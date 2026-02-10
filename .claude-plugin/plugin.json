@@ -1,0 +1,13 @@
+{
+  "name": "edloidas-skills",
+  "version": "1.0.0",
+  "description": "20 Claude Code skills: code review, auditing, text processing, Git workflows, and more.",
+  "author": {
+    "name": "Mikita Taukachou",
+    "url": "https://github.com/edloidas"
+  },
+  "repository": "https://github.com/edloidas/skills",
+  "license": "MIT",
+  "keywords": ["skills", "code-review", "audit", "text", "git", "lint"],
+  "skills": "./"
+}

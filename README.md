@@ -2,15 +2,24 @@
 
 A public collection of [Claude Code](https://docs.anthropic.com/en/docs/claude-code) agent skills following the [Agent Skills specification](https://agentskills.io/specification).
 
-## Usage
+## Installation
 
-Clone this repository and register it as a skill source in your Claude Code configuration:
+Add the marketplace and install the skills plugin:
 
-```bash
-git clone https://github.com/edloidas/skills.git
+```
+/plugin marketplace add edloidas/skills
+/plugin install edloidas-skills@edloidas-skills
 ```
 
-Point Claude Code to the cloned directory to make skills available in your sessions. See the [Claude Code documentation](https://docs.anthropic.com/en/docs/claude-code) for details on configuring custom skills.
+This makes all 20 skills available in your Claude Code sessions.
+
+### Scopes
+
+| Scope | Command | Use case |
+|-------|---------|----------|
+| User (default) | `/plugin install edloidas-skills@edloidas-skills` | Personal — all projects |
+| Project | `/plugin install edloidas-skills@edloidas-skills --scope project` | Team — shared via Git |
+| Local | `/plugin install edloidas-skills@edloidas-skills --scope local` | Project — gitignored |
 
 ## Skill Structure
 
