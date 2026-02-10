@@ -106,6 +106,12 @@ The `description` determines when an agent activates the skill. Be specific and 
 - Creating scripts with undocumented external dependencies
 - Using absolute paths or paths outside the skill directory
 
+## Commit Messages
+
+Use [Conventional Commits](https://www.conventionalcommits.org/) format: `<type>: <description>`
+
+Common types: `feat:`, `fix:`, `docs:`, `chore:`, `refactor:`, `test:`, `style:`, `ci:`
+
 ## License
 
 All skills in this repository are released under the MIT License unless a skill's own `SKILL.md` specifies otherwise via the `license` frontmatter field.
