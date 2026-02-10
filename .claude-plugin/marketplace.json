@@ -2,24 +2,37 @@
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "edloidas-skills",
   "owner": {
-    "name": "Mikita Taukachou"
-  },
-  "metadata": {
-    "description": "A collection of Claude Code skills for code review, auditing, text processing, and more."
+    "name": "Mikita Taukachou",
+    "url": "https://edloidas.io"
   },
   "plugins": [
     {
       "name": "edloidas-skills",
-      "source": ".",
-      "description": "20 Claude Code skills: code review, auditing, text processing, Git workflows, and more.",
+      "source": "./",
+      "description": "Collection of Claude Code skills for text editing, code review, config auditing, and development workflows",
       "version": "1.0.0",
-      "author": {
-        "name": "Mikita Taukachou"
-      },
-      "category": "development",
-      "repository": "https://github.com/edloidas/skills",
-      "license": "MIT",
-      "keywords": ["skills", "code-review", "audit", "text", "git", "lint"]
+      "skills": [
+        "./changes-review",
+        "./ci-audit",
+        "./code-cleanup",
+        "./code-polish",
+        "./comment-audit",
+        "./git-worktree",
+        "./gradle-format",
+        "./issue-writer",
+        "./lint-audit",
+        "./lint-sync",
+        "./npm-release",
+        "./review-scope",
+        "./scripts-audit",
+        "./suggest-react-improvements",
+        "./summary-commit",
+        "./sync-labels",
+        "./text-fix",
+        "./text-summary",
+        "./tsconfig-audit",
+        "./workspace-audit"
+      ]
     }
   ]
 }
