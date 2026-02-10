@@ -1,0 +1,14 @@
+[
+  {"name": "bug", "description": "Something isn't working", "color": "B60205"},
+  {"name": "duplicate", "description": "This issue or pull request already exists", "color": "DCDCDC"},
+  {"name": "enhancement", "description": "New feature or request", "color": "1D76DB"},
+  {"name": "good first issue", "description": "Good for newcomers", "color": "7057FF"},
+  {"name": "help wanted", "description": "Extra attention is needed", "color": "008672"},
+  {"name": "documentation", "description": "Improvements or additions to documentation", "color": "0075CA"},
+  {"name": "wontfix", "description": "This will not be worked on", "color": "FFFFFF"},
+  {"name": "refactoring", "description": "Code restructuring without behavior change", "color": "D4C5F9"},
+  {"name": "critical", "description": "High priority issues or requests", "color": "FBCA04"},
+  {"name": "testing", "description": "Build, tests, and CI related", "color": "C2E0C6"},
+  {"name": "performance", "description": "Performance improvements or optimizations", "color": "D93F0B"},
+  {"name": "dependencies", "description": "Pull requests that update a dependency", "color": "0366D6"}
+]
