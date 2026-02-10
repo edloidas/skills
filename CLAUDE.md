@@ -48,7 +48,7 @@ Optional fields:
 | Field           | Constraint                                                                       |
 | --------------- | -------------------------------------------------------------------------------- |
 | `license`       | License name or reference to a bundled LICENSE file                              |
-| `compatibility` | 1–500 chars; describes environment needs (products, packages, network access)    |
+| `compatibility` | 1–500 chars; target agent and/or environment needs (see Multi-Agent Convention)  |
 | `metadata`      | Key-value mapping; use reasonably unique key names to prevent conflicts           |
 | `allowed-tools` | **Experimental.** Space-delimited list of pre-approved tools (e.g. `Bash(git:*) Read`) |
 
@@ -68,6 +68,24 @@ metadata:
   version: "1.0"
 ---
 ```
+
+### Multi-Agent Convention
+
+Skills for different agents (Claude Code, Codex, etc.) live flat at the repo root — no nesting by agent. Agent compatibility is declared via the `compatibility` frontmatter field.
+
+**Agent-specific skill:**
+```yaml
+compatibility: Claude Code
+```
+
+**Multi-agent skill:**
+```yaml
+compatibility: Claude Code, Codex
+```
+
+**Universal skill:** Omit `compatibility` entirely — the skill works with any agent.
+
+The README "Available Skills" table includes an **Agent** column for quick scanning.
 
 ### Writing Good Descriptions
 

@@ -42,7 +42,28 @@ See the full [Agent Skills specification](https://agentskills.io/specification) 
 
 ## Available Skills
 
-*No skills yet — check back soon.*
+| Skill | Description | Agent | Category |
+|-------|-------------|-------|----------|
+| [changes-review](./changes-review/) | Deep logic analysis of code changes | Claude | Review |
+| [ci-audit](./ci-audit/) | Analyze GitHub Actions workflows for optimization | Claude | Audit |
+| [code-cleanup](./code-cleanup/) | Post-implementation cleanup of comments and artifacts | Claude | Code Quality |
+| [code-polish](./code-polish/) | Analyze code changes for best practices and quality | Claude | Code Quality |
+| [comment-audit](./comment-audit/) | Analyze code comments for quality and relevance | Claude | Audit |
+| [git-worktree](./git-worktree/) | Manage Git worktrees with centralized storage | Claude | Git |
+| [gradle-format](./gradle-format/) | Format and modernize Gradle build files | Claude | Formatting |
+| [issue-writer](./issue-writer/) | Create and update well-structured GitHub issues | Claude | GitHub |
+| [lint-audit](./lint-audit/) | Analyze ESLint, Biome, and Oxlint configurations | Claude | Audit |
+| [lint-sync](./lint-sync/) | Compare ESLint rules against Biome for overlap | Claude | Audit |
+| [npm-release](./npm-release/) | Guide npm/pnpm package release workflow | Claude | Release |
+| [review-scope](./review-scope/) | Determine review scope from git diff | Claude | Review |
+| [scripts-audit](./scripts-audit/) | Analyze package.json scripts for consistency | Claude | Audit |
+| [suggest-react-improvements](./suggest-react-improvements/) | Suggest React code improvements and patterns | Claude | Code Quality |
+| [summary-commit](./summary-commit/) | Generate formatted Git commit message summaries | Claude | Git |
+| [sync-labels](./sync-labels/) | Synchronize GitHub repository labels from JSON | Claude | GitHub |
+| [text-fix](./text-fix/) | Fix grammar and polish text with minimal edits | Claude | Text |
+| [text-summary](./text-summary/) | Summarize text or URL content | Claude | Text |
+| [tsconfig-audit](./tsconfig-audit/) | Analyze TypeScript configurations for best practices | Claude | Audit |
+| [workspace-audit](./workspace-audit/) | Analyze pnpm workspace and monorepo setup | Claude | Audit |
 
 ## Creating a Skill
 
