@@ -1,5 +1,5 @@
 ---
-name: summary-commit
+name: commit-summary
 description: Generate Git commit message summaries following strict formatting rules. Analyzes staged/unstaged changes and produces technical, past-tense commit messages.
 license: MIT
 compatibility: Claude Code
@@ -27,9 +27,9 @@ Trigger phrases: "commit summary", "generate commit", "commit message", "summari
 
 | Command | Description |
 |---------|-------------|
-| `/summary-commit` | Analyze all changes (staged + unstaged) |
-| `/summary-commit staged only` | Only staged changes |
-| `/summary-commit [custom]` | Follow custom instructions |
+| `/commit-summary` | Analyze all changes (staged + unstaged) |
+| `/commit-summary staged only` | Only staged changes |
+| `/commit-summary [custom]` | Follow custom instructions |
 
 ## Workflow
 

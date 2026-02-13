@@ -30,7 +30,7 @@ Install directly from this GitHub repo into `~/.codex/skills`:
 ```bash
 python ~/.codex/skills/.system/skill-installer/scripts/install-skill-from-github.py \
   --repo edloidas/skills \
-  --path ci-audit code-cleanup code-polish gradle-format lint-audit scripts-audit suggest-react-improvements text-fix tsconfig-audit workspace-audit
+  --path ci-audit code-cleanup code-polish gradle-format lint-audit react-improvements scripts-audit text-fix tsconfig-audit workspace-audit
 ```
 
 No `.curated` folder is required for this repo; installs use explicit `--path` values.
@@ -73,17 +73,17 @@ See the full [Agent Skills specification](https://agentskills.io/specification) 
 | [code-cleanup](./code-cleanup/)                             | Post-implementation cleanup of comments and artifacts                     | Claude, Codex | Code Quality |
 | [code-polish](./code-polish/)                               | Analyze code changes for best practices and quality                       | Claude, Codex | Code Quality |
 | [comment-audit](./comment-audit/)                           | Analyze code comments for quality and relevance                           | Claude        | Audit        |
+| [commit-summary](./commit-summary/)                         | Generate formatted Git commit message summaries                           | Claude        | Git          |
 | [git-worktree](./git-worktree/)                             | Manage Git worktrees with configurable storage and agent settings copying | Any           | Git          |
 | [gradle-format](./gradle-format/)                           | Format and modernize Gradle build files                                   | Claude, Codex | Formatting   |
 | [issue-writer](./issue-writer/)                             | Create and update well-structured GitHub issues                           | Claude        | GitHub       |
-| [lint-audit](./lint-audit/)                                 | Analyze ESLint, Biome, and Oxlint configurations                          | Claude, Codex | Audit        |
+| [labels-sync](./labels-sync/)                               | Synchronize GitHub repository labels from JSON                            | Claude        | GitHub       |
+| [lint-audit](./lint-audit/)                                 | Analyze ESLint, Biome, and Oxlint configurations                         | Claude, Codex | Audit        |
 | [lint-sync](./lint-sync/)                                   | Compare ESLint rules against Biome for overlap                            | Claude        | Audit        |
 | [npm-release](./npm-release/)                               | Guide npm/pnpm package release workflow                                   | Claude        | Release      |
+| [react-improvements](./react-improvements/)                 | Suggest React code improvements and patterns                              | Claude, Codex | Code Quality |
 | [review-scope](./review-scope/)                             | Determine review scope from git diff                                      | Claude        | Review       |
 | [scripts-audit](./scripts-audit/)                           | Analyze package.json scripts for consistency                              | Claude, Codex | Audit        |
-| [suggest-react-improvements](./suggest-react-improvements/) | Suggest React code improvements and patterns                              | Claude, Codex | Code Quality |
-| [summary-commit](./summary-commit/)                         | Generate formatted Git commit message summaries                           | Claude        | Git          |
-| [sync-labels](./sync-labels/)                               | Synchronize GitHub repository labels from JSON                            | Claude        | GitHub       |
 | [text-fix](./text-fix/)                                     | Fix grammar and polish text with minimal edits                            | Claude, Codex | Text         |
 | [text-summary](./text-summary/)                             | Summarize text or URL content                                             | Claude        | Text         |
 | [tsconfig-audit](./tsconfig-audit/)                         | Analyze TypeScript configurations for best practices                      | Claude, Codex | Audit        |

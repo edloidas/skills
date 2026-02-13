@@ -1,12 +1,12 @@
 ---
-name: suggest-react-improvements
+name: react-improvements
 description: Analyze React code and suggest improvements based on best practices, project conventions, and modern patterns. Focuses on architecture, hooks usage, state management, and code organization.
 license: MIT
 compatibility: Claude Code, Codex
 allowed-tools: Bash, Read, Glob, Grep
 ---
 
-# Suggest React Improvements
+# React Improvements
 
 ## Purpose
 
@@ -25,9 +25,9 @@ Trigger phrases: "suggest improvements", "how can I improve this", "better patte
 
 | Command | Description |
 |---------|-------------|
-| `/suggest-react-improvements` | Analyze staged/unstaged changes |
-| `/suggest-react-improvements path/file.tsx` | Specific file |
-| `/suggest-react-improvements path/` | Directory |
+| `/react-improvements` | Analyze staged/unstaged changes |
+| `/react-improvements path/file.tsx` | Specific file |
+| `/react-improvements path/` | Directory |
 
 ## Workflow
 

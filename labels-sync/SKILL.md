@@ -1,5 +1,5 @@
 ---
-name: sync-labels
+name: labels-sync
 description: >
   Synchronize GitHub repository labels with a predefined label set.
   Compares, creates, updates, and deletes labels to match a JSON definition.
@@ -12,7 +12,7 @@ arguments: "[apply|check] - 'apply' syncs labels, 'check' shows differences only
 model: claude-sonnet-4-5
 ---
 
-# Sync Labels: GitHub Label Synchronization
+# Labels Sync: GitHub Label Synchronization
 
 ## Purpose
 
@@ -26,7 +26,7 @@ Use when the user asks to:
 - "Manage GitHub labels", "set up labels"
 - "Apply standard labels to this repo"
 
-Trigger phrases: "sync-labels", "sync labels", "label sync", "github labels", "check labels"
+Trigger phrases: "labels-sync", "labels sync", "sync labels", "label sync", "github labels", "check labels"
 
 ## Operations
 
@@ -44,11 +44,11 @@ From the command arguments or conversation context, determine the user's intent:
 
 **Apply changes** if user explicitly requests (keywords in args or context):
 - `apply`, `sync`, `update`, `fix`, `set`, `enforce`
-- Example: `/sync-labels apply` or "sync my labels"
+- Example: `/labels-sync apply` or "sync my labels"
 
 **Report only** if user wants to check (keywords):
 - `check`, `list`, `show`, `preview`, `dry-run`, `diff`
-- Example: `/sync-labels check` or "show label differences"
+- Example: `/labels-sync check` or "show label differences"
 
 **Ask user** if intent is unclear or no arguments provided.
 
