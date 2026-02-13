@@ -13,7 +13,7 @@ Add the marketplace and install the skills plugin:
 /plugin install edloidas-skills@edloidas-skills
 ```
 
-This makes all 21 skills available in your Claude Code sessions.
+This makes all 22 skills available in your Claude Code sessions.
 
 ### Scopes
 
@@ -81,6 +81,7 @@ See the full [Agent Skills specification](https://agentskills.io/specification) 
 | [lint-audit](./lint-audit/)                                 | Analyze ESLint, Biome, and Oxlint configurations                         | Claude, Codex | Audit        |
 | [lint-sync](./lint-sync/)                                   | Compare ESLint rules against Biome for overlap                            | Claude        | Audit        |
 | [npm-release](./npm-release/)                               | Guide npm/pnpm package release workflow                                   | Claude        | Release      |
+| [permissions-cleanup](./permissions-cleanup/)                | Clean up stale permission entries from settings files                     | Claude        | Maintenance  |
 | [react-improvements](./react-improvements/)                 | Suggest React code improvements and patterns                              | Claude, Codex | Code Quality |
 | [review-scope](./review-scope/)                             | Determine review scope from git diff                                      | Claude        | Review       |
 | [scripts-audit](./scripts-audit/)                           | Analyze package.json scripts for consistency                              | Claude, Codex | Audit        |
