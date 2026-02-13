@@ -3,7 +3,7 @@ name: issue-writer
 description: Use this skill when the user asks to create, write, draft, or update a GitHub issue. It analyzes the user's description, asks clarifying questions, and produces a well-structured issue title and description following the project's template. Can also update existing issues.
 license: MIT
 compatibility: Claude Code
-allowed-tools: Bash, Read, Glob, Task, AskUserQuestion
+allowed-tools: Bash Read Glob Task AskUserQuestion
 ---
 
 # GitHub Issue Writer

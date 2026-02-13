@@ -3,7 +3,7 @@ name: npm-release
 description: This skill should be used when the user asks to release, publish, or create a new version of an npm/pnpm package. It guides through version bumping, validation, git tagging, and publishing with proper safety checks and user approval.
 license: MIT
 compatibility: Claude Code
-allowed-tools: Bash, Read, Glob, Task, AskUserQuestion
+allowed-tools: Bash Read Glob Task AskUserQuestion
 ---
 
 # NPM/PNPM Package Release Workflow

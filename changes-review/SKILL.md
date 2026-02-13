@@ -3,7 +3,7 @@ name: changes-review
 description: Deep logic analysis of code changes. Spawns review-build and review-rules agents, then performs logic analysis to find issues tooling cannot detect.
 license: MIT
 compatibility: Claude Code
-allowed-tools: Bash, Read, Glob, Grep, Task
+allowed-tools: Bash Read Glob Grep Task
 ---
 
 # Review Code Changes

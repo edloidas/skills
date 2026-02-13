@@ -6,7 +6,7 @@ description: >
   Use when the user asks to sync, check, or manage GitHub labels.
 license: MIT
 compatibility: Claude Code
-allowed-tools: Bash, Read, AskUserQuestion
+allowed-tools: Bash Read AskUserQuestion
 user-invocable: true
 arguments: "[apply|check] - 'apply' syncs labels, 'check' shows differences only"
 model: claude-sonnet-4-5

@@ -3,7 +3,7 @@ name: comment-audit
 description: Analyze code comments in changed files for quality, relevance, and adherence to best practices. Manual invocation only.
 license: MIT
 compatibility: Claude Code
-allowed-tools: Bash, Read, Glob, Grep, Task
+allowed-tools: Bash Read Glob Grep Task
 model: claude-haiku-4-5
 ---
 

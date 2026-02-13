@@ -50,6 +50,7 @@ Optional fields:
 | `license`       | License name or reference to a bundled LICENSE file                              |
 | `compatibility` | 1–500 chars; target agent and/or environment needs (see Multi-Agent Convention)  |
 | `metadata`      | Key-value mapping; use reasonably unique key names to prevent conflicts           |
+| `arguments`     | Plain-text description of accepted arguments for `user-invocable` skills. **Avoid regex metacharacters** (`[`, `]`, `|`, `<`, `>`, etc.) — Claude Code parses this field as a regex and will throw `SyntaxError: Invalid regular expression` if the value contains unescaped special characters. Use descriptive text instead (e.g. `"all or space-separated skill names"`). |
 | `allowed-tools` | **Experimental.** Space-delimited list of pre-approved tools (e.g. `Bash(git:*) Read`) |
 
 Example frontmatter:

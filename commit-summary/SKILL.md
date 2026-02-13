@@ -3,7 +3,7 @@ name: commit-summary
 description: Generate Git commit message summaries following strict formatting rules. Analyzes staged/unstaged changes and produces technical, past-tense commit messages.
 license: MIT
 compatibility: Claude Code
-allowed-tools: Read, Bash(git status:*), Bash(git diff:*), Bash(git log:*), Bash(git show:*)
+allowed-tools: Read Bash(git status:*) Bash(git diff:*) Bash(git log:*) Bash(git show:*)
 model: claude-sonnet-4-5
 ---
 

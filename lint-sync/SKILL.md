@@ -3,7 +3,7 @@ name: lint-sync
 description: Compare ESLint rules against Biome to find overlaps, recommend disabling redundant rules, and guide migration
 license: MIT
 compatibility: Claude Code
-allowed-tools: Bash, Read, Glob, Grep, WebFetch, Write
+allowed-tools: Bash Read Glob Grep WebFetch Write
 user-invocable: true
 arguments: "[mode] - 'sync' (default), 'audit', or 'update'"
 ---

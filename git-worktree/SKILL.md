@@ -7,7 +7,7 @@ description: >
   over. Use when the user asks to create a worktree, work on multiple branches,
   or clean up worktrees.
 license: MIT
-allowed-tools: Bash, Read, Glob, Grep
+allowed-tools: Bash Read Glob Grep
 ---
 
 # Git Worktree Manager

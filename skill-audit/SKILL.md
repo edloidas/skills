@@ -10,7 +10,7 @@ license: MIT
 compatibility: Claude Code
 allowed-tools: Read Glob Grep Task
 user-invocable: true
-arguments: "[all | <skill-name>...]"
+arguments: "all or space-separated skill names"
 metadata:
   author: edloidas
   version: "1.0"
@@ -38,7 +38,8 @@ Trigger phrases: "skill audit", "audit skills", "evaluate skills", "skill qualit
 | Command | Scope | Description |
 |---------|-------|-------------|
 | `/skill-audit` | All | Audit all skills (excluding `skill-audit` itself) |
-| `/skill-audit <name> [<name>...]` | Specific | Audit one or more named skills |
+| `/skill-audit all` | All | Same as above |
+| `/skill-audit name [name ...]` | Specific | Audit one or more named skills |
 
 When the user's intent is ambiguous (e.g., "audit the skills"), default to all-skills mode without asking.
 
