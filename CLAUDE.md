@@ -115,7 +115,8 @@ The `description` determines when an agent activates the skill. Be specific and 
 2. Create `<skill-name>/SKILL.md` with required frontmatter and instructions
 3. Add `scripts/`, `references/`, or `assets/` directories as needed
 4. Update the "Available Skills" table in `README.md`
-5. Validate with: `skills-ref validate ./<skill-name>`
+5. Add the skill path to `.claude-plugin/marketplace.json` under `plugins[0].skills`
+6. Validate with: `skills-ref validate ./<skill-name>`
 
 ## Avoid
 
