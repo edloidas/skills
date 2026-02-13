@@ -1,6 +1,6 @@
 {
   "name": "edloidas-skills",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Collection of Claude Code skills for text editing, code review, config auditing, and development workflows",
   "author": {
     "name": "Mikita Taukachou",
