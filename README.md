@@ -58,7 +58,7 @@ See the full [Agent Skills specification](https://agentskills.io/specification) 
 | [code-cleanup](./code-cleanup/) | Post-implementation cleanup of comments and artifacts | Claude | Code Quality |
 | [code-polish](./code-polish/) | Analyze code changes for best practices and quality | Claude | Code Quality |
 | [comment-audit](./comment-audit/) | Analyze code comments for quality and relevance | Claude | Audit |
-| [git-worktree](./git-worktree/) | Manage Git worktrees with centralized storage | Claude | Git |
+| [git-worktree](./git-worktree/) | Manage Git worktrees with configurable storage and agent settings copying | Any | Git |
 | [gradle-format](./gradle-format/) | Format and modernize Gradle build files | Claude | Formatting |
 | [issue-writer](./issue-writer/) | Create and update well-structured GitHub issues | Claude | GitHub |
 | [lint-audit](./lint-audit/) | Analyze ESLint, Biome, and Oxlint configurations | Claude | Audit |
