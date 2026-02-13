@@ -2,7 +2,7 @@
 name: code-cleanup
 description: Post-implementation cleanup. Removes obvious comments, AI artifacts, improves JSDoc, fixes trivial TODOs, and flags misleading comments.
 license: MIT
-compatibility: Claude Code
+compatibility: Claude Code, Codex
 allowed-tools: Bash, Read, Edit, Glob, Grep
 ---
 

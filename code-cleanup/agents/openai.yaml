@@ -1,0 +1,3 @@
+interface:
+  display_name: "Code Cleanup"
+  short_description: "Clean comments, docs, and trivial code noise"

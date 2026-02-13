@@ -1,0 +1,3 @@
+interface:
+  display_name: "Text Fix"
+  short_description: "Fix grammar while preserving tone and style"

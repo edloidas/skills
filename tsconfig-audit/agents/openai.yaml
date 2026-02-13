@@ -1,0 +1,3 @@
+interface:
+  display_name: "TSConfig Audit"
+  short_description: "Audit TypeScript configs for safety and performance"

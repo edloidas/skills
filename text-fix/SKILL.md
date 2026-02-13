@@ -2,7 +2,7 @@
 name: text-fix
 description: Fix grammar and polish text with minimal edits. Preserves author's voice, tone, and personality while correcting errors.
 license: MIT
-compatibility: Claude Code
+compatibility: Claude Code, Codex
 ---
 
 # Text Grammar Fixer

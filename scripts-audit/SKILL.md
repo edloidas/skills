@@ -2,7 +2,7 @@
 name: scripts-audit
 description: Analyze package.json scripts for consistency, performance, and best practices
 license: MIT
-compatibility: Claude Code
+compatibility: Claude Code, Codex
 allowed-tools: Bash, Read, Glob, Grep
 ---
 

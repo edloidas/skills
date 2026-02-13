@@ -2,7 +2,7 @@
 name: ci-audit
 description: Analyze GitHub Actions workflows for parallelization, caching, and optimization
 license: MIT
-compatibility: Claude Code
+compatibility: Claude Code, Codex
 allowed-tools: Bash, Read, Glob, Grep
 ---
 

@@ -2,7 +2,7 @@
 name: workspace-audit
 description: Analyze pnpm workspace configuration and monorepo setup for optimization
 license: MIT
-compatibility: Claude Code
+compatibility: Claude Code, Codex
 allowed-tools: Bash, Read, Glob, Grep
 ---
 

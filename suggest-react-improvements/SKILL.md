@@ -2,7 +2,7 @@
 name: suggest-react-improvements
 description: Analyze React code and suggest improvements based on best practices, project conventions, and modern patterns. Focuses on architecture, hooks usage, state management, and code organization.
 license: MIT
-compatibility: Claude Code
+compatibility: Claude Code, Codex
 allowed-tools: Bash, Read, Glob, Grep
 ---
 

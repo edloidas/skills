@@ -2,7 +2,7 @@
 name: code-polish
 description: Analyze code changes for implementation quality, best practices, robustness, and reliability. Suggests improvements without over-engineering.
 license: MIT
-compatibility: Claude Code
+compatibility: Claude Code, Codex
 allowed-tools: Bash, Read, Glob, Grep
 ---
 

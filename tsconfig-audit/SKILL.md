@@ -2,7 +2,7 @@
 name: tsconfig-audit
 description: Analyze TypeScript configurations for performance, safety, and modern best practices
 license: MIT
-compatibility: Claude Code
+compatibility: Claude Code, Codex
 allowed-tools: Bash, Read, Glob, Grep
 ---
 

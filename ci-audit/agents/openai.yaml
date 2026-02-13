@@ -1,0 +1,3 @@
+interface:
+  display_name: "CI Audit"
+  short_description: "Audit GitHub Actions for speed and reliability"

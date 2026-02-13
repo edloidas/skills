@@ -1,0 +1,3 @@
+interface:
+  display_name: "Code Polish"
+  short_description: "Review changed code for quality and robustness"

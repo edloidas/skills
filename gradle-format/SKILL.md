@@ -2,7 +2,7 @@
 name: gradle-format
 description: Format and modernize Gradle build files according to Gradle 8+ best practices. Use when asked to format, clean up, or modernize build.gradle files.
 license: MIT
-compatibility: Claude Code
+compatibility: Claude Code, Codex
 allowed-tools: Bash, Read, Glob, Grep, Edit, Write
 ---
 

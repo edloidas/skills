@@ -1,0 +1,3 @@
+interface:
+  display_name: "Gradle Format"
+  short_description: "Modernize and format Gradle build files"

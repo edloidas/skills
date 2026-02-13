@@ -2,7 +2,7 @@
 name: lint-audit
 description: Analyze ESLint, Biome, and Oxlint configurations for performance, coverage, and tool overlap
 license: MIT
-compatibility: Claude Code
+compatibility: Claude Code, Codex
 allowed-tools: Bash, Read, Glob, Grep
 ---
 

@@ -1,0 +1,3 @@
+interface:
+  display_name: "Scripts Audit"
+  short_description: "Audit package scripts for consistency and speed"
