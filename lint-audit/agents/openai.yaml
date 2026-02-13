@@ -1,3 +1,0 @@
-interface:
-  display_name: "Lint Audit"
-  short_description: "Audit ESLint, Biome, and Oxlint configurations"
