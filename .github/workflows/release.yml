@@ -17,27 +17,11 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Validate skills list
+        run: bash .github/scripts/validate-skills.sh
+
       - name: Validate version consistency
-        run: |
-          TAG_VERSION="${GITHUB_REF_NAME#v}"
-          MARKETPLACE_VERSION=$(jq -r '.plugins[0].version' .claude-plugin/marketplace.json)
-          PLUGIN_VERSION=$(jq -r '.version' .claude-plugin/plugin.json)
-
-          echo "Tag version:         $TAG_VERSION"
-          echo "Marketplace version: $MARKETPLACE_VERSION"
-          echo "Plugin version:      $PLUGIN_VERSION"
-
-          if [ "$TAG_VERSION" != "$MARKETPLACE_VERSION" ]; then
-            echo "::error::Tag version ($TAG_VERSION) does not match marketplace.json ($MARKETPLACE_VERSION)"
-            exit 1
-          fi
-
-          if [ "$TAG_VERSION" != "$PLUGIN_VERSION" ]; then
-            echo "::error::Tag version ($TAG_VERSION) does not match plugin.json ($PLUGIN_VERSION)"
-            exit 1
-          fi
-
-          echo "All versions match: $TAG_VERSION"
+        run: bash .github/scripts/validate-version.sh "${GITHUB_REF_NAME#v}"
 
       - name: Create GitHub Release
         env:
