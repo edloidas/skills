@@ -3,7 +3,7 @@ name: workspace-audit
 description: Analyze pnpm workspace configuration and monorepo setup for optimization
 license: MIT
 compatibility: Claude Code, Codex
-allowed-tools: Bash Read Glob Grep
+allowed-tools: Bash(pnpm:*) Bash(npm:*) Bash(node:*) Bash(npx:*) Bash(turbo:*) Read Glob Grep
 ---
 
 # Workspace Audit (pnpm/npm/yarn)

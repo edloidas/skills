@@ -4,6 +4,8 @@ description: This skill should be used when the user asks to release, publish, o
 license: MIT
 compatibility: Claude Code
 allowed-tools: Bash Read Glob Task AskUserQuestion
+arguments: "version bump type: major, minor, or patch"
+argument-hint: "[version]"
 ---
 
 # NPM/PNPM Package Release Workflow

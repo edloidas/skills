@@ -8,7 +8,8 @@ license: MIT
 compatibility: Claude Code
 allowed-tools: Bash Read AskUserQuestion
 user-invocable: true
-arguments: "[apply|check] - 'apply' syncs labels, 'check' shows differences only"
+arguments: "apply or check - apply syncs labels, check shows differences only"
+argument-hint: "[apply|check]"
 model: claude-sonnet-4-5
 ---
 

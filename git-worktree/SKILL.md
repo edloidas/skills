@@ -8,6 +8,8 @@ description: >
   or clean up worktrees.
 license: MIT
 allowed-tools: Bash Read Glob Grep
+arguments: "subcommand: create, remove, list, or clean, followed by branch name"
+argument-hint: "[command] [branch]"
 ---
 
 # Git Worktree Manager

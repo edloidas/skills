@@ -5,7 +5,8 @@ license: MIT
 compatibility: Claude Code
 allowed-tools: Bash Read Glob Grep WebFetch Write
 user-invocable: true
-arguments: "[mode] - 'sync' (default), 'audit', or 'update'"
+arguments: "mode name: sync, audit, or update. Defaults to sync"
+argument-hint: "[mode]"
 ---
 
 # Lint Sync: ESLint ↔ Biome Rule Comparison
