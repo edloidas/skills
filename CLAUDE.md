@@ -45,13 +45,28 @@ Required fields:
 
 Optional fields:
 
-| Field           | Constraint                                                                       |
-| --------------- | -------------------------------------------------------------------------------- |
-| `license`       | License name or reference to a bundled LICENSE file                              |
-| `compatibility` | 1–500 chars; target agent and/or environment needs (see Multi-Agent Convention)  |
-| `metadata`      | Key-value mapping; use reasonably unique key names to prevent conflicts           |
-| `arguments`     | Plain-text description of accepted arguments for `user-invocable` skills. **Avoid regex metacharacters** (`[`, `]`, `|`, `<`, `>`, etc.) — Claude Code parses this field as a regex and will throw `SyntaxError: Invalid regular expression` if the value contains unescaped special characters. Use descriptive text instead (e.g. `"all or space-separated skill names"`). |
-| `allowed-tools` | **Experimental.** Space-delimited list of pre-approved tools (e.g. `Bash(git:*) Read`) |
+| Field           | Constraint                                                                                                            |
+| --------------- | --------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `license`       | License name or reference to a bundled LICENSE file                                                                   |
+| `compatibility` | 1–500 chars; target agent and/or environment needs (see Multi-Agent Convention)                                       |
+| `metadata`      | Key-value mapping; use reasonably unique key names to prevent conflicts                                               |
+| `arguments`     | Plain-text description of accepted arguments for `user-invocable` skills. **Avoid regex metacharacters** (`[`, `]`, ` | `, `<`, `>`, etc.) — Claude Code parses this field as a regex and will throw `SyntaxError: Invalid regular expression`if the value contains unescaped special characters. Use descriptive text instead (e.g.`"all or space-separated skill names"`). |
+| `allowed-tools` | **Experimental.** Space-delimited list of pre-approved tools (e.g. `Bash(git:*) Read`)                                |
+
+Claude Code extension fields (ignored by other agents, safe to use in any skill):
+
+| Field                      | Constraint                                                                                                          |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| `argument-hint`            | Autocomplete hint for expected arguments (e.g. `[issue-number]`, `[filename] [format]`)                             |
+| `disable-model-invocation` | `true` prevents Claude from auto-loading the skill; invoke manually with `/skill-name`. Default: `false`            |
+| `user-invocable`           | `false` hides from the `/` menu; Claude can still load it when relevant. Default: `true`                            |
+| `model`                    | Model to use when skill is active (e.g. `claude-sonnet-4-5`)                                                        |
+| `context`                  | `fork` runs the skill in a forked subagent context                                                                  |
+| `agent`                    | Subagent type when `context: fork` (e.g. `Explore`, `Plan`, `general-purpose`, or a custom `.claude/agents/` agent) |
+| `hooks`                    | Hooks scoped to skill lifecycle. See [Claude Code hooks docs](https://code.claude.com/docs/en/hooks)                |
+
+String substitutions available in skill body: `$ARGUMENTS`, `$ARGUMENTS[N]` / `$N`, `${CLAUDE_SESSION_ID}`.
+Dynamic context injection: `` !`command` `` runs a shell command and inserts its output before Claude sees the skill content.
 
 Example frontmatter:
 
@@ -64,6 +79,8 @@ description: >
 license: MIT
 compatibility: Requires poppler-utils (pdftotext) installed on the system
 allowed-tools: Bash(pdftotext:*) Read
+user-invocable: true
+model: claude-sonnet-4-5
 metadata:
   author: edloidas
   version: "1.0"
@@ -75,11 +92,13 @@ metadata:
 Skills for different agents (Claude Code, Codex, etc.) live flat at the repo root — no nesting by agent. Agent compatibility is declared via the `compatibility` frontmatter field.
 
 **Agent-specific skill:**
+
 ```yaml
 compatibility: Claude Code
 ```
 
 **Multi-agent skill:**
+
 ```yaml
 compatibility: Claude Code, Codex
 ```
@@ -117,7 +136,7 @@ The `description` determines when an agent activates the skill. Be specific and 
 3. Add `scripts/`, `references/`, or `assets/` directories as needed
 4. Update the "Available Skills" table in `README.md`
 5. Add the skill path to `.claude-plugin/marketplace.json` under `plugins[0].skills`
-6. Validate with: `skills-ref validate ./<skill-name>`
+6. Validate via `skill-audit` skill if available
 
 ## Avoid
 
