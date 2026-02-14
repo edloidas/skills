@@ -5,6 +5,7 @@ license: MIT
 compatibility: Claude Code
 allowed-tools: Bash Read Glob Grep Task
 model: claude-haiku-4-5
+disable-model-invocation: true
 ---
 
 # Comment Audit

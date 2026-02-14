@@ -3,7 +3,9 @@ name: react-improvements
 description: Analyze React code and suggest improvements based on best practices, project conventions, and modern patterns. Focuses on architecture, hooks usage, state management, and code organization.
 license: MIT
 compatibility: Claude Code, Codex
-allowed-tools: Bash Read Glob Grep
+allowed-tools: Bash(git:*) Read Glob Grep
+arguments: "file path, directory, or none for staged changes"
+argument-hint: "[path]"
 ---
 
 # React Improvements
@@ -33,12 +35,13 @@ Trigger phrases: "suggest improvements", "how can I improve this", "better patte
 
 ### Phase 1: Load Context
 
-1. **Read project rules:**
+1. **Read project rules** (if available — skip silently if files don't exist):
    ```
    .cursor/rules/react.mdc
    .cursor/rules/typescript.mdc
    .cursor/rules/stores.mdc (if exists)
    ```
+   If no project rules found, use React 18+ best practices and modern patterns as defaults.
 
 2. **Identify target files:**
    - If path argument provided: use that path

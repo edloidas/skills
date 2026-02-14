@@ -3,7 +3,9 @@ name: code-cleanup
 description: Post-implementation cleanup. Removes obvious comments, AI artifacts, improves JSDoc, fixes trivial TODOs, and flags misleading comments.
 license: MIT
 compatibility: Claude Code, Codex
-allowed-tools: Bash Read Edit Glob Grep
+allowed-tools: Bash(git:*) Read Edit Glob Grep
+arguments: "file, directory, last N commits, --dry-run, or --aggressive"
+argument-hint: "[files] [--dry-run]"
 ---
 
 # Code Cleanup
@@ -123,6 +125,8 @@ Fix without asking if truly trivial:
 - Unused imports (if safe to remove)
 
 ### Phase 3: Execute Cleanup
+
+**User confirmation:** Before making any changes, present the analysis summary from Phase 2 and ask the user for approval. If `--dry-run` was specified, output the report and stop here.
 
 **Order of operations:**
 1. Remove obvious comments

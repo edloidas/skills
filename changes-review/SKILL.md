@@ -4,6 +4,8 @@ description: Deep logic analysis of code changes. Spawns review-build and review
 license: MIT
 compatibility: Claude Code
 allowed-tools: Bash Read Glob Grep Task
+arguments: "last N commits, file path, directory, commit range, or none for all changes"
+argument-hint: "[scope]"
 ---
 
 # Review Code Changes
@@ -26,7 +28,7 @@ Trigger phrases: "review changes", "review my code", "check changes", "analyze c
 
 | Command | Description |
 |---------|-------------|
-| `/code:review-changes` | All changes (staged + unstaged), or last commit if clean |
+| `/changes-review` | All changes (staged + unstaged), or last commit if clean |
 | `/code:review-changes last N commits` | Changes in last N commits |
 | `/code:review-changes path/` | Changes in directory |
 | `/code:review-changes file.ext` | Specific file |

@@ -4,6 +4,8 @@ description: Generate Git commit message summaries following strict formatting r
 license: MIT
 compatibility: Claude Code
 allowed-tools: Read Bash(git status:*) Bash(git diff:*) Bash(git log:*) Bash(git show:*)
+arguments: "'staged only', custom instructions, or none for all changes"
+argument-hint: "[scope]"
 model: claude-sonnet-4-5
 ---
 
