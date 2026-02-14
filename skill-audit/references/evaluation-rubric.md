@@ -18,6 +18,8 @@ Objective checks against the Agent Skills specification.
 - [ ] Body is under 500 lines
 - [ ] Token estimate under ~5000 (heuristic: character count / 4)
 
+**Claude Code extension fields:** The following frontmatter fields are valid Claude Code extensions and must NOT be flagged as non-standard or unknown: `model`, `user-invocable`, `context`, `agent`, `argument-hint`, `disable-model-invocation`, `hooks`, `arguments`. Note that `user-invocable` defaults to `true` — its absence is not a gap and should not be penalized.
+
 **Scoring anchors:**
 | Score | Criteria |
 |-------|----------|

@@ -8,7 +8,7 @@ description: >
   Use when the user asks to audit, evaluate, review, or check skill quality.
 license: MIT
 compatibility: Claude Code
-allowed-tools: Read Glob Grep Task
+allowed-tools: Read Glob Grep Task Bash(bash:skill-audit/*)
 user-invocable: true
 arguments: "all or space-separated skill names"
 metadata:
@@ -83,74 +83,28 @@ If the argument doesn't match a known skill name or keyword, output an error and
 
 ### Step 2: Discover Skills
 
-Use Glob to find all skills:
+Run `scripts/list-skills.sh` from the repo root to discover skills:
 
-```
-Glob: */SKILL.md
-```
+- **All-skills mode**: `bash skill-audit/scripts/list-skills.sh --exclude skill-audit`
+- **Specific skills**: Validate the named skills exist by checking each `<name>/SKILL.md`
 
-For each match, extract the skill name from the directory. Verify each skill directory exists and contains a `SKILL.md`.
-
-In **all-skills mode**, exclude `skill-audit` from the list.
+The script finds `*/SKILL.md` relative to CWD, extracts directory names, and applies exclusions. It exits with code 1 if no skills are found.
 
 If no skills match the scope, output a message and stop.
 
-### Step 3: Read Evaluation Rubric
+### Step 3: Load Subagent Prompt
 
-Read the full rubric from `references/evaluation-rubric.md`. This content will be injected into each subagent prompt.
+Read `references/subagent-prompt.md` — it contains the complete prompt template with a condensed rubric baked in. This is what gets injected into each subagent.
+
+The full rubric (`references/evaluation-rubric.md`) remains as a detailed human-readable reference for spec lookups but is not injected into subagents.
 
 ### Step 4: Spawn Subagents
 
 Spawn **all** subagents in a **single message** using the Task tool so they execute in parallel. Use one `haiku` subagent per skill.
 
-Each subagent receives:
-1. The full evaluation rubric (inline in the prompt)
-2. The skill name and repo root path
-3. Instructions to read **all files** in the skill directory (SKILL.md, scripts/, references/, assets/)
-4. The exact output format expected (see below)
+For each skill, take the prompt template from `references/subagent-prompt.md`, replace `{{SKILL_NAME}}` and `{{REPO_ROOT}}` with actual values, and pass the result as the subagent prompt.
 
-**Subagent prompt template:**
-
-```
-You are a skill auditor. Evaluate the skill "<SKILL_NAME>" located at <REPO_ROOT>/<SKILL_NAME>/ against the evaluation rubric below.
-
-INSTRUCTIONS:
-1. Read ALL files in the skill directory: SKILL.md plus any files in scripts/, references/, assets/
-2. Evaluate the skill against each of the 6 categories in the rubric
-3. For each category, assign a score (1-5) and provide specific evidence (line numbers, quotes, file paths)
-4. A score without evidence is INVALID — you must cite what you observed
-5. List up to 5 top issues, up to 3 strengths, and up to 3 recommendations
-6. Use EXACTLY the output format specified below
-
-EVALUATION RUBRIC:
-<RUBRIC_CONTENT>
-
-OUTPUT FORMAT (follow exactly):
-
-SKILL: <SKILL_NAME>
-
-SCORES:
-- Specification Compliance: <1-5> | <evidence>
-- Instruction Quality: <1-5> | <evidence>
-- Tool & Integration Design: <1-5> | <evidence>
-- Context Efficiency: <1-5> | <evidence>
-- Safety & Robustness: <1-5> | <evidence>
-- Formatting & Syntax: <1-5> | <evidence>
-
-TOP ISSUES (max 5, most impactful first):
-1. [Category] Description — file:line or quote
-...
-
-STRENGTHS (max 3):
-1. Description
-...
-
-RECOMMENDATIONS (max 3, actionable):
-1. Description
-...
-```
-
-**Subagent configuration:**
+**Subagent configuration** (also documented in the reference file):
 - `subagent_type`: `general-purpose`
 - `model`: `haiku`
 - `max_turns`: 10
