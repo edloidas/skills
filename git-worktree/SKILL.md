@@ -7,8 +7,8 @@ description: >
   over. Use when the user asks to create a worktree, work on multiple branches,
   or clean up worktrees.
 license: MIT
-allowed-tools: Bash Read Glob Grep
-arguments: "subcommand: create, remove, list, or clean, followed by branch name"
+allowed-tools: Bash(git:*,rsync:*) Read Glob Grep
+arguments: "create, remove, list, or clean, followed by optional branch name"
 argument-hint: "[command] [branch]"
 ---
 

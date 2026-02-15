@@ -5,7 +5,7 @@ license: MIT
 compatibility: Claude Code
 allowed-tools: Bash Read Glob Grep WebFetch Write
 user-invocable: true
-arguments: "mode name: sync, audit, or update. Defaults to sync"
+arguments: "sync, audit, or update. Defaults to sync"
 argument-hint: "[mode]"
 ---
 

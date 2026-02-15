@@ -4,6 +4,8 @@ description: Analyze code comments in changed files for quality, relevance, and 
 license: MIT
 compatibility: Claude Code
 allowed-tools: Bash Read Glob Grep Task
+arguments: "all or space-separated file paths"
+argument-hint: "[files]"
 model: claude-haiku-4-5
 disable-model-invocation: true
 ---
@@ -40,12 +42,12 @@ Filter to code files only (exclude: `*.md`, `*.json`, `*.lock`, `dist/`, `build/
 
 ### Step 2: Spawn Comment Scanner
 
-Use Task tool with haiku model to scan specific files:
+Use Task tool with claude-haiku-4-5 model to scan specific files:
 
 ```
 Task:
 - subagent_type: general-purpose
-- model: haiku
+- model: claude-haiku-4-5
 - prompt: "Scan the following files for comments and extract all comments with their line numbers and context. Files: [file list]"
 ```
 

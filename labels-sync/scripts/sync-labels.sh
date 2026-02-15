@@ -57,7 +57,10 @@ if ! echo "$DEFINED_LABELS_JSON" | jq empty 2>/dev/null; then
 fi
 
 # Fetch current labels from repository
-CURRENT_LABELS=$(gh label list --json name,description,color 2>/dev/null || echo "[]")
+CURRENT_LABELS=$(gh label list --json name,description,color) || {
+    echo "ERROR: Failed to fetch labels. Check 'gh auth status' and repo access." >&2
+    exit 1
+}
 
 # Use jq to compute all differences
 RESULT=$(jq -n \

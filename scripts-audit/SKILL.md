@@ -3,7 +3,7 @@ name: scripts-audit
 description: Analyze package.json scripts for consistency, performance, and best practices
 license: MIT
 compatibility: Claude Code, Codex
-allowed-tools: Bash(jq:*) Bash(node:*) Read Glob Grep
+allowed-tools: Bash(jq:*) Read Glob Grep
 ---
 
 # Package.json Scripts Audit
@@ -71,7 +71,7 @@ Look for the same tool invoked with different patterns:
 ### Step 3: Check for Missing Flags
 
 #### Cache Flags
-```json
+```jsonc
 // Missing cache (slower)
 "lint": "eslint 'src/**/*.ts'"
 
@@ -80,7 +80,7 @@ Look for the same tool invoked with different patterns:
 ```
 
 #### Parallelization
-```json
+```jsonc
 // Sequential
 "build": "pnpm build:lib && pnpm build:css"
 
@@ -91,7 +91,7 @@ Look for the same tool invoked with different patterns:
 ```
 
 #### CI-specific flags
-```json
+```jsonc
 // Dev (use cache)
 "lint": "eslint --cache 'src/**/*.ts'"
 
@@ -114,7 +114,7 @@ Verify presence of common scripts:
 | `typecheck` | TypeScript checking | If using TS |
 
 **Missing script examples:**
-```json
+```jsonc
 {
   // Missing clean script
   "build": "vite build",
@@ -129,7 +129,7 @@ Verify presence of common scripts:
 
 Verify composite scripts run in optimal order:
 
-```json
+```jsonc
 // Good: typecheck before lint (fail fast)
 "check": "pnpm typecheck && pnpm lint && pnpm format:check"
 

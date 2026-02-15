@@ -47,6 +47,10 @@ bash scripts/release-execute.sh
 
 These scripts work with any npm/pnpm project and don't require project-specific setup.
 
+## Prerequisites
+- `jq` installed (used by release-analyze.sh and release-execute.sh)
+- Git repository with at least one prior commit
+
 ## Release Workflow
 
 Follow these steps in order. Create an in-memory plan at the start.
@@ -101,7 +105,7 @@ If validation fails:
 
 ### Step 3: Analyze Commits for Version Decision
 
-Determine whether to use `minor` or `patch` bump by analyzing changes since last release.
+Determine whether to use `major`, `minor`, or `patch` bump by analyzing changes since last release.
 
 **Use the bundled script:**
 
@@ -124,6 +128,7 @@ git log $(git describe --tags --abbrev=0)..HEAD --stat
 
 **Decision criteria:**
 
+- **Major bump** (x.0.0): Breaking API changes, removal of public APIs, incompatible behavior changes (post-1.0 only)
 - **Minor bump** (0.x.0): New features, significant enhancements, API additions, breaking changes (in pre-1.0)
 - **Patch bump** (0.0.x): Bug fixes, small improvements, documentation updates, refactoring
 

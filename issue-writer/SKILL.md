@@ -487,41 +487,7 @@ Return the issue URL to the user.
 
 ---
 
-## AskUserQuestion Standards
-
-When using the `AskUserQuestion` tool in this skill, follow these standards:
-
-### Format Requirements
-
-1. **First option MUST be recommended** - Always add "(Recommended)" suffix to the first option
-2. **Every option MUST have a description** - Explain what the choice means or what will happen
-3. **Order by relevance** - Recommended first, then logical alternatives, then "skip/none" option last
-4. **Maximum 4 options** - Claude Code tool limit; "Other" is automatically added by the system
-5. **Clear, concise labels** - 1-5 words, actionable
-
-### Questions Used in This Skill
-
-| Step | Question | Header |
-|------|----------|--------|
-| 1.5 | "What level of detail should this issue have?" | Format |
-| 3.5 | "Which label best describes this issue?" | Label |
-| 6.5 | "Who should this issue be assigned to?" | Assignee |
-
-### Template
-
-```
-question: "{{CLEAR_QUESTION_ENDING_WITH_?}}"
-header: "{{SHORT_HEADER_MAX_12_CHARS}}"
-options:
-  - label: "{{CHOICE}} (Recommended)"
-    description: "{{WHY_THIS_IS_RECOMMENDED}}"
-  - label: "{{ALTERNATIVE_1}}"
-    description: "{{WHAT_THIS_MEANS}}"
-  - label: "{{ALTERNATIVE_2}}"
-    description: "{{WHAT_THIS_MEANS}}"
-  - label: "{{SKIP_OPTION}}"
-    description: "{{CONSEQUENCE_OF_SKIPPING}}"
-```
+See `references/askuser-format.md` for AskUserQuestion standards and template.
 
 ---
 
@@ -655,70 +621,7 @@ Specific requirements:
 - `gh` CLI installed and authenticated (`gh auth login`)
 - Must be run from within a GitHub repository
 
-## Bundled Helper Scripts Details
-
-### scripts/check-environment.sh
-
-- Validates current directory is a git repository
-- Checks if GitHub CLI (gh) is installed
-- Verifies `gh` authentication status
-- Shows remote origin information
-
-**Exit codes:**
-- `0` - Environment ready
-- `1` - Not in a git repository
-- `2` - gh CLI not installed
-- `3` - No authentication method available
-
-### scripts/get-repo-info.sh
-
-- Uses `gh` for GitHub CLI calls
-- Fetches repository details (name, owner, description)
-- Lists available labels (filtered to allowed set)
-- Shows recent issues for context and style guidance
-- Lists assignable users (collaborators and top contributors)
-
-### scripts/create-issue.sh
-
-- Uses `gh` for GitHub CLI calls
-- Creates issue with title, body, labels, and assignee
-- Supports `--body` for inline content or `--body-file` for file input
-- Handles special characters in body content
-- Returns the created issue URL
-
-**Usage:**
-```bash
-create-issue.sh --title "Title" --body "Body" [--label "label1,label2"] [--assignee "@me"]
-create-issue.sh --title "Title" --body-file /path/to/body.md [--label "bug"]
-```
-
-### scripts/get-issue.sh
-
-- Uses `gh` for GitHub CLI calls
-- Fetches existing issue data by number or URL
-- Returns JSON with title, body, labels, state, number, url
-- Supports multiple input formats: `123`, `#123`, `owner/repo#123`, full URL
-
-**Usage:**
-```bash
-get-issue.sh 123
-get-issue.sh https://github.com/owner/repo/issues/123
-```
-
-### scripts/update-issue.sh
-
-- Uses `gh` for GitHub CLI calls
-- Updates existing issue title, body, and/or labels
-- Supports adding and removing labels
-- At least one modification required
-
-**Usage:**
-```bash
-update-issue.sh --issue 123 --title "New Title"
-update-issue.sh --issue 123 --body "New description"
-update-issue.sh --issue 123 --add-label "bug" --remove-label "feature"
-update-issue.sh --issue 123 --title "Title" --body-file /path/to/body.md
-```
+See `references/helper-scripts.md` for detailed script documentation, usage examples, and exit codes.
 
 ## Error Handling
 

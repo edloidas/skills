@@ -4,6 +4,7 @@ description: Post-implementation cleanup. Removes obvious comments, AI artifacts
 license: MIT
 compatibility: Claude Code, Codex
 allowed-tools: Bash(git:*) Read Edit Glob Grep
+model: claude-sonnet-4-5
 arguments: "file, directory, last N commits, --dry-run, or --aggressive"
 argument-hint: "[files] [--dry-run]"
 ---

@@ -3,7 +3,7 @@ name: ci-audit
 description: Analyze GitHub Actions workflows for parallelization, caching, and optimization
 license: MIT
 compatibility: Claude Code, Codex
-allowed-tools: Bash(fd:*) Bash(cat:*) Read Glob Grep
+allowed-tools: Bash(fd:*) Read Glob Grep
 ---
 
 # CI/CD Audit (GitHub Actions)
@@ -290,64 +290,7 @@ on: [push, pull_request]  # Runs twice on PR
 3. Use artifact caching for build outputs
 ```
 
-## Optimized CI Template
-
-```yaml
-name: CI
-
-on:
-  push:
-    branches: [main]
-    paths:
-      - 'src/**'
-      - 'package.json'
-      - 'pnpm-lock.yaml'
-  pull_request:
-    branches: [main]
-
-concurrency:
-  group: ci-${{ github.ref }}
-  cancel-in-progress: true
-
-jobs:
-  typecheck:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version-file: '.node-version'
-          cache: 'pnpm'
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm typecheck
-
-  lint:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version-file: '.node-version'
-          cache: 'pnpm'
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm lint:ci
-
-  build:
-    needs: [typecheck, lint]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version-file: '.node-version'
-          cache: 'pnpm'
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm build
-      - run: pnpm test:ci
-```
+See `references/ci-template.yaml` for an optimized GitHub Actions CI workflow with parallel jobs, path filters, and concurrency control.
 
 ## Keywords
 
