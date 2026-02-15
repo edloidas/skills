@@ -10,7 +10,7 @@
       "name": "edloidas-skills",
       "source": "./",
       "description": "Collection of Claude Code skills for text editing, code review, config auditing, and development workflows",
-      "version": "1.2.3",
+      "version": "1.3.0",
       "skills": [
         "./changes-review",
         "./ci-audit",
