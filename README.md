@@ -13,7 +13,7 @@ Add the marketplace and install the skills plugin:
 /plugin install edloidas-skills@edloidas-skills
 ```
 
-This makes all 15 skills available in your Claude Code sessions.
+This makes all 16 skills available in your Claude Code sessions.
 
 ### Scopes
 
@@ -71,6 +71,7 @@ See the full [Agent Skills specification](https://agentskills.io/specification) 
 | [changes-review](./changes-review/)                         | Deep logic analysis of code changes                                       | Claude        | Review       |
 | [ci-audit](./ci-audit/)                                     | Analyze GitHub Actions workflows for optimization                         | Claude, Codex | Audit        |
 | [code-cleanup](./code-cleanup/)                             | Post-implementation cleanup of comments and artifacts                     | Claude, Codex | Code Quality |
+| [consilium](./consilium/)                                   | Critical review board — 4 parallel reviewers stress-test plans            | Claude        | Review       |
 | [comment-audit](./comment-audit/)                           | Analyze code comments for quality and relevance                           | Claude        | Audit        |
 | [commit-summary](./commit-summary/)                         | Generate formatted Git commit message summaries                           | Claude        | Git          |
 | [git-worktree](./git-worktree/)                             | Manage Git worktrees with configurable storage and agent settings copying | Any           | Git          |
