@@ -15,7 +15,6 @@ arguments: "optional focus area or empty for full review"
 argument-hint: "[focus-area]"
 metadata:
   author: edloidas
-  version: "1.0"
 ---
 
 # Consilium — Critical Review Board

@@ -13,7 +13,6 @@ user-invocable: true
 arguments: "all or space-separated skill names"
 metadata:
   author: edloidas
-  version: "1.0"
 ---
 
 # Skill Audit

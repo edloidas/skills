@@ -10,7 +10,6 @@ compatibility: Claude Code
 allowed-tools: Bash Read Glob Task AskUserQuestion
 metadata:
   author: edloidas
-  version: "1.0"
 ---
 
 # Skills Collection Release Workflow

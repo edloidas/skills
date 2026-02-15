@@ -11,7 +11,6 @@ arguments: "--dry-run, --project, or --global flags, space-separated"
 argument-hint: "[--flags]"
 metadata:
   author: edloidas
-  version: "1.0"
 ---
 
 Clean up stale, one-off, and redundant permission entries from Claude Code settings files.
