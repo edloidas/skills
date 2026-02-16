@@ -81,7 +81,7 @@ Code review, cleanup, and quality improvement skills.
 | [changes-review](./review/changes-review/)                  | Deep logic analysis of code changes                                       | Claude        |
 | [code-cleanup](./review/code-cleanup/)                      | Post-implementation cleanup of comments and artifacts                     | Claude, Codex |
 | [comment-audit](./review/comment-audit/)                    | Analyze code comments for quality and relevance                           | Claude        |
-| [consilium](./review/consilium/)                            | Critical review board — 4 parallel reviewers stress-test plans            | Claude        |
+| [consilium](./review/consilium/)                            | Critical review board — up to 6 reviewers (2 core + 4 on-demand)         | Claude        |
 | [react-improvements](./review/react-improvements/)          | Suggest React code improvements and patterns                              | Claude, Codex |
 
 ### Audit
