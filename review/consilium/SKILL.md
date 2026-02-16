@@ -65,7 +65,7 @@ Extract the content into a single text block. If the target is unclear, use the 
 
 ### Step 2: Prepare Context
 
-1. Write the review content to `/tmp/consilium-context.md` with a header:
+1. Write the review content to `/tmp/consilium-${CLAUDE_SESSION_ID}-context.md` with a header:
    ```
    # Consilium Review Context
    # Source: <what this is — plan, proposal, research>
@@ -88,7 +88,7 @@ Launch **all applicable reviewers in a single message** (parallel execution):
 
 **Codex** — via Bash:
 ```
-bash review/consilium/scripts/run-codex.sh /tmp/consilium-context.md /tmp/consilium-codex.txt
+bash review/consilium/scripts/run-codex.sh /tmp/consilium-${CLAUDE_SESSION_ID}-context.md /tmp/consilium-${CLAUDE_SESSION_ID}-codex.txt
 ```
 Run in background so it doesn't block the other subagents.
 
@@ -115,7 +115,7 @@ If focus area narrows the scope, only launch the relevant reviewers.
 
 ### Step 4: Collect Results
 
-1. Read Codex output from `/tmp/consilium-codex.txt`
+1. Read Codex output from `/tmp/consilium-${CLAUDE_SESSION_ID}-codex.txt`
 2. Parse Task results from the 3 subagent responses
 3. If any reviewer failed or timed out, note it — do not block on it
 
@@ -142,7 +142,7 @@ Before presenting the report, critically evaluate each finding against your broa
 
 Remove temporary files:
 ```
-rm -f /tmp/consilium-context.md /tmp/consilium-codex.txt
+rm -f /tmp/consilium-${CLAUDE_SESSION_ID}-context.md /tmp/consilium-${CLAUDE_SESSION_ID}-codex.txt
 ```
 
 ## Output Format
@@ -191,7 +191,7 @@ Present the final report using the format from `references/synthesis-guide.md`:
 - **Parallel execution**: always launch all reviewers in a single message
 - **Autonomous**: do not ask the user questions during the review — resolve ambiguity yourself
 - **Evidence required**: no finding survives without specific evidence
-- **Clean up**: always remove `/tmp/consilium-*` files when done
+- **Clean up**: always remove session-specific `/tmp/consilium-${CLAUDE_SESSION_ID}-*` files when done
 - **No modifications**: this is review only — never modify the reviewed content
 - **Honest synthesis**: disagree with reviewers when your broader context warrants it
 
