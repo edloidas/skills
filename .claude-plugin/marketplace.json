@@ -1,34 +1,37 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
-  "name": "edloidas-skills",
+  "name": "edloidas",
+  "metadata": {
+    "description": "Skills for code review, auditing, and development workflows"
+  },
   "owner": {
     "name": "Mikita Taukachou",
     "url": "https://edloidas.io"
   },
   "plugins": [
     {
-      "name": "edloidas-skills",
-      "source": "./",
-      "description": "Collection of Claude Code skills for text editing, code review, config auditing, and development workflows",
+      "name": "review",
+      "source": "./review",
+      "description": "Code review, cleanup, and quality improvement skills",
       "version": "1.3.0",
-      "skills": [
-        "./changes-review",
-        "./ci-audit",
-        "./code-cleanup",
-        "./consilium",
-        "./comment-audit",
-        "./commit-summary",
-        "./git-worktree",
-        "./issue-writer",
-        "./labels-sync",
-        "./lint-sync",
-        "./npm-release",
-        "./permissions-cleanup",
-        "./react-improvements",
-        "./scripts-audit",
-        "./skill-audit",
-        "./workspace-audit"
-      ]
+      "author": { "name": "Mikita Taukachou", "url": "https://edloidas.io" },
+      "category": "review"
+    },
+    {
+      "name": "audit",
+      "source": "./audit",
+      "description": "CI, lint, script, skill, and workspace auditing skills",
+      "version": "1.3.0",
+      "author": { "name": "Mikita Taukachou", "url": "https://edloidas.io" },
+      "category": "audit"
+    },
+    {
+      "name": "workflow",
+      "source": "./workflow",
+      "description": "Git, GitHub, release, and development workflow skills",
+      "version": "1.3.0",
+      "author": { "name": "Mikita Taukachou", "url": "https://edloidas.io" },
+      "category": "workflow"
     }
   ]
 }

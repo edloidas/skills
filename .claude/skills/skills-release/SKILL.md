@@ -20,7 +20,7 @@ Automate the release process for this skills repository:
 
 - Pre-flight validation and safety checks
 - Conventional commit analysis with version bump recommendation
-- Version update in both config JSON files
+- Version update in all plugin.json and marketplace.json files
 - Git commit, tag, and push with user approval gates
 
 ## When to Use This Skill
@@ -65,9 +65,10 @@ This checks:
 
 - Current branch is `master` or `main`
 - Working tree is clean (no uncommitted changes)
-- `.claude-plugin/plugin.json` and `.claude-plugin/marketplace.json` exist
+- `.claude-plugin/marketplace.json` exists
+- Each plugin's `.claude-plugin/plugin.json` exists
 - `jq` is available
-- Versions in both files match
+- Versions across all config files match
 
 If checks fail, report the problem and suggest a fix. Do not proceed.
 
@@ -123,7 +124,7 @@ If user selects **Cancel**, stop the workflow.
 
 ### Step 4: Bump Version
 
-Update both config files using `jq`. The execution script handles this:
+Update all config files using `jq`. The execution script handles this:
 
 ```bash
 bash scripts/release-execute.sh {{VERSION}}
@@ -133,24 +134,30 @@ bash scripts/release-execute.sh {{VERSION}}
 
 ```bash
 VERSION="{{VERSION}}"
-PLUGIN_JSON=".claude-plugin/plugin.json"
 MARKETPLACE_JSON=".claude-plugin/marketplace.json"
+PLUGIN_COUNT=$(jq '.plugins | length' "$MARKETPLACE_JSON")
 
-# Update plugin.json
-jq --arg v "$VERSION" '.version = $v' "$PLUGIN_JSON" > "$PLUGIN_JSON.tmp" && mv "$PLUGIN_JSON.tmp" "$PLUGIN_JSON"
+# Update all marketplace.json plugin entries
+for i in $(seq 0 $((PLUGIN_COUNT - 1))); do
+  jq --arg v "$VERSION" --argjson i "$i" '.plugins[$i].version = $v' "$MARKETPLACE_JSON" > "$MARKETPLACE_JSON.tmp" && mv "$MARKETPLACE_JSON.tmp" "$MARKETPLACE_JSON"
+done
 
-# Update marketplace.json
-jq --arg v "$VERSION" '.plugins[0].version = $v' "$MARKETPLACE_JSON" > "$MARKETPLACE_JSON.tmp" && mv "$MARKETPLACE_JSON.tmp" "$MARKETPLACE_JSON"
+# Update each plugin.json
+for i in $(seq 0 $((PLUGIN_COUNT - 1))); do
+  source=$(jq -r ".plugins[$i].source" "$MARKETPLACE_JSON" | sed 's|^\./||')
+  plugin_json="$source/.claude-plugin/plugin.json"
+  jq --arg v "$VERSION" '.version = $v' "$plugin_json" > "$plugin_json.tmp" && mv "$plugin_json.tmp" "$plugin_json"
+done
 ```
 
-Verify both files were updated correctly by reading them back.
+Verify all files were updated correctly by reading them back.
 
 ### Step 5: Commit Version Bump
 
 Stage and commit the version bump:
 
 ```bash
-git add .claude-plugin/plugin.json .claude-plugin/marketplace.json
+git add .claude-plugin/marketplace.json review/.claude-plugin/plugin.json audit/.claude-plugin/plugin.json workflow/.claude-plugin/plugin.json
 git commit -m "Release v{{VERSION}}"
 ```
 

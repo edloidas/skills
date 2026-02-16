@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Validate that all skill directories are listed in marketplace.json and vice versa.
+# Validate that each plugin's source directory contains a plugin.json and that
+# all SKILL.md directories inside it are discoverable (auto-discovery via "skills": "./").
 
 MARKETPLACE=".claude-plugin/marketplace.json"
 
@@ -10,37 +11,45 @@ if [ ! -f "$MARKETPLACE" ]; then
   exit 1
 fi
 
-# Skill directories: top-level dirs containing SKILL.md (exclude .claude/)
-dir_skills=$(find . -maxdepth 2 -name SKILL.md -not -path './.claude/*' \
-  | sed 's|^\./||; s|/SKILL.md$||' | sort)
-
-# Skills listed in marketplace.json (strip leading ./)
-json_skills=$(jq -r '.plugins[0].skills[]' "$MARKETPLACE" \
-  | sed 's|^\./||' | sort)
-
-missing_from_json=$(comm -23 <(echo "$dir_skills") <(echo "$json_skills"))
-missing_from_dirs=$(comm -13 <(echo "$dir_skills") <(echo "$json_skills"))
-
 errors=0
+total_skills=0
 
-if [ -n "$missing_from_json" ]; then
-  echo "Skills missing from $MARKETPLACE:"
-  while IFS= read -r skill; do
-    echo "  ::error::$skill has SKILL.md but is not in marketplace.json"
-  done <<< "$missing_from_json"
-  errors=1
-fi
+# Iterate over each plugin entry in marketplace.json
+plugin_count=$(jq '.plugins | length' "$MARKETPLACE")
 
-if [ -n "$missing_from_dirs" ]; then
-  echo "Stale entries in $MARKETPLACE:"
-  while IFS= read -r skill; do
-    echo "  ::error::$skill is in marketplace.json but has no SKILL.md"
-  done <<< "$missing_from_dirs"
-  errors=1
-fi
+for i in $(seq 0 $((plugin_count - 1))); do
+  name=$(jq -r ".plugins[$i].name" "$MARKETPLACE")
+  source=$(jq -r ".plugins[$i].source" "$MARKETPLACE" | sed 's|^\./||')
+
+  if [ ! -d "$source" ]; then
+    echo "::error::Plugin '$name': source directory '$source' does not exist"
+    errors=1
+    continue
+  fi
+
+  if [ ! -f "$source/.claude-plugin/plugin.json" ]; then
+    echo "::error::Plugin '$name': missing .claude-plugin/plugin.json in '$source/'"
+    errors=1
+  fi
+
+  # Find all SKILL.md files inside the plugin source directory
+  skill_count=0
+  for skill_dir in "$source"/*/SKILL.md; do
+    [ -f "$skill_dir" ] || continue
+    skill_count=$((skill_count + 1))
+  done
+
+  if [ "$skill_count" -eq 0 ]; then
+    echo "::error::Plugin '$name': no skills found in '$source/'"
+    errors=1
+  else
+    echo "Plugin '$name': $skill_count skills found in '$source/'"
+    total_skills=$((total_skills + skill_count))
+  fi
+done
 
 if [ "$errors" -eq 1 ]; then
   exit 1
 fi
 
-echo "All skills are in sync with $MARKETPLACE"
+echo "All plugins valid. $total_skills skills across $plugin_count plugins."

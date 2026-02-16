@@ -1,0 +1,10 @@
+{
+  "name": "workflow",
+  "version": "1.3.0",
+  "description": "Git, GitHub, release, and development workflow skills",
+  "author": { "name": "Mikita Taukachou", "url": "https://edloidas.io" },
+  "repository": "https://github.com/edloidas/skills",
+  "license": "MIT",
+  "skills": "./",
+  "keywords": ["skills", "workflow", "git", "github", "release", "npm"]
+}

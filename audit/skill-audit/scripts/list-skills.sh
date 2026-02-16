@@ -23,9 +23,9 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-# Find all SKILL.md files one level deep, extract directory names
+# Find all SKILL.md files two levels deep (group/skill), extract paths
 skills=()
-for f in */SKILL.md; do
+for f in */*/SKILL.md; do
   [[ -f "$f" ]] || continue
   skills+=("${f%/SKILL.md}")
 done

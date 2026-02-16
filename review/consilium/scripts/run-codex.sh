@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 # Run Codex CLI as an independent reviewer for consilium.
-# Usage: bash consilium/scripts/run-codex.sh <context-file> <output-file>
+# Usage: bash review/consilium/scripts/run-codex.sh <context-file> <output-file>
 set -euo pipefail
 
 CONTEXT_FILE="${1:-}"
 OUTPUT_FILE="${2:-}"
 
 if [[ -z "$CONTEXT_FILE" || -z "$OUTPUT_FILE" ]]; then
-  echo "Usage: bash consilium/scripts/run-codex.sh <context-file> <output-file>" >&2
+  echo "Usage: bash review/consilium/scripts/run-codex.sh <context-file> <output-file>" >&2
   exit 1
 fi
 

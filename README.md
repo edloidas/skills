@@ -6,22 +6,24 @@ A public collection of [Claude Code](https://docs.anthropic.com/en/docs/claude-c
 
 ### Claude Code
 
-Add the marketplace and install the skills plugin:
+Add the marketplace and install the plugin groups you need:
 
 ```
 /plugin marketplace add edloidas/skills
-/plugin install edloidas-skills@edloidas-skills
+/plugin install edloidas@review
+/plugin install edloidas@audit
+/plugin install edloidas@workflow
 ```
 
-This makes all 16 skills available in your Claude Code sessions.
+Install all three for the full set, or pick only the groups relevant to your workflow.
 
 ### Scopes
 
-| Scope          | Command                                                           | Use case                |
-| -------------- | ----------------------------------------------------------------- | ----------------------- |
-| User (default) | `/plugin install edloidas-skills@edloidas-skills`                 | Personal — all projects |
-| Project        | `/plugin install edloidas-skills@edloidas-skills --scope project` | Team — shared via Git   |
-| Local          | `/plugin install edloidas-skills@edloidas-skills --scope local`   | Project — gitignored    |
+| Scope          | Command                                          | Use case                |
+| -------------- | ------------------------------------------------ | ----------------------- |
+| User (default) | `/plugin install edloidas@review`                | Personal — all projects |
+| Project        | `/plugin install edloidas@review --scope project`| Team — shared via Git   |
+| Local          | `/plugin install edloidas@review --scope local`  | Project — gitignored    |
 
 ### Codex
 
@@ -30,22 +32,26 @@ Install directly from this GitHub repo into `~/.codex/skills`:
 ```bash
 python ~/.codex/skills/.system/skill-installer/scripts/install-skill-from-github.py \
   --repo edloidas/skills \
-  --path ci-audit code-cleanup react-improvements scripts-audit workspace-audit
+  --path audit/ci-audit review/code-cleanup review/react-improvements audit/scripts-audit audit/workspace-audit
 ```
 
 No `.curated` folder is required for this repo; installs use explicit `--path` values.
 
 ## Skill Structure
 
-Each skill is a top-level directory containing at minimum a `SKILL.md` file:
+Skills are organized into plugin groups, each containing related skills:
 
 ```
-<skill-name>/
-├── SKILL.md              # Required — frontmatter + instructions
-├── agents/               # Optional — agent-specific configs (e.g. openai.yaml)
-├── scripts/              # Optional — executable code
-├── references/           # Optional — additional documentation
-└── assets/               # Optional — templates, images, data files
+<group>/
+├── .claude-plugin/
+│   └── plugin.json       # Plugin metadata (auto-discovers skills via "skills": "./")
+├── <skill-name>/
+│   ├── SKILL.md          # Required — frontmatter + instructions
+│   ├── agents/           # Optional — agent-specific configs (e.g. openai.yaml)
+│   ├── scripts/          # Optional — executable code
+│   ├── references/       # Optional — additional documentation
+│   └── assets/           # Optional — templates, images, data files
+└── ...
 ```
 
 The `SKILL.md` file contains YAML frontmatter (`name`, `description`) followed by Markdown instructions:
@@ -66,32 +72,51 @@ See the full [Agent Skills specification](https://agentskills.io/specification) 
 
 ## Available Skills
 
-| Skill                                                       | Description                                                               | Agent         | Category     |
-| ----------------------------------------------------------- | ------------------------------------------------------------------------- | ------------- | ------------ |
-| [changes-review](./changes-review/)                         | Deep logic analysis of code changes                                       | Claude        | Review       |
-| [ci-audit](./ci-audit/)                                     | Analyze GitHub Actions workflows for optimization                         | Claude, Codex | Audit        |
-| [code-cleanup](./code-cleanup/)                             | Post-implementation cleanup of comments and artifacts                     | Claude, Codex | Code Quality |
-| [consilium](./consilium/)                                   | Critical review board — 4 parallel reviewers stress-test plans            | Claude        | Review       |
-| [comment-audit](./comment-audit/)                           | Analyze code comments for quality and relevance                           | Claude        | Audit        |
-| [commit-summary](./commit-summary/)                         | Generate formatted Git commit message summaries                           | Claude        | Git          |
-| [git-worktree](./git-worktree/)                             | Manage Git worktrees with configurable storage and agent settings copying | Any           | Git          |
-| [issue-writer](./issue-writer/)                             | Create and update well-structured GitHub issues                           | Claude        | GitHub       |
-| [labels-sync](./labels-sync/)                               | Synchronize GitHub repository labels from JSON                            | Claude        | GitHub       |
-| [lint-sync](./lint-sync/)                                   | Compare ESLint rules against Biome for overlap                            | Claude        | Audit        |
-| [npm-release](./npm-release/)                               | Guide npm/pnpm package release workflow                                   | Claude        | Release      |
-| [permissions-cleanup](./permissions-cleanup/)                | Clean up stale permission entries from settings files                     | Claude        | Maintenance  |
-| [react-improvements](./react-improvements/)                 | Suggest React code improvements and patterns                              | Claude, Codex | Code Quality |
-| [scripts-audit](./scripts-audit/)                           | Analyze package.json scripts for consistency                              | Claude, Codex | Audit        |
-| [skill-audit](./skill-audit/)                               | Audit skills for quality and specification compliance                     | Claude        | Audit        |
-| [workspace-audit](./workspace-audit/)                       | Analyze pnpm workspace and monorepo setup                                 | Claude, Codex | Audit        |
+### Review
+
+Code review, cleanup, and quality improvement skills.
+
+| Skill                                                       | Description                                                               | Agent         |
+| ----------------------------------------------------------- | ------------------------------------------------------------------------- | ------------- |
+| [changes-review](./review/changes-review/)                  | Deep logic analysis of code changes                                       | Claude        |
+| [code-cleanup](./review/code-cleanup/)                      | Post-implementation cleanup of comments and artifacts                     | Claude, Codex |
+| [comment-audit](./review/comment-audit/)                    | Analyze code comments for quality and relevance                           | Claude        |
+| [consilium](./review/consilium/)                            | Critical review board — 4 parallel reviewers stress-test plans            | Claude        |
+| [react-improvements](./review/react-improvements/)          | Suggest React code improvements and patterns                              | Claude, Codex |
+
+### Audit
+
+CI, lint, script, skill, and workspace auditing skills.
+
+| Skill                                                       | Description                                                               | Agent         |
+| ----------------------------------------------------------- | ------------------------------------------------------------------------- | ------------- |
+| [ci-audit](./audit/ci-audit/)                               | Analyze GitHub Actions workflows for optimization                         | Claude, Codex |
+| [lint-sync](./audit/lint-sync/)                              | Compare ESLint rules against Biome for overlap                            | Claude        |
+| [scripts-audit](./audit/scripts-audit/)                     | Analyze package.json scripts for consistency                              | Claude, Codex |
+| [skill-audit](./audit/skill-audit/)                         | Audit skills for quality and specification compliance                     | Claude        |
+| [workspace-audit](./audit/workspace-audit/)                 | Analyze pnpm workspace and monorepo setup                                 | Claude, Codex |
+
+### Workflow
+
+Git, GitHub, release, and development workflow skills.
+
+| Skill                                                       | Description                                                               | Agent         |
+| ----------------------------------------------------------- | ------------------------------------------------------------------------- | ------------- |
+| [commit-summary](./workflow/commit-summary/)                | Generate formatted Git commit message summaries                           | Claude        |
+| [git-worktree](./workflow/git-worktree/)                    | Manage Git worktrees with configurable storage and agent settings copying | Any           |
+| [issue-writer](./workflow/issue-writer/)                    | Create and update well-structured GitHub issues                           | Claude        |
+| [labels-sync](./workflow/labels-sync/)                      | Synchronize GitHub repository labels from JSON                            | Claude        |
+| [npm-release](./workflow/npm-release/)                      | Guide npm/pnpm package release workflow                                   | Claude        |
+| [permissions-cleanup](./workflow/permissions-cleanup/)       | Clean up stale permission entries from settings files                     | Claude        |
 
 ## Creating a Skill
 
-1. Create a directory at the repo root matching the skill name
-2. Add a `SKILL.md` with required `name` and `description` frontmatter
-3. Write Markdown instructions in the body (keep under 500 lines)
-4. Optionally add `scripts/`, `references/`, or `assets/` directories
-5. Update the table above
+1. Choose the appropriate group directory (`review/`, `audit/`, or `workflow/`)
+2. Create a subdirectory matching the skill name
+3. Add a `SKILL.md` with required `name` and `description` frontmatter
+4. Write Markdown instructions in the body (keep under 500 lines)
+5. Optionally add `scripts/`, `references/`, or `assets/` directories
+6. Update the appropriate table above
 
 ## License
 

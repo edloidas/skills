@@ -19,9 +19,9 @@ if ! command -v jq &> /dev/null; then
   exit 1
 fi
 
-# Read current version from plugin.json
-PLUGIN_JSON=".claude-plugin/plugin.json"
-CURRENT_VERSION=$(jq -r '.version' "$PLUGIN_JSON" 2>/dev/null || echo "unknown")
+# Read current version from first plugin in marketplace.json
+MARKETPLACE_JSON=".claude-plugin/marketplace.json"
+CURRENT_VERSION=$(jq -r '.plugins[0].version' "$MARKETPLACE_JSON" 2>/dev/null || echo "unknown")
 echo "Current version: $CURRENT_VERSION"
 
 # Get the last version tag

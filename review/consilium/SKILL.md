@@ -9,7 +9,7 @@ description: >
   Autonomous — runs without user interaction, presents combined findings.
 license: MIT
 compatibility: Claude Code
-allowed-tools: Read Write Glob Grep Task Bash(bash:consilium/*) Bash(codex:*) Bash(cat:*) Bash(rm:*)
+allowed-tools: Read Write Glob Grep Task Bash(bash:review/consilium/*) Bash(codex:*) Bash(cat:*) Bash(rm:*)
 user-invocable: true
 arguments: "optional focus area or empty for full review"
 argument-hint: "[focus-area]"
@@ -78,9 +78,9 @@ Extract the content into a single text block. If the target is unclear, use the 
 ### Step 3: Load Prompts and Launch Reviewers
 
 Read the prompt templates from `references/`:
-- `consilium/references/seneca-prompt.md`
-- `consilium/references/librarius-prompt.md`
-- `consilium/references/censor-prompt.md`
+- `review/consilium/references/seneca-prompt.md`
+- `review/consilium/references/librarius-prompt.md`
+- `review/consilium/references/censor-prompt.md`
 
 For each Task-based reviewer, replace `{{CONTEXT}}` in the prompt template with the actual review content.
 
@@ -88,7 +88,7 @@ Launch **all applicable reviewers in a single message** (parallel execution):
 
 **Codex** — via Bash:
 ```
-bash consilium/scripts/run-codex.sh /tmp/consilium-context.md /tmp/consilium-codex.txt
+bash review/consilium/scripts/run-codex.sh /tmp/consilium-context.md /tmp/consilium-codex.txt
 ```
 Run in background so it doesn't block the other subagents.
 
@@ -121,7 +121,7 @@ If focus area narrows the scope, only launch the relevant reviewers.
 
 ### Step 5: Synthesize Report
 
-Read `consilium/references/synthesis-guide.md` and follow it exactly:
+Read `review/consilium/references/synthesis-guide.md` and follow it exactly:
 
 1. **Deduplicate** — merge identical findings across reviewers
 2. **Resolve contradictions** — use your broader conversation context

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Release Execution Script
-# Bumps version in config files, commits, tags, and pushes
+# Bumps version in all plugin.json and marketplace.json files, commits, tags, and pushes
 # Usage: release-execute.sh <version>
 # For use with the skills-release skill
 
@@ -44,49 +44,66 @@ if git tag -l | grep -q "^$TAG_NAME$"; then
   exit 1
 fi
 
-PLUGIN_JSON=".claude-plugin/plugin.json"
 MARKETPLACE_JSON=".claude-plugin/marketplace.json"
 
-# Verify config files exist
-if [[ ! -f "$PLUGIN_JSON" ]]; then
-  echo "ERROR: $PLUGIN_JSON not found"
-  exit 1
-fi
-
+# Verify marketplace.json exists
 if [[ ! -f "$MARKETPLACE_JSON" ]]; then
   echo "ERROR: $MARKETPLACE_JSON not found"
   exit 1
 fi
 
+PLUGIN_COUNT=$(jq '.plugins | length' "$MARKETPLACE_JSON")
+FILES_TO_STAGE=("$MARKETPLACE_JSON")
+
 echo "Bumping version to $VERSION..."
 
-# Update plugin.json
-jq --arg v "$VERSION" '.version = $v' "$PLUGIN_JSON" > "$PLUGIN_JSON.tmp" && mv "$PLUGIN_JSON.tmp" "$PLUGIN_JSON"
-echo "Updated $PLUGIN_JSON"
+# Update all marketplace.json plugin entries
+for i in $(seq 0 $((PLUGIN_COUNT - 1))); do
+  jq --arg v "$VERSION" --argjson i "$i" '.plugins[$i].version = $v' "$MARKETPLACE_JSON" > "$MARKETPLACE_JSON.tmp" && mv "$MARKETPLACE_JSON.tmp" "$MARKETPLACE_JSON"
+done
+echo "Updated $MARKETPLACE_JSON ($PLUGIN_COUNT entries)"
 
-# Update marketplace.json
-jq --arg v "$VERSION" '.plugins[0].version = $v' "$MARKETPLACE_JSON" > "$MARKETPLACE_JSON.tmp" && mv "$MARKETPLACE_JSON.tmp" "$MARKETPLACE_JSON"
-echo "Updated $MARKETPLACE_JSON"
+# Update each plugin.json
+for i in $(seq 0 $((PLUGIN_COUNT - 1))); do
+  name=$(jq -r ".plugins[$i].name" "$MARKETPLACE_JSON")
+  source=$(jq -r ".plugins[$i].source" "$MARKETPLACE_JSON" | sed 's|^\./||')
+  plugin_json="$source/.claude-plugin/plugin.json"
 
-# Verify updates
-PLUGIN_VERSION=$(jq -r '.version' "$PLUGIN_JSON")
-MARKETPLACE_VERSION=$(jq -r '.plugins[0].version' "$MARKETPLACE_JSON")
+  if [[ ! -f "$plugin_json" ]]; then
+    echo "ERROR: $plugin_json not found"
+    exit 1
+  fi
 
-if [[ "$PLUGIN_VERSION" != "$VERSION" ]]; then
-  echo "ERROR: plugin.json version mismatch after update (got $PLUGIN_VERSION)"
-  exit 1
-fi
+  jq --arg v "$VERSION" '.version = $v' "$plugin_json" > "$plugin_json.tmp" && mv "$plugin_json.tmp" "$plugin_json"
+  echo "Updated $plugin_json"
+  FILES_TO_STAGE+=("$plugin_json")
+done
 
-if [[ "$MARKETPLACE_VERSION" != "$VERSION" ]]; then
-  echo "ERROR: marketplace.json version mismatch after update (got $MARKETPLACE_VERSION)"
-  exit 1
-fi
+# Verify all updates
+for i in $(seq 0 $((PLUGIN_COUNT - 1))); do
+  name=$(jq -r ".plugins[$i].name" "$MARKETPLACE_JSON")
+  source=$(jq -r ".plugins[$i].source" "$MARKETPLACE_JSON" | sed 's|^\./||')
+  plugin_json="$source/.claude-plugin/plugin.json"
 
-echo "Verified: both files updated to $VERSION"
+  mp_version=$(jq -r ".plugins[$i].version" "$MARKETPLACE_JSON")
+  pj_version=$(jq -r '.version' "$plugin_json")
+
+  if [[ "$mp_version" != "$VERSION" ]]; then
+    echo "ERROR: marketplace.json plugin '$name' version mismatch after update (got $mp_version)"
+    exit 1
+  fi
+
+  if [[ "$pj_version" != "$VERSION" ]]; then
+    echo "ERROR: $plugin_json version mismatch after update (got $pj_version)"
+    exit 1
+  fi
+done
+
+echo "Verified: all files updated to $VERSION"
 echo ""
 
 # Stage and commit
-git add "$PLUGIN_JSON" "$MARKETPLACE_JSON"
+git add "${FILES_TO_STAGE[@]}"
 git commit -m "Release $TAG_NAME"
 echo "SUCCESS: Committed version bump"
 

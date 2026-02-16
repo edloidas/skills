@@ -4,15 +4,24 @@ A collection of Claude Code and other agents skills following the [Agent Skills 
 
 ## Repository Structure
 
-Each skill lives as a top-level directory in the repo root. This repo IS the skills collection — there is no nested `skills/` subdirectory.
+Skills are organized into plugin groups. Each group has a `.claude-plugin/plugin.json` for auto-discovery and contains related skills:
 
 ```
-<skill-name>/
-├── SKILL.md              # Required — frontmatter + instructions
-├── scripts/              # Optional — executable code (bash, python, js)
-├── references/           # Optional — additional docs loaded on demand
-└── assets/               # Optional — templates, images, data files
+<group>/
+├── .claude-plugin/
+│   └── plugin.json       # Plugin metadata — "skills": "./" enables auto-discovery
+├── <skill-name>/
+│   ├── SKILL.md          # Required — frontmatter + instructions
+│   ├── scripts/          # Optional — executable code (bash, python, js)
+│   ├── references/       # Optional — additional docs loaded on demand
+│   └── assets/           # Optional — templates, images, data files
+└── ...
 ```
+
+**Plugin groups:**
+- `review/` — Code review, cleanup, and quality improvement (5 skills)
+- `audit/` — CI, lint, script, skill, and workspace auditing (5 skills)
+- `workflow/` — Git, GitHub, release, and development workflows (6 skills)
 
 ## How Skills Load (Progressive Disclosure)
 
@@ -50,7 +59,7 @@ Optional fields:
 | `license`       | License name or reference to a bundled LICENSE file                                                                   |
 | `compatibility` | 1–500 chars; target agent and/or environment needs (see Multi-Agent Convention)                                       |
 | `metadata`      | Key-value mapping; use reasonably unique key names to prevent conflicts                                               |
-| `arguments`     | Plain-text description of accepted arguments for `user-invocable` skills. **Avoid regex metacharacters** (`[`, `]`, ` | `, `<`, `>`, etc.) — Claude Code parses this field as a regex and will throw `SyntaxError: Invalid regular expression`if the value contains unescaped special characters. Use descriptive text instead (e.g.`"all or space-separated skill names"`). |
+| `arguments`     | Plain-text description of accepted arguments for `user-invocable` skills. **Avoid regex metacharacters** (`[`, `]`, `|`, `<`, `>`, etc.) — Claude Code parses this field as a regex and will throw `SyntaxError: Invalid regular expression` if the value contains unescaped special characters. Use descriptive text instead (e.g. `"all or space-separated skill names"`). |
 | `allowed-tools` | **Experimental.** Space-delimited list of pre-approved tools (e.g. `Bash(git:*) Read`)                                |
 
 Claude Code extension fields (ignored by other agents, safe to use in any skill):
@@ -83,13 +92,12 @@ user-invocable: true
 model: claude-sonnet-4-5
 metadata:
   author: edloidas
-  version: "1.0"
 ---
 ```
 
 ### Multi-Agent Convention
 
-Skills for different agents (Claude Code, Codex, etc.) live flat at the repo root — no nesting by agent. Agent compatibility is declared via the `compatibility` frontmatter field.
+Skills for different agents (Claude Code, Codex, etc.) live in the same group directories — no nesting by agent. Agent compatibility is declared via the `compatibility` frontmatter field.
 
 **Agent-specific skill:**
 
@@ -105,7 +113,7 @@ compatibility: Claude Code, Codex
 
 **Universal skill:** Omit `compatibility` entirely — the skill works with any agent.
 
-The README "Available Skills" table includes an **Agent** column for quick scanning.
+The README "Available Skills" tables include an **Agent** column for quick scanning.
 
 ### Writing Good Descriptions
 
@@ -131,12 +139,21 @@ The `description` determines when an agent activates the skill. Be specific and 
 
 ## Creating a New Skill
 
-1. Create a directory at the repo root: `mkdir <skill-name>`
-2. Create `<skill-name>/SKILL.md` with required frontmatter and instructions
-3. Add `scripts/`, `references/`, or `assets/` directories as needed
-4. Update the "Available Skills" table in `README.md`
-5. Add the skill path to `.claude-plugin/marketplace.json` under `plugins[0].skills`
+1. Choose the appropriate group directory (`review/`, `audit/`, or `workflow/`)
+2. Create a subdirectory: `mkdir <group>/<skill-name>`
+3. Create `<group>/<skill-name>/SKILL.md` with required frontmatter and instructions
+4. Add `scripts/`, `references/`, or `assets/` directories as needed
+5. Update the appropriate "Available Skills" table in `README.md`
 6. Validate via `skill-audit` skill if available
+
+## Plugin Manifests (`.claude-plugin/`)
+
+`marketplace.json` and `plugin.json` have **different schemas** — do not mix their fields.
+
+- **`marketplace.json`** — marketplace registry entry. Plugin objects support: `commands`, `agents`, `hooks`, `mcpServers`, `lspServers`. **No `skills` field.** Adding `skills` here causes validation error: `plugins.0.skills: Invalid input`.
+- **`plugin.json`** — plugin manifest. Declares `skills` as a path (e.g. `"skills": "./"`) for skill directory discovery.
+
+Skills are discovered automatically from the path declared in `plugin.json`. No per-skill registration is needed in either file.
 
 ## Avoid
 

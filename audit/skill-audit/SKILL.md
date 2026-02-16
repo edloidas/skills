@@ -8,7 +8,7 @@ description: >
   Use when the user asks to audit, evaluate, review, or check skill quality.
 license: MIT
 compatibility: Claude Code
-allowed-tools: Read Glob Grep Task Bash(bash:skill-audit/*)
+allowed-tools: Read Glob Grep Task Bash(bash:audit/skill-audit/*)
 user-invocable: true
 arguments: "all or space-separated skill names"
 metadata:
@@ -84,8 +84,8 @@ If the argument doesn't match a known skill name or keyword, output an error and
 
 Run `scripts/list-skills.sh` from the repo root to discover skills:
 
-- **All-skills mode**: `bash skill-audit/scripts/list-skills.sh --exclude skill-audit`
-- **Specific skills**: Validate the named skills exist by checking each `<name>/SKILL.md`
+- **All-skills mode**: `bash audit/skill-audit/scripts/list-skills.sh --exclude audit/skill-audit`
+- **Specific skills**: Validate the named skills exist by checking each `<group>/<name>/SKILL.md`
 
 The script finds `*/SKILL.md` relative to CWD, extracts directory names, and applies exclusions. It exits with code 1 if no skills are found.
 

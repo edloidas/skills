@@ -35,43 +35,54 @@ if ! command -v jq &> /dev/null; then
   exit 1
 fi
 
-# Verify config files exist
-PLUGIN_JSON=".claude-plugin/plugin.json"
+# Verify marketplace.json exists
 MARKETPLACE_JSON=".claude-plugin/marketplace.json"
-
-if [[ ! -f "$PLUGIN_JSON" ]]; then
-  echo "ERROR: $PLUGIN_JSON not found"
-  exit 1
-fi
 
 if [[ ! -f "$MARKETPLACE_JSON" ]]; then
   echo "ERROR: $MARKETPLACE_JSON not found"
   exit 1
 fi
 
-# Read versions from both files
-PLUGIN_VERSION=$(jq -r '.version' "$PLUGIN_JSON" 2>/dev/null)
-MARKETPLACE_VERSION=$(jq -r '.plugins[0].version' "$MARKETPLACE_JSON" 2>/dev/null)
+# Discover plugins from marketplace.json
+PLUGIN_COUNT=$(jq '.plugins | length' "$MARKETPLACE_JSON")
 
-if [[ -z "$PLUGIN_VERSION" ]] || [[ "$PLUGIN_VERSION" == "null" ]]; then
-  echo "ERROR: Could not read version from $PLUGIN_JSON"
+if [[ "$PLUGIN_COUNT" -eq 0 ]]; then
+  echo "ERROR: No plugins found in $MARKETPLACE_JSON"
   exit 1
 fi
 
-if [[ -z "$MARKETPLACE_VERSION" ]] || [[ "$MARKETPLACE_VERSION" == "null" ]]; then
-  echo "ERROR: Could not read version from $MARKETPLACE_JSON"
-  exit 1
-fi
+echo "Plugins: $PLUGIN_COUNT"
 
-echo "Version (plugin.json): $PLUGIN_VERSION"
-echo "Version (marketplace.json): $MARKETPLACE_VERSION"
+# Collect all versions and check consistency
+VERSIONS=()
 
-# Warn if versions mismatch
-if [[ "$PLUGIN_VERSION" != "$MARKETPLACE_VERSION" ]]; then
-  echo "WARNING: Version mismatch between config files"
-  echo "  plugin.json: $PLUGIN_VERSION"
-  echo "  marketplace.json: $MARKETPLACE_VERSION"
-fi
+for i in $(seq 0 $((PLUGIN_COUNT - 1))); do
+  name=$(jq -r ".plugins[$i].name" "$MARKETPLACE_JSON")
+  source=$(jq -r ".plugins[$i].source" "$MARKETPLACE_JSON" | sed 's|^\./||')
+  mp_version=$(jq -r ".plugins[$i].version" "$MARKETPLACE_JSON")
+  plugin_json="$source/.claude-plugin/plugin.json"
 
+  if [[ ! -f "$plugin_json" ]]; then
+    echo "ERROR: $plugin_json not found"
+    exit 1
+  fi
+
+  pj_version=$(jq -r '.version' "$plugin_json")
+
+  echo "Plugin '$name': marketplace=$mp_version, plugin.json=$pj_version"
+  VERSIONS+=("$mp_version" "$pj_version")
+done
+
+# Check all versions match
+FIRST="${VERSIONS[0]}"
+for v in "${VERSIONS[@]}"; do
+  if [[ "$v" != "$FIRST" ]]; then
+    echo "WARNING: Version mismatch detected across config files"
+    exit 1
+  fi
+done
+
+echo ""
+echo "Version: $FIRST"
 echo ""
 echo "SUCCESS: All pre-flight checks passed"
