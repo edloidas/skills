@@ -1,10 +1,20 @@
 {
   "name": "audit",
-  "version": "1.3.0",
+  "version": "2.0.0",
   "description": "CI, lint, script, skill, and workspace auditing skills",
-  "author": { "name": "Mikita Taukachou", "url": "https://edloidas.io" },
+  "author": {
+    "name": "Mikita Taukachou",
+    "url": "https://edloidas.io"
+  },
   "repository": "https://github.com/edloidas/skills",
   "license": "MIT",
   "skills": "./",
-  "keywords": ["skills", "audit", "ci", "lint", "workspace", "scripts"]
+  "keywords": [
+    "skills",
+    "audit",
+    "ci",
+    "lint",
+    "workspace",
+    "scripts"
+  ]
 }

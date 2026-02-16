@@ -13,24 +13,33 @@
       "name": "review",
       "source": "./review",
       "description": "Code review, cleanup, and quality improvement skills",
-      "version": "1.3.0",
-      "author": { "name": "Mikita Taukachou", "url": "https://edloidas.io" },
+      "version": "2.0.0",
+      "author": {
+        "name": "Mikita Taukachou",
+        "url": "https://edloidas.io"
+      },
       "category": "review"
     },
     {
       "name": "audit",
       "source": "./audit",
       "description": "CI, lint, script, skill, and workspace auditing skills",
-      "version": "1.3.0",
-      "author": { "name": "Mikita Taukachou", "url": "https://edloidas.io" },
+      "version": "2.0.0",
+      "author": {
+        "name": "Mikita Taukachou",
+        "url": "https://edloidas.io"
+      },
       "category": "audit"
     },
     {
       "name": "workflow",
       "source": "./workflow",
       "description": "Git, GitHub, release, and development workflow skills",
-      "version": "1.3.0",
-      "author": { "name": "Mikita Taukachou", "url": "https://edloidas.io" },
+      "version": "2.0.0",
+      "author": {
+        "name": "Mikita Taukachou",
+        "url": "https://edloidas.io"
+      },
       "category": "workflow"
     }
   ]
