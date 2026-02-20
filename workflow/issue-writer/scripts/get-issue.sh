@@ -6,8 +6,6 @@
 
 set -e
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-
 # Check argument
 if [ -z "$1" ]; then
     echo "ERROR: Issue number or URL required"
@@ -22,13 +20,13 @@ ISSUE="$1"
 
 # Check if we're in a git repo
 if ! git rev-parse --is-inside-work-tree > /dev/null 2>&1; then
-    echo "ERROR: Not in a git repository"
+    echo "ERROR: Not in a git repository. Navigate to a git repository and try again."
     exit 1
 fi
 
 # Check if gh is available
 if ! command -v gh &> /dev/null; then
-    echo "ERROR: GitHub CLI not installed"
+    echo "ERROR: GitHub CLI not installed. Install with: brew install gh"
     exit 1
 fi
 

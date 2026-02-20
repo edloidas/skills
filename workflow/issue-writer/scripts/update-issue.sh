@@ -5,8 +5,6 @@
 
 set -e
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-
 # Parse arguments
 ISSUE=""
 TITLE=""
@@ -63,12 +61,12 @@ fi
 
 # Check environment
 if ! git rev-parse --is-inside-work-tree > /dev/null 2>&1; then
-    echo "ERROR: Not in a git repository"
+    echo "ERROR: Not in a git repository. Navigate to a git repository and try again."
     exit 1
 fi
 
 if ! command -v gh &> /dev/null; then
-    echo "ERROR: GitHub CLI not installed"
+    echo "ERROR: GitHub CLI not installed. Install with: brew install gh"
     exit 1
 fi
 

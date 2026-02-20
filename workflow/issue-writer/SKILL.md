@@ -1,10 +1,10 @@
 ---
 name: issue-writer
-description: Use this skill when the user asks to create, write, draft, or update a GitHub issue. It analyzes the user's description, asks clarifying questions, and produces a well-structured issue title and description following the project's template. Can also update existing issues.
+description: Use this skill when the user asks to draft, write, or update a GitHub issue. It analyzes the user's description, asks clarifying questions, and produces a well-structured issue title and description following the project's template. Can also update existing issues. For issue creation on GitHub, use issue-flow.
 license: MIT
 compatibility: Claude Code
 allowed-tools: Bash Read Glob Task AskUserQuestion
-arguments: "issue description, issue number to update, or none for interactive mode"
+arguments: "issue description to draft, issue number to update, or none for interactive mode"
 argument-hint: "[description or issue number]"
 ---
 
@@ -12,23 +12,25 @@ argument-hint: "[description or issue number]"
 
 ## Purpose
 
-Help users create and update well-structured GitHub issues by:
+Help users draft and update well-structured GitHub issues by:
 
 - Analyzing the user's initial description
 - Asking targeted clarifying questions
 - Generating a concise title (under 72 characters)
 - Producing a comprehensive description using the project template
-- Creating or updating issues on GitHub if in a git repository
+- Updating existing issues on GitHub
 
 ## When to Use This Skill
 
 Use this skill when the user:
 
-**Creating issues:**
-- Asks to "create an issue", "write an issue", or "draft an issue"
+**Drafting issues:**
+- Asks to "write an issue" or "draft an issue"
 - Wants help structuring a bug report or feature request
 - Mentions wanting to document a task for GitHub
 - Needs to formalize a task description
+
+> For **creating** new issues on GitHub, use /issue-flow.
 
 **Updating issues:**
 - Asks to "update issue", "edit issue", or "modify issue"
@@ -40,19 +42,13 @@ Use this skill when the user:
 
 This skill includes helper bash scripts in the `scripts/` directory:
 
-1. **check-environment.sh** - Validates git repo, gh CLI, and shows auth source (incl. cache status)
-2. **get-repo-info.sh** - Retrieves repository details, labels, and recent issues
-3. **get-issue.sh** - Fetches existing issue data (title, body, labels, state)
-4. **create-issue.sh** - Creates a new issue
-5. **update-issue.sh** - Updates an existing issue
+1. **get-issue.sh** - Fetches existing issue data (title, body, labels, state)
+2. **update-issue.sh** - Updates an existing issue
 
 To use bundled scripts, execute them from the skill directory:
 
 ```bash
-bash scripts/check-environment.sh
-bash scripts/get-repo-info.sh
 bash scripts/get-issue.sh 123
-bash scripts/create-issue.sh --title "Title" --body "Body" --label "enhancement"
 bash scripts/update-issue.sh --issue 123 --title "New Title" --add-label "bug"
 ```
 
@@ -119,7 +115,7 @@ Identify which template sections are relevant based on scope:
 | Scope | Required Sections |
 |-------|-------------------|
 | Short (minimal, quick) | Brief Description, Rationale (no section headers, bold markers only) |
-| Default (simple task, draft) | Brief Description, Rationale, References, Implementation Notes |
+| Default (simple task, draft) | Description, Rationale; optionally References, Implementation Notes |
 | Small (bug fix, typo) | Brief Description, Acceptance Criteria |
 | Medium (feature, enhancement) | Brief Description, Rationale, Implementation, Acceptance Criteria |
 | Large / Full (architecture, major feature) | All sections as needed |
@@ -229,7 +225,13 @@ Create a title that:
 
 ### Step 5: Generate Description
 
-Use the appropriate template based on the selected format. **BRIEF_DESCRIPTION is always required.**
+Use the appropriate template based on the selected format.
+
+**Writing rules (all formats):**
+
+1. Never start the description with a markdown header — always lead with plain text
+2. Use present tense for existing problems ("the button does not respond", not "the button did not respond" or "added responsive button handling") — describe the issue as it currently exists
+3. Preserve the user's original wording where possible — restructure, don't rewrite
 
 #### Full Issue Template
 
@@ -323,52 +325,44 @@ Use this comprehensive template for Full format issues (includes all sections as
 
 ---
 
-_Drafted with AI assistance_
+<sub>*Drafted with AI assistance*</sub>
 ```
 
 #### Short Issue Template
 
-Use this minimal template for Short format issues. Note: No section headers (`##`), use bold text for markers instead:
+Use this minimal template for Short format issues. No section headers, no horizontal rules:
 
 ```markdown
-{{BRIEF_DESCRIPTION}}
+{{DESCRIPTION — 4-6 sentences. Explain the issue naturally: what happens, what's affected, why it matters. Keep the user's original phrasing.}}
 
-**Rationale:** {{WHY_NEEDED - explain the motivation in 1-2 sentences}}
+**Rationale:** {{WHY_NEEDED — 1-2 sentences}}
 
-_Drafted with AI assistance_
+<sub>*Drafted with AI assistance*</sub>
 ```
 
 #### Default Issue Template
 
-Use this template for Default format issues:
+Use this template for Default format issues. Use h5 headers, no horizontal rules:
 
 ```markdown
-{{BRIEF_DESCRIPTION}}
+{{DESCRIPTION — 4-8 sentences: what the issue is, what it affects, how to reproduce (when applicable), what's impacted. Keep the user's original phrasing.}}
 
----
+##### Rationale
 
-## Rationale
+{{WHY_NEEDED — explain why this needs to be fixed or implemented}}
 
-{{WHY_NEEDED - explain the motivation}}
+##### References
 
----
+{{Include only if there are relevant links or related issues}}
 
-## References
+##### Implementation Notes
 
-{{REFERENCE_LINKS_OR_RELATED_ISSUES - include any relevant links, or "None" if not applicable}}
+{{Include only if the approach is already known — brief notes on what needs to be done}}
 
----
-
-## Implementation Notes
-
-{{BASIC_APPROACH_OR_HINTS - brief guidance on how to approach this}}
-
-_Drafted with AI assistance_
+<sub>*Drafted with AI assistance*</sub>
 ```
 
 ### Step 6: Present to User
-
-> **Important:** Always show the complete issue (title and description) to the user before creating it on GitHub. Skip this step only if the user explicitly requests to create without preview (e.g., "create without showing", "skip preview").
 
 Show the user:
 
@@ -377,119 +371,7 @@ Show the user:
 3. **Type suggestion:** bug, feature, enhancement, documentation, etc.
 4. **Label suggestions:** Based on the content
 
-Ask if they want any modifications before creating.
-
-### Step 6.5: Assign Issue
-
-Before creating, determine who should be assigned to the issue.
-
-**Fetch suggested assignees:**
-```bash
-bash scripts/get-repo-info.sh
-```
-
-The script outputs:
-- Top contributors and collaborators for the repository
-
-**Use `AskUserQuestion` to confirm assignee:**
-
-**Requirements:**
-- Always include `@me` (self-assign) as first (recommended) option
-- Always include at least 2 other contributors from the repo
-- Always include "No assignee" as last option
-- Total: 4 options (self + 2 others + no assignee)
-
-```
-question: "Who should this issue be assigned to?"
-header: "Assignee"
-options:
-  - label: "@me (Recommended)"
-    description: "Self-assign since you're creating this issue"
-  - label: "@{{PERSON_1}}"
-    description: "{{Collaborator or top contributor to this repository}}"
-  - label: "@{{PERSON_2}}"
-    description: "{{Collaborator or top contributor to this repository}}"
-  - label: "No assignee"
-    description: "Leave unassigned for team triage"
-```
-
-**Priority for selecting the 2 other people:**
-1. Repository collaborators
-2. If less than 2 collaborators found, fill remaining slots with top contributors
-
-**Example:**
-```
-options:
-  - label: "@me (Recommended)"
-    description: "Self-assign since you're creating this issue"
-  - label: "@contributor-1"
-    description: "Collaborator on this repository"
-  - label: "@contributor-2"
-    description: "Top contributor to this repository"
-  - label: "No assignee"
-    description: "Leave unassigned for team triage"
-```
-
-### Step 7: Create on GitHub (Optional)
-
-If the user confirms and we're in a git repository:
-
-**Use the bundled scripts:**
-
-```bash
-# First, check the environment
-bash scripts/check-environment.sh
-
-# Optionally, get repo info for context (labels, recent issues)
-bash scripts/get-repo-info.sh
-
-# Create the issue
-bash scripts/create-issue.sh \
-  --title "{{TITLE}}" \
-  --body "{{DESCRIPTION}}" \
-  --label "{{LABELS}}" \
-  --assignee "@me"
-```
-
-**Or manual creation:**
-
-```bash
-gh issue create \
-  --title "{{TITLE}}" \
-  --body "$(cat <<'EOF'
-{{DESCRIPTION}}
-EOF
-)" \
-  --label "{{LABELS}}" \
-  {{--assignee "@me" if requested}}
-```
-
-Return the issue URL to the user.
-
-**Label Selection:**
-
-1. First, fetch existing labels from the repository:
-   ```bash
-   gh label list --json name,description
-   ```
-
-2. Filter to only use labels matching these (case-insensitive):
-   - `feature` - New functionality
-   - `improvement` - Enhancement to existing functionality
-   - `bug` - Something isn't working
-   - `epic` - Large multi-issue effort
-   - `critical` - High priority, needs immediate attention
-   - `refactoring` - Code restructuring without behavior change
-   - `r&d` - Research and development, exploration
-   - `won't fix` - Acknowledged but not planned to address
-
-3. Suggest from the filtered list based on issue type, or set none if no match
-
----
-
-See `references/askuser-format.md` for AskUserQuestion standards and template.
-
----
+Ask if they want any modifications.
 
 ## Update Workflow
 
@@ -558,8 +440,8 @@ Return the updated issue URL to the user.
 
 ## Template Section Guidelines
 
-### Brief Description (Required)
-1-2 sentences describing what this is and its primary purpose. Be specific and actionable.
+### Description (Required)
+The opening paragraph before any sections. Length varies by format: Short 4-6 sentences, Default 4-8 sentences, Full 1-2 sentences (detailed sections follow). Describe the issue in present tense. Preserve the user's original phrasing — restructure for clarity, don't rewrite.
 
 ### Rationale (Optional)
 Explain the "why" when it's not obvious:
@@ -618,17 +500,16 @@ Specific requirements:
 
 ## Prerequisites
 
-- `gh` CLI installed and authenticated (`gh auth login`)
-- Must be run from within a GitHub repository
+- `gh` CLI installed and authenticated (`gh auth login`) — required for updating issues
+- Must be run from within a GitHub repository for update operations
 
 See `references/helper-scripts.md` for detailed script documentation, usage examples, and exit codes.
 
 ## Error Handling
 
-- If `gh` CLI is not available, provide the formatted issue for manual creation
+- If `gh` CLI is not available, skip update operations and just provide the formatted output
 - If not in a git repository, skip GitHub integration and just provide the formatted output
-- If user declines creation, provide the markdown for them to copy
 
 ## Keywords
 
-issue, github, create issue, write issue, update issue, edit issue, modify issue, bug report, feature request, task, documentation
+issue, github, draft issue, write issue, update issue, edit issue, modify issue, bug report, feature request, task, documentation

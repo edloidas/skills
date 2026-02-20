@@ -95,6 +95,16 @@ metadata:
 ---
 ```
 
+### AskUserQuestion Conventions
+
+Skills using `AskUserQuestion` must follow these rules:
+
+1. First option is recommended — add `(Recommended)` suffix to its label
+2. Every option has a description explaining the choice
+3. Order by relevance — recommended first, alternatives next, skip/none last
+4. Maximum 4 options — "Other" is added automatically by Claude Code
+5. Headers ≤12 characters, labels 1-5 words
+
 ### Multi-Agent Convention
 
 Skills for different agents (Claude Code, Codex, etc.) live in the same group directories — no nesting by agent. Agent compatibility is declared via the `compatibility` frontmatter field.

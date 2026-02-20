@@ -1,29 +1,15 @@
 ---
 name: commit-summary
-description: Generate Git commit message summaries following strict formatting rules. Analyzes staged/unstaged changes and produces technical, past-tense commit messages.
+description: Generate commit message body summaries from git changes. Produces technical, past-tense descriptions formatted as one-line-per-change. Use when the user asks for a commit summary, commit message body, or change description — not for full commit creation.
 license: MIT
 compatibility: Claude Code
 allowed-tools: Read Bash(git status:*) Bash(git diff:*) Bash(git log:*) Bash(git show:*)
 arguments: "'staged only', custom instructions, or none for all changes"
 argument-hint: "[scope]"
-model: claude-sonnet-4-5
+model: claude-sonnet-4-6
 ---
 
 # Git Commit Message Summary Generator
-
-## Purpose
-
-Analyze git changes and generate well-formatted commit message summaries. Produces technical, specific commit messages using past participle tense with strict formatting requirements.
-
-## When to Use This Skill
-
-Use when the user asks to:
-- Generate a commit message
-- Summarize changes for commit
-- Create commit summary
-- Write commit message body
-
-Trigger phrases: "commit summary", "generate commit", "commit message", "summarize for commit", "write commit"
 
 ## Commands
 
@@ -45,17 +31,16 @@ git diff --cached
 
 ### Step 2: Generate Summary
 
-Apply strict output format rules.
+Apply the output format rules below.
 
 ## Output Format Rules
 
-**Structure:**
-1. Each change on a NEW LINE
+1. Each change on a NEW LINE — one sentence per line, ending with a period
 2. NO blank lines between regular lines (only before footer)
-3. Start immediately - no preamble
-4. One sentence per line with period
-5. 2-6 lines total for body
-6. Use backticks for code: `ClassName`, `functionName()`
+3. Start immediately — no preamble or explanatory text
+4. 2-6 lines total for body
+5. Use backticks for code: `ClassName`, `functionName()`
+6. No bullet points (`-` or `*`), no paragraphs
 
 **Correct:**
 ```
@@ -77,13 +62,13 @@ Created Storybook stories demonstrating toolbar patterns with separators and dis
 - "Refactored `Button` to accept `asChild` prop"
 - NOT: "Implement hook" or "Implementing hook"
 
-**Content depth:** Technical and specific
+**Depth:** Technical and specific
 - "Refactored `ToggleGroup` to use single `value` prop instead of separate `singleValue`/`multipleValue`"
 - NOT: "Refactored ToggleGroup component" (too vague)
 
-**Focus:** HOW and WHY
-- Mention approach/pattern used
-- Explain benefit when non-obvious
+**Focus:** HOW and WHY — mention approach/pattern used, explain benefit when non-obvious
+
+**Grouping:** Group related changes (component + tests + stories → one line). Order by importance: main feature first, supporting second, cleanup last. Avoid obvious statements like "Added new file" — describe what was implemented.
 
 ## Preferred Verbs
 
@@ -97,13 +82,6 @@ Created Storybook stories demonstrating toolbar patterns with separators and dis
 | Fixed | Bug fixes |
 | Integrated | Connected systems |
 | Extracted | Separated into reusable pieces |
-
-## Content Guidelines
-
-1. **Group related changes:** Component + tests + stories → one line
-2. **Order by importance:** Main feature first, supporting second, cleanup last
-3. **Technical specificity:** Key props, hooks, patterns, architecture, ARIA
-4. **Avoid obvious:** NOT "Added new file" → "Implemented component with..."
 
 ## Footer (Optional)
 
@@ -122,28 +100,9 @@ Created comprehensive Storybook stories covering all date selection patterns.
 ```
 
 ```
-Refactored `Form` validation to use Zod schemas instead of custom validators.
-Updated all form components to support `schema` prop for type-safe validation.
-Extracted common validation logic into `useFormValidation` hook.
-
-BREAKING CHANGE: Removed `validate` prop, use `schema` instead.
-```
-
-```
 Fixed focus trap in `Dialog` not releasing when closed via Escape key.
 Updated `useKeyDown` hook to properly cleanup event listeners on unmount.
 ```
-
-## Final Checklist
-
-Before output, verify:
-- [ ] Each change on its own line
-- [ ] No blank lines between changes
-- [ ] 2-6 lines total
-- [ ] Code elements use backticks
-- [ ] Past tense throughout
-- [ ] Technical details included
-- [ ] No preamble or explanatory text
 
 ## Keywords
 
