@@ -234,7 +234,7 @@ Present the final report using the format from `references/synthesis-guide.md`:
 ## Edge Cases
 
 - **Codex not installed**: script writes skip message to output file — proceed with remaining reviewers
-- **Codex timeout (120s)**: script writes timeout message — proceed with remaining reviewers
+- **Codex timeout (300s default)**: script writes timeout message — proceed with remaining reviewers. Pass custom timeout as third argument to the script.
 - **Subagent failure**: note in report header, continue with available results
 - **Empty context**: if no review target can be identified, tell the user and stop
 - **No findings**: if all reviewers return "No findings", report that — it's a valid outcome

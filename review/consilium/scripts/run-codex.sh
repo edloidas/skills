@@ -1,13 +1,14 @@
 #!/usr/bin/env bash
 # Run Codex CLI as an independent reviewer for consilium.
-# Usage: bash review/consilium/scripts/run-codex.sh <context-file> <output-file>
+# Usage: bash review/consilium/scripts/run-codex.sh <context-file> <output-file> [timeout-seconds]
 set -euo pipefail
 
 CONTEXT_FILE="${1:-}"
 OUTPUT_FILE="${2:-}"
+TIMEOUT="${3:-300}"
 
 if [[ -z "$CONTEXT_FILE" || -z "$OUTPUT_FILE" ]]; then
-  echo "Usage: bash review/consilium/scripts/run-codex.sh <context-file> <output-file>" >&2
+  echo "Usage: bash review/consilium/scripts/run-codex.sh <context-file> <output-file> [timeout-seconds]" >&2
   exit 1
 fi
 
@@ -35,12 +36,12 @@ PROMPT="$(cat "$PROMPT_FILE")
 $(cat "$CONTEXT_FILE")"
 
 # Run codex with a timeout. read-only sandbox, output to file.
-if timeout 120s codex exec -C "$PWD" -s read-only -o "$OUTPUT_FILE" "$PROMPT" > /dev/null 2>&1; then
+if timeout "${TIMEOUT}s" codex exec -C "$PWD" -s read-only -o "$OUTPUT_FILE" "$PROMPT" > /dev/null 2>&1; then
   exit 0
 else
   EXIT_CODE=$?
   if [[ $EXIT_CODE -eq 124 ]]; then
-    echo "Codex reviewer timed out after 120s." > "$OUTPUT_FILE"
+    echo "Codex reviewer timed out after ${TIMEOUT}s." > "$OUTPUT_FILE"
   else
     echo "Codex reviewer failed (exit code $EXIT_CODE)." > "$OUTPUT_FILE"
   fi
