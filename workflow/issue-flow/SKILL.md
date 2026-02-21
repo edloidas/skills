@@ -9,7 +9,7 @@ license: MIT
 compatibility: Claude Code
 model: claude-sonnet-4-6
 allowed-tools: Bash(gh:*) Bash(git:*) Bash(bash:*) Read Glob Grep AskUserQuestion
-arguments: "issue number, step name, or description for new issue"
+arguments: "issue-number description"
 argument-hint: "[issue-number or description]"
 metadata:
   author: edloidas

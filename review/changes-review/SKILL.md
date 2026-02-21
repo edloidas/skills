@@ -4,8 +4,8 @@ description: Deep logic analysis of code changes. Spawns review-build and review
 license: MIT
 compatibility: Claude Code
 allowed-tools: Bash Read Glob Grep Task
-arguments: "last N commits, file path, directory, commit range, or none for all changes"
-argument-hint: "[scope]"
+arguments: "scope"
+argument-hint: "[commits, path, range, or empty]"
 ---
 
 # Review Code Changes

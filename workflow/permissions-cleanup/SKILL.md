@@ -7,8 +7,8 @@ description: >
 license: MIT
 compatibility: Claude Code
 allowed-tools: Read Write Edit AskUserQuestion
-arguments: "--dry-run, --project, or --global flags, space-separated"
-argument-hint: "[--flags]"
+arguments: "--flags"
+argument-hint: "[--dry-run, --project, --global]"
 metadata:
   author: edloidas
 ---

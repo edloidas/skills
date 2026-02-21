@@ -4,8 +4,8 @@ description: Analyze React code and suggest improvements based on best practices
 license: MIT
 compatibility: Claude Code, Codex
 allowed-tools: Bash(git:*) Read Glob Grep
-arguments: "file path, directory, or none for staged changes"
-argument-hint: "[path]"
+arguments: "path"
+argument-hint: "[file, directory, or empty]"
 ---
 
 # React Improvements

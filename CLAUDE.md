@@ -59,14 +59,14 @@ Optional fields:
 | `license`       | License name or reference to a bundled LICENSE file                                                                   |
 | `compatibility` | 1–500 chars; target agent and/or environment needs (see Multi-Agent Convention)                                       |
 | `metadata`      | Key-value mapping; use reasonably unique key names to prevent conflicts                                               |
-| `arguments`     | Plain-text description of accepted arguments for `user-invocable` skills. **Avoid regex metacharacters** (`[`, `]`, `|`, `<`, `>`, etc.) — Claude Code parses this field as a regex and will throw `SyntaxError: Invalid regular expression` if the value contains unescaped special characters. Use descriptive text instead (e.g. `"all or space-separated skill names"`). |
+| `arguments`     | Short space-separated parameter names for autocomplete tokens. Each word becomes a `[word]` token in Claude Code's autocomplete. Match the `argument-hint` pattern without brackets (e.g. `"command branch"`, `"mode"`, `"files --dry-run"`). **Avoid regex metacharacters** (`[`, `]`, `|`, `<`, `>`, etc.) — Claude Code parses this field as a regex and will throw `SyntaxError: Invalid regular expression`. |
 | `allowed-tools` | **Experimental.** Space-delimited list of pre-approved tools (e.g. `Bash(git:*) Read`)                                |
 
 Claude Code extension fields (ignored by other agents, safe to use in any skill):
 
 | Field                      | Constraint                                                                                                          |
 | -------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| `argument-hint`            | Autocomplete hint for expected arguments (e.g. `[issue-number]`, `[filename] [format]`)                             |
+| `argument-hint`            | Hint shown during autocomplete to indicate expected arguments (e.g. `[issue-number]`, `[filename] [format]`)        |
 | `disable-model-invocation` | `true` prevents Claude from auto-loading the skill; invoke manually with `/skill-name`. Default: `false`            |
 | `user-invocable`           | `false` hides from the `/` menu; Claude can still load it when relevant. Default: `true`                            |
 | `model`                    | Model to use when skill is active (e.g. `claude-sonnet-4-5`)                                                        |

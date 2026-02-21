@@ -4,7 +4,7 @@ description: Use this skill when the user asks to draft, write, or update a GitH
 license: MIT
 compatibility: Claude Code
 allowed-tools: Bash Read Glob Task AskUserQuestion
-arguments: "issue description to draft, issue number to update, or none for interactive mode"
+arguments: "description issue-number"
 argument-hint: "[description or issue number]"
 ---
 

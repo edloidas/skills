@@ -11,8 +11,8 @@ license: MIT
 compatibility: Claude Code
 allowed-tools: Read Write Glob Grep Task Bash(bash:review/consilium/*) Bash(codex:*) Bash(cat:*) Bash(rm:*)
 user-invocable: true
-arguments: "optional focus area or empty for auto-selection"
-argument-hint: "[focus-area]"
+arguments: "focus-area"
+argument-hint: "[focus area or empty]"
 metadata:
   author: edloidas
 ---

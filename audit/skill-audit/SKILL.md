@@ -10,7 +10,8 @@ license: MIT
 compatibility: Claude Code
 allowed-tools: Read Glob Grep Task Bash(bash:audit/skill-audit/*)
 user-invocable: true
-arguments: "all or space-separated skill names"
+arguments: "skills"
+argument-hint: "[all or skill names]"
 metadata:
   author: edloidas
 ---

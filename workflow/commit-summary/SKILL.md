@@ -4,8 +4,8 @@ description: Generate commit message body summaries from git changes. Produces t
 license: MIT
 compatibility: Claude Code
 allowed-tools: Read Bash(git status:*) Bash(git diff:*) Bash(git log:*) Bash(git show:*)
-arguments: "'staged only', custom instructions, or none for all changes"
-argument-hint: "[scope]"
+arguments: "scope"
+argument-hint: "['staged only', instructions, or empty]"
 model: claude-sonnet-4-6
 ---
 

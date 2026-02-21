@@ -10,7 +10,7 @@ license: MIT
 compatibility: Claude Code
 allowed-tools: Read Edit Glob Grep Bash AskUserQuestion
 user-invocable: true
-arguments: "check or apply - check shows drift report, apply fixes it"
+arguments: "mode"
 argument-hint: "[check|apply]"
 metadata:
   author: edloidas

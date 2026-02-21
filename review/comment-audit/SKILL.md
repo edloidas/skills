@@ -4,8 +4,8 @@ description: Analyze code comments in changed files for quality, relevance, and 
 license: MIT
 compatibility: Claude Code
 allowed-tools: Bash Read Glob Grep Task
-arguments: "all or space-separated file paths"
-argument-hint: "[files]"
+arguments: "files"
+argument-hint: "[all or file paths]"
 model: claude-haiku-4-5
 disable-model-invocation: true
 ---
