@@ -92,6 +92,7 @@ create.sh --new-branch <branch> --start-point <ref>
 
 **Behavior:**
 - Fetches all remotes before creating (unless `--no-fetch`)
+- If branch doesn't exist locally or on any remote, creates it from HEAD
 - Global mode: copies `.claude/`, `.codex/`, `.agents/` from source repo (if they exist)
 - Local mode: adds `.worktrees` to `.gitignore` (only at real repo root, not inside a worktree)
 - `CLAUDE.md` arrives via git checkout automatically
@@ -211,7 +212,7 @@ clean.sh [--local] --force  # force remove (implies --apply)
 | Error | Solution |
 |-------|----------|
 | Not in a git repository | Inform user to navigate to a git repository first |
-| Branch doesn't exist | Suggest `git fetch --all` or use `--new-branch` to create |
+| Branch doesn't exist | Script auto-creates from HEAD after checking local and remote refs |
 | Worktree already exists | Show existing path, ask if user wants to navigate there |
 | Uncommitted changes on remove | Ask user if they want to force remove |
 

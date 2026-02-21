@@ -114,17 +114,23 @@ if [[ "$DO_FETCH" == true ]]; then
     git fetch --all --quiet
 fi
 
-# Verify branch exists (for existing branch mode)
+# Resolve branch (for existing branch mode)
 if [[ -n "$BRANCH" ]]; then
     if ! git rev-parse --verify "$BRANCH" > /dev/null 2>&1; then
-        echo "ERROR: Branch '$BRANCH' not found" >&2
-        echo "Hint: Run 'git fetch --all' or use --new-branch to create it" >&2
-        exit 3
+        # Check remote tracking branches (git worktree add has DWIM for these)
+        if git branch -r --list "*/$BRANCH" | grep -q .; then
+            echo "Branch '$BRANCH' found on remote, will create local tracking branch"
+        else
+            echo "Branch '$BRANCH' not found, creating from HEAD"
+            NEW_BRANCH="$BRANCH"
+            START_POINT="HEAD"
+            BRANCH=""
+        fi
     fi
 fi
 
 # Verify start point exists (for new branch mode)
-if [[ -n "$START_POINT" ]]; then
+if [[ -n "$START_POINT" && "$START_POINT" != "HEAD" ]]; then
     if ! git rev-parse --verify "$START_POINT" > /dev/null 2>&1; then
         echo "ERROR: Start point '$START_POINT' not found" >&2
         exit 3
