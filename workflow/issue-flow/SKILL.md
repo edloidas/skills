@@ -48,12 +48,23 @@ Determine entry step from user intent, check prerequisites, then proceed forward
 
 | User intent                          | Entry step | Prerequisite             |
 | ------------------------------------ | ---------- | ------------------------ |
+| No arguments / empty invocation      | Step 1     | Staged or changed files  |
 | "create issue", "new issue"          | Step 1     | gh authenticated         |
 | "start work on #N", "branch for #N"  | Step 2     | Issue exists             |
 | "commit", "commit changes"           | Step 3     | On issue-* branch        |
 | "push", "push changes"               | Step 4     | Commits ahead of remote  |
 | "create PR", "open PR"               | Step 5     | Branch pushed            |
 | "merge", "merge PR"                  | Step 6     | PR exists                |
+
+### No Arguments (Full Flow from Changes)
+
+When invoked without arguments, assume a full flow based on current working tree changes:
+
+1. Check for staged files: `git diff --cached --name-only`
+2. If no staged files, check for all changed/untracked files: `git diff --name-only` and `git ls-files --others --exclude-standard`
+3. If no changes found at all, stop and tell the user there's nothing to commit
+4. Analyze the changes (diff content) to infer issue type and description
+5. Run the full flow (Steps 1–6) using the detected files — stage only the identified files in Step 3
 
 When the user says "full flow" or asks to go from issue to merge, run all steps sequentially. Otherwise, start at the detected step and ask whether to continue to the next step after each one completes.
 
