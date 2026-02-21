@@ -8,13 +8,14 @@ description: >
   or clean up worktrees.
 license: MIT
 allowed-tools: Bash(git:*,rsync:*) Read Glob Grep
-arguments: "create, remove, list, or clean, followed by optional branch name"
+arguments: "command branch"
 argument-hint: "[command] [branch]"
+model: claude-sonnet-4-6
 ---
 
 # Git Worktree Manager
 
-Manage Git worktrees for the current repository with a centralized, configurable storage location.
+Manage Git worktrees for the current repository with configurable storage — global or local to the project.
 
 ## When to Use This Skill
 
@@ -27,13 +28,22 @@ Use when the user asks to:
 
 Trigger phrases: "create worktree", "add worktree", "remove worktree", "list worktrees", "clean worktrees", "worktree for branch"
 
+## Storage Modes
+
+| Mode | Flag | Path | Settings Copied |
+|------|------|------|-----------------|
+| Global (default) | — | `~/.worktrees/<repo-name>/<branch>` | Yes |
+| Local | `--local` | `.worktrees/<branch>` | No |
+
+**Global** stores worktrees outside the repo, copies agent settings (`.claude/`, `.codex/`, `.agents/`), and is the default.
+
+**Local** stores worktrees inside the repo under `.worktrees/`. The script adds `.worktrees` to `.gitignore` automatically. Settings are not copied because local worktrees share the same repo root context. Prefer `--local` when invoked by another skill.
+
 ## Configuration
 
 | Setting | Env Var | Default |
 |---------|---------|---------|
-| Storage root | `GIT_WORKTREES_DIR` | `~/.worktrees` |
-
-Worktree path: `$GIT_WORKTREES_DIR/<repo-name>/<sanitized-branch>`
+| Storage root (global mode) | `GIT_WORKTREES_DIR` | `~/.worktrees` |
 
 Branch names are sanitized: `/` → `-` (e.g. `feature/new-ui` → `feature-new-ui`).
 
@@ -42,7 +52,7 @@ Branch names are sanitized: `/` → `-` (e.g. `feature/new-ui` → `feature-new-
 Claude Code **cannot change its own working directory** during a session. After creating a worktree, show the user a ready-to-copy command:
 
 ```
-cd ~/.worktrees/repo/branch && claude
+cd ~/.worktrees/repo/branch
 ```
 
 The user must open a new terminal or Claude Code session to work in the worktree.
@@ -53,6 +63,7 @@ All scripts live in the `scripts/` directory. Execute them from the skill direct
 
 ```bash
 bash scripts/create.sh --branch <branch>
+bash scripts/create.sh --local --branch <branch>
 bash scripts/remove.sh --branch <branch>
 bash scripts/list.sh
 bash scripts/clean.sh
@@ -60,11 +71,12 @@ bash scripts/clean.sh
 
 ### scripts/create.sh
 
-Creates a worktree, fetches remotes, and copies agent settings.
+Creates a worktree, fetches remotes, and copies agent settings (global mode only).
 
 **Usage:**
 ```
 create.sh --branch <branch>
+create.sh --local --branch <branch>
 create.sh --new-branch <branch> --start-point <ref>
 ```
 
@@ -74,14 +86,16 @@ create.sh --new-branch <branch> --start-point <ref>
 | `--branch <branch>` | Checkout existing branch |
 | `--new-branch <branch>` | Create new branch |
 | `--start-point <ref>` | Base ref for new branch (required with `--new-branch`) |
+| `--local` | Store in `.worktrees/` inside the repo |
 | `--no-fetch` | Skip `git fetch --all` |
-| `--no-copy-settings` | Skip agent settings copying |
+| `--no-copy-settings` | Skip agent settings copying (global mode only) |
 
 **Behavior:**
 - Fetches all remotes before creating (unless `--no-fetch`)
-- Copies `.claude/`, `.codex/`, `.agents/` from source repo (if they exist) so permissions carry over
+- Global mode: copies `.claude/`, `.codex/`, `.agents/` from source repo (if they exist)
+- Local mode: adds `.worktrees` to `.gitignore` (only at real repo root, not inside a worktree)
 - `CLAUDE.md` arrives via git checkout automatically
-- Outputs a `cd ... && claude` command for the user
+- Outputs a `cd <path>` command for the user
 
 **Exit codes:** 0=success, 1=not git repo, 2=bad args, 3=branch not found, 4=already exists, 5=git error
 
@@ -92,6 +106,7 @@ Removes a worktree in a single pass — no double-deletion.
 **Usage:**
 ```
 remove.sh --branch <branch>
+remove.sh --local --branch <branch>
 remove.sh --path <path>
 ```
 
@@ -100,12 +115,13 @@ remove.sh --path <path>
 |------|-------------|
 | `--branch <branch>` | Remove by branch name (resolves path automatically) |
 | `--path <path>` | Remove by explicit path |
+| `--local` | Look in `.worktrees/` inside the repo |
 | `--force` | Force remove with uncommitted changes |
 
 **Behavior:**
 - Single `git worktree remove` call (handles git unlinking and directory deletion)
 - Runs `git worktree prune` after removal
-- Cleans empty parent directories
+- Cleans empty parent directories (`.worktrees/` for local, `<repo>/` and root for global)
 
 **Exit codes:** 0=success, 1=not git repo, 2=bad args, 3=not found, 4=has uncommitted changes
 
@@ -115,16 +131,19 @@ Lists worktrees for the current repository.
 
 **Usage:**
 ```
-list.sh [--all]
+list.sh [--local] [--all]
 ```
 
 **Flags:**
 | Flag | Description |
 |------|-------------|
-| `--all` | Include main repo working directory |
+| `--local` | Show worktrees from `.worktrees/` inside the repo |
+| `--all` | Show all worktrees via `git worktree list` |
 
 **Behavior:**
-- Default: shows only worktrees under the storage directory
+- Default: shows only worktrees under the global storage directory
+- `--local`: shows only worktrees under `.worktrees/`
+- `--all`: shows everything git tracks (includes main repo)
 - Formatted output: path, commit hash, branch
 - Shows total count
 
@@ -134,10 +153,17 @@ Removes all worktrees for the current repository.
 
 **Usage:**
 ```
-clean.sh              # dry-run (default)
-clean.sh --apply      # actually remove
-clean.sh --force      # force remove (implies --apply)
+clean.sh [--local]          # dry-run (default)
+clean.sh [--local] --apply  # actually remove
+clean.sh [--local] --force  # force remove (implies --apply)
 ```
+
+**Flags:**
+| Flag | Description |
+|------|-------------|
+| `--local` | Clean worktrees from `.worktrees/` inside the repo |
+| `--apply` | Perform actual removal |
+| `--force` | Force remove (implies `--apply`) |
 
 **Behavior:**
 - Prunes stale references first
@@ -152,22 +178,26 @@ clean.sh --force      # force remove (implies --apply)
 | Command | Script Call |
 |---------|------------|
 | `/git-worktree create <branch>` | `create.sh --branch <branch>` |
+| `/git-worktree create --local <branch>` | `create.sh --local --branch <branch>` |
 | `/git-worktree create -b <new-branch> <start-point>` | `create.sh --new-branch <branch> --start-point <ref>` |
 | `/git-worktree remove <branch>` | `remove.sh --branch <branch>` |
+| `/git-worktree remove --local <branch>` | `remove.sh --local --branch <branch>` |
 | `/git-worktree list` | `list.sh` |
+| `/git-worktree list --local` | `list.sh --local` |
 | `/git-worktree clean` | `clean.sh` (then `clean.sh --apply` after confirmation) |
+| `/git-worktree clean --local` | `clean.sh --local` (then `clean.sh --local --apply` after confirmation) |
 
 ## Workflow
 
 ### Creating a Worktree
 
 1. Run `create.sh` with the appropriate flags
-2. Show the user the output path and the `cd ... && claude` command
+2. Show the user the output path and the `cd <path>` command
 3. Remind them to open a new terminal or session
 
 ### Removing a Worktree
 
-1. Run `remove.sh` with `--branch` or `--path`
+1. Run `remove.sh` with `--branch` or `--path` (add `--local` if needed)
 2. If it fails with exit code 4 (uncommitted changes), ask the user if they want to `--force`
 
 ### Cleaning All Worktrees
@@ -195,7 +225,18 @@ User: Create a worktree for the feature/new-ui branch
 
 Worktree created at: ~/.worktrees/my-repo/feature-new-ui
 To start working:
-  cd ~/.worktrees/my-repo/feature-new-ui && claude
+  cd ~/.worktrees/my-repo/feature-new-ui
+```
+
+### Create local worktree
+```
+User: Create a local worktree for the fix/bug-456 branch
+
+[Runs: bash scripts/create.sh --local --branch fix/bug-456]
+
+Worktree created at: .worktrees/fix-bug-456
+To start working:
+  cd .worktrees/fix-bug-456
 ```
 
 ### Create worktree with new branch
@@ -207,7 +248,7 @@ User: Create a worktree with a new branch fix/bug-123 from main
 Worktree created at: ~/.worktrees/my-repo/fix-bug-123
 Branch fix/bug-123 created from main
 To start working:
-  cd ~/.worktrees/my-repo/fix-bug-123 && claude
+  cd ~/.worktrees/my-repo/fix-bug-123
 ```
 
 ### Remove a worktree

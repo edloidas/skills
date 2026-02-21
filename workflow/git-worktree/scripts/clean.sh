@@ -2,20 +2,25 @@
 # clean.sh
 # Removes all worktrees for the current repository
 #
-# Usage: clean.sh            # dry-run (default)
-#        clean.sh --apply    # actually remove
-#        clean.sh --force    # force remove (implies --apply)
+# Usage: clean.sh [--local]           # dry-run (default)
+#        clean.sh [--local] --apply   # actually remove
+#        clean.sh [--local] --force   # force remove (implies --apply)
 #
 # Exit codes: 0=success, 1=not git repo
 
 set -e
 
 # Parse arguments
+LOCAL=false
 APPLY=false
 FORCE=false
 
 while [[ $# -gt 0 ]]; do
     case $1 in
+        --local)
+            LOCAL=true
+            shift
+            ;;
         --apply)
             APPLY=true
             shift
@@ -27,7 +32,7 @@ while [[ $# -gt 0 ]]; do
             ;;
         *)
             echo "ERROR: Unknown option: $1" >&2
-            echo "Usage: clean.sh [--apply] [--force]" >&2
+            echo "Usage: clean.sh [--local] [--apply] [--force]" >&2
             exit 1
             ;;
     esac
@@ -42,9 +47,13 @@ fi
 REPO_ROOT=$(git rev-parse --show-toplevel)
 REPO_NAME=$(basename "$REPO_ROOT")
 
-# Resolve storage root
-WORKTREE_ROOT="${GIT_WORKTREES_DIR:-$HOME/.worktrees}"
-REPO_DIR="$WORKTREE_ROOT/$REPO_NAME"
+# Resolve filter directory
+if [[ "$LOCAL" == true ]]; then
+    FILTER_DIR="$REPO_ROOT/.worktrees"
+else
+    WORKTREE_ROOT="${GIT_WORKTREES_DIR:-$HOME/.worktrees}"
+    FILTER_DIR="$WORKTREE_ROOT/$REPO_NAME"
+fi
 
 # Prune stale references first
 git worktree prune
@@ -54,11 +63,11 @@ WORKTREES=()
 while IFS= read -r line; do
     WT_PATH=$(echo "$line" | awk '{print $1}')
 
-    # Skip main repo and worktrees outside our storage directory
+    # Skip main repo and worktrees outside our filter directory
     if [[ "$WT_PATH" == "$REPO_ROOT" ]]; then
         continue
     fi
-    if [[ "$WT_PATH" != "$REPO_DIR"/* ]]; then
+    if [[ "$WT_PATH" != "$FILTER_DIR"/* ]]; then
         continue
     fi
 
@@ -74,7 +83,11 @@ fi
 echo "Worktrees to remove (${#WORKTREES[@]}):"
 echo ""
 for wt in "${WORKTREES[@]}"; do
-    DISPLAY="${wt/$HOME/~}"
+    if [[ "$LOCAL" == true ]]; then
+        DISPLAY=".worktrees/${wt##*/.worktrees/}"
+    else
+        DISPLAY="${wt/$HOME/~}"
+    fi
     echo "  $DISPLAY"
 done
 echo ""
@@ -87,7 +100,11 @@ fi
 # Remove each worktree
 echo "Removing worktrees..."
 for wt in "${WORKTREES[@]}"; do
-    DISPLAY="${wt/$HOME/~}"
+    if [[ "$LOCAL" == true ]]; then
+        DISPLAY=".worktrees/${wt##*/.worktrees/}"
+    else
+        DISPLAY="${wt/$HOME/~}"
+    fi
     echo "  Removing: $DISPLAY"
     if [[ "$FORCE" == true ]]; then
         git worktree remove --force "$wt"
@@ -100,10 +117,17 @@ done
 git worktree prune
 
 # Clean empty directories
-if [[ -d "$REPO_DIR" ]] && [[ -z "$(ls -A "$REPO_DIR" 2>/dev/null)" ]]; then
-    rmdir "$REPO_DIR"
-    if [[ -d "$WORKTREE_ROOT" ]] && [[ -z "$(ls -A "$WORKTREE_ROOT" 2>/dev/null)" ]]; then
-        rmdir "$WORKTREE_ROOT"
+if [[ "$LOCAL" == true ]]; then
+    if [[ -d "$FILTER_DIR" ]] && [[ -z "$(ls -A "$FILTER_DIR" 2>/dev/null)" ]]; then
+        rmdir "$FILTER_DIR"
+    fi
+else
+    if [[ -d "$FILTER_DIR" ]] && [[ -z "$(ls -A "$FILTER_DIR" 2>/dev/null)" ]]; then
+        rmdir "$FILTER_DIR"
+        WORKTREE_ROOT="${GIT_WORKTREES_DIR:-$HOME/.worktrees}"
+        if [[ -d "$WORKTREE_ROOT" ]] && [[ -z "$(ls -A "$WORKTREE_ROOT" 2>/dev/null)" ]]; then
+            rmdir "$WORKTREE_ROOT"
+        fi
     fi
 fi
 

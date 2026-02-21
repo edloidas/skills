@@ -4,7 +4,8 @@
 #
 # Usage: remove.sh --branch <branch>
 #        remove.sh --path <path>
-# Flags: --force    Force remove with uncommitted changes
+# Flags: --local   Remove from .worktrees/ inside the repo
+#        --force   Force remove with uncommitted changes
 #
 # Exit codes: 0=success, 1=not git repo, 2=bad args, 3=not found,
 #             4=has uncommitted changes
@@ -14,6 +15,7 @@ set -e
 # Parse arguments
 BRANCH=""
 WORKTREE_PATH=""
+LOCAL=false
 FORCE=false
 
 while [[ $# -gt 0 ]]; do
@@ -25,6 +27,10 @@ while [[ $# -gt 0 ]]; do
         --path)
             WORKTREE_PATH="$2"
             shift 2
+            ;;
+        --local)
+            LOCAL=true
+            shift
             ;;
         --force)
             FORCE=true
@@ -56,13 +62,15 @@ fi
 REPO_ROOT=$(git rev-parse --show-toplevel)
 REPO_NAME=$(basename "$REPO_ROOT")
 
-# Resolve storage root
-WORKTREE_ROOT="${GIT_WORKTREES_DIR:-$HOME/.worktrees}"
-
 # Resolve worktree path from branch name
 if [[ -n "$BRANCH" ]]; then
     SANITIZED=$(echo "$BRANCH" | tr '/' '-')
-    WORKTREE_PATH="$WORKTREE_ROOT/$REPO_NAME/$SANITIZED"
+    if [[ "$LOCAL" == true ]]; then
+        WORKTREE_PATH="$REPO_ROOT/.worktrees/$SANITIZED"
+    else
+        WORKTREE_ROOT="${GIT_WORKTREES_DIR:-$HOME/.worktrees}"
+        WORKTREE_PATH="$WORKTREE_ROOT/$REPO_NAME/$SANITIZED"
+    fi
 fi
 
 # Expand ~ in path
@@ -70,12 +78,20 @@ WORKTREE_PATH="${WORKTREE_PATH/#\~/$HOME}"
 
 # Check if worktree exists in git's tracking
 if ! git worktree list --porcelain | grep -q "^worktree $WORKTREE_PATH$"; then
-    DISPLAY_PATH="${WORKTREE_PATH/$HOME/~}"
+    if [[ "$LOCAL" == true ]]; then
+        DISPLAY_PATH=".worktrees/${WORKTREE_PATH##*/.worktrees/}"
+    else
+        DISPLAY_PATH="${WORKTREE_PATH/$HOME/~}"
+    fi
     echo "ERROR: No worktree found at $DISPLAY_PATH" >&2
     exit 3
 fi
 
-DISPLAY_PATH="${WORKTREE_PATH/$HOME/~}"
+if [[ "$LOCAL" == true ]]; then
+    DISPLAY_PATH=".worktrees/${WORKTREE_PATH##*/.worktrees/}"
+else
+    DISPLAY_PATH="${WORKTREE_PATH/$HOME/~}"
+fi
 
 # Remove worktree (single pass — handles both git unlinking and directory deletion)
 echo "Removing worktree at $DISPLAY_PATH..."
@@ -92,12 +108,19 @@ fi
 git worktree prune
 
 # Clean empty parent directories
-REPO_DIR="$WORKTREE_ROOT/$REPO_NAME"
-if [[ -d "$REPO_DIR" ]] && [[ -z "$(ls -A "$REPO_DIR" 2>/dev/null)" ]]; then
-    rmdir "$REPO_DIR"
-    # Also remove root if empty
-    if [[ -d "$WORKTREE_ROOT" ]] && [[ -z "$(ls -A "$WORKTREE_ROOT" 2>/dev/null)" ]]; then
-        rmdir "$WORKTREE_ROOT"
+if [[ "$LOCAL" == true ]]; then
+    LOCAL_DIR="$REPO_ROOT/.worktrees"
+    if [[ -d "$LOCAL_DIR" ]] && [[ -z "$(ls -A "$LOCAL_DIR" 2>/dev/null)" ]]; then
+        rmdir "$LOCAL_DIR"
+    fi
+else
+    WORKTREE_ROOT="${GIT_WORKTREES_DIR:-$HOME/.worktrees}"
+    REPO_DIR="$WORKTREE_ROOT/$REPO_NAME"
+    if [[ -d "$REPO_DIR" ]] && [[ -z "$(ls -A "$REPO_DIR" 2>/dev/null)" ]]; then
+        rmdir "$REPO_DIR"
+        if [[ -d "$WORKTREE_ROOT" ]] && [[ -z "$(ls -A "$WORKTREE_ROOT" 2>/dev/null)" ]]; then
+            rmdir "$WORKTREE_ROOT"
+        fi
     fi
 fi
 
