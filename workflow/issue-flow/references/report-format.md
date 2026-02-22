@@ -64,7 +64,16 @@ Issue #<number> will be closed
 Confirm merge?
 ```
 
-After merge:
+### Step 6: Waiting for Checks
+
+```
+### [6] Waiting for Checks
+PR #<pr-number>: <N> checks pending...
+```
+
+Print while `wait-checks.sh` is polling. After checks pass, print the merged report below.
+
+### Step 6: Merged
 
 ```
 ### [6] Merged

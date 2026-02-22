@@ -31,6 +31,7 @@ Located in `scripts/` relative to this skill:
 | `resolve-project-token.sh` | Resolve token: GH_PROJECTS_TOKEN → gh auth      |
 | `add-to-project.sh`        | Add issue to GitHub Projects V2                 |
 | `project-status.sh`        | Update project board status                     |
+| `wait-checks.sh`          | Poll PR check status until complete or timeout   |
 
 Run scripts from the skill directory:
 
@@ -40,6 +41,7 @@ bash "<skill-dir>/scripts/detect-base.sh"
 bash "<skill-dir>/scripts/repo-context.sh"
 bash "<skill-dir>/scripts/add-to-project.sh" <issue-number> <project-title> [status]
 bash "<skill-dir>/scripts/project-status.sh" <issue-number> <status>
+bash "<skill-dir>/scripts/wait-checks.sh" <pr-number> [timeout-seconds]
 ```
 
 ## Step Router
@@ -274,9 +276,25 @@ Determine the current user: `gh api user --jq .login`. If the PR reviewer OR ass
 PR #<number> is ready for review by @<reviewer>. Merge skipped — awaiting external review.
 ```
 
-If reviewer AND assignee are the current user (self-review), or user explicitly asked to merge, proceed with merge confirmation below.
+If reviewer AND assignee are the current user (self-review), or user explicitly asked to merge, proceed below.
 
-**CRITICAL: MUST stop and confirm before merging.** Show the user:
+### Suggest Merge (Full Flow)
+
+When **all** of these are true:
+- Full flow was performed (entered at Step 1 and ran through Step 5)
+- Issue assignee is the current user
+- PR assignee is the current user
+- No external reviewer was set on the PR
+
+Then suggest merging via `AskUserQuestion`:
+1. "Merge now" (Recommended) — wait for checks and merge
+2. "Skip" — leave PR open, end flow
+
+If user picks "Skip", print the skip message and stop. If "Merge now", continue to Pre-checks below. Mark that the user has **already confirmed** merge intent (skip the pre-merge confirmation later).
+
+### Pre-merge Confirmation (Direct Entry Only)
+
+When the user entered **directly at Step 6** (not via the full-flow suggestion above), **MUST stop and confirm before merging.** Show the user:
 - Target branch and commit count
 - Linked issue that will be closed
 - CI check status
@@ -285,13 +303,37 @@ Print the Step 6 pre-merge report and wait for confirmation.
 
 ### Pre-checks
 
+1. Check PR state:
+
 ```bash
-gh pr view --json state,mergeable,statusCheckRollup
+gh pr view <pr-number> --json state,mergeable
 ```
 
-- If checks are failing: report which checks failed and **stop**. Do not merge.
-- If there are conflicts: rebase onto base, force-push, wait for checks, ask again.
-- If PR is not open: report current state and stop.
+- If PR is not open: report current state and **stop**.
+- If there are conflicts: rebase onto base, force-push, then continue to step 2.
+
+2. Wait for CI checks:
+
+```bash
+bash "<skill-dir>/scripts/wait-checks.sh" <pr-number> 300
+```
+
+- Exit 0 (all passed/skipped) → proceed to step 3
+- Exit 1 (failure) → report failed checks, **stop**. Do not merge.
+- Exit 2 (timeout) → report timeout, ask user via `AskUserQuestion`:
+  1. "Merge anyway" — proceed to step 3
+  2. "Wait longer" — re-run `wait-checks.sh` with another 300s
+  3. "Abort" — stop
+
+Print the "Waiting for Checks" report while polling (see `references/report-format.md`).
+
+3. After checks pass, verify mergeability one more time:
+
+```bash
+gh pr view <pr-number> --json mergeable --jq '.mergeable'
+```
+
+If conflicts appeared, rebase and re-run checks.
 
 ### Merge
 
