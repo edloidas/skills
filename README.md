@@ -104,6 +104,7 @@ Git, GitHub, release, and development workflow skills.
 | ----------------------------------------------------------- | ------------------------------------------------------------------------- | ------------- |
 | [claude-md-sync](./workflow/claude-md-sync/)                | Detect and fix stale references in project CLAUDE.md                      | Claude        |
 | [commit-summary](./workflow/commit-summary/)                | Generate formatted Git commit message summaries                           | Claude        |
+| [fix-findings](./workflow/fix-findings/)                    | Triage and fix problems from reviews, consilium, or debugging             | Claude        |
 | [git-worktree](./workflow/git-worktree/)                    | Manage Git worktrees with configurable storage and agent settings copying | Any           |
 | [issue-flow](./workflow/issue-flow/)                        | Full issue lifecycle: create, branch, commit, push, PR, merge            | Claude        |
 | [issue-writer](./workflow/issue-writer/)                    | Draft and update well-structured GitHub issues                            | Claude        |
