@@ -10,7 +10,7 @@ description: >
   solution approaches. Autonomous — runs without user interaction, presents combined findings.
 license: MIT
 compatibility: Claude Code
-allowed-tools: Read Write(/tmp/consilium-*) Edit(/tmp/consilium-*) Read(/tmp/consilium-*) Glob Grep Task Bash(bash:review/consilium/*) Bash(codex:*) Bash(cat:*) Bash(rm:*)
+allowed-tools: Read Write(*/consilium-*) Edit(*/consilium-*) Read(*/consilium-*) Glob Grep Task Bash(bash:review/consilium/*) Bash(codex:*) Bash(cat:*)
 user-invocable: true
 arguments: "focus-area brainstorm"
 argument-hint: "[focus area, brainstorm, or empty]"
@@ -101,7 +101,7 @@ If brainstorm mode → skip to **Brainstorm Workflow** section below. Otherwise 
 
 ### Step 2: Prepare Context
 
-1. Write the review content to `/tmp/consilium-${CLAUDE_SESSION_ID}-context.md` with a header:
+1. Write the review content to `${TMPDIR:-/tmp}/consilium-${CLAUDE_SESSION_ID}-context.md` with a header:
    ```
    # Consilium Review Context
    # Source: <what this is — plan, proposal, research>
@@ -141,7 +141,7 @@ Launch **all applicable reviewers in a single message** (parallel execution):
 
 **Codex** (core) — via Bash:
 ```
-bash review/consilium/scripts/run-codex.sh /tmp/consilium-${CLAUDE_SESSION_ID}-context.md /tmp/consilium-${CLAUDE_SESSION_ID}-codex.txt
+bash review/consilium/scripts/run-codex.sh ${TMPDIR:-/tmp}/consilium-${CLAUDE_SESSION_ID}-context.md ${TMPDIR:-/tmp}/consilium-${CLAUDE_SESSION_ID}-codex.txt
 ```
 Run in background so it doesn't block the other subagents.
 
@@ -178,7 +178,7 @@ Run in background so it doesn't block the other subagents.
 
 ### Step 4: Collect Results
 
-1. Read Codex output from `/tmp/consilium-${CLAUDE_SESSION_ID}-codex.txt`
+1. Read Codex output from `${TMPDIR:-/tmp}/consilium-${CLAUDE_SESSION_ID}-codex.txt`
 2. Parse Task results from the subagent responses
 3. If any reviewer failed or timed out, note it — do not block on it
 
@@ -204,13 +204,6 @@ Before presenting the report, critically evaluate each finding against your broa
 - You may downgrade findings that are technically correct but practically insignificant
 - You should upgrade findings that align with concerns you already had
 - Note your reasoning for any overrides
-
-### Step 7: Clean Up
-
-Remove temporary files:
-```
-rm -f /tmp/consilium-${CLAUDE_SESSION_ID}-context.md /tmp/consilium-${CLAUDE_SESSION_ID}-codex.txt
-```
 
 ## Output Format
 
@@ -258,7 +251,7 @@ When brainstorm mode is detected, follow these steps instead of the standard rev
 
 ### Step B1: Prepare Brainstorm Context
 
-Write the problem description to `/tmp/consilium-${CLAUDE_SESSION_ID}-context.md`:
+Write the problem description to `${TMPDIR:-/tmp}/consilium-${CLAUDE_SESSION_ID}-context.md`:
 ```
 # Consilium Brainstorm Context
 # Problem: <one-line summary>
@@ -280,7 +273,7 @@ Write the problem description to `/tmp/consilium-${CLAUDE_SESSION_ID}-context.md
 
 ### Step B3: Prepare Phase 2 Context
 
-Write `/tmp/consilium-${CLAUDE_SESSION_ID}-phase2-context.md`:
+Write `${TMPDIR:-/tmp}/consilium-${CLAUDE_SESSION_ID}-phase2-context.md`:
 ```
 # Consilium Brainstorm — Phase 2 Critique Context
 # Original Problem: <one-line summary>
@@ -301,7 +294,7 @@ Launch all Phase 2 reviewers in a single message (parallel execution):
 
 **Codex** (core) — via Bash:
 ```
-bash review/consilium/scripts/run-codex.sh /tmp/consilium-${CLAUDE_SESSION_ID}-phase2-context.md /tmp/consilium-${CLAUDE_SESSION_ID}-codex.txt
+bash review/consilium/scripts/run-codex.sh ${TMPDIR:-/tmp}/consilium-${CLAUDE_SESSION_ID}-phase2-context.md ${TMPDIR:-/tmp}/consilium-${CLAUDE_SESSION_ID}-codex.txt
 ```
 Run in background.
 
@@ -333,7 +326,7 @@ Seneca uses its brainstorm-specific prompt (`seneca-brainstorm-prompt.md`) to ev
 
 ### Step B5: Synthesize Brainstorm Report
 
-1. Read Codex output from `/tmp/consilium-${CLAUDE_SESSION_ID}-codex.txt`
+1. Read Codex output from `${TMPDIR:-/tmp}/consilium-${CLAUDE_SESSION_ID}-codex.txt`
 2. Parse Task results from Phase 2 subagent responses
 3. Read `review/consilium/references/brainstorm-synthesis-guide.md` and follow it exactly
 
@@ -344,13 +337,6 @@ Before presenting the brainstorm report, critically evaluate each finding and th
 - You may adjust the recommendation if your broader context warrants it
 - You should flag findings that align with concerns you already had
 - Note your reasoning for any overrides
-
-### Step B6: Clean Up
-
-Remove temporary files:
-```
-rm -f /tmp/consilium-${CLAUDE_SESSION_ID}-context.md /tmp/consilium-${CLAUDE_SESSION_ID}-phase2-context.md /tmp/consilium-${CLAUDE_SESSION_ID}-codex.txt
-```
 
 ## Edge Cases
 
@@ -364,8 +350,8 @@ rm -f /tmp/consilium-${CLAUDE_SESSION_ID}-context.md /tmp/consilium-${CLAUDE_SES
 - **Scrutator finds no state**: if review content has no meaningful state, Scrutator returns early — this is fine
 - **Novator finds no decisions to challenge**: Novator returns early — this is fine
 - **Brainstorm with existing proposal**: if `brainstorm` is explicit but content is a finished plan, warn user but proceed — treat the plan as problem space
-- **Novator fails in Phase 1**: cannot continue brainstorm — clean up temp files (`rm -f /tmp/consilium-${CLAUDE_SESSION_ID}-context.md`), report failure, suggest re-running or falling back to review mode
-- **All Phase 2 fail**: present Novator's raw output with a note that critic validation was incomplete. Still run Step B6 cleanup.
+- **Novator fails in Phase 1**: cannot continue brainstorm — report failure, suggest re-running or falling back to review mode
+- **All Phase 2 fail**: present Novator's raw output with a note that critic validation was incomplete
 - **Single generator**: Novator is the sole Phase 1 generator. If it misses an approach, Phase 2 critics cannot introduce fundamentally new alternatives. This is a known v1 limitation — re-run with different framing if the approaches feel narrow.
 - **Auto-detection ambiguity**: default to review mode when uncertain
 
@@ -374,7 +360,7 @@ rm -f /tmp/consilium-${CLAUDE_SESSION_ID}-context.md /tmp/consilium-${CLAUDE_SES
 - **Parallel execution**: always launch core + selected optional reviewers in a single message
 - **Autonomous**: do not ask the user questions during the review — resolve ambiguity yourself
 - **Evidence required**: no finding survives without specific evidence
-- **Clean up**: always remove session-specific `/tmp/consilium-${CLAUDE_SESSION_ID}-*` files when done
+- **Temp files**: session-scoped files in `${TMPDIR:-/tmp}/consilium-${CLAUDE_SESSION_ID}-*` are left for OS cleanup — do not delete manually
 - **No modifications**: this is review only — never modify the reviewed content
 - **Honest synthesis**: disagree with reviewers when your broader conversation context warrants it
 
