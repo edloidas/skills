@@ -52,6 +52,8 @@ Determine entry step from user intent, check prerequisites, then proceed forward
 | ------------------------------------ | ---------- | ------------------------ |
 | No arguments / empty invocation      | Step 1     | Staged or changed files  |
 | "create issue", "new issue"          | Step 1     | gh authenticated         |
+| "add sub-issues to #N", "link issues to #N" | Sub-issues | Parent issue exists |
+| "X blocks #N", "block #N with #M", "unblock #N" | Blocked-by | Both issues exist |
 | "start work on #N", "branch for #N"  | Step 2     | Issue exists             |
 | "commit", "commit changes"           | Step 3     | On issue-* branch        |
 | "push", "push changes"               | Step 4     | Commits ahead of remote  |
@@ -131,6 +133,64 @@ gh issue create --title "<title>" --body "<body>" --label "<label>" --assignee "
 ```
 
 Print the Step 1 report (see `references/report-format.md`).
+
+### Sub-Issues (Optional)
+
+If the user mentioned other issue numbers to include in this aggregated issue, add them as sub-issues immediately after the parent is created — before printing the Step 1 report. See **## Sub-Issues** for the procedure.
+
+## Sub-Issues
+
+Use when an aggregated (parent) issue should group related child issues. Needs the **integer** `.id`, not the issue number — they are different things. See `references/github-relationships.md` for ID type details.
+
+### Procedure
+
+Fetch each child's integer ID, then POST it. Use `<owner>/<repo>` from `repo-context.sh` first line.
+
+```bash
+PARENT=<parent_number>
+for num in <child1> <child2> <child3>; do
+  id=$(gh api repos/<owner>/<repo>/issues/$num --jq '.id')
+  gh api repos/<owner>/<repo>/issues/$PARENT/sub_issues \
+    --method POST \
+    -F sub_issue_id="$id"
+done
+```
+
+`-F` (form field) is required — `-f` sends a string, causing `422`. The POST returns the parent issue object — parent title in response means success. Verify:
+
+```bash
+gh api repos/<owner>/<repo>/issues/<parent_number>/sub_issues --jq '.[].number'
+```
+
+## Blocked-By
+
+Use when child issues have dependencies between them — e.g., issue B cannot start until issue A is done. Requires GraphQL **node IDs** (not issue numbers or integer IDs) — see `references/github-relationships.md`. Use `<owner>/<repo>` from `repo-context.sh` first line.
+
+### Procedure
+
+Step 1 — Fetch **node IDs** in one batch query:
+
+```bash
+gh api graphql -f query='{
+  repository(owner: "<owner>", name: "<repo>") {
+    a: issue(number: <blocking-num>) { id }
+    b: issue(number: <blocked-num>) { id }
+  }
+}'
+```
+
+Step 2 — Add relationship ("b is blocked by a"):
+
+```bash
+gh api graphql -f query='mutation {
+  addBlockedBy(input: {
+    issueId: "<node-id-of-b>",
+    blockingIssueId: "<node-id-of-a>"
+  }) { issue { number } blockingIssue { number } }
+}'
+```
+
+Use `removeBlockedBy` with the same signature to undo. See `references/github-relationships.md` for full details and ID type reference.
 
 ## Step 2: Create Branch
 
@@ -369,3 +429,4 @@ Print the Step 6 merged report.
 - For commit message body → invoke `/commit-summary` via Skill tool; fall back to inline if unavailable
 - For project token setup → see `references/project-integration.md`
 - For report templates → see `references/report-format.md`
+- For sub-issues and blocked-by relationships → see `references/github-relationships.md`
