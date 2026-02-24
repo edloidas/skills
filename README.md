@@ -32,7 +32,7 @@ Install directly from this GitHub repo into `~/.codex/skills`:
 ```bash
 python ~/.codex/skills/.system/skill-installer/scripts/install-skill-from-github.py \
   --repo edloidas/skills \
-  --path audit/ci-audit review/code-cleanup review/react-improvements audit/scripts-audit audit/workspace-audit
+  --path audit/ci-audit review/code-cleanup review/react-review audit/scripts-audit audit/workspace-audit
 ```
 
 No `.curated` folder is required for this repo; installs use explicit `--path` values.
@@ -82,7 +82,7 @@ Code review, cleanup, and quality improvement skills.
 | [code-cleanup](./review/code-cleanup/)                      | Post-implementation cleanup of comments and artifacts                     | Claude, Codex |
 | [comment-audit](./review/comment-audit/)                    | Analyze code comments for quality and relevance                           | Claude        |
 | [consilium](./review/consilium/)                            | Critical review board — up to 6 reviewers (2 core + 4 on-demand)         | Claude        |
-| [react-improvements](./review/react-improvements/)          | Suggest React code improvements and patterns                              | Claude, Codex |
+| [react-review](./review/react-review/)                      | Review React code for effects, conventions, and patterns                  | Claude, Codex |
 
 ### Audit
 
