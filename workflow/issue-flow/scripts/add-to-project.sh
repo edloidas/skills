@@ -43,8 +43,8 @@ if [[ -z "$ISSUE_NODE_ID" || "$ISSUE_NODE_ID" == "null" ]]; then
   exit 1
 fi
 
-# Find matching project (try repo-level, then org-level)
-ALL_PROJECTS=$(gh api graphql -f query="
+# Find matching project (always query both repo-level and org-level, then merge)
+REPO_PROJECTS=$(gh api graphql -f query="
   query {
     repository(owner: \"$OWNER\", name: \"$NAME\") {
       projectsV2(first: 20) {
@@ -54,17 +54,17 @@ ALL_PROJECTS=$(gh api graphql -f query="
   }
 " 2>/dev/null | jq -r '.data.repository.projectsV2.nodes[]? | "\(.id)\t\(.title)"' 2>/dev/null) || true
 
-if [[ -z "$ALL_PROJECTS" ]]; then
-  ALL_PROJECTS=$(gh api graphql -f query="
-    query {
-      organization(login: \"$OWNER\") {
-        projectsV2(first: 50, orderBy: {field: UPDATED_AT, direction: DESC}) {
-          nodes { id title }
-        }
+ORG_PROJECTS=$(gh api graphql -f query="
+  query {
+    organization(login: \"$OWNER\") {
+      projectsV2(first: 50, orderBy: {field: UPDATED_AT, direction: DESC}) {
+        nodes { id title }
       }
     }
-  " 2>/dev/null | jq -r '.data.organization.projectsV2.nodes[]? | "\(.id)\t\(.title)"' 2>/dev/null) || true
-fi
+  }
+" 2>/dev/null | jq -r '.data.organization.projectsV2.nodes[]? | "\(.id)\t\(.title)"' 2>/dev/null) || true
+
+ALL_PROJECTS=$(printf '%s\n%s\n' "$REPO_PROJECTS" "$ORG_PROJECTS" | awk 'NF' | sort -u -t$'\t' -k1,1)
 
 if [[ -z "$ALL_PROJECTS" ]]; then
   echo "ERROR: Could not fetch projects"
