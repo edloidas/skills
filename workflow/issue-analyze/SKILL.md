@@ -176,3 +176,82 @@ For each dependency found:
 - **Closed blocker**: skip — already resolved, doesn't affect planning.
 - **Parent epic**: include only if it adds implementation context not in the issue itself.
 - **No dependencies**: omit the Dependencies section from output entirely.
+
+## Phase 4: Synthesize & Output
+
+### Scope Analysis — quality bar
+
+This is the highest-value section. Write it to be directly useful for implementation
+planning — not a summary of the issue text, but an interpretation of it.
+
+A high-quality Scope Analysis:
+- Explains what the issue is truly asking for (beyond restating the title)
+- Identifies technical scope: what needs to be built or changed, and roughly where
+- For epics: weaves sub-issues into a coherent narrative. Example: "This epic covers three
+  areas: authentication (#43, done), session management (#44), and token refresh (#45)."
+  Closed sub-issues are noted as already implemented and excluded from tasks.
+- Surfaces implicit requirements not stated in the issue (e.g., "adding X implies Y also
+  needs to handle the new input format")
+- Calls out ambiguities or decisions the implementer will face
+- States what is explicitly out of scope
+- When a blocker is open: explains what cannot be built until it's resolved, and what can
+  be built in parallel
+
+Length: 2–5 paragraphs for a normal issue; more for a large epic (one paragraph per
+sub-issue area).
+
+### Implementation Tasks — quality bar
+
+- Each task is a concrete, actionable step (not "investigate X" — investigation is part
+  of Scope Analysis)
+- Ordered logically: setup before implementation, implementation before tests, tests
+  before integration
+- 5–12 tasks for a normal issue
+- For epics: group tasks under sub-issue headings
+- If a blocker is open: mark affected tasks as "blocked by #N" and list them last
+
+### Output format
+
+Print output in this exact structure:
+
+````
+> Note: #<N> is assigned to @<user> — you may be looking at someone else's work.
+(omit line if current user is among assignees, or if issue has no assignees)
+
+# #<N>: <title>
+
+## Scope Analysis
+
+<analysis paragraphs>
+
+## Local Context
+(omit entire section if Phase 2 found nothing)
+
+- `.claude/docs/foo.md` — <one sentence on why it's relevant to this issue>
+
+## Dependencies
+(omit entire section if no implementation-relevant open dependencies)
+
+Depends on #<M> (open) — <what that issue provides that this one needs>.
+This issue's output expected by #<K> — must deliver <Y>.
+
+## Implementation Tasks
+
+1. <task>
+2. <task>
+3. <task>
+
+---
+<issue URL>
+````
+
+## Error Handling
+
+| Situation | Action |
+|---|---|
+| `gh` not authenticated | Stop: "Run `gh auth login` first." |
+| Not in a git repo + no URL given | Stop: "Provide a full GitHub URL or run from inside a git repository." |
+| Sub-issues API returns 404 | Skip silently |
+| No `.claude/` directory | Skip local context phase silently |
+| GraphQL returns error or empty data | Skip dependencies section silently |
+| Issue body is empty | Analyze from title only; note in Scope Analysis that the issue has no description |
