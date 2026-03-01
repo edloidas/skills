@@ -31,6 +31,14 @@ gh repo view --json nameWithOwner --jq '.nameWithOwner'
 
 Outputs `owner/repo`. Split on `/` to get owner and repo name separately.
 
+### Guard: no argument
+
+If `$ARGUMENTS` is empty, stop:
+
+```
+Provide an issue number or URL. Usage: /issue-analyze 42
+```
+
 ### Parse argument
 
 `$ARGUMENTS` is either:
@@ -152,13 +160,17 @@ gh api graphql -f query='{
 `trackedInIssues` — parent issues or epics that track this issue. If this issue is part
 of a larger epic, these are the parents.
 
-Also try blocked-by relationships (may not be available on all repos):
+Also try blocked-by relationships. GitHub stores these via node-ID-based relationships
+(same mechanism as `addBlockedBy` / `removeBlockedBy` mutations). Query them directly:
 
 ```bash
 gh api graphql -f query='{
   repository(owner: "<owner>", name: "<repo>") {
     issue(number: <N>) {
-      blockedByIssues: references(first: 10) {
+      blockedByIssues(first: 10) {
+        nodes { number title state url }
+      }
+      blockingIssues(first: 10) {
         nodes { number title state url }
       }
     }
@@ -166,7 +178,13 @@ gh api graphql -f query='{
 }' 2>/dev/null
 ```
 
-If either query fails or returns no data, skip silently.
+`blockedByIssues` — what is blocking this issue (must be resolved first).
+`blockingIssues` — what this issue blocks (expects deliverables from this one).
+
+These fields may not be available on all repos or GitHub plans — skip silently if query
+fails or returns null.
+
+If all queries fail or return no data, skip silently.
 
 ### Relevance filter
 
@@ -206,7 +224,7 @@ sub-issue area).
   of Scope Analysis)
 - Ordered logically: setup before implementation, implementation before tests, tests
   before integration
-- 5–12 tasks for a normal issue
+- 3–12 tasks (3–4 is fine for small/trivial issues; 5–12 for normal scope)
 - For epics: group tasks under sub-issue headings
 - If a blocker is open: mark affected tasks as "blocked by #N" and list them last
 
@@ -249,8 +267,10 @@ This issue's output expected by #<K> — must deliver <Y>.
 
 | Situation | Action |
 |---|---|
+| `$ARGUMENTS` is empty | Stop: "Provide an issue number or URL. Usage: /issue-analyze 42" |
 | `gh` not authenticated | Stop: "Run `gh auth login` first." |
 | Not in a git repo + no URL given | Stop: "Provide a full GitHub URL or run from inside a git repository." |
+| Issue number not found (`gh` 404) | Stop: "Issue #<N> not found in <owner>/<repo>." |
 | Sub-issues API returns 404 | Skip silently |
 | No `.claude/` directory | Skip local context phase silently |
 | GraphQL returns error or empty data | Skip dependencies section silently |
