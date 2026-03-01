@@ -21,7 +21,7 @@ Skills are organized into plugin groups. Each group has a `.claude-plugin/plugin
 **Plugin groups:**
 - `review/` — Code review, cleanup, and quality improvement (5 skills)
 - `audit/` — CI, lint, script, skill, and workspace auditing (5 skills)
-- `workflow/` — Git, GitHub, release, and development workflows (6 skills)
+- `workflow/` — Git, GitHub, release, and development workflows (7 skills)
 
 ## How Skills Load (Progressive Disclosure)
 
