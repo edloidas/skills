@@ -91,6 +91,16 @@ Run `check-env.sh` to validate environment. Run `repo-context.sh` to fetch label
 
 Use conventional commit format: `<type>: <description>`. Defer to CLAUDE.md conventions if they differ.
 
+### Epic Detection
+
+Before writing the body or picking a label, determine if this is an **epic issue** — one that coordinates work without containing implementation itself. Signals:
+
+- User mentions "epic", "umbrella", "tracking issue", or "aggregated issue"
+- Issue groups multiple child issues or feature areas
+- No concrete implementation details — only scope or coordination
+
+If it is an epic, and the repo has an `epic` label (check `repo-context.sh` output), apply `epic` as the label without asking. Skip the normal type-based label inference. If `epic` label does not exist in the repo, fall through to normal label selection.
+
 ### Body
 
 Write a brief 2-4 sentence description. No markdown headers. Add the AI footer at the very bottom:
@@ -98,6 +108,8 @@ Write a brief 2-4 sentence description. No markdown headers. Add the AI footer a
 ```
 <sub>*Drafted with AI assistance*</sub>
 ```
+
+For epic issues: **do NOT list child issue numbers in the body.** Sub-issue relationships are managed via the GitHub sub-issues API (see **## Sub-Issues**), not via body text.
 
 ### Labels
 
