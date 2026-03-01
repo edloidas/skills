@@ -13,7 +13,7 @@
       "name": "review",
       "source": "./review",
       "description": "Code review, cleanup, and quality improvement skills",
-      "version": "2.8.1",
+      "version": "2.9.0",
       "author": {
         "name": "Mikita Taukachou",
         "url": "https://edloidas.io"
@@ -24,7 +24,7 @@
       "name": "audit",
       "source": "./audit",
       "description": "CI, lint, script, skill, and workspace auditing skills",
-      "version": "2.8.1",
+      "version": "2.9.0",
       "author": {
         "name": "Mikita Taukachou",
         "url": "https://edloidas.io"
@@ -35,7 +35,7 @@
       "name": "workflow",
       "source": "./workflow",
       "description": "Git, GitHub, release, and development workflow skills",
-      "version": "2.8.1",
+      "version": "2.9.0",
       "author": {
         "name": "Mikita Taukachou",
         "url": "https://edloidas.io"
