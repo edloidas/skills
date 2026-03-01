@@ -91,3 +91,44 @@ gh issue view <sub-N> --repo <owner>/<repo> --json number,title,body,state
 
 Collect all sub-issue data. Closed sub-issues are noted in the analysis as already done
 but do not generate implementation tasks.
+
+## Phase 2: Local Context Search
+
+Find the git root:
+
+```bash
+git rev-parse --show-toplevel
+```
+
+Check whether `<git-root>/.claude/` exists. If absent, skip this phase entirely — do not
+mention it in output.
+
+### Find doc files
+
+Use `Glob` tool to find:
+- `<git-root>/.claude/*.md`
+- `<git-root>/.claude/docs/*.md`
+
+If no files found, skip phase.
+
+### Search for issue number
+
+Use `Grep` to search all found files for:
+- `#<N>` (e.g. `#42`)
+- Word-boundary match for bare number (to avoid matching `142` when looking for `42`)
+
+### Extract and search key terms
+
+From the issue title and body, extract:
+- Capitalized component/module names (e.g. `TreeView`, `AuthService`)
+- camelCase or PascalCase identifiers
+- File paths mentioned (e.g. `src/components/Button.tsx`)
+- Technical terms: API endpoint names, config keys, function names in backticks
+
+Use `Grep` to search all found files for each extracted term. Collect unique
+(file path, matching line) pairs. Deduplicate across term searches.
+
+### Result
+
+If nothing found across all searches → omit the Local Context section from output.
+If matches found → collect as: `{ file: string, reason: string }[]` for use in Phase 4.
