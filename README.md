@@ -107,6 +107,7 @@ Git, GitHub, release, and development workflow skills.
 | [fix-findings](./workflow/fix-findings/)                    | Triage and fix problems from reviews, consilium, or debugging             | Claude        |
 | [git-worktree](./workflow/git-worktree/)                    | Manage Git worktrees with configurable storage and agent settings copying | Any           |
 | [issue-flow](./workflow/issue-flow/)                        | Full issue lifecycle: create, branch, commit, push, PR, merge            | Claude        |
+| [issue-analyze](./workflow/issue-analyze/)                  | Analyze issue scope and produce an implementation task list               | Claude        |
 | [issue-writer](./workflow/issue-writer/)                    | Draft and update well-structured GitHub issues                            | Claude        |
 | [labels-sync](./workflow/labels-sync/)                      | Synchronize GitHub repository labels from JSON                            | Claude        |
 | [npm-release](./workflow/npm-release/)                      | Guide npm/pnpm package release workflow                                   | Claude        |
