@@ -132,3 +132,47 @@ Use `Grep` to search all found files for each extracted term. Collect unique
 
 If nothing found across all searches → omit the Local Context section from output.
 If matches found → collect as: `{ file: string, reason: string }[]` for use in Phase 4.
+
+## Phase 3: Dependency Analysis
+
+Query issue relationships via GraphQL. Fetch the issue's tracking relationships:
+
+```bash
+gh api graphql -f query='{
+  repository(owner: "<owner>", name: "<repo>") {
+    issue(number: <N>) {
+      trackedInIssues(first: 5) {
+        nodes { number title state url }
+      }
+    }
+  }
+}'
+```
+
+`trackedInIssues` — parent issues or epics that track this issue. If this issue is part
+of a larger epic, these are the parents.
+
+Also try blocked-by relationships (may not be available on all repos):
+
+```bash
+gh api graphql -f query='{
+  repository(owner: "<owner>", name: "<repo>") {
+    issue(number: <N>) {
+      blockedByIssues: references(first: 10) {
+        nodes { number title state url }
+      }
+    }
+  }
+}' 2>/dev/null
+```
+
+If either query fails or returns no data, skip silently.
+
+### Relevance filter
+
+For each dependency found:
+- **Open blocker** (blocks this issue and is still open): always include — it constrains
+  what can be built. Fetch its title and state. Note what it's expected to deliver.
+- **Closed blocker**: skip — already resolved, doesn't affect planning.
+- **Parent epic**: include only if it adds implementation context not in the issue itself.
+- **No dependencies**: omit the Dependencies section from output entirely.
