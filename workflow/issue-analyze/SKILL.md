@@ -23,14 +23,6 @@ task list. Standalone — no forced next step.
 
 ## Phase 1: Resolve & Fetch
 
-### Detect repo
-
-```bash
-gh repo view --json nameWithOwner --jq '.nameWithOwner'
-```
-
-Outputs `owner/repo`. Split on `/` to get owner and repo name separately.
-
 ### Guard: no argument
 
 If `$ARGUMENTS` is empty, stop:
@@ -38,6 +30,14 @@ If `$ARGUMENTS` is empty, stop:
 ```
 Provide an issue number or URL. Usage: /issue-analyze 42
 ```
+
+### Detect repo
+
+```bash
+gh repo view --json nameWithOwner --jq '.nameWithOwner'
+```
+
+Outputs `owner/repo`. Split on `/` to get owner and repo name separately.
 
 ### Parse argument
 
