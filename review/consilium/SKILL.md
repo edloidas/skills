@@ -10,7 +10,7 @@ description: >
   solution approaches. Autonomous — runs without user interaction, presents combined findings.
 license: MIT
 compatibility: Claude Code
-allowed-tools: Read Write(*/consilium-*) Edit(*/consilium-*) Read(*/consilium-*) Glob Grep Task Bash(bash:review/consilium/*) Bash(codex:*) Bash(cat:*)
+allowed-tools: Read Write(*/consilium-*) Edit(*/consilium-*) Read(*/consilium-*) Glob Grep Task Bash(bash:review/consilium/*) Bash(codex:*)
 user-invocable: true
 arguments: "focus-area brainstorm"
 argument-hint: "[focus area, brainstorm, or empty]"
@@ -101,7 +101,12 @@ If brainstorm mode → skip to **Brainstorm Workflow** section below. Otherwise 
 
 ### Step 2: Prepare Context
 
-1. Write the review content to `${TMPDIR:-/tmp}/consilium-${CLAUDE_SESSION_ID}-context.md` with a header:
+1. Resolve the temp directory (run once, reuse for all files in this session):
+   ```bash
+   bash "<skill-dir>/scripts/resolve-tmp.sh"
+   ```
+   Use the output as `<TMP>` in all subsequent file paths.
+2. Use the **Write tool** to save the review content to `<TMP>/consilium-${CLAUDE_SESSION_ID}-context.md` with a header:
    ```
    # Consilium Review Context
    # Source: <what this is — plan, proposal, research>
@@ -109,7 +114,8 @@ If brainstorm mode → skip to **Brainstorm Workflow** section below. Otherwise 
 
    <content>
    ```
-2. This file is used by the Codex script and as the source for Task prompts.
+   Do NOT use Bash heredoc (`cat >`) — the Write tool avoids shell quote-parsing issues.
+3. This file is used by the Codex script and as the source for Task prompts.
 
 ### Step 2.5: Select Optional Subagents
 
@@ -141,7 +147,7 @@ Launch **all applicable reviewers in a single message** (parallel execution):
 
 **Codex** (core) — via Bash:
 ```
-bash review/consilium/scripts/run-codex.sh ${TMPDIR:-/tmp}/consilium-${CLAUDE_SESSION_ID}-context.md ${TMPDIR:-/tmp}/consilium-${CLAUDE_SESSION_ID}-codex.txt
+bash review/consilium/scripts/run-codex.sh <TMP>/consilium-${CLAUDE_SESSION_ID}-context.md <TMP>/consilium-${CLAUDE_SESSION_ID}-codex.txt
 ```
 Run in background so it doesn't block the other subagents.
 
@@ -178,7 +184,7 @@ Run in background so it doesn't block the other subagents.
 
 ### Step 4: Collect Results
 
-1. Read Codex output from `${TMPDIR:-/tmp}/consilium-${CLAUDE_SESSION_ID}-codex.txt`
+1. Read Codex output from `<TMP>/consilium-${CLAUDE_SESSION_ID}-codex.txt`
 2. Parse Task results from the subagent responses
 3. If any reviewer failed or timed out, note it — do not block on it
 
@@ -251,7 +257,7 @@ When brainstorm mode is detected, follow these steps instead of the standard rev
 
 ### Step B1: Prepare Brainstorm Context
 
-Write the problem description to `${TMPDIR:-/tmp}/consilium-${CLAUDE_SESSION_ID}-context.md`:
+Use the **Write tool** to save the problem description to `<TMP>/consilium-${CLAUDE_SESSION_ID}-context.md`:
 ```
 # Consilium Brainstorm Context
 # Problem: <one-line summary>
@@ -259,6 +265,7 @@ Write the problem description to `${TMPDIR:-/tmp}/consilium-${CLAUDE_SESSION_ID}
 
 <problem description extracted from conversation>
 ```
+Do NOT use Bash heredoc (`cat >`) — the Write tool avoids shell quote-parsing issues.
 
 ### Step B2: Phase 1 — Novator as Solution Architect
 
@@ -273,7 +280,7 @@ Write the problem description to `${TMPDIR:-/tmp}/consilium-${CLAUDE_SESSION_ID}
 
 ### Step B3: Prepare Phase 2 Context
 
-Write `${TMPDIR:-/tmp}/consilium-${CLAUDE_SESSION_ID}-phase2-context.md`:
+Use the **Write tool** to save Phase 2 context to `<TMP>/consilium-${CLAUDE_SESSION_ID}-phase2-context.md`:
 ```
 # Consilium Brainstorm — Phase 2 Critique Context
 # Original Problem: <one-line summary>
@@ -285,6 +292,7 @@ Write `${TMPDIR:-/tmp}/consilium-${CLAUDE_SESSION_ID}-phase2-context.md`:
 ## Novator's Proposed Approaches
 <Novator's full Phase 1 output>
 ```
+Do NOT use Bash heredoc (`cat >`) — the Write tool avoids shell quote-parsing issues.
 
 Select Phase 2 reviewers using the existing decision table (Step 2.5). Apply it against **both** the original problem description and Novator's output — use the original problem for domain signals (what the problem involves), and Novator's output for structural signals (whether approaches involve state machines, library choices, etc.). This prevents selection from depending solely on Novator's word choices. Novator is excluded from Phase 2. State your selections and one-line reasoning.
 
@@ -294,7 +302,7 @@ Launch all Phase 2 reviewers in a single message (parallel execution):
 
 **Codex** (core) — via Bash:
 ```
-bash review/consilium/scripts/run-codex.sh ${TMPDIR:-/tmp}/consilium-${CLAUDE_SESSION_ID}-phase2-context.md ${TMPDIR:-/tmp}/consilium-${CLAUDE_SESSION_ID}-codex.txt
+bash review/consilium/scripts/run-codex.sh <TMP>/consilium-${CLAUDE_SESSION_ID}-phase2-context.md <TMP>/consilium-${CLAUDE_SESSION_ID}-codex.txt
 ```
 Run in background.
 
@@ -326,7 +334,7 @@ Seneca uses its brainstorm-specific prompt (`seneca-brainstorm-prompt.md`) to ev
 
 ### Step B5: Synthesize Brainstorm Report
 
-1. Read Codex output from `${TMPDIR:-/tmp}/consilium-${CLAUDE_SESSION_ID}-codex.txt`
+1. Read Codex output from `<TMP>/consilium-${CLAUDE_SESSION_ID}-codex.txt`
 2. Parse Task results from Phase 2 subagent responses
 3. Read `review/consilium/references/brainstorm-synthesis-guide.md` and follow it exactly
 
@@ -360,7 +368,7 @@ Before presenting the brainstorm report, critically evaluate each finding and th
 - **Parallel execution**: always launch core + selected optional reviewers in a single message
 - **Autonomous**: do not ask the user questions during the review — resolve ambiguity yourself
 - **Evidence required**: no finding survives without specific evidence
-- **Temp files**: session-scoped files in `${TMPDIR:-/tmp}/consilium-${CLAUDE_SESSION_ID}-*` are left for OS cleanup — do not delete manually
+- **Temp files**: session-scoped files in `<TMP>/consilium-${CLAUDE_SESSION_ID}-*` are left for OS cleanup — do not delete manually
 - **No modifications**: this is review only — never modify the reviewed content
 - **Honest synthesis**: disagree with reviewers when your broader conversation context warrants it
 

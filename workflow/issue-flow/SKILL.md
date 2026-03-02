@@ -8,7 +8,7 @@ description: >
 license: MIT
 compatibility: Claude Code
 model: claude-sonnet-4-6
-allowed-tools: Bash(gh:*) Bash(git:*) Bash(bash:*) Read Glob Grep AskUserQuestion
+allowed-tools: Bash(gh:*) Bash(git:*) Bash(bash:*) Read Write Glob Grep AskUserQuestion
 arguments: "issue-number description"
 argument-hint: "[issue-number or description]"
 metadata:
@@ -36,6 +36,7 @@ Located in `scripts/` relative to this skill:
 Run scripts from the skill directory:
 
 ```bash
+bash "<skill-dir>/scripts/resolve-tmp.sh"          # creates unique temp dir, use output as <TMPDIR>
 bash "<skill-dir>/scripts/check-env.sh"
 bash "<skill-dir>/scripts/detect-base.sh"
 bash "<skill-dir>/scripts/repo-context.sh"
@@ -140,9 +141,19 @@ Check the target repo's CLAUDE.md for milestone configuration:
 
 ### Create
 
+Resolve the temp directory (run once at start, reuse throughout):
+
 ```bash
-gh issue create --title "<title>" --body "<body>" --label "<label>" --assignee "<assignee>" [--milestone "<name>"]
+bash "<skill-dir>/scripts/resolve-tmp.sh"
 ```
+
+Use the output as `<TMPDIR>` in all subsequent file paths. Use the **Write tool** to save the issue body to `<TMPDIR>/body.md`, then create the issue with `--body-file`:
+
+```bash
+gh issue create --title "<title>" --body-file <TMPDIR>/body.md --label "<label>" --assignee "<assignee>" [--milestone "<name>"]
+```
+
+Do NOT use `--body "$(cat <<'EOF'...)"` — the `$()` command substitution triggers a Claude Code safety prompt every time.
 
 Print the Step 1 report (see `references/report-format.md`).
 
@@ -326,9 +337,13 @@ If same, skip `--reviewer` flag (GitHub doesn't allow self-review).
 
 ### Create
 
+Use the **Write tool** to save the PR body to `<TMPDIR>/pr-body.md`, then create the PR with `--body-file`:
+
 ```bash
-gh pr create --title "<title>" --body "<body>" --base <base> --assignee @me --reviewer <reviewer>
+gh pr create --title "<title>" --body-file <TMPDIR>/pr-body.md --base <base> --assignee @me --reviewer <reviewer>
 ```
+
+Do NOT use `--body "$(cat <<'EOF'...)"` — the `$()` command substitution triggers a Claude Code safety prompt every time.
 
 Update project status to "Review":
 
