@@ -22,6 +22,7 @@ Skills are organized into plugin groups. Each group has a `.claude-plugin/plugin
 - `review/` — Code review, cleanup, and quality improvement (5 skills)
 - `audit/` — CI, lint, script, skill, and workspace auditing (5 skills)
 - `workflow/` — Git, GitHub, release, and development workflows (7 skills)
+- `obsidian/` — Obsidian vault organization and working document management (1 skill)
 
 ## How Skills Load (Progressive Disclosure)
 
@@ -149,7 +150,7 @@ The `description` determines when an agent activates the skill. Be specific and 
 
 ## Creating a New Skill
 
-1. Choose the appropriate group directory (`review/`, `audit/`, or `workflow/`)
+1. Choose the appropriate group directory (`review/`, `audit/`, `workflow/`, or `obsidian/`)
 2. Create a subdirectory: `mkdir <group>/<skill-name>`
 3. Create `<group>/<skill-name>/SKILL.md` with required frontmatter and instructions
 4. Add `scripts/`, `references/`, or `assets/` directories as needed

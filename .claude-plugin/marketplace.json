@@ -41,6 +41,17 @@
         "url": "https://edloidas.io"
       },
       "category": "workflow"
+    },
+    {
+      "name": "obsidian",
+      "source": "./obsidian",
+      "description": "Obsidian vault organization and working document management skills",
+      "version": "2.9.1",
+      "author": {
+        "name": "Mikita Taukachou",
+        "url": "https://edloidas.io"
+      },
+      "category": "productivity"
     }
   ]
 }

@@ -13,6 +13,7 @@ Add the marketplace and install the plugin groups you need:
 /plugin install edloidas@review
 /plugin install edloidas@audit
 /plugin install edloidas@workflow
+/plugin install edloidas@obsidian
 ```
 
 Install all three for the full set, or pick only the groups relevant to your workflow.
@@ -113,9 +114,17 @@ Git, GitHub, release, and development workflow skills.
 | [npm-release](./workflow/npm-release/)                      | Guide npm/pnpm package release workflow                                   | Claude        |
 | [permissions-cleanup](./workflow/permissions-cleanup/)       | Clean up stale permission entries from settings files                     | Claude        |
 
+### Obsidian
+
+Obsidian vault organization and working document management skills.
+
+| Skill                                                       | Description                                                               | Agent         |
+| ----------------------------------------------------------- | ------------------------------------------------------------------------- | ------------- |
+| [working-docs](./obsidian/working-docs/)                    | Organize working documents in Obsidian with two-tier system               | Claude        |
+
 ## Creating a Skill
 
-1. Choose the appropriate group directory (`review/`, `audit/`, or `workflow/`)
+1. Choose the appropriate group directory (`review/`, `audit/`, `workflow/`, or `obsidian/`)
 2. Create a subdirectory matching the skill name
 3. Add a `SKILL.md` with required `name` and `description` frontmatter
 4. Write Markdown instructions in the body (keep under 500 lines)

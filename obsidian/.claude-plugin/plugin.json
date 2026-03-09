@@ -1,0 +1,19 @@
+{
+  "name": "obsidian",
+  "version": "2.9.1",
+  "description": "Obsidian vault organization and working document management skills",
+  "author": {
+    "name": "Mikita Taukachou",
+    "url": "https://edloidas.io"
+  },
+  "repository": "https://github.com/edloidas/skills",
+  "license": "MIT",
+  "skills": "./",
+  "keywords": [
+    "skills",
+    "obsidian",
+    "vault",
+    "notes",
+    "organization"
+  ]
+}
