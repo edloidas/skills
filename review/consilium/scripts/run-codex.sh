@@ -5,7 +5,7 @@ set -euo pipefail
 
 CONTEXT_FILE="${1:-}"
 OUTPUT_FILE="${2:-}"
-TIMEOUT="${3:-300}"
+TIMEOUT="${3:-600}"
 
 if [[ -z "$CONTEXT_FILE" || -z "$OUTPUT_FILE" ]]; then
   echo "Usage: bash review/consilium/scripts/run-codex.sh <context-file> <output-file> [timeout-seconds]" >&2
