@@ -84,6 +84,10 @@ Read the target repo's CLAUDE.md for project-specific formatting. Use these defa
 
 Common types: `feat`, `fix`, `docs`, `chore`, `refactor`, `test`, `style`, `ci`
 
+### Skip Interactive Prompts
+
+When the user explicitly provides values for labels, assignee, project, or other options in their request, use those values directly — do NOT ask via `AskUserQuestion` to confirm what was already stated. Only ask about fields the user left unspecified.
+
 ## Step 1: Create Issue
 
 Run `check-env.sh` to validate environment. Run `repo-context.sh` to fetch labels, collaborators, and projects.
@@ -153,6 +157,10 @@ Use the output as `<TMPDIR>` in all subsequent file paths. Use the **Write tool*
 gh issue create --title "<title>" --body-file <TMPDIR>/body.md --label "<label>" --assignee "<assignee>" [--milestone "<name>"]
 ```
 
+When creating multiple issues, use unique filenames per issue: `<TMPDIR>/<slug>-body.md` (e.g. `auth-body.md`, `settings-body.md`). Resolve `<TMPDIR>` once and reuse it for all issues.
+
+**Important:** Replace `<TMPDIR>` with the literal absolute path in all commands (e.g. `--body-file /var/folders/.../issue-flow-AbCdEf/body.md`). Do NOT set `TMPDIR=` as an env var prefix on commands — that changes the command pattern and triggers permission prompts.
+
 Do NOT use `--body "$(cat <<'EOF'...)"` — the `$()` command substitution triggers a Claude Code safety prompt every time.
 
 Print the Step 1 report (see `references/report-format.md`).
@@ -214,6 +222,30 @@ gh api graphql -f query='mutation {
 ```
 
 Use `removeBlockedBy` with the same signature to undo. See `references/github-relationships.md` for full details and ID type reference.
+
+## Batch Issue Creation
+
+When the user asks to create multiple issues at once (e.g., an epic with child issues, or a set of related issues):
+
+### Workflow
+
+1. Resolve `<TMPDIR>` once via `resolve-tmp.sh`
+2. Create the parent/epic issue first (if applicable)
+3. Write all child issue body files with unique slugs: `<TMPDIR>/<slug>-body.md`
+4. Create all child issues in parallel (`gh issue create` calls)
+5. Batch-link sub-issues to parent (if applicable) — use the for loop from **## Sub-Issues**
+6. Add all issues to project sequentially — run `add-to-project.sh` in a for loop, one at a time (parallel calls cause API rate-limit failures and require retries)
+7. Ask about initial project status (e.g., "Backlog", "Current Sprint") via `AskUserQuestion` — then batch-update via `project-status.sh`
+8. Print a summary table at the end instead of per-issue Step 1 reports
+
+### Summary Table Format
+
+```
+| #     | Title                   | URL                                              |
+| ----- | ----------------------- | ------------------------------------------------ |
+| 10023 | AnchorDialog for Editor | https://github.com/owner/repo/issues/10023       |
+| ...   | ...                     | ...                                              |
+```
 
 ## Step 2: Create Branch
 
@@ -337,7 +369,7 @@ If same, skip `--reviewer` flag (GitHub doesn't allow self-review).
 
 ### Create
 
-Use the **Write tool** to save the PR body to `<TMPDIR>/pr-body.md`, then create the PR with `--body-file`:
+Use the **Write tool** to save the PR body to `<TMPDIR>/pr-body.md`, then create the PR with `--body-file`. Replace `<TMPDIR>` with the literal absolute path — do NOT use `TMPDIR=` as an env var prefix.
 
 ```bash
 gh pr create --title "<title>" --body-file <TMPDIR>/pr-body.md --base <base> --assignee @me --reviewer <reviewer>
