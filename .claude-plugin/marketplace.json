@@ -2,7 +2,7 @@
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "edloidas",
   "metadata": {
-    "description": "Skills for code review, auditing, and development workflows"
+    "description": "Skills for code review, auditing, development workflows, and external tools"
   },
   "owner": {
     "name": "Mikita Taukachou",
@@ -52,6 +52,17 @@
         "url": "https://edloidas.io"
       },
       "category": "productivity"
+    },
+    {
+      "name": "tools",
+      "source": "./tools",
+      "description": "Skills for working with specific external tools and CLIs",
+      "version": "2.11.0",
+      "author": {
+        "name": "Mikita Taukachou",
+        "url": "https://edloidas.io"
+      },
+      "category": "tools"
     }
   ]
 }
