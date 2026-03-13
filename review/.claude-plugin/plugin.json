@@ -9,6 +9,7 @@
   "repository": "https://github.com/edloidas/skills",
   "license": "MIT",
   "skills": "./",
+  "agents": "./agents/",
   "keywords": [
     "skills",
     "code-review",

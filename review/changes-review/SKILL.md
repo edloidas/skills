@@ -33,7 +33,7 @@ This skill spawns two subagents via the Task tool:
 | `review-build` | Custom agent | Runs project checks (typecheck, lint, build, test), returns TOOLING_REPORT |
 | `review-rules` | Custom agent | Checks files against project conventions, returns CONVENTION_REPORT |
 
-These must be defined as `.claude/agents/review-build.md` and `.claude/agents/review-rules.md` in the target project. If unavailable, Claude Code falls back to `general-purpose` behavior.
+Bundled with the `review` plugin — deployed automatically when the plugin is installed. If unavailable, Claude Code falls back to `general-purpose` behavior.
 
 **Fallback:** If either agent fails, proceed with the other's report and note the gap in output. If both fail, perform logic analysis standalone and note that tooling/convention checks were skipped.
 

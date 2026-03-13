@@ -166,6 +166,56 @@ The `description` determines when an agent activates the skill. Be specific and 
 
 Skills are discovered automatically from the path declared in `plugin.json`. No per-skill registration is needed in either file.
 
+## Bundling Agents with a Plugin
+
+Claude Code agents (`.claude/agents/`) can be distributed alongside skills as part of a plugin. This is a **Claude Code-specific feature** — the Agent Skills spec (agentskills.io) has no concept of agent distribution.
+
+### Directory layout
+
+Place agent files in an `agents/` directory at the plugin group root:
+
+```
+<group>/
+├── .claude-plugin/
+│   └── plugin.json
+├── agents/
+│   ├── my-agent.md       # Auto-discovered by Claude Code
+│   └── other-agent.md
+└── <skill-name>/
+    └── SKILL.md
+```
+
+`agents/` at the plugin root is **auto-discovered** — no declaration needed in `plugin.json`. The `"agents"` field in `plugin.json` is additive (supplements auto-discovery for non-standard paths).
+
+### Agent file format
+
+Agent files are Markdown with YAML frontmatter:
+
+```markdown
+---
+name: my-agent
+description: What this agent does and when to invoke it
+model: sonnet
+tools: Bash, Read, Glob, Grep
+---
+
+Agent system prompt here.
+```
+
+### Priority order
+
+When multiple locations define an agent with the same `name`, higher-priority locations win silently:
+
+1. `.claude/agents/` — project-level (highest)
+2. `~/.claude/agents/` — global user
+3. Plugin's `agents/` — distributed (lowest)
+
+### Naming and invocation
+
+- Agents appear in the UI as `<plugin-name>:<agent-name>` (e.g. `review:review-build`)
+- `subagent_type` in code uses the plain `name` without namespace (e.g. `subagent_type: "review-build"`)
+- Agent `name` in frontmatter must match the filename (without `.md`)
+
 ## Avoid
 
 - Putting all content in SKILL.md body — move reference material to `references/`
