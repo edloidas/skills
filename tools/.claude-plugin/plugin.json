@@ -1,6 +1,6 @@
 {
   "name": "tools",
-  "version": "2.12.2",
+  "version": "2.12.3",
   "description": "Skills for working with specific external tools and CLIs",
   "author": {
     "name": "Mikita Taukachou",
