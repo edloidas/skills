@@ -7,7 +7,6 @@ description: >
   create PRs, push changes, or merge PRs. Supports entering at any step.
 license: MIT
 compatibility: Claude Code
-model: claude-sonnet-4-6
 allowed-tools: Bash(gh:*) Bash(git:*) Bash(bash:*) Read Write Glob Grep AskUserQuestion
 arguments: "issue-number description"
 argument-hint: "[issue-number or description]"
