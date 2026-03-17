@@ -230,6 +230,8 @@ Use [Conventional Commits](https://www.conventionalcommits.org/) format: `<type>
 
 Common types: `feat:`, `fix:`, `docs:`, `chore:`, `refactor:`, `test:`, `style:`, `ci:`
 
+**One commit per feature.** When adding a new skill or feature, do all work first (writing, reviewing, fixing) and produce a single clean commit at the end. Do not create intermediate commits during the process — squash everything into one before committing.
+
 ## License
 
 All skills in this repository are released under the MIT License unless a skill's own `SKILL.md` specifies otherwise via the `license` frontmatter field.
