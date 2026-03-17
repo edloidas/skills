@@ -10,7 +10,6 @@ allowed-tools: Bash Read AskUserQuestion
 user-invocable: true
 arguments: "mode"
 argument-hint: "[apply|check]"
-model: claude-sonnet-4-5
 ---
 
 # Labels Sync: GitHub Label Synchronization

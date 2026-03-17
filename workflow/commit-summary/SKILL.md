@@ -6,7 +6,6 @@ compatibility: Claude Code
 allowed-tools: Read Bash(git status:*) Bash(git diff:*) Bash(git log:*) Bash(git show:*)
 arguments: "scope"
 argument-hint: "['staged only', instructions, or empty]"
-model: claude-sonnet-4-6
 ---
 
 # Git Commit Message Summary Generator

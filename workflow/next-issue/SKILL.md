@@ -7,7 +7,6 @@ description: >
   issue to work on, what's next, or wants to pick an issue from the backlog.
 license: MIT
 compatibility: Claude Code
-model: claude-sonnet-4-6
 allowed-tools: Bash(gh:*) Bash(git:*) Read Glob Grep AskUserQuestion
 metadata:
   author: edloidas

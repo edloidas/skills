@@ -8,7 +8,6 @@ description: >
 license: MIT
 compatibility: Claude Code. Requires Railway CLI (railway) installed and authenticated.
 allowed-tools: Bash(railway:*) Read
-model: claude-sonnet-4-6
 metadata:
   author: edloidas
 ---

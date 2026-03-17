@@ -10,7 +10,6 @@ license: MIT
 allowed-tools: Bash(git:*,rsync:*) Read Glob Grep
 arguments: "command branch"
 argument-hint: "[command] [branch]"
-model: claude-sonnet-4-6
 ---
 
 # Git Worktree Manager

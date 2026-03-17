@@ -6,7 +6,6 @@ description: >
   Use when reviewing React components, finishing a feature, or refactoring.
 license: MIT
 compatibility: Claude Code, Codex
-model: claude-sonnet-4-6
 allowed-tools: Bash(pnpm:*) Bash(npx:*) Bash(timeout:*) Bash(git:*) Task Read Glob Grep
 arguments: "path"
 argument-hint: "[file, directory, or empty]"

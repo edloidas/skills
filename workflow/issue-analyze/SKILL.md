@@ -7,7 +7,6 @@ description: >
   understand what needs to be built and plan implementation steps.
 license: MIT
 compatibility: Claude Code
-model: claude-sonnet-4-6
 allowed-tools: Bash(gh:*) Bash(git:*) Read Glob Grep
 arguments: "issue-number"
 argument-hint: "[issue-number or URL]"
