@@ -4,9 +4,10 @@
 #
 # Algorithm:
 #   1. Get default branch from GitHub (main/master)
-#   2. If current branch is issue-*, check for epic-* ancestor branches
-#   3. Among matching epic branches, pick the one with the most recent merge-base
-#   4. If no epic match, use default branch
+#   2. If current branch is a base-like branch (main/master/next/epic-*), use it directly
+#   3. If current branch is issue-*, check for epic-* ancestor branches
+#   4. Among matching epic branches, pick the one with the most recent merge-base
+#   5. If no epic match, use default branch
 #
 # Output (last line): base branch name
 # Exit codes: 0 = found, 1 = not git repo, 2 = no remote
@@ -33,7 +34,14 @@ fi
 
 CURRENT_BRANCH=$(git branch --show-current 2>/dev/null)
 
-# Only check for epic branches if on an issue-* branch
+# If current branch is a base-like branch, use it directly
+if [[ "$CURRENT_BRANCH" == "main" || "$CURRENT_BRANCH" == "master" || "$CURRENT_BRANCH" == "next" || "$CURRENT_BRANCH" == epic-* ]]; then
+  echo "Using current branch as base: $CURRENT_BRANCH" >&2
+  echo "$CURRENT_BRANCH"
+  exit 0
+fi
+
+# If on an issue-* branch, check for epic-* ancestor branches
 if [[ "$CURRENT_BRANCH" == issue-* ]]; then
   git fetch origin --quiet 2>/dev/null || true
 

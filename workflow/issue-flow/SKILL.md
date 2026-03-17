@@ -25,7 +25,7 @@ Located in `scripts/` relative to this skill:
 | Script                     | Purpose                                         |
 | -------------------------- | ----------------------------------------------- |
 | `check-env.sh`             | Validate git repo, gh CLI, authentication       |
-| `detect-base.sh`           | Detect base branch (main/master/epic-*)         |
+| `detect-base.sh`           | Detect base branch (main/master/next/epic-*)    |
 | `repo-context.sh`          | Fetch labels, collaborators, projects           |
 | `resolve-project-token.sh` | Resolve token: GH_PROJECTS_TOKEN → gh auth      |
 | `add-to-project.sh`        | Add issue to GitHub Projects V2                 |
@@ -249,6 +249,16 @@ When the user asks to create multiple issues at once (e.g., an epic with child i
 ## Step 2: Create Branch
 
 Run `detect-base.sh` to find the correct base branch.
+
+If the working tree is dirty (full flow from uncommitted changes):
+
+```bash
+git checkout -b issue-<number>
+```
+
+Changes carry over to the new branch automatically. Skip checkout and pull — pulling on a dirty tree fails, and you're already on the base.
+
+If the working tree is clean (entered at Step 2 directly, e.g. "start work on #N"):
 
 ```bash
 git checkout <base> && git pull origin <base>
