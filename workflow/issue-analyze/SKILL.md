@@ -115,6 +115,7 @@ mention it in output.
 Use `Glob` tool to find:
 - `<git-root>/.claude/*.md`
 - `<git-root>/.claude/docs/*.md`
+- `<git-root>/docs/superpowers/**/*.md`
 
 If no files found, skip phase.
 
