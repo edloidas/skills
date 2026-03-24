@@ -6,8 +6,8 @@ description: >
   Triages findings into tasks and works through each with user approval.
 license: MIT
 compatibility: Claude Code
-arguments: instructions
-argument-hint: "[additional instructions]"
+arguments: auto instructions
+argument-hint: "[auto] [additional instructions]"
 allowed-tools: Bash Read Write Edit Glob Grep Task AskUserQuestion
 metadata:
   author: edloidas
@@ -15,80 +15,41 @@ metadata:
 
 # Fix Findings
 
-Turns problems and findings from the current conversation into a task-driven fix workflow. Scans for issues surfaced by reviews, consilium, debugging, or research — triages them, creates tasks, and works through each fix with user approval before implementing.
-
 ## Arguments
 
-| Argument    | Description                                                      |
-| ----------- | ---------------------------------------------------------------- |
-| _(none)_    | Triage all findings from conversation, ask before working        |
-| `$ARGUMENTS`| Focusing instructions — e.g., `skip warnings`, `only criticals` |
+| Argument     | Description                                                      |
+| ------------ | ---------------------------------------------------------------- |
+| _(none)_     | Triage all findings from conversation, ask before working        |
+| `auto`       | Fix routine findings automatically, only ask for tough decisions |
+| `$ARGUMENTS` | Focusing instructions, combinable with `auto`                    |
 
-Honor any filtering or scoping passed via `$ARGUMENTS`. Examples:
-
-- `skip warnings` — only critical and note severity
-- `only criticals` — skip warnings and notes
-- `focus on performance` — only performance-related findings
-- `ignore lint` — skip lint/formatting findings
+Filtering examples: `skip warnings`, `only criticals`, `focus on performance`, `ignore lint`, `auto only criticals`.
 
 ## Workflow
 
-```
-┌─────────────────────────────────────────────┐
-│              Phase 1: Triage                │
-│                                             │
-│  Scan conversation → Categorize findings    │
-│  → Group trivials → Create tasks            │
-│         │                                   │
-│         ▼                                   │
-│  Ambiguous? ──yes──► AskUserQuestion        │
-│      │                     │                │
-│      no                    ▼                │
-│      │              User confirms scope     │
-│      ▼                     │                │
-└──────┴─────────────────────┘                │
-       │                                      │
-       ▼                                      │
-┌─────────────────────────────────────────────┐
-│         Phase 2: Work Loop                  │
-│                                             │
-│  For each task:                             │
-│    Mark in_progress                         │
-│    → Analyze code + root cause              │
-│    → Present problem/thoughts/fix           │
-│    → WAIT for user approval                 │
-│    → Implement fix                          │
-│    → Mark completed                         │
-│    → Next task                              │
-└─────────────────────────────────────────────┘
-       │
-       ▼
-┌─────────────────────────────────────────────┐
-│      Phase 3: Trivial Batch (optional)      │
-│                                             │
-│  Offer to fix grouped trivials via          │
-│  background subagent                        │
-└─────────────────────────────────────────────┘
-```
+### Regular Mode
+
+1. **Triage:** Scan conversation → Categorize → Group trivials → Create tasks → If ambiguous: AskUserQuestion for scope confirmation
+2. **Work Loop:** For each task: mark in_progress → Analyze → Present analysis → WAIT for user approval → Implement → mark completed → next
+3. **Trivial Batch:** Offer to fix grouped trivials (background subagent, inline, or skip)
+
+### Auto Mode
+
+1. **Triage:** Scan conversation → Categorize → Group trivials → Create tasks → Resolve ambiguity autonomously (no AskUserQuestion)
+2. **Auto Work Loop:** For each task: mark in_progress → Analyze → Classify as routine or escalate
+   - **Routine:** Implement fix → show condensed summary → mark completed → next
+   - **Escalate:** Present full analysis → WAIT for user approval → Implement → mark completed → next
+3. **Trivial Batch:** Fix all trivials via background subagent automatically (no user prompt)
 
 ## Phase 1: Triage
 
 ### 1. Scan Conversation
 
-Search the full conversation history for problems, issues, and findings. Sources include:
+Search conversation history for findings from: reviews, consilium feedback, debugging conclusions, research, user-reported problems, build/test/lint failures.
 
-- Consilium reviewer feedback (Seneca, Codex, Scrutator, etc.)
-- Code review comments and suggestions
-- Debugging session conclusions
-- Research findings and recommendations
-- User-reported problems
-- Build/test/lint failures mentioned in conversation
-
-Prioritize **recent** findings. Ignore stale or already-addressed items from early in the conversation.
+Prioritize **recent** findings. Ignore stale or already-addressed items.
 
 ### 2. Categorize by Severity
-
-Assign each finding one severity level:
 
 | Severity     | Criteria                                                        |
 | ------------ | --------------------------------------------------------------- |
@@ -98,53 +59,34 @@ Assign each finding one severity level:
 
 ### 3. Group Trivial Items
 
-Collect genuinely trivial fixes into a single "batch fix" group:
-
-- Lint/formatting fixes
-- Typo corrections
-- Simple rename suggestions
-- Obvious test fixes (e.g., updated snapshot, changed assertion value)
-
-These will be offered as a batch in Phase 3. Do NOT group items that require analysis or judgment.
+Collect genuinely trivial fixes (lint, typos, simple renames, obvious test fixes) into a single batch for Phase 3. Do NOT group items that require analysis or judgment.
 
 ### 4. Create Tasks
 
-Use `TaskCreate` for each finding (or trivial group). Include:
-
+`TaskCreate` for each finding (or trivial group):
 - **subject**: Concise problem title (imperative form)
-- **description**: Problem context, source (which review/reviewer), severity, relevant file(s)
+- **description**: Problem context, source (reviewer), severity, relevant file(s)
 - **activeForm**: Present continuous form for the spinner
 
-Order tasks: critical first, then warnings, then notes, trivial batch last.
+Order: critical → warnings → notes → trivial batch last.
 
 ### 5. Decision Point
 
-If the task list is clear and unambiguous, proceed directly to Phase 2.
+If clear and unambiguous, proceed to Phase 2.
 
-If unclear — multiple interpretations, conflicting findings, or many low-severity items — use `AskUserQuestion`:
+If unclear (multiple interpretations, conflicting findings, many low-severity items), use `AskUserQuestion` for scope: severity levels, specific skips, trivial batch handling.
 
-- Which severity levels to include (criticals only? include warnings?)
-- Whether to skip specific findings
-- Whether the trivial batch should be auto-fixed
+**Auto mode:** Skip `AskUserQuestion`. Resolve ambiguity with best judgment, default to all severity levels unless `$ARGUMENTS` says otherwise. Conflicting reviewer feedback gets escalated per-task in Phase 2.
 
 ## Phase 2: Work Loop
 
-Process tasks one at a time, in order. For each task:
+Process tasks one at a time, in order.
 
-### Step 1: Start
+**Start:** `TaskUpdate` → mark `in_progress`.
 
-`TaskUpdate` → mark `in_progress`.
+**Analyze:** Read relevant code, grep for related patterns, understand root cause and impact, consider fix approaches.
 
-### Step 2: Analyze
-
-- Read the relevant code files
-- Research the problem (grep for related patterns, check usage)
-- Understand root cause and impact
-- Consider trade-offs between different fix approaches
-
-### Step 3: Present
-
-Show the user a structured analysis. Use this format:
+**Present:** Show structured analysis:
 
 ```
 ### Task #N: <Subject>
@@ -154,59 +96,73 @@ Show the user a structured analysis. Use this format:
 **File(s):** `path/to/file.ts:42`
 
 **Problem**
-<What's wrong and where — be specific, reference line numbers>
+<What's wrong and where — reference line numbers>
 
 **Analysis**
-<Root cause, why it matters, trade-offs considered>
+<Root cause, why it matters, trade-offs>
 
 **Suggested Fix**
-<Recommended approach — or multiple options if genuinely ambiguous>
+<Recommended approach — or options if genuinely ambiguous>
 ```
 
-If the fix is obvious and low-risk, present it briefly. If complex or ambiguous, present options via `AskUserQuestion`:
+If complex or ambiguous, present options via `AskUserQuestion`: recommended approach, alternative, or skip.
 
-1. Recommended approach (with description of trade-offs)
-2. Alternative approach (if genuinely different)
-3. "Skip this task" — move to next
+**Wait:** Do NOT implement until the user approves.
 
-### Step 4: Wait
+**Implement:** Apply the approved fix using `Edit`, `Write`, `Bash`, etc.
 
-**Do NOT implement until the user approves.** Wait for explicit user input. The user may:
+**Complete:** `TaskUpdate` → mark `completed`. Next task.
 
-- Approve the suggested fix
-- Choose an alternative
-- Provide additional context or constraints
-- Skip the task
-- Ask for more analysis
+### Auto Mode: Classify Fix
 
-### Step 5: Implement
+In auto mode, after Analyze, classify as **routine** or **escalate**:
 
-Apply the approved fix. Use the appropriate tools (`Edit`, `Write`, `Bash` for tests, etc.).
+| Routine (auto-fix)                            | Escalate (ask user)                                      |
+| --------------------------------------------- | -------------------------------------------------------- |
+| Bug with clear correct behavior               | Multiple valid approaches with real trade-offs            |
+| Missing error handling, obvious approach       | Breaking changes or public API changes                    |
+| Code not matching documented patterns          | Security-sensitive changes                                |
+| Test fixes, assertion updates                  | Ambiguous requirements, unclear "right" fix               |
+| Performance fix with no readability cost       | Cross-cutting changes affecting multiple systems          |
+| Single-file, localized changes                | Architectural decisions (new abstractions, restructuring) |
+| Removing dead code or unused imports           | Conflicting reviewer feedback on same issue               |
 
-### Step 6: Complete
+**When in doubt, escalate.** Think through implications, check for side effects, and verify codebase context before classifying as routine.
 
-`TaskUpdate` → mark `completed`. Move to the next task.
+**Routine flow:** Implement the fix, then show condensed summary:
+
+```
+**Task #N: <Subject>** [<severity>]
+`path/to/file.ts:42` — <one-line description of what was fixed and why>
+```
+
+Do NOT wait for approval — proceed to next task.
+
+**Escalate flow:** Same as regular mode — present full analysis, wait for approval, implement.
 
 ## Phase 3: Trivial Batch
 
-After all non-trivial tasks are done, if a trivial batch exists:
+After non-trivial tasks are done, if a trivial batch exists:
 
-1. Show the user the list of trivial fixes grouped together
-2. Use `AskUserQuestion`:
-   - "Fix all in background" (Recommended) — use `Task` tool with `run_in_background: true`
-   - "Fix all inline" — apply fixes sequentially in this conversation
-   - "Skip trivials" — leave them unfixed
+1. Show the list of trivial fixes
+2. `AskUserQuestion`: "Fix all in background" (Recommended), "Fix all inline", or "Skip trivials"
 
-For background execution, the subagent prompt should list each trivial fix with file paths and specific changes to make. Report results when the background task completes.
+Background subagent prompt should list each fix with file paths and specific changes. Only delegate genuinely trivial fixes.
 
-Only delegate to background subagent for genuinely trivial fixes — if any item requires judgment, keep it in the main loop.
+**Auto mode:** Skip `AskUserQuestion`. Fix all trivials via background subagent. Show brief summary of what was dispatched.
 
 ## Rules
 
-1. **Never implement before user approves** — always present analysis first, wait for input
-2. **Use TaskCreate/TaskUpdate/TaskList** — not ad-hoc tracking or numbered lists
-3. **Prioritize recency** — most recent review/research findings take priority over older ones
-4. **Respect `$ARGUMENTS`** — honor filtering instructions (severity, topic, skip directives)
-5. **One task at a time** — do not jump ahead, batch non-trivial fixes, or implement multiple fixes without approval between each
-6. **Stay focused** — fix what was found, do not expand scope or refactor adjacent code
-7. **Mark tasks properly** — `in_progress` before starting, `completed` after implementing
+1. **Never implement before user approves** — present analysis first, wait for input
+2. **Use TaskCreate/TaskUpdate/TaskList** — not ad-hoc tracking
+3. **Prioritize recency** — recent findings over older ones
+4. **Respect `$ARGUMENTS`** — honor filtering and mode instructions
+5. **One task at a time** — no jumping ahead or batching non-trivials
+6. **Stay focused** — fix what was found, no scope expansion
+7. **Mark tasks properly** — `in_progress` before starting, `completed` after
+
+### Auto Mode Exceptions
+
+- **Rule 1:** Routine fixes are implemented immediately after classification
+- **Rule 5:** Routine fixes proceed without waiting, but still sequentially
+- **Extra:** Spend extra time analyzing before classifying as routine — confidence must be high before auto-implementing
