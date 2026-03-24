@@ -7,7 +7,7 @@ description: >
   issue to work on, what's next, or wants to pick an issue from the backlog.
 license: MIT
 compatibility: Claude Code
-allowed-tools: Bash(gh:*) Bash(git:*) Read Glob Grep AskUserQuestion
+allowed-tools: Bash(gh:*) Bash(git:*) Read Glob Grep AskUserQuestion Skill
 metadata:
   author: edloidas
 ---
@@ -16,7 +16,8 @@ metadata:
 
 Recommends the most relevant GitHub issue to work on next. Gathers local git
 state, plan files, open PRs, and the issue backlog, then ranks candidates and
-presents the top picks. Decision layer only — does not start work on the issue.
+presents the top picks. After the user selects an issue, automatically runs
+`issue-analyze` on it to produce a full implementation analysis.
 
 ## Prerequisites
 
@@ -260,9 +261,17 @@ The ambiguity gate triggers when ALL of these are true:
 - No open PRs by current user
 - More than 5 candidate issues share the same highest tier
 
-### AskUserQuestion: narrow scope
+### Auto-scan when candidate count is small
 
-Present with `AskUserQuestion`:
+If the total number of unblocked candidate issues is **fewer than 25**, skip
+the `AskUserQuestion` prompt and automatically scan all of them — rank by
+available signals (labels, milestone, creation date, assignment) and proceed
+directly to the Output phase with the top picks.
+
+### AskUserQuestion: narrow scope (25+ candidates)
+
+If there are **25 or more** unblocked candidate issues, present with
+`AskUserQuestion`:
 
 - **question**: "I found N open issues but no plan files to guide priority. How should I narrow down?"
 - **Option 1:** `Scan all` `(Recommended)` — `Review all open issues and rank by signals`
@@ -312,22 +321,9 @@ After ranking, present the top candidates using `AskUserQuestion`.
 
 ### After selection
 
-When the user picks an issue, output:
-
-```
-# #<N>: <title>
-
-<one-paragraph summary from the issue body>
-
-Labels: <labels or "none">
-Milestone: <milestone or "none">
-Assignee: <assignee or "unassigned">
-URL: <issue-url>
-
-To analyze this issue in detail, run: /issue-analyze <N>
-```
-
-Do not invoke `/issue-analyze` — only suggest it.
+When the user picks an issue, immediately invoke `/issue-analyze <N>` using
+the `Skill` tool. Do not output a short summary first — let `issue-analyze`
+provide the full structured analysis.
 
 If the user picks `None`, output:
 
