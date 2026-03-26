@@ -15,3 +15,5 @@ node_modules/
 # AI
 .claude/settings.local.json
 .claude/plans/
+# Specs & plans — delete after feature is completed
+docs/

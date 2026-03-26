@@ -224,6 +224,10 @@ When multiple locations define an agent with the same `name`, higher-priority lo
 - Creating scripts with undocumented external dependencies
 - Using absolute paths or paths outside the skill directory
 
+## Specs and Plans
+
+Specs and plans are stored in `docs/superpowers/` (gitignored). Delete the spec and plan files for a feature once it is fully implemented.
+
 ## Commit Messages
 
 Use [Conventional Commits](https://www.conventionalcommits.org/) format: `<type>: <description>`
