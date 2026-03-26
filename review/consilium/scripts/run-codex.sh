@@ -36,7 +36,7 @@ PROMPT="$(cat "$PROMPT_FILE")
 $(cat "$CONTEXT_FILE")"
 
 # Run codex with a timeout. read-only sandbox, output to file.
-if echo "$PROMPT" | timeout "${TIMEOUT}s" codex exec -C "$PWD" -s read-only --ephemeral -c model_reasoning_effort=xhigh -c web_search=live -o "$OUTPUT_FILE" - > /dev/null 2>&1; then
+if echo "$PROMPT" | timeout "${TIMEOUT}s" codex exec -m gpt-5.4 --enable fast_mode -C "$PWD" -s read-only --ephemeral -c model_reasoning_effort=xhigh -c web_search=live -o "$OUTPUT_FILE" - > /dev/null 2>&1; then
   exit 0
 else
   EXIT_CODE=$?
