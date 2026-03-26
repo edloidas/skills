@@ -86,6 +86,7 @@ Code review, cleanup, and quality improvement skills.
 | [comment-audit](./review/comment-audit/)                    | Analyze code comments for quality and relevance                           | Claude        |
 | [consilium](./review/consilium/)                            | Critical review board — up to 6 reviewers (2 core + 4 on-demand)         | Claude        |
 | [react-review](./review/react-review/)                      | Review React code for effects, conventions, and patterns                  | Claude, Codex |
+| [review-comments](./review/review-comments/)                | Analyze PR review comments — triage into fix/skip with reasoning          | Claude, Codex |
 
 ### Audit
 
