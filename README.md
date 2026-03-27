@@ -117,6 +117,7 @@ Git, GitHub, release, and development workflow skills.
 | [next-issue](./workflow/next-issue/)                        | Find the most relevant next GitHub issue to work on                       | Claude        |
 | [npm-release](./workflow/npm-release/)                      | Guide npm/pnpm package release workflow                                   | Claude        |
 | [permissions-cleanup](./workflow/permissions-cleanup/)       | Clean up stale permission entries from settings files                     | Claude        |
+| [resolve-conflicts](./workflow/resolve-conflicts/)          | Semi-automatic merge and rebase conflict resolution                      | Claude        |
 
 ### Obsidian
 
