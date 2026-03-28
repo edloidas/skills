@@ -35,19 +35,12 @@ Use this skill when the user:
 
 ## Bundled Scripts
 
-This skill includes three helper scripts in the `scripts/` directory:
+This skill includes helper scripts in the `scripts/` directory:
 
 1. **release-prepare.sh** — Validates git status, branch, config files, and version consistency
 2. **release-analyze.sh** — Analyzes commits since last tag, counts by type, recommends bump
-3. **release-execute.sh** — Bumps version, commits, tags, and pushes to remote
-
-Run scripts from the skill directory:
-
-```bash
-bash scripts/release-prepare.sh
-bash scripts/release-analyze.sh
-bash scripts/release-execute.sh 1.1.0
-```
+3. **release-bump.sh** — Bumps version in all config files, commits, and tags (no push)
+4. **release-execute.sh** — Full flow: bump, commit, tag, and push (use `release-bump.sh` + manual push instead for approval gates)
 
 ## Release Workflow
 
@@ -122,58 +115,19 @@ Replace `{{CURRENT}}` with current version, and compute `{{MAJOR}}`, `{{MINOR}}`
 
 If user selects **Cancel**, stop the workflow.
 
-### Step 4: Bump Version
+### Step 4: Bump, Commit, and Tag
 
-Update all config files using `jq`. The execution script handles this:
-
-```bash
-bash scripts/release-execute.sh {{VERSION}}
-```
-
-**Important:** In step 4, only run the version bump portion. The execution script also commits, tags, and pushes — but we need a user approval gate before pushing. So instead of running the full script, perform the bump manually:
+Run the bump script to update all config files, commit, and tag:
 
 ```bash
-VERSION="{{VERSION}}"
-MARKETPLACE_JSON=".claude-plugin/marketplace.json"
-PLUGIN_COUNT=$(jq '.plugins | length' "$MARKETPLACE_JSON")
-
-# Update all marketplace.json plugin entries
-for i in $(seq 0 $((PLUGIN_COUNT - 1))); do
-  jq --arg v "$VERSION" --argjson i "$i" '.plugins[$i].version = $v' "$MARKETPLACE_JSON" > "$MARKETPLACE_JSON.tmp" && mv "$MARKETPLACE_JSON.tmp" "$MARKETPLACE_JSON"
-done
-
-# Update each plugin.json
-for i in $(seq 0 $((PLUGIN_COUNT - 1))); do
-  source=$(jq -r ".plugins[$i].source" "$MARKETPLACE_JSON" | sed 's|^\./||')
-  plugin_json="$source/.claude-plugin/plugin.json"
-  jq --arg v "$VERSION" '.version = $v' "$plugin_json" > "$plugin_json.tmp" && mv "$plugin_json.tmp" "$plugin_json"
-done
+bash scripts/release-bump.sh {{VERSION}}
 ```
 
-Verify all files were updated correctly by reading them back.
+This script updates all `plugin.json` and `marketplace.json` files, verifies the updates, stages, commits as `Release v{{VERSION}}`, and creates the `v{{VERSION}}` tag. It does **not** push.
 
-### Step 5: Commit Version Bump
-
-Stage and commit the version bump:
-
-```bash
-git add .claude-plugin/marketplace.json review/.claude-plugin/plugin.json audit/.claude-plugin/plugin.json workflow/.claude-plugin/plugin.json
-git commit -m "Release v{{VERSION}}"
-```
-
-### Step 6: Create Git Tag
-
-Tag the release commit:
-
-```bash
-git tag v{{VERSION}}
-```
-
-### Step 7: User Approval Before Push
+### Step 5: User Approval Before Push
 
 **CRITICAL: Always pause here for user approval.**
-
-Present a summary and ask for confirmation.
 
 **Use the AskUserQuestion tool:**
 
@@ -195,7 +149,7 @@ If user selects **No**, inform them:
 
 If user selects **Other**, follow their instructions.
 
-### Step 8: Push Release
+### Step 6: Push Release
 
 Only after user approves:
 
