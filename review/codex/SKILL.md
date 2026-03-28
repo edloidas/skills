@@ -6,7 +6,7 @@ description: >
   or when you want a fast second perspective. Lighter and faster than consilium's full review board.
 license: MIT
 compatibility: Claude Code
-allowed-tools: Bash(bash:review/codex/*)
+allowed-tools: Bash(bash:review/codex/*) Write(*/codex-*)
 user-invocable: true
 arguments: "review"
 argument-hint: "[review, or empty for ask mode]"
@@ -42,19 +42,29 @@ Use when you have a specific question and want Codex's take.
 
 1. **Prepare a focused question with context.** Extract only the relevant code or plan excerpt — don't dump the entire conversation. Keep under 2000 words.
 
-2. **Run the script with a heredoc:**
+2. **Resolve the temp directory** (run once, reuse for all files in this session):
+   ```bash
+   bash review/codex/scripts/resolve-tmp.sh
+   ```
+   Use the output as `<TMP>` in subsequent file paths.
+
+3. **Write the question to a temp file** using the **Write tool** (not Bash heredoc — heredocs with markdown headers trigger Claude Code's security heuristic):
+   Write to `<TMP>/codex-${CLAUDE_SESSION_ID}-question.md`:
+   ```
+   ## Question
+   <clear, specific question>
+
+   ## Context
+   <relevant code, plan excerpt, or description>
+   ```
+
+4. **Run the script with the file path:**
 
 ```bash
-bash review/codex/scripts/run-codex.sh ask <<'CODEX_EOF'
-## Question
-<clear, specific question>
-
-## Context
-<relevant code, plan excerpt, or description>
-CODEX_EOF
+bash review/codex/scripts/run-codex.sh ask <TMP>/codex-${CLAUDE_SESSION_ID}-question.md
 ```
 
-3. **Present the output** as Codex's opinion (see Presenting Output below).
+5. **Present the output** as Codex's opinion (see Presenting Output below).
 
 ## Review Mode
 

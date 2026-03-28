@@ -31,13 +31,28 @@ run_codex() {
 
 case "$MODE" in
   ask)
-    TIMEOUT="${1:-300}"
+    # Accept: ask [file] [timeout] OR ask [timeout] (stdin fallback)
+    INPUT_FILE=""
+    TIMEOUT=300
+    while [[ $# -gt 0 ]]; do
+      if [[ -f "$1" ]]; then
+        INPUT_FILE="$1"
+      elif [[ "$1" =~ ^[0-9]+$ ]]; then
+        TIMEOUT="$1"
+      fi
+      shift
+    done
+
     PROMPT_FILE="$SCRIPT_DIR/../references/prompt.md"
     PROMPT=""
     if [[ -f "$PROMPT_FILE" ]]; then
       PROMPT="$(cat "$PROMPT_FILE")"
     fi
-    PROMPT+="$(cat -)"
+    if [[ -n "$INPUT_FILE" ]]; then
+      PROMPT+="$(cat "$INPUT_FILE")"
+    else
+      PROMPT+="$(cat -)"
+    fi
     echo "$PROMPT" | run_codex timeout "${TIMEOUT}s" codex exec "${COMMON_FLAGS[@]}" -s read-only - 2>/dev/null
     ;;
   review)

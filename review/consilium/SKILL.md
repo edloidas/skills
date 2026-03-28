@@ -10,7 +10,7 @@ description: >
   solution approaches. Autonomous — runs without user interaction, presents combined findings.
 license: MIT
 compatibility: Claude Code
-allowed-tools: Read Write(*/consilium-*) Edit(*/consilium-*) Read(*/consilium-*) Glob Grep Task Bash(bash:review/consilium/*) Bash(cat:*/consilium-*) Bash(codex:*)
+allowed-tools: Read Write(*/consilium-*) Edit(*/consilium-*) Glob Grep Task Bash(bash:review/consilium/*) Bash(cat:*/consilium-*) Bash(codex:*)
 user-invocable: true
 arguments: "focus-area brainstorm"
 argument-hint: "[focus area, brainstorm, or empty]"
@@ -184,7 +184,7 @@ Run in background so it doesn't block the other subagents.
 
 ### Step 4: Collect Results
 
-1. Read Codex output from `<TMP>/consilium-${CLAUDE_SESSION_ID}-codex.txt`
+1. Read Codex output via Bash: `cat <TMP>/consilium-${CLAUDE_SESSION_ID}-codex.txt`
 2. Parse Task results from the subagent responses
 3. If any reviewer failed or timed out, note it — do not block on it
 
@@ -334,7 +334,7 @@ Seneca uses its brainstorm-specific prompt (`seneca-brainstorm-prompt.md`) to ev
 
 ### Step B5: Synthesize Brainstorm Report
 
-1. Read Codex output from `<TMP>/consilium-${CLAUDE_SESSION_ID}-codex.txt`
+1. Read Codex output via Bash: `cat <TMP>/consilium-${CLAUDE_SESSION_ID}-codex.txt`
 2. Parse Task results from Phase 2 subagent responses
 3. Read `review/consilium/references/brainstorm-synthesis-guide.md` and follow it exactly
 
