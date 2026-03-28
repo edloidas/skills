@@ -414,7 +414,7 @@ When **all** of these are true:
 - PR assignee is the current user
 - No external reviewer was set on the PR
 
-Then suggest merging via `AskUserQuestion`:
+Then print the Step 6 pre-merge summary (see `references/report-format.md`) and suggest merging via `AskUserQuestion`:
 1. "Merge now" (Recommended) — wait for checks and merge
 2. "Skip" — leave PR open, end flow
 
@@ -422,12 +422,9 @@ If user picks "Skip", print the skip message and stop. If "Merge now", continue 
 
 ### Pre-merge Confirmation (Direct Entry Only)
 
-When the user entered **directly at Step 6** (not via the full-flow suggestion above), **MUST stop and confirm before merging.** Show the user:
-- Target branch and commit count
-- Linked issue that will be closed
-- CI check status
+When the user entered **directly at Step 6** (not via the full-flow suggestion above), **MUST stop and confirm before merging.**
 
-Print the Step 6 pre-merge report and wait for confirmation.
+Print the Step 6 pre-merge summary (see `references/report-format.md`) and wait for confirmation.
 
 ### Pre-checks
 

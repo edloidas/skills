@@ -55,13 +55,16 @@ Base: <base> <- issue-<number> | Reviewer: @<login>
 <pr-url>
 ```
 
-### Step 6: Pre-Merge Confirmation
+### Step 6: Pre-Merge Summary
+
+Print this summary before asking the user to merge. Always use full URLs, not `owner/repo#N` shorthand.
 
 ```
-### [6] Pre-Merge
-PR #<pr-number> → <base> (rebase, <N> commits)
-Issue #<number> will be closed
-Confirm merge?
+### [6] Summary
+Issue:  <issue-title> — <issue-url>
+PR:     <pr-title> — <pr-url>
+Branch: issue-<number> → <base> (rebase, <N> commits)
+Commit: <short-sha> <commit-subject> (<N> files, +<insertions>/-<deletions>)
 ```
 
 ### Step 6: Waiting for Checks
