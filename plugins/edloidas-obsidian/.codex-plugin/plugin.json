@@ -1,7 +1,7 @@
 {
   "name": "edloidas-obsidian",
   "version": "2.16.3",
-  "description": "Obsidian working-document helpers for Codex.",
+  "description": "A Codex-ready helper for maintaining structured working documents in an Obsidian vault.",
   "author": {
     "name": "Mikita Taukachou",
     "url": "https://edloidas.io"
@@ -13,13 +13,14 @@
     "skills",
     "codex",
     "obsidian",
-    "notes"
+    "notes",
+    "knowledge-base"
   ],
   "skills": "./skills/",
   "interface": {
     "displayName": "Edloidas Obsidian",
-    "shortDescription": "Manage working documents in an Obsidian vault.",
-    "longDescription": "Codex-ready Obsidian note management skills from edloidas/skills.",
+    "shortDescription": "Structured working docs for Obsidian.",
+    "longDescription": "Install the Obsidian working-docs helper from edloidas/skills to manage active task notes with a consistent vault structure.",
     "developerName": "Mikita Taukachou",
     "category": "Productivity",
     "websiteURL": "https://github.com/edloidas/skills",

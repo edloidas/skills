@@ -1,7 +1,7 @@
 {
   "name": "edloidas-tools",
   "version": "2.16.3",
-  "description": "External tool integrations for Codex.",
+  "description": "A Codex-ready integration bundle for inspecting Railway services, logs, variables, and deploy state.",
   "author": {
     "name": "Mikita Taukachou",
     "url": "https://edloidas.io"
@@ -13,13 +13,14 @@
     "skills",
     "codex",
     "tools",
-    "railway"
+    "railway",
+    "deployments"
   ],
   "skills": "./skills/",
   "interface": {
     "displayName": "Edloidas Tools",
-    "shortDescription": "Operate external developer tools from Codex.",
-    "longDescription": "Codex-ready external tool skills from edloidas/skills.",
+    "shortDescription": "Railway inspection and deploy-state helpers.",
+    "longDescription": "Install the Railway integration from edloidas/skills to inspect services, logs, environment variables, and deployment status from Codex.",
     "developerName": "Mikita Taukachou",
     "category": "Productivity",
     "websiteURL": "https://github.com/edloidas/skills",

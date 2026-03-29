@@ -18,8 +18,9 @@ Interact with Railway-deployed applications — check status, read logs, manage 
 
 ## Prerequisites
 
-- **Railway CLI** installed (`brew install railway` or `npm i -g @railway/cli`)
-- **Authenticated** — run `railway login` before using this skill
+Assume Railway CLI is installed and authenticated. If the first command fails with
+`railway: command not found`, stop and tell the user to install it:
+`brew install railway` or `npm i -g @railway/cli`.
 
 ## When to Use
 

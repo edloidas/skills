@@ -57,6 +57,18 @@ Wrapper plugin names and display names for Codex:
 - `plugins/edloidas-obsidian/` → `edloidas-obsidian` / `Edloidas Obsidian`
 - `plugins/edloidas-tools/` → `edloidas-tools` / `Edloidas Tools`
 
+The Codex wrapper layer is driven from `scripts/codex/catalog.json`. After changing the Codex-exposed
+skill set or plugin metadata, run:
+
+```bash
+./scripts/codex-packaging.sh sync-repo
+```
+
+Treat `.agents/plugins/marketplace.json`, `plugins/<plugin-name>/.codex-plugin/plugin.json`,
+`.agents/skills/`, and `plugins/<plugin-name>/skills/` as generated outputs. Update the source
+skills and `scripts/codex/catalog.json`, then regenerate the wrapper layer instead of editing those files
+by hand.
+
 ## How Skills Load (Progressive Disclosure)
 
 Skills use progressive disclosure to manage context efficiently:
@@ -237,6 +249,8 @@ Codex packaging layer is updated in the same change:
   be installable through the repo marketplace.
 - Ensure the wrapper plugin manifest and `.agents/plugins/marketplace.json` still reflect the
   intended Codex plugin set.
+- Update `scripts/codex/catalog.json` and run `./scripts/codex-packaging.sh sync-repo` so the
+  generated wrapper layer stays in sync.
 - Update `README.md` if the exposed Codex skill set or plugin group contents changed.
 
 A skill is not considered fully integrated until both the source skill and the Codex wrapper layer

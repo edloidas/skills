@@ -47,6 +47,22 @@ repository.
 
 Codex follows symlinked skill folders, so updates from `git pull` flow through automatically. If new skills or plugin changes do not appear, restart Codex.
 
+The Codex wrapper layer is defined in `scripts/codex/catalog.json` and can be regenerated from the repo root:
+
+```bash
+./scripts/codex-packaging.sh sync-repo
+```
+
+Treat `.agents/plugins/marketplace.json`, `plugins/<plugin-name>/.codex-plugin/plugin.json`,
+`.agents/skills/`, and `plugins/<plugin-name>/skills/` as generated Codex wrapper outputs. Edit
+`scripts/codex/catalog.json` and source skills first, then rerun the sync script.
+
+To install one or more Codex skill groups into your home-level `~/.agents/skills` without copying:
+
+```bash
+./scripts/codex-packaging.sh install-links review workflow
+```
+
 For user-scoped installation outside the repo, you can still install individual skills directly into `~/.codex/skills`:
 
 ```bash
