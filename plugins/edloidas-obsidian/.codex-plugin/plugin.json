@@ -24,6 +24,8 @@
     "developerName": "Mikita Taukachou",
     "category": "Productivity",
     "websiteURL": "https://github.com/edloidas/skills",
-    "brandColor": "#D97706"
+    "brandColor": "#FD3DB5",
+    "composerIcon": "./assets/logo.png",
+    "logo": "./assets/logo.png"
   }
 }

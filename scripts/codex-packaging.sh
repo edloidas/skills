@@ -47,6 +47,11 @@ catalog_plugin_field() {
   jq -er --arg group "$group" ".plugins[] | select(.group == \$group) | .$field" "$CATALOG_PATH"
 }
 
+catalog_branding_field() {
+  local field="$1"
+  jq -er ".pluginBranding.$field" "$CATALOG_PATH"
+}
+
 catalog_plugin_manifest_json() {
   local group="$1"
   jq -n \
@@ -72,7 +77,9 @@ catalog_plugin_manifest_json() {
           developerName: $catalog.author.name,
           category: $plugin.category,
           websiteURL: $plugin.websiteURL,
-          brandColor: $plugin.brandColor
+          brandColor: $catalog.pluginBranding.brandColor,
+          composerIcon: $catalog.pluginBranding.composerIcon,
+          logo: $catalog.pluginBranding.logo
         }
       }
     '
@@ -200,6 +207,10 @@ validate_catalog() {
   catalog_jq '.marketplace.displayName | strings | select(length > 0)' >/dev/null || die "Marketplace displayName is required"
   catalog_jq '.author.name | strings | select(length > 0)' >/dev/null || die "Author name is required"
   catalog_jq '.author.url | strings | select(length > 0)' >/dev/null || die "Author URL is required"
+  catalog_jq '.pluginBranding.brandColor | strings | test("^#[0-9A-Fa-f]{6}$")' >/dev/null || die "Shared plugin brandColor is required"
+  catalog_jq '.pluginBranding.assetSource | strings | select(startswith("./"))' >/dev/null || die "Shared plugin assetSource must start with ./"
+  catalog_jq '.pluginBranding.logo | strings | select(startswith("./assets/"))' >/dev/null || die "Shared plugin logo path must be under ./assets/"
+  catalog_jq '.pluginBranding.composerIcon | strings | select(startswith("./assets/"))' >/dev/null || die "Shared plugin composerIcon path must be under ./assets/"
   catalog_jq '.repository | strings | select(length > 0)' >/dev/null || die "Repository URL is required"
   catalog_jq '.license | strings | select(length > 0)' >/dev/null || die "License is required"
 
@@ -207,7 +218,34 @@ validate_catalog() {
   catalog_jq '([.plugins[].name] | length) == ([.plugins[].name] | unique | length)' >/dev/null || die "Duplicate plugin name in catalog"
   catalog_jq '([.plugins[].skills[] | split("/")[-1]] | length) == ([.plugins[].skills[] | split("/")[-1]] | unique | length)' >/dev/null || die "Duplicate exposed skill name across Codex plugins"
   catalog_jq '.plugins | length > 0' >/dev/null || die "Catalog must define at least one plugin"
-  catalog_jq 'all(.plugins[]; (.group | strings | length > 0) and (.name | strings | length > 0) and (.displayName | strings | length > 0) and (.description | strings | length > 0) and (.shortDescription | strings | length > 0) and (.longDescription | strings | length > 0) and (.category | strings | length > 0) and (.websiteURL | strings | length > 0) and (.brandColor | strings | test("^#[0-9A-Fa-f]{6}$")) and (.keywords | type == "array" and length > 0) and (.skills | type == "array" and length > 0))' >/dev/null || die "Each plugin must define complete metadata, keywords, and skills"
+  catalog_jq 'all(.plugins[]; (.group | strings | length > 0) and (.name | strings | length > 0) and (.displayName | strings | length > 0) and (.description | strings | length > 0) and (.shortDescription | strings | length > 0) and (.longDescription | strings | length > 0) and (.category | strings | length > 0) and (.websiteURL | strings | length > 0) and (.keywords | type == "array" and length > 0) and (.skills | type == "array" and length > 0))' >/dev/null || die "Each plugin must define complete metadata, keywords, and skills"
+}
+
+sync_plugin_branding_assets() {
+  local plugin_name="$1"
+  local plugin_root="$REPO_ROOT/plugins/$plugin_name"
+  local asset_source
+  local logo_path
+  local composer_icon_path
+
+  asset_source=$(catalog_branding_field 'assetSource')
+  logo_path=$(catalog_branding_field 'logo')
+  composer_icon_path=$(catalog_branding_field 'composerIcon')
+
+  [ -f "$REPO_ROOT/${asset_source#./}" ] || die "Shared plugin asset not found: $asset_source"
+
+  case "$logo_path" in
+    ./assets/*) ;;
+    *) die "Shared plugin logo path must stay under ./assets/: $logo_path" ;;
+  esac
+
+  case "$composer_icon_path" in
+    ./assets/*) ;;
+    *) die "Shared plugin composerIcon path must stay under ./assets/: $composer_icon_path" ;;
+  esac
+
+  ensure_symlink "../../../${asset_source#./}" "$plugin_root/${logo_path#./}"
+  ensure_symlink "../../../${asset_source#./}" "$plugin_root/${composer_icon_path#./}"
 }
 
 write_json_file() {
@@ -254,6 +292,7 @@ sync_repo() {
     plugin_skills_dir="$REPO_ROOT/plugins/$plugin_name/skills"
 
     write_plugin_manifest "$group"
+    sync_plugin_branding_assets "$plugin_name"
     plugin_keep_names=""
 
     while IFS= read -r skill_path; do

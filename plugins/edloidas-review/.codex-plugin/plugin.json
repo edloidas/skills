@@ -24,8 +24,10 @@
     "shortDescription": "React review, comment audits, PR feedback triage, and cleanup.",
     "longDescription": "Install the Codex-ready review bundle from edloidas/skills for React code review, comment-quality audits, review-comment triage, and post-implementation cleanup.",
     "developerName": "Mikita Taukachou",
-    "category": "Productivity",
+    "category": "Coding",
     "websiteURL": "https://github.com/edloidas/skills",
-    "brandColor": "#2F6FED"
+    "brandColor": "#FD3DB5",
+    "composerIcon": "./assets/logo.png",
+    "logo": "./assets/logo.png"
   }
 }

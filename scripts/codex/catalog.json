@@ -8,6 +8,12 @@
     "name": "Mikita Taukachou",
     "url": "https://edloidas.io"
   },
+  "pluginBranding": {
+    "brandColor": "#FD3DB5",
+    "assetSource": "./assets/logo.png",
+    "logo": "./assets/logo.png",
+    "composerIcon": "./assets/logo.png"
+  },
   "repository": "https://github.com/edloidas/skills",
   "license": "MIT",
   "plugins": [
@@ -18,9 +24,8 @@
       "description": "A curated Codex-safe review bundle for React analysis, comment quality audits, PR feedback triage, and post-change cleanup.",
       "shortDescription": "React review, comment audits, PR feedback triage, and cleanup.",
       "longDescription": "Install the Codex-ready review bundle from edloidas/skills for React code review, comment-quality audits, review-comment triage, and post-implementation cleanup.",
-      "category": "Productivity",
+      "category": "Coding",
       "websiteURL": "https://github.com/edloidas/skills",
-      "brandColor": "#2F6FED",
       "keywords": [
         "skills",
         "codex",
@@ -44,9 +49,8 @@
       "description": "A Codex-safe audit bundle for GitHub Actions, ESLint and Biome overlap, package scripts, and monorepo workspace configuration.",
       "shortDescription": "Audit CI, lint overlap, scripts, and workspace setup.",
       "longDescription": "Install the audit bundle from edloidas/skills to inspect CI workflows, ESLint and Biome overlap, package scripts, and pnpm workspace configuration from Codex.",
-      "category": "Productivity",
+      "category": "Coding",
       "websiteURL": "https://github.com/edloidas/skills",
-      "brandColor": "#0F766E",
       "keywords": [
         "skills",
         "codex",
@@ -71,9 +75,8 @@
       "description": "A Codex-safe workflow bundle for instruction-file sync, issue drafting and triage, release prep, commit summaries, label management, and Git worktree management.",
       "shortDescription": "Instruction sync, issue flow, releases, labels, and worktrees.",
       "longDescription": "Install lightweight Git and GitHub workflow helpers from edloidas/skills for syncing repo instruction files, drafting and prioritizing issues, validating npm releases, summarizing commits, managing labels, and working across multiple worktrees.",
-      "category": "Productivity",
+      "category": "Coding",
       "websiteURL": "https://github.com/edloidas/skills",
-      "brandColor": "#7C3AED",
       "keywords": [
         "skills",
         "codex",
@@ -106,7 +109,6 @@
       "longDescription": "Install the Obsidian working-docs helper from edloidas/skills to manage active task notes with a consistent vault structure.",
       "category": "Productivity",
       "websiteURL": "https://github.com/edloidas/skills",
-      "brandColor": "#D97706",
       "keywords": [
         "skills",
         "codex",
@@ -127,7 +129,6 @@
       "longDescription": "Install the Railway integration from edloidas/skills to inspect services, logs, environment variables, and deployment status from Codex.",
       "category": "Productivity",
       "websiteURL": "https://github.com/edloidas/skills",
-      "brandColor": "#B91C1C",
       "keywords": [
         "skills",
         "codex",

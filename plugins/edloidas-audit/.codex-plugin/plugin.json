@@ -25,8 +25,10 @@
     "shortDescription": "Audit CI, lint overlap, scripts, and workspace setup.",
     "longDescription": "Install the audit bundle from edloidas/skills to inspect CI workflows, ESLint and Biome overlap, package scripts, and pnpm workspace configuration from Codex.",
     "developerName": "Mikita Taukachou",
-    "category": "Productivity",
+    "category": "Coding",
     "websiteURL": "https://github.com/edloidas/skills",
-    "brandColor": "#0F766E"
+    "brandColor": "#FD3DB5",
+    "composerIcon": "./assets/logo.png",
+    "logo": "./assets/logo.png"
   }
 }
