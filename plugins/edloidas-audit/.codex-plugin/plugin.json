@@ -1,6 +1,6 @@
 {
   "name": "edloidas-audit",
-  "version": "2.16.3",
+  "version": "2.17.0",
   "description": "A Codex-safe audit bundle for GitHub Actions, ESLint and Biome overlap, package scripts, and monorepo workspace configuration.",
   "author": {
     "name": "Mikita Taukachou",

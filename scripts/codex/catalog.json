@@ -1,5 +1,5 @@
 {
-  "version": "2.16.3",
+  "version": "2.17.0",
   "marketplace": {
     "name": "edloidas-skills",
     "displayName": "Edloidas Skills"
@@ -21,7 +21,15 @@
       "category": "Productivity",
       "websiteURL": "https://github.com/edloidas/skills",
       "brandColor": "#2F6FED",
-      "keywords": ["skills", "codex", "review", "cleanup", "react", "comments", "pull-request"],
+      "keywords": [
+        "skills",
+        "codex",
+        "review",
+        "cleanup",
+        "react",
+        "comments",
+        "pull-request"
+      ],
       "skills": [
         "review/comment-audit",
         "review/code-cleanup",
@@ -39,7 +47,16 @@
       "category": "Productivity",
       "websiteURL": "https://github.com/edloidas/skills",
       "brandColor": "#0F766E",
-      "keywords": ["skills", "codex", "audit", "ci", "scripts", "workspace", "eslint", "biome"],
+      "keywords": [
+        "skills",
+        "codex",
+        "audit",
+        "ci",
+        "scripts",
+        "workspace",
+        "eslint",
+        "biome"
+      ],
       "skills": [
         "audit/ci-audit",
         "audit/lint-sync",
@@ -57,7 +74,18 @@
       "category": "Productivity",
       "websiteURL": "https://github.com/edloidas/skills",
       "brandColor": "#7C3AED",
-      "keywords": ["skills", "codex", "workflow", "git", "github", "worktree", "labels", "issues", "release", "instructions"],
+      "keywords": [
+        "skills",
+        "codex",
+        "workflow",
+        "git",
+        "github",
+        "worktree",
+        "labels",
+        "issues",
+        "release",
+        "instructions"
+      ],
       "skills": [
         "workflow/claude-md-sync",
         "workflow/commit-summary",
@@ -79,7 +107,13 @@
       "category": "Productivity",
       "websiteURL": "https://github.com/edloidas/skills",
       "brandColor": "#D97706",
-      "keywords": ["skills", "codex", "obsidian", "notes", "knowledge-base"],
+      "keywords": [
+        "skills",
+        "codex",
+        "obsidian",
+        "notes",
+        "knowledge-base"
+      ],
       "skills": [
         "obsidian/working-docs"
       ]
@@ -94,7 +128,13 @@
       "category": "Productivity",
       "websiteURL": "https://github.com/edloidas/skills",
       "brandColor": "#B91C1C",
-      "keywords": ["skills", "codex", "tools", "railway", "deployments"],
+      "keywords": [
+        "skills",
+        "codex",
+        "tools",
+        "railway",
+        "deployments"
+      ],
       "skills": [
         "tools/railway"
       ]
