@@ -2,7 +2,7 @@
 
 # Release Analysis Script
 # Shows commits and changes since last release to help decide version bump
-# Optimized for Claude Code interpretation
+# Optimized for agent interpretation
 
 set -e  # Exit on error
 

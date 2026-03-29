@@ -2,8 +2,8 @@
 name: npm-release
 description: This skill should be used when the user asks to release, publish, or create a new version of an npm/pnpm package. It guides through version bumping, validation, git tagging, and publishing with proper safety checks and user approval.
 license: MIT
-compatibility: Claude Code
-allowed-tools: Bash Read Glob Task AskUserQuestion
+compatibility: Claude Code, Codex
+allowed-tools: Bash Read Glob AskUserQuestion
 arguments: "version"
 argument-hint: "[major, minor, or patch]"
 ---
@@ -182,7 +182,7 @@ Example: `git tag v0.16.0`
 
 ### Step 7: User Review & Approval
 
-**CRITICAL: Always pause here for user approval unless explicitly told to skip.**
+**CRITICAL: Always pause here for explicit user approval unless explicitly told to skip.**
 
 Present a summary to the user (each on a new line):
 
@@ -191,7 +191,8 @@ Present a summary to the user (each on a new line):
 - **Changes summary:** 2-4 bullet points of key changes based on your analysis
 - **What happens next:** Push commits and tags, CI/CD will publish
 
-**Use the AskUserQuestion tool** with these options:
+Ask for approval with these options. Use `AskUserQuestion` when it is
+available; otherwise ask directly in normal chat:
 
 - **Yes** - Proceed with pushing and releasing
 - **No** - Cancel the release (keep local changes for review)
@@ -212,7 +213,7 @@ AskUserQuestion:
 
 **If user selects:**
 - **Yes** → Proceed to Step 8
-- **No** → Inform user that local commit/tag remain and can be reset with `git reset --hard HEAD~1 && git tag -d v{{VERSION}}`
+- **No** → Inform the user that the local commit and tag remain in place for review. Do not run cleanup automatically. If the user wants to undo the release prep, explain the cleanup steps and ask before performing any destructive git command.
 - **Other** → Follow user's custom instructions
 
 ### Step 8: Push Release

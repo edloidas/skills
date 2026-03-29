@@ -50,19 +50,22 @@
       "group": "workflow",
       "name": "edloidas-workflow",
       "displayName": "Edloidas Workflow",
-      "description": "A Codex-safe workflow bundle for instruction-file sync, commit summaries, label management, issue analysis, and Git worktree management.",
-      "shortDescription": "Instruction sync, commit summaries, labels, issues, and worktrees.",
-      "longDescription": "Install lightweight Git and GitHub workflow helpers from edloidas/skills for syncing repo instruction files, summarizing commits, managing labels, planning issues, and working across multiple worktrees.",
+      "description": "A Codex-safe workflow bundle for instruction-file sync, issue drafting and triage, release prep, commit summaries, label management, and Git worktree management.",
+      "shortDescription": "Instruction sync, issue flow, releases, labels, and worktrees.",
+      "longDescription": "Install lightweight Git and GitHub workflow helpers from edloidas/skills for syncing repo instruction files, drafting and prioritizing issues, validating npm releases, summarizing commits, managing labels, and working across multiple worktrees.",
       "category": "Productivity",
       "websiteURL": "https://github.com/edloidas/skills",
       "brandColor": "#7C3AED",
-      "keywords": ["skills", "codex", "workflow", "git", "github", "worktree", "labels", "instructions"],
+      "keywords": ["skills", "codex", "workflow", "git", "github", "worktree", "labels", "issues", "release", "instructions"],
       "skills": [
         "workflow/claude-md-sync",
         "workflow/commit-summary",
         "workflow/git-worktree",
         "workflow/issue-analyze",
-        "workflow/labels-sync"
+        "workflow/issue-writer",
+        "workflow/labels-sync",
+        "workflow/next-issue",
+        "workflow/npm-release"
       ]
     },
     {

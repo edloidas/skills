@@ -1,7 +1,7 @@
 {
   "name": "edloidas-workflow",
   "version": "2.16.3",
-  "description": "A Codex-safe workflow bundle for instruction-file sync, commit summaries, label management, issue analysis, and Git worktree management.",
+  "description": "A Codex-safe workflow bundle for instruction-file sync, issue drafting and triage, release prep, commit summaries, label management, and Git worktree management.",
   "author": {
     "name": "Mikita Taukachou",
     "url": "https://edloidas.io"
@@ -17,13 +17,15 @@
     "github",
     "worktree",
     "labels",
+    "issues",
+    "release",
     "instructions"
   ],
   "skills": "./skills/",
   "interface": {
     "displayName": "Edloidas Workflow",
-    "shortDescription": "Instruction sync, commit summaries, labels, issues, and worktrees.",
-    "longDescription": "Install lightweight Git and GitHub workflow helpers from edloidas/skills for syncing repo instruction files, summarizing commits, managing labels, planning issues, and working across multiple worktrees.",
+    "shortDescription": "Instruction sync, issue flow, releases, labels, and worktrees.",
+    "longDescription": "Install lightweight Git and GitHub workflow helpers from edloidas/skills for syncing repo instruction files, drafting and prioritizing issues, validating npm releases, summarizing commits, managing labels, and working across multiple worktrees.",
     "developerName": "Mikita Taukachou",
     "category": "Productivity",
     "websiteURL": "https://github.com/edloidas/skills",

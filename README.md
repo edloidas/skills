@@ -149,10 +149,10 @@ Git, GitHub, release, and development workflow skills.
 | [git-worktree](./workflow/git-worktree/)                    | Manage Git worktrees with configurable storage and agent settings copying | Claude, Codex |
 | [issue-flow](./workflow/issue-flow/)                        | Full issue lifecycle: create, branch, commit, push, PR, merge            | Claude        |
 | [issue-analyze](./workflow/issue-analyze/)                  | Analyze issue scope and produce an implementation task list               | Claude, Codex |
-| [issue-writer](./workflow/issue-writer/)                    | Draft and update well-structured GitHub issues                            | Claude        |
+| [issue-writer](./workflow/issue-writer/)                    | Draft and update well-structured GitHub issues                            | Claude, Codex |
 | [labels-sync](./workflow/labels-sync/)                      | Synchronize GitHub repository labels from JSON                            | Claude, Codex |
-| [next-issue](./workflow/next-issue/)                        | Find the most relevant next GitHub issue to work on                       | Claude        |
-| [npm-release](./workflow/npm-release/)                      | Guide npm/pnpm package release workflow                                   | Claude        |
+| [next-issue](./workflow/next-issue/)                        | Find the most relevant next GitHub issue to work on                       | Claude, Codex |
+| [npm-release](./workflow/npm-release/)                      | Guide npm/pnpm package release workflow                                   | Claude, Codex |
 | [permissions-cleanup](./workflow/permissions-cleanup/)       | Clean up stale permission entries from settings files                     | Claude        |
 | [resolve-conflicts](./workflow/resolve-conflicts/)          | Semi-automatic merge and rebase conflict resolution                      | Claude        |
 

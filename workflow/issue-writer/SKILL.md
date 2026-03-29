@@ -1,9 +1,9 @@
 ---
 name: issue-writer
-description: Use this skill when the user asks to draft, write, or update a GitHub issue. It analyzes the user's description, asks clarifying questions, and produces a well-structured issue title and description following the project's template. Can also update existing issues. For issue creation on GitHub, use issue-flow.
+description: Use this skill when the user asks to draft, write, or update a GitHub issue. It analyzes the user's description, asks clarifying questions, and produces a well-structured issue title and description following the project's template. It can also update existing issues or prepare a draft for later creation on GitHub.
 license: MIT
-compatibility: Claude Code
-allowed-tools: Bash Read Glob Task AskUserQuestion
+compatibility: Claude Code, Codex
+allowed-tools: Bash Read Glob AskUserQuestion
 arguments: "description issue-number"
 argument-hint: "[description or issue number]"
 ---
@@ -30,7 +30,9 @@ Use this skill when the user:
 - Mentions wanting to document a task for GitHub
 - Needs to formalize a task description
 
-> For **creating** new issues on GitHub, use /issue-flow.
+> For **creating** new issues on GitHub, use `issue-flow` when that skill is
+> available. Otherwise use this skill to prepare the title and body, then
+> create the issue with the available GitHub tooling.
 
 **Updating issues:**
 - Asks to "update issue", "edit issue", or "modify issue"
@@ -70,7 +72,9 @@ Check if the user's request indicates a preferred format:
 **Auto-detect Default format** if keywords present:
 - "simple issue", "draft issue", "basic issue"
 
-**If not auto-detected**, use `AskUserQuestion` to ask:
+**If not auto-detected**, ask the user which format they want. Use
+`AskUserQuestion` when that tool is available; otherwise ask directly in
+normal chat:
 
 ```
 question: "What level of detail should this issue have?"
@@ -126,7 +130,9 @@ Identify which template sections are relevant based on scope:
 
 ### Step 3: Interactive Questionnaire
 
-Ask clarifying questions using `AskUserQuestion` tool to fill in gaps. Questions should be tailored to the issue type and scope.
+Ask clarifying questions to fill in gaps. Use `AskUserQuestion` when it is
+available; otherwise ask concise direct questions in normal chat. Questions
+should be tailored to the issue type and scope.
 
 **For Features:**
 - What problem does this solve?
@@ -149,7 +155,9 @@ Keep questions focused and avoid asking about things already clear from the desc
 
 ### Step 3.5: Confirm Label
 
-Based on the type-to-label mapping from Step 2, use `AskUserQuestion` to confirm the label:
+Based on the type-to-label mapping from Step 2, confirm the label. Use
+`AskUserQuestion` when available; otherwise ask the user directly and present
+the same options in plain text:
 
 ```
 question: "Which label best describes this issue?"
@@ -371,7 +379,8 @@ Show the user:
 3. **Type suggestion:** bug, feature, enhancement, documentation, etc.
 4. **Label suggestions:** Based on the content
 
-Ask if they want any modifications.
+Ask if they want any modifications. Use a structured question tool when
+available; otherwise ask directly in chat.
 
 ## Update Workflow
 
@@ -423,7 +432,8 @@ Show the user:
 - **After**: New title/description
 - **Label changes**: Labels being added/removed
 
-Ask for confirmation before updating.
+Ask for confirmation before updating. Use a structured question tool when
+available; otherwise ask directly in chat.
 
 ### Step 6: Update on GitHub
 

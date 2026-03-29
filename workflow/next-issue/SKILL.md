@@ -6,8 +6,8 @@ description: >
   to recommend what to pick up next. Use when the user asks which
   issue to work on, what's next, or wants to pick an issue from the backlog.
 license: MIT
-compatibility: Claude Code
-allowed-tools: Bash(gh:*) Bash(git:*) Read Glob Grep AskUserQuestion Skill
+compatibility: Claude Code, Codex
+allowed-tools: Bash(gh:*) Bash(git:*) Read Glob Grep AskUserQuestion
 metadata:
   author: edloidas
 ---
@@ -90,7 +90,8 @@ If a PR exists, store it as `<current-pr>`.
 ### Short-circuit: feature branch with open PR
 
 If on a feature branch AND `<current-pr>` exists, skip Phases 2–4. Present
-this as the default recommendation via `AskUserQuestion`:
+this as the default recommendation. Use `AskUserQuestion` when available;
+otherwise ask directly in chat:
 
 - **Option 1:** `Issue #<N>` `(Recommended)` — `You have unfinished work: PR #<pr-number> "<pr-title>". Continue this before picking a new issue.`
 - **Option 2:** `New issue` — `Skip current work and pick a different issue (continues to Phase 2)`
@@ -268,10 +269,10 @@ the `AskUserQuestion` prompt and automatically scan all of them — rank by
 available signals (labels, milestone, creation date, assignment) and proceed
 directly to the Output phase with the top picks.
 
-### AskUserQuestion: narrow scope (25+ candidates)
+### Narrow scope (25+ candidates)
 
-If there are **25 or more** unblocked candidate issues, present with
-`AskUserQuestion`:
+If there are **25 or more** unblocked candidate issues, ask how to narrow the
+search. Use `AskUserQuestion` when available; otherwise ask directly in chat:
 
 - **question**: "I found N open issues but no plan files to guide priority. How should I narrow down?"
 - **Option 1:** `Scan all` `(Recommended)` — `Review all open issues and rank by signals`
@@ -299,7 +300,9 @@ Then re-fetch issues filtered by the chosen milestone and re-rank.
 
 ### Present top candidates
 
-After ranking, present the top candidates using `AskUserQuestion`.
+After ranking, present the top candidates. Use `AskUserQuestion` when
+available; otherwise present up to 4 numbered options in normal chat and ask
+the user to choose one.
 
 **Header format:** `Issue #<N>` (must be 12 characters or fewer)
 
@@ -321,9 +324,11 @@ After ranking, present the top candidates using `AskUserQuestion`.
 
 ### After selection
 
-When the user picks an issue, immediately invoke `/issue-analyze <N>` using
-the `Skill` tool. Do not output a short summary first — let `issue-analyze`
-provide the full structured analysis.
+When the user picks an issue, immediately invoke `issue-analyze` for `#<N>` if
+that skill is available in the current agent runtime. Do not output a short
+summary first — let `issue-analyze` provide the full structured analysis. If
+`issue-analyze` is unavailable, fall back to a brief handoff summary with the
+selected issue number, title, and why it ranked first.
 
 If the user picks `None`, output:
 

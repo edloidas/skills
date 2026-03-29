@@ -1,0 +1,6 @@
+interface:
+  display_name: "Issue Writer"
+  short_description: "Draft or update a GitHub issue using the repo's structure and label conventions."
+  default_prompt: "Use $issue-writer to draft or update a GitHub issue, then show the proposed title and body before applying any GitHub update."
+policy:
+  allow_implicit_invocation: true

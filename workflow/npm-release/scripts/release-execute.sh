@@ -2,7 +2,7 @@
 
 # Release Execution Script
 # Creates git tag and pushes to remote
-# Optimized for Claude Code interpretation
+# Optimized for agent interpretation
 
 set -e  # Exit on error
 

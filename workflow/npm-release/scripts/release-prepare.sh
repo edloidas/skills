@@ -2,7 +2,7 @@
 
 # Release Preparation Script
 # Validates git status and runs pre-release checks
-# Optimized for Claude Code interpretation
+# Optimized for agent interpretation
 
 set -e  # Exit on error
 

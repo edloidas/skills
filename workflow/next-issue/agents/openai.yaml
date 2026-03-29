@@ -1,0 +1,6 @@
+interface:
+  display_name: "Next Issue"
+  short_description: "Recommend the next GitHub issue to work on from plan files, PRs, and open issues."
+  default_prompt: "Use $next-issue to inspect local git state, plan files, open PRs, and the issue backlog, then recommend the best next issue and hand off to $issue-analyze."
+policy:
+  allow_implicit_invocation: true
