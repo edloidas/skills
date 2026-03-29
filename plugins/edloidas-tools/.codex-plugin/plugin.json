@@ -1,0 +1,28 @@
+{
+  "name": "edloidas-tools",
+  "version": "2.16.3",
+  "description": "External tool integrations for Codex.",
+  "author": {
+    "name": "Mikita Taukachou",
+    "url": "https://edloidas.io"
+  },
+  "homepage": "https://github.com/edloidas/skills",
+  "repository": "https://github.com/edloidas/skills",
+  "license": "MIT",
+  "keywords": [
+    "skills",
+    "codex",
+    "tools",
+    "railway"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Edloidas Tools",
+    "shortDescription": "Operate external developer tools from Codex.",
+    "longDescription": "Codex-ready external tool skills from edloidas/skills.",
+    "developerName": "Mikita Taukachou",
+    "category": "Productivity",
+    "websiteURL": "https://github.com/edloidas/skills",
+    "brandColor": "#B91C1C"
+  }
+}

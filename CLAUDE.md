@@ -2,6 +2,13 @@
 
 A collection of Claude Code and other agents skills following the [Agent Skills specification](https://agentskills.io/specification).
 
+## Canonical Repo Instructions
+
+`CLAUDE.md` is the canonical repo instructions file. The repo root also contains an `AGENTS.md`
+symlink pointing to this file so Codex and other agents read the same instructions.
+
+Edit `CLAUDE.md` directly. Do not replace the `AGENTS.md` symlink with a copied file.
+
 ## Repository Structure
 
 Skills are organized into plugin groups. Each group has a `.claude-plugin/plugin.json` for auto-discovery and contains related skills:
@@ -18,12 +25,37 @@ Skills are organized into plugin groups. Each group has a `.claude-plugin/plugin
 └── ...
 ```
 
+Codex packaging is layered on top of these source groups using wrapper plugins and repo-local
+skill symlinks:
+
+```
+.agents/
+├── plugins/
+│   └── marketplace.json  # Repo-local Codex marketplace
+└── skills/
+    └── <skill-name> -> ../../<group>/<skill-name>
+
+plugins/
+└── <plugin-name>/
+    ├── .codex-plugin/
+    │   └── plugin.json   # Codex wrapper plugin manifest
+    └── skills/
+        └── <skill-name> -> ../../../<group>/<skill-name>
+```
+
 **Plugin groups:**
 - `review/` — Code review, cleanup, and quality improvement (5 skills)
 - `audit/` — CI, lint, script, skill, and workspace auditing (5 skills)
 - `workflow/` — Git, GitHub, release, and development workflows (12 skills)
 - `obsidian/` — Obsidian vault organization and working document management (1 skill)
 - `tools/` — Skills for working with specific external tools and CLIs (1 skill)
+
+Wrapper plugin names and display names for Codex:
+- `plugins/edloidas-review/` → `edloidas-review` / `Edloidas Review`
+- `plugins/edloidas-audit/` → `edloidas-audit` / `Edloidas Audit`
+- `plugins/edloidas-workflow/` → `edloidas-workflow` / `Edloidas Workflow`
+- `plugins/edloidas-obsidian/` → `edloidas-obsidian` / `Edloidas Obsidian`
+- `plugins/edloidas-tools/` → `edloidas-tools` / `Edloidas Tools`
 
 ## How Skills Load (Progressive Disclosure)
 
@@ -127,6 +159,18 @@ compatibility: Claude Code, Codex
 
 The README "Available Skills" tables include an **Agent** column for quick scanning.
 
+### Codex Metadata
+
+Skills exposed to Codex should include `agents/openai.yaml` with:
+
+- `interface.display_name`
+- `interface.short_description`
+- optional `interface.default_prompt`
+- `policy.allow_implicit_invocation`
+
+Use `allow_implicit_invocation: false` for destructive or environment-specific skills that should
+only run when explicitly invoked.
+
 ### Writing Good Descriptions
 
 The `description` determines when an agent activates the skill. Be specific and actionable — include what the skill does, what inputs it handles, and keywords that would appear in a matching user request.
@@ -166,6 +210,37 @@ The `description` determines when an agent activates the skill. Be specific and 
 - **`plugin.json`** — plugin manifest. Declares `skills` as a path (e.g. `"skills": "./"`) for skill directory discovery.
 
 Skills are discovered automatically from the path declared in `plugin.json`. No per-skill registration is needed in either file.
+
+## Codex Wrapper Plugins
+
+Do not add `.codex-plugin/plugin.json` directly to the source group directories (`review/`,
+`audit/`, `workflow/`, `obsidian/`, `tools/`).
+
+Use wrapper plugins under `plugins/<plugin-name>/` instead:
+
+- Source groups remain the canonical skill source for all agents.
+- Wrapper plugins expose only the Codex-vetted subset of skills.
+- `plugins/<plugin-name>/skills/` should contain symlinks to the real skill directories.
+- `.agents/skills/` should also contain only Codex-vetted skill symlinks.
+
+Do not rely on `compatibility` metadata alone to hide unsupported skills from Codex discovery.
+Only add a skill to `plugins/<plugin-name>/skills/` or `.agents/skills/` after reviewing that the
+instructions are actually Codex-safe.
+
+When adding a new skill, or when upgrading an existing skill to support Codex, make sure the
+Codex packaging layer is updated in the same change:
+
+- Add or update the skill's `compatibility` frontmatter to reflect actual Codex support.
+- Add `agents/openai.yaml` if the skill should be exposed in Codex.
+- Add the skill symlink in `.agents/skills/` if it is part of the repo-local Codex skill set.
+- Add the skill symlink in the appropriate `plugins/<plugin-name>/skills/` wrapper plugin if it should
+  be installable through the repo marketplace.
+- Ensure the wrapper plugin manifest and `.agents/plugins/marketplace.json` still reflect the
+  intended Codex plugin set.
+- Update `README.md` if the exposed Codex skill set or plugin group contents changed.
+
+A skill is not considered fully integrated until both the source skill and the Codex wrapper layer
+are kept in sync.
 
 ## Bundling Agents with a Plugin
 

@@ -1,0 +1,6 @@
+interface:
+  display_name: "Review Comments"
+  short_description: "Triage GitHub PR review feedback into fix and skip lists"
+  default_prompt: "Use $review-comments to analyze the current PR's review feedback."
+policy:
+  allow_implicit_invocation: true

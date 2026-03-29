@@ -1,3 +1,5 @@
 interface:
   display_name: "Code Cleanup"
   short_description: "Clean comments, docs, and trivial code noise"
+policy:
+  allow_implicit_invocation: true

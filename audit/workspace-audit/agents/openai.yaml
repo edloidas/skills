@@ -1,3 +1,5 @@
 interface:
   display_name: "Workspace Audit"
   short_description: "Audit monorepo workspace setup and dependency flow"
+policy:
+  allow_implicit_invocation: true

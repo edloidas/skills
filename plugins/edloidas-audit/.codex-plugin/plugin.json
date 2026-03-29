@@ -1,0 +1,29 @@
+{
+  "name": "edloidas-audit",
+  "version": "2.16.3",
+  "description": "Curated CI, scripts, and workspace audit skills for Codex.",
+  "author": {
+    "name": "Mikita Taukachou",
+    "url": "https://edloidas.io"
+  },
+  "homepage": "https://github.com/edloidas/skills",
+  "repository": "https://github.com/edloidas/skills",
+  "license": "MIT",
+  "keywords": [
+    "skills",
+    "codex",
+    "audit",
+    "ci",
+    "workspace"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Edloidas Audit",
+    "shortDescription": "Audit CI, scripts, and monorepo configuration.",
+    "longDescription": "Curated Codex-safe audit skills from edloidas/skills.",
+    "developerName": "Mikita Taukachou",
+    "category": "Productivity",
+    "websiteURL": "https://github.com/edloidas/skills",
+    "brandColor": "#0F766E"
+  }
+}

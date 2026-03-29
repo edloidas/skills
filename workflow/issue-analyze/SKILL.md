@@ -2,11 +2,12 @@
 name: issue-analyze
 description: >
   Fetches a GitHub issue by number or URL, analyzes its scope of work, cross-references
-  local project docs in .claude/, checks blocking relationships, and produces a structured
-  implementation analysis with a task list. Use before starting work on any issue to
-  understand what needs to be built and plan implementation steps.
+  local project docs in `.claude/`, `.agents/`, and repo instruction files, checks
+  blocking relationships, and produces a structured implementation analysis with a
+  task list. Use before starting work on any issue to understand what needs to be
+  built and plan implementation steps.
 license: MIT
-compatibility: Claude Code
+compatibility: Claude Code, Codex
 allowed-tools: Bash(gh:*) Bash(git:*) Read Glob Grep
 arguments: "issue-number"
 argument-hint: "[issue-number or URL]"
@@ -107,14 +108,23 @@ Find the git root:
 git rev-parse --show-toplevel
 ```
 
-Check whether `<git-root>/.claude/` exists. If absent, skip this phase entirely — do not
-mention it in output.
+Check whether any of these local context sources exist. If none do, skip this phase
+entirely — do not mention it in output.
+
+- `<git-root>/AGENTS.md`
+- `<git-root>/CLAUDE.md`
+- `<git-root>/.claude/`
+- `<git-root>/.agents/`
 
 ### Find doc files
 
 Use `Glob` tool to find:
+- `<git-root>/AGENTS.md`
+- `<git-root>/CLAUDE.md`
 - `<git-root>/.claude/*.md`
 - `<git-root>/.claude/docs/*.md`
+- `<git-root>/.agents/*.md`
+- `<git-root>/.agents/docs/*.md`
 - `<git-root>/docs/superpowers/**/*.md`
 
 If no files found, skip phase.

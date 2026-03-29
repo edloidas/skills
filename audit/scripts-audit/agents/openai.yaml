@@ -1,3 +1,5 @@
 interface:
   display_name: "Scripts Audit"
   short_description: "Audit package scripts for consistency and speed"
+policy:
+  allow_implicit_invocation: true

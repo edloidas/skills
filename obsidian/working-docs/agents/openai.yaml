@@ -1,0 +1,6 @@
+interface:
+  display_name: "Working Docs"
+  short_description: "Manage structured working notes in an Obsidian vault"
+  default_prompt: "Use $working-docs to manage the current task's working document in Obsidian."
+policy:
+  allow_implicit_invocation: false

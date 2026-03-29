@@ -1,0 +1,29 @@
+{
+  "name": "edloidas-workflow",
+  "version": "2.16.3",
+  "description": "Curated Git and GitHub workflow helpers for Codex.",
+  "author": {
+    "name": "Mikita Taukachou",
+    "url": "https://edloidas.io"
+  },
+  "homepage": "https://github.com/edloidas/skills",
+  "repository": "https://github.com/edloidas/skills",
+  "license": "MIT",
+  "keywords": [
+    "skills",
+    "codex",
+    "workflow",
+    "git",
+    "github"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Edloidas Workflow",
+    "shortDescription": "Summarize commits, analyze issues, and manage worktrees.",
+    "longDescription": "Curated Codex-safe workflow skills from edloidas/skills.",
+    "developerName": "Mikita Taukachou",
+    "category": "Productivity",
+    "websiteURL": "https://github.com/edloidas/skills",
+    "brandColor": "#7C3AED"
+  }
+}

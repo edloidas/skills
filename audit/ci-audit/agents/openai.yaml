@@ -1,3 +1,5 @@
 interface:
   display_name: "CI Audit"
   short_description: "Audit GitHub Actions for speed and reliability"
+policy:
+  allow_implicit_invocation: true

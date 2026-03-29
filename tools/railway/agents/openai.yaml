@@ -1,0 +1,6 @@
+interface:
+  display_name: "Railway"
+  short_description: "Inspect Railway services, logs, variables, and deploy status"
+  default_prompt: "Use $railway to inspect the linked Railway project before taking action."
+policy:
+  allow_implicit_invocation: false

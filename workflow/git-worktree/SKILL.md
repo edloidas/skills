@@ -7,6 +7,7 @@ description: >
   over. Use when the user asks to create a worktree, work on multiple branches,
   or clean up worktrees.
 license: MIT
+compatibility: Claude Code, Codex
 allowed-tools: Bash(git:*,rsync:*) Read Glob Grep
 arguments: "command branch"
 argument-hint: "[command] [branch]"
@@ -48,13 +49,13 @@ Branch names are sanitized: `/` → `-` (e.g. `feature/new-ui` → `feature-new-
 
 ## Important: Working Directory
 
-Claude Code **cannot change its own working directory** during a session. After creating a worktree, show the user a ready-to-copy command:
+The agent **cannot change its own working directory** during a session. After creating a worktree, show the user a ready-to-copy command:
 
 ```
 cd ~/.worktrees/repo/branch
 ```
 
-The user must open a new terminal or Claude Code session to work in the worktree.
+The user must open a new terminal or agent session to work in the worktree.
 
 ## Bundled Scripts
 

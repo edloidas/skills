@@ -2,7 +2,7 @@
 name: commit-summary
 description: Generate commit message body summaries from git changes. Produces technical, past-tense descriptions formatted as one-line-per-change. Use when the user asks for a commit summary, commit message body, or change description — not for full commit creation.
 license: MIT
-compatibility: Claude Code
+compatibility: Claude Code, Codex
 allowed-tools: Read Bash(git status:*) Bash(git diff:*) Bash(git log:*) Bash(git show:*)
 arguments: "scope"
 argument-hint: "['staged only', instructions, or empty]"

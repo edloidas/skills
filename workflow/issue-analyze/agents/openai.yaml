@@ -1,0 +1,6 @@
+interface:
+  display_name: "Issue Analyze"
+  short_description: "Analyze a GitHub issue and turn it into an implementation plan"
+  default_prompt: "Use $issue-analyze to analyze a GitHub issue before starting work."
+policy:
+  allow_implicit_invocation: true

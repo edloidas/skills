@@ -29,7 +29,25 @@ Install all groups for the full set, or pick only the groups relevant to your wo
 
 ### Codex
 
-Install directly from this GitHub repo into `~/.codex/skills`:
+When you open this repository in Codex, it exposes two Codex-native integration paths:
+
+- Repo skills via `.agents/skills/` — curated symlinks to Codex-vetted skills for live repo-local use
+- Repo marketplace via `.agents/plugins/marketplace.json` — grouped wrapper plugins with Codex install metadata
+
+Available Codex plugin groups in this repo marketplace:
+
+- `Edloidas Review`
+- `Edloidas Audit`
+- `Edloidas Workflow`
+- `Edloidas Obsidian`
+- `Edloidas Tools`
+
+These wrapper plugins expose the Codex-vetted subset of each source group, not every skill in the
+repository.
+
+Codex follows symlinked skill folders, so updates from `git pull` flow through automatically. If new skills or plugin changes do not appear, restart Codex.
+
+For user-scoped installation outside the repo, you can still install individual skills directly into `~/.codex/skills`:
 
 ```bash
 python ~/.codex/skills/.system/skill-installer/scripts/install-skill-from-github.py \
@@ -47,6 +65,8 @@ Skills are organized into plugin groups, each containing related skills:
 <group>/
 ├── .claude-plugin/
 │   └── plugin.json       # Plugin metadata (auto-discovers skills via "skills": "./")
+├── .codex-plugin/        # Only in wrapper plugins under plugins/<plugin-name>/
+│   └── plugin.json       # Codex plugin manifest (wrapper plugin only)
 ├── <skill-name>/
 │   ├── SKILL.md          # Required — frontmatter + instructions
 │   ├── agents/           # Optional — agent-specific configs (e.g. openai.yaml)
@@ -107,11 +127,11 @@ Git, GitHub, release, and development workflow skills.
 | Skill                                                       | Description                                                               | Agent         |
 | ----------------------------------------------------------- | ------------------------------------------------------------------------- | ------------- |
 | [claude-md-sync](./workflow/claude-md-sync/)                | Detect and fix stale references in project CLAUDE.md                      | Claude        |
-| [commit-summary](./workflow/commit-summary/)                | Generate formatted Git commit message summaries                           | Claude        |
+| [commit-summary](./workflow/commit-summary/)                | Generate formatted Git commit message summaries                           | Claude, Codex |
 | [fix-findings](./workflow/fix-findings/)                    | Triage and fix problems from reviews, consilium, or debugging             | Claude        |
-| [git-worktree](./workflow/git-worktree/)                    | Manage Git worktrees with configurable storage and agent settings copying | Any           |
+| [git-worktree](./workflow/git-worktree/)                    | Manage Git worktrees with configurable storage and agent settings copying | Claude, Codex |
 | [issue-flow](./workflow/issue-flow/)                        | Full issue lifecycle: create, branch, commit, push, PR, merge            | Claude        |
-| [issue-analyze](./workflow/issue-analyze/)                  | Analyze issue scope and produce an implementation task list               | Claude        |
+| [issue-analyze](./workflow/issue-analyze/)                  | Analyze issue scope and produce an implementation task list               | Claude, Codex |
 | [issue-writer](./workflow/issue-writer/)                    | Draft and update well-structured GitHub issues                            | Claude        |
 | [labels-sync](./workflow/labels-sync/)                      | Synchronize GitHub repository labels from JSON                            | Claude        |
 | [next-issue](./workflow/next-issue/)                        | Find the most relevant next GitHub issue to work on                       | Claude        |
@@ -125,7 +145,7 @@ Obsidian vault organization and working document management skills.
 
 | Skill                                                       | Description                                                               | Agent         |
 | ----------------------------------------------------------- | ------------------------------------------------------------------------- | ------------- |
-| [working-docs](./obsidian/working-docs/)                    | Organize working documents in Obsidian with two-tier system               | Claude        |
+| [working-docs](./obsidian/working-docs/)                    | Organize working documents in Obsidian with two-tier system               | Claude, Codex |
 
 ### Tools
 
@@ -133,7 +153,7 @@ Skills for working with specific external tools and CLIs.
 
 | Skill                                                       | Description                                                               | Agent         |
 | ----------------------------------------------------------- | ------------------------------------------------------------------------- | ------------- |
-| [railway](./tools/railway/)                                 | Interact with Railway deployments — status, logs, variables, deploy       | Claude        |
+| [railway](./tools/railway/)                                 | Interact with Railway deployments — status, logs, variables, deploy       | Claude, Codex |
 
 ## Creating a Skill
 

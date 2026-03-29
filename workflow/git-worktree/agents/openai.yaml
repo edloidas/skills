@@ -1,0 +1,6 @@
+interface:
+  display_name: "Git Worktree"
+  short_description: "Create, list, clean, and remove worktrees for the current repo"
+  default_prompt: "Use $git-worktree to manage worktrees for the current repository."
+policy:
+  allow_implicit_invocation: false

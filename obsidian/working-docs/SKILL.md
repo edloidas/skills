@@ -1,14 +1,14 @@
 ---
 name: working-docs
 description: >
-  Manage Claude's working documents in Obsidian vault using a two-tier system
+  Manage working documents in an Obsidian vault using a two-tier system
   (Inbox for quick dumps, Dev/Claude for persistent docs). Handles creating,
   finding, promoting, updating, and completing working documents with proper
   naming, headers, and lifecycle. Use when creating notes for multi-step tasks,
   looking up previous work, managing cross-session state, or when the user asks
   to write something to Obsidian.
 license: MIT
-compatibility: Claude Code
+compatibility: Claude Code, Codex
 allowed-tools: Read Write Edit Glob Grep Bash(ls:*)
 metadata:
   author: edloidas

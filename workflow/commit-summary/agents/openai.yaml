@@ -1,0 +1,6 @@
+interface:
+  display_name: "Commit Summary"
+  short_description: "Generate concise commit message body lines from git changes"
+  default_prompt: "Use $commit-summary to summarize the current git changes."
+policy:
+  allow_implicit_invocation: true

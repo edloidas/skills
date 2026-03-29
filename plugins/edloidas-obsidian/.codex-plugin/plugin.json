@@ -1,0 +1,28 @@
+{
+  "name": "edloidas-obsidian",
+  "version": "2.16.3",
+  "description": "Obsidian working-document helpers for Codex.",
+  "author": {
+    "name": "Mikita Taukachou",
+    "url": "https://edloidas.io"
+  },
+  "homepage": "https://github.com/edloidas/skills",
+  "repository": "https://github.com/edloidas/skills",
+  "license": "MIT",
+  "keywords": [
+    "skills",
+    "codex",
+    "obsidian",
+    "notes"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Edloidas Obsidian",
+    "shortDescription": "Manage working documents in an Obsidian vault.",
+    "longDescription": "Codex-ready Obsidian note management skills from edloidas/skills.",
+    "developerName": "Mikita Taukachou",
+    "category": "Productivity",
+    "websiteURL": "https://github.com/edloidas/skills",
+    "brandColor": "#D97706"
+  }
+}

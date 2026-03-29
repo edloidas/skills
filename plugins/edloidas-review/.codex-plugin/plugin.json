@@ -1,0 +1,29 @@
+{
+  "name": "edloidas-review",
+  "version": "2.16.3",
+  "description": "Curated review, cleanup, and code quality skills for Codex.",
+  "author": {
+    "name": "Mikita Taukachou",
+    "url": "https://edloidas.io"
+  },
+  "homepage": "https://github.com/edloidas/skills",
+  "repository": "https://github.com/edloidas/skills",
+  "license": "MIT",
+  "keywords": [
+    "skills",
+    "codex",
+    "review",
+    "cleanup",
+    "react"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Edloidas Review",
+    "shortDescription": "Review, cleanup, and React-focused analysis skills.",
+    "longDescription": "Curated Codex-safe review skills from edloidas/skills.",
+    "developerName": "Mikita Taukachou",
+    "category": "Productivity",
+    "websiteURL": "https://github.com/edloidas/skills",
+    "brandColor": "#2F6FED"
+  }
+}
