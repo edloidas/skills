@@ -1,7 +1,7 @@
 {
   "name": "edloidas-audit",
   "version": "2.16.3",
-  "description": "A Codex-safe audit bundle for GitHub Actions, package scripts, and monorepo workspace configuration.",
+  "description": "A Codex-safe audit bundle for GitHub Actions, ESLint and Biome overlap, package scripts, and monorepo workspace configuration.",
   "author": {
     "name": "Mikita Taukachou",
     "url": "https://edloidas.io"
@@ -15,13 +15,15 @@
     "audit",
     "ci",
     "scripts",
-    "workspace"
+    "workspace",
+    "eslint",
+    "biome"
   ],
   "skills": "./skills/",
   "interface": {
     "displayName": "Edloidas Audit",
-    "shortDescription": "Audit CI, scripts, and workspace setup.",
-    "longDescription": "Install the audit bundle from edloidas/skills to inspect CI workflows, package scripts, and pnpm workspace configuration from Codex.",
+    "shortDescription": "Audit CI, lint overlap, scripts, and workspace setup.",
+    "longDescription": "Install the audit bundle from edloidas/skills to inspect CI workflows, ESLint and Biome overlap, package scripts, and pnpm workspace configuration from Codex.",
     "developerName": "Mikita Taukachou",
     "category": "Productivity",
     "websiteURL": "https://github.com/edloidas/skills",

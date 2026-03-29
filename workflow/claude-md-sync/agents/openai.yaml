@@ -1,0 +1,6 @@
+interface:
+  display_name: "Instruction Sync"
+  short_description: "Detect drift in the repo's root CLAUDE.md or AGENTS.md"
+  default_prompt: "Use $claude-md-sync to check whether the repo's root instruction file matches the current project state."
+policy:
+  allow_implicit_invocation: false

@@ -1,13 +1,13 @@
 ---
 name: claude-md-sync
 description: >
-  Detect and fix stale references in a project's root CLAUDE.md.
+  Detect and fix stale references in a project's root CLAUDE.md or AGENTS.md.
   Compares documented commands, directory structures, file paths, and counts
-  against actual project state. Use when the user asks to sync or check CLAUDE.md,
-  or auto-activate after modifying package.json scripts, renaming directories,
-  or changing build configuration.
+  against actual project state. Use when the user asks to sync or check repo
+  instruction files, or after modifying package.json scripts, renaming
+  directories, or changing build configuration.
 license: MIT
-compatibility: Claude Code
+compatibility: Claude Code, Codex
 allowed-tools: Read Edit Glob Grep Bash AskUserQuestion
 user-invocable: true
 arguments: "mode"
@@ -16,39 +16,47 @@ metadata:
   author: edloidas
 ---
 
-Detect and fix stale references in a project's root CLAUDE.md — commands, paths, directory structures, and counts that have drifted from the actual project state.
+Detect and fix stale references in a project's root instruction file (`CLAUDE.md` or `AGENTS.md`) — commands, paths, directory structures, and counts that have drifted from the actual project state.
 
 ## Arguments
 
 | Argument | Description                                                   |
 | -------- | ------------------------------------------------------------- |
-| _(none)_ | Interactive — show drift report, ask before applying fixes    |
-| `check`  | Report only, do not modify CLAUDE.md                          |
-| `apply`  | Apply fixes without confirmation (still asks for ambiguous cases) |
+| _(none)_ | Interactive — show drift report, ask before applying fixes         |
+| `check`  | Report only, do not modify the instruction file                    |
+| `apply`  | Apply fixes without confirmation (still ask for ambiguous cases)   |
 
 ## When to Use
 
 **Manual triggers:**
-- "Sync CLAUDE.md", "check CLAUDE.md", "update CLAUDE.md"
+- "Sync CLAUDE.md", "sync AGENTS.md", "check repo instructions", "update instruction file"
 - "Are my docs up to date?", "validate project docs"
 
 **Auto-activation — run in check mode when:**
 - You just renamed, added, or removed scripts in `package.json`, `Makefile`, etc.
-- You just renamed or moved directories referenced in CLAUDE.md
-- You just changed build configuration (added/removed tools, changed output paths)
-- You just added or removed skills, plugins, or tools documented in CLAUDE.md
+- You just renamed or moved directories referenced in the instruction file
+- You just changed build configuration (added or removed tools, changed output paths)
+- You just added or removed skills, plugins, or tools documented in the instruction file
 
 When auto-activating, always run in **check** mode first. Only apply after showing the report and getting user confirmation.
 
 ## Steps
 
-### 1. Load CLAUDE.md
+### 1. Load the Instruction File
 
-Read the **project-level** CLAUDE.md (root of the working directory). Never touch the global `~/.claude/CLAUDE.md`.
+Read the **project-level** instruction file at the repo root.
 
-If no CLAUDE.md exists at the project root, report that and stop.
+Resolve the target file in this order:
 
-Parse the file into sections by Markdown headers (`#`, `##`, `###`, etc.). Track line numbers for each section — you'll need them for the report.
+1. If both `AGENTS.md` and `CLAUDE.md` exist and one is a symlink to the other, treat them as the same document and edit the canonical target file.
+2. If only one of `AGENTS.md` or `CLAUDE.md` exists, use that file.
+3. If both exist as separate regular files with different contents, stop and ask the user which file is authoritative before making edits.
+
+Never touch global instruction files such as `~/.claude/CLAUDE.md` or `~/.codex/AGENTS.md`.
+
+If no root `AGENTS.md` or `CLAUDE.md` exists, report that and stop.
+
+Parse the chosen file into sections by Markdown headers (`#`, `##`, `###`, etc.). Track line numbers for each section for the report.
 
 ### 2. Identify Structural Sections
 
@@ -87,7 +95,7 @@ For each structural section found in Step 2, collect the corresponding ground tr
 
 ### 4. Analyze Drift
 
-Compare CLAUDE.md content against collected state. Classify each finding:
+Compare the instruction file content against collected state. Classify each finding:
 
 | Class              | Meaning                                                     | Action in apply mode        |
 | ------------------ | ----------------------------------------------------------- | --------------------------- |
@@ -104,7 +112,7 @@ Compare CLAUDE.md content against collected state. Classify each finding:
 Present findings as a markdown report grouped by section:
 
 ```markdown
-## CLAUDE.md Drift Report
+## Instruction File Drift Report
 
 ### Section: "## Available Scripts" (lines 45–62)
 
@@ -112,7 +120,7 @@ Present findings as a markdown report grouped by section:
 |---|----------------|--------------------|-----------------------|-----------------------------|
 | 1 | STALE          | `npm run deploy`   | _(not found)_         | Script removed              |
 | 2 | COUNT_MISMATCH | "8 scripts"        | 6 scripts             | 2 scripts were removed      |
-| 3 | INFORMATIONAL  | _(not documented)_ | `npm run typecheck`   | New script, not in CLAUDE.md |
+| 3 | INFORMATIONAL  | _(not documented)_ | `npm run typecheck`   | New script, not in the instruction file |
 
 ### Section: "## Project Structure" (lines 12–30)
 
@@ -124,11 +132,11 @@ Present findings as a markdown report grouped by section:
 ### Summary
 
 - 2 fixable issues (STALE, COUNT_MISMATCH, PATH_MISSING)
-- 1 informational (new items not in CLAUDE.md)
+- 1 informational (new items not in the instruction file)
 - 1 requires confirmation (RENAMED)
 ```
 
-If no drift is found, report that CLAUDE.md is in sync and stop.
+If no drift is found, report that the instruction file is in sync and stop.
 
 If the mode is `check`, stop after the report.
 
@@ -139,17 +147,17 @@ For each fixable finding, apply a **surgical edit** — change only the specific
 - **STALE** — remove the line or list item containing the stale reference. If it's in a table row, remove the row. If removing it leaves an empty section, leave the section header (the author can decide to remove it).
 - **COUNT_MISMATCH** — update only the number in the text. E.g., change "8 scripts" to "6 scripts".
 - **PATH_MISSING** — remove the reference. If the path appears in a tree/ASCII structure, remove that line and fix indentation.
-- **RENAMED** — ask the user to confirm the rename before applying. Show the old and new names. If confirmed, replace the old name with the new one everywhere in CLAUDE.md.
+- **RENAMED** — ask the user to confirm the rename before applying. Show the old and new names. If confirmed, replace the old name with the new one everywhere in the instruction file.
 
 Use the `Edit` tool for all modifications. Never rewrite entire sections — preserve the author's formatting, prose style, and ordering.
 
-After applying, re-read CLAUDE.md and confirm the fixes look correct.
+After applying, re-read the instruction file and confirm the fixes look correct.
 
 ## Edge Cases
 
-- **No CLAUDE.md** — report "No CLAUDE.md found at project root" and stop.
-- **No structural sections** — report "CLAUDE.md has no structural references to verify" and stop.
+- **No instruction file** — report "No AGENTS.md or CLAUDE.md found at project root" and stop.
+- **No structural sections** — report "The instruction file has no structural references to verify" and stop.
 - **Code blocks with examples** — content inside fenced code blocks (` ``` `) that looks like commands or paths may be examples, not actual references. Look for surrounding context ("example", "e.g.", "for instance") and skip those. When unsure, classify as INFORMATIONAL.
-- **Monorepos** — if CLAUDE.md references paths in sub-packages, verify relative to the project root, not the sub-package.
-- **Global CLAUDE.md** — never read or modify `~/.claude/CLAUDE.md`. This skill only operates on the project-level file.
+- **Monorepos** — if the instruction file references paths in sub-packages, verify relative to the project root, not the sub-package.
+- **Global instruction files** — never read or modify `~/.claude/CLAUDE.md` or `~/.codex/AGENTS.md`. This skill only operates on the project-level file.
 - **Template placeholders** — strings like `<your-name>`, `YOUR_TOKEN`, `TODO` are intentional placeholders, not stale references. Skip them.

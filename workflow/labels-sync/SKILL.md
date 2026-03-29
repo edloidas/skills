@@ -5,7 +5,7 @@ description: >
   Compares, creates, updates, and deletes labels to match a JSON definition.
   Use when the user asks to sync, check, or manage GitHub labels.
 license: MIT
-compatibility: Claude Code
+compatibility: Claude Code, Codex
 allowed-tools: Bash Read AskUserQuestion
 user-invocable: true
 arguments: "mode"
@@ -44,13 +44,13 @@ From the command arguments or conversation context, determine the user's intent:
 
 **Apply changes** if user explicitly requests (keywords in args or context):
 - `apply`, `sync`, `update`, `fix`, `set`, `enforce`
-- Example: `/labels-sync apply` or "sync my labels"
+- Example: `labels-sync apply` or "sync my labels"
 
 **Report only** if user wants to check (keywords):
 - `check`, `list`, `show`, `preview`, `dry-run`, `diff`
-- Example: `/labels-sync check` or "show label differences"
+- Example: `labels-sync check` or "show label differences"
 
-**Ask user** if intent is unclear or no arguments provided.
+Ask the user to choose the mode if intent is unclear or no arguments are provided.
 
 ### Step 2: Read Label Definitions
 

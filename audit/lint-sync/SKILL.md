@@ -2,7 +2,7 @@
 name: lint-sync
 description: Compare ESLint rules against Biome to find overlaps, recommend disabling redundant rules, and guide migration
 license: MIT
-compatibility: Claude Code
+compatibility: Claude Code, Codex
 allowed-tools: Bash Read Glob Grep WebFetch Write
 user-invocable: true
 arguments: "mode"
@@ -31,9 +31,9 @@ Trigger phrases: "lint sync", "lint-sync", "eslint biome overlap", "biome migrat
 
 | Mode | Trigger | Description |
 |------|---------|-------------|
-| **sync** | `/lint-sync` or `/lint-sync sync` | Quick overlap check. Shows which ESLint rules Biome covers. |
-| **audit** | `/lint-sync audit` | Full analysis with `TIMING=1` performance data, coverage stats, migration checklist. |
-| **update** | `/lint-sync update` | Refresh `biome-eslint-mapping.json` from biomejs.dev. |
+| **sync** | Invoked with no mode or `sync` | Quick overlap check. Shows which ESLint rules Biome covers. |
+| **audit** | Invoked with `audit` | Full analysis with `TIMING=1` performance data, coverage stats, migration checklist. |
+| **update** | Invoked with `update` | Refresh `biome-eslint-mapping.json` from biomejs.dev. |
 
 ## Workflow
 
@@ -239,9 +239,8 @@ When mode is `update`:
 #### 7a. Update biome-eslint-mapping.json
 
 1. Fetch the latest mapping from Biome documentation:
-```
-WebFetch https://biomejs.dev/linter/rules-sources/
-```
+   - Prefer direct web access to `https://biomejs.dev/linter/rules-sources/`
+   - If web access is unavailable, use `curl` to fetch the page content
 
 2. Parse the page content to extract all ESLint → Biome rule mappings
 
@@ -250,13 +249,7 @@ WebFetch https://biomejs.dev/linter/rules-sources/
    - Show removed mappings (deprecated rules)
    - Update `_meta.biomeVersion` and `_meta.updatedAt`
 
-4. Write the updated file:
-```bash
-# Write updated mapping
-cat > references/biome-eslint-mapping.json << 'EOF'
-{updated JSON}
-EOF
-```
+4. Write the updated JSON to `references/biome-eslint-mapping.json` using the agent's normal file editing tools.
 
 5. Report what changed
 
@@ -274,13 +267,7 @@ gh api repos/typescript-eslint/typescript-eslint/contents/packages/eslint-plugin
    - Show removed rules (dropped rules)
    - Update `_meta.updatedAt`
 
-4. Write the updated file:
-```bash
-# Write updated type-aware rules
-cat > references/type-aware-rules.json << 'EOF'
-{updated JSON}
-EOF
-```
+4. Write the updated JSON to `references/type-aware-rules.json` using the agent's normal file editing tools.
 
 5. Report what changed
 

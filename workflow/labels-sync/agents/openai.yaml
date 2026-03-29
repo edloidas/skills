@@ -1,0 +1,6 @@
+interface:
+  display_name: "Labels Sync"
+  short_description: "Check or apply the standard GitHub label set for the current repo"
+  default_prompt: "Use $labels-sync to compare the current repository labels against the bundled standard label set before applying any changes."
+policy:
+  allow_implicit_invocation: false

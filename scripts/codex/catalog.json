@@ -32,15 +32,16 @@
       "group": "audit",
       "name": "edloidas-audit",
       "displayName": "Edloidas Audit",
-      "description": "A Codex-safe audit bundle for GitHub Actions, package scripts, and monorepo workspace configuration.",
-      "shortDescription": "Audit CI, scripts, and workspace setup.",
-      "longDescription": "Install the audit bundle from edloidas/skills to inspect CI workflows, package scripts, and pnpm workspace configuration from Codex.",
+      "description": "A Codex-safe audit bundle for GitHub Actions, ESLint and Biome overlap, package scripts, and monorepo workspace configuration.",
+      "shortDescription": "Audit CI, lint overlap, scripts, and workspace setup.",
+      "longDescription": "Install the audit bundle from edloidas/skills to inspect CI workflows, ESLint and Biome overlap, package scripts, and pnpm workspace configuration from Codex.",
       "category": "Productivity",
       "websiteURL": "https://github.com/edloidas/skills",
       "brandColor": "#0F766E",
-      "keywords": ["skills", "codex", "audit", "ci", "scripts", "workspace"],
+      "keywords": ["skills", "codex", "audit", "ci", "scripts", "workspace", "eslint", "biome"],
       "skills": [
         "audit/ci-audit",
+        "audit/lint-sync",
         "audit/scripts-audit",
         "audit/workspace-audit"
       ]
@@ -49,17 +50,19 @@
       "group": "workflow",
       "name": "edloidas-workflow",
       "displayName": "Edloidas Workflow",
-      "description": "A Codex-safe workflow bundle for commit summaries, issue analysis, and Git worktree management.",
-      "shortDescription": "Commit summaries, issue analysis, and worktrees.",
-      "longDescription": "Install lightweight Git and GitHub workflow helpers from edloidas/skills for commit summaries, issue planning, and multi-branch worktree management.",
+      "description": "A Codex-safe workflow bundle for instruction-file sync, commit summaries, label management, issue analysis, and Git worktree management.",
+      "shortDescription": "Instruction sync, commit summaries, labels, issues, and worktrees.",
+      "longDescription": "Install lightweight Git and GitHub workflow helpers from edloidas/skills for syncing repo instruction files, summarizing commits, managing labels, planning issues, and working across multiple worktrees.",
       "category": "Productivity",
       "websiteURL": "https://github.com/edloidas/skills",
       "brandColor": "#7C3AED",
-      "keywords": ["skills", "codex", "workflow", "git", "github", "worktree"],
+      "keywords": ["skills", "codex", "workflow", "git", "github", "worktree", "labels", "instructions"],
       "skills": [
+        "workflow/claude-md-sync",
         "workflow/commit-summary",
         "workflow/git-worktree",
-        "workflow/issue-analyze"
+        "workflow/issue-analyze",
+        "workflow/labels-sync"
       ]
     },
     {

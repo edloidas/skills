@@ -132,7 +132,7 @@ CI, lint, script, skill, and workspace auditing skills.
 | Skill                                                       | Description                                                               | Agent         |
 | ----------------------------------------------------------- | ------------------------------------------------------------------------- | ------------- |
 | [ci-audit](./audit/ci-audit/)                               | Analyze GitHub Actions workflows for optimization                         | Claude, Codex |
-| [lint-sync](./audit/lint-sync/)                              | Compare ESLint rules against Biome for overlap                            | Claude        |
+| [lint-sync](./audit/lint-sync/)                              | Compare ESLint rules against Biome for overlap                            | Claude, Codex |
 | [scripts-audit](./audit/scripts-audit/)                     | Analyze package.json scripts for consistency                              | Claude, Codex |
 | [skill-audit](./audit/skill-audit/)                         | Audit skills for quality and specification compliance                     | Claude        |
 | [workspace-audit](./audit/workspace-audit/)                 | Analyze pnpm workspace and monorepo setup                                 | Claude, Codex |
@@ -143,14 +143,14 @@ Git, GitHub, release, and development workflow skills.
 
 | Skill                                                       | Description                                                               | Agent         |
 | ----------------------------------------------------------- | ------------------------------------------------------------------------- | ------------- |
-| [claude-md-sync](./workflow/claude-md-sync/)                | Detect and fix stale references in project CLAUDE.md                      | Claude        |
+| [claude-md-sync](./workflow/claude-md-sync/)                | Detect and fix stale references in project CLAUDE.md or AGENTS.md         | Claude, Codex |
 | [commit-summary](./workflow/commit-summary/)                | Generate formatted Git commit message summaries                           | Claude, Codex |
 | [fix-findings](./workflow/fix-findings/)                    | Triage and fix problems from reviews, consilium, or debugging             | Claude        |
 | [git-worktree](./workflow/git-worktree/)                    | Manage Git worktrees with configurable storage and agent settings copying | Claude, Codex |
 | [issue-flow](./workflow/issue-flow/)                        | Full issue lifecycle: create, branch, commit, push, PR, merge            | Claude        |
 | [issue-analyze](./workflow/issue-analyze/)                  | Analyze issue scope and produce an implementation task list               | Claude, Codex |
 | [issue-writer](./workflow/issue-writer/)                    | Draft and update well-structured GitHub issues                            | Claude        |
-| [labels-sync](./workflow/labels-sync/)                      | Synchronize GitHub repository labels from JSON                            | Claude        |
+| [labels-sync](./workflow/labels-sync/)                      | Synchronize GitHub repository labels from JSON                            | Claude, Codex |
 | [next-issue](./workflow/next-issue/)                        | Find the most relevant next GitHub issue to work on                       | Claude        |
 | [npm-release](./workflow/npm-release/)                      | Guide npm/pnpm package release workflow                                   | Claude        |
 | [permissions-cleanup](./workflow/permissions-cleanup/)       | Clean up stale permission entries from settings files                     | Claude        |
