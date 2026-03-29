@@ -7,6 +7,7 @@ set -euo pipefail
 
 TAG_VERSION="${1:?Usage: validate-version.sh <version>}"
 MARKETPLACE=".claude-plugin/marketplace.json"
+CODEX_CATALOG="scripts/codex/catalog.json"
 
 echo "Tag version: $TAG_VERSION"
 
@@ -47,6 +48,44 @@ for i in $(seq 0 $((plugin_count - 1))); do
     errors=1
   fi
 done
+
+# Check Codex catalog version
+if [ ! -f "$CODEX_CATALOG" ]; then
+  echo "::error::$CODEX_CATALOG not found"
+  errors=1
+else
+  codex_catalog_version=$(jq -r '.version' "$CODEX_CATALOG")
+  echo "Codex catalog ($CODEX_CATALOG): $codex_catalog_version"
+
+  if [ "$TAG_VERSION" != "$codex_catalog_version" ]; then
+    echo "::error::Tag version ($TAG_VERSION) does not match $CODEX_CATALOG ($codex_catalog_version)"
+    errors=1
+  fi
+fi
+
+# Check generated Codex plugin manifests
+if [ -f "$CODEX_CATALOG" ]; then
+  while IFS= read -r plugin_name; do
+    [ -n "$plugin_name" ] || continue
+    plugin_json="plugins/$plugin_name/.codex-plugin/plugin.json"
+
+    if [ ! -f "$plugin_json" ]; then
+      echo "::error::Codex plugin '$plugin_name': $plugin_json not found"
+      errors=1
+      continue
+    fi
+
+    pj_version=$(jq -r '.version' "$plugin_json")
+    echo "Codex plugin '$plugin_name' ($plugin_json): $pj_version"
+
+    if [ "$TAG_VERSION" != "$pj_version" ]; then
+      echo "::error::Tag version ($TAG_VERSION) does not match $plugin_json ($pj_version)"
+      errors=1
+    fi
+  done <<EOF
+$(jq -r '.plugins[].name' "$CODEX_CATALOG")
+EOF
+fi
 
 if [ "$errors" -eq 1 ]; then
   exit 1

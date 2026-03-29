@@ -61,6 +61,7 @@ The Codex wrapper layer is driven from `scripts/codex/catalog.json`. After chang
 skill set or plugin metadata, run:
 
 ```bash
+./scripts/validate-codex.sh
 ./scripts/codex-packaging.sh sync-repo
 ```
 
@@ -236,8 +237,9 @@ Use wrapper plugins under `plugins/<plugin-name>/` instead:
 - `.agents/skills/` should also contain only Codex-vetted skill symlinks.
 
 Do not rely on `compatibility` metadata alone to hide unsupported skills from Codex discovery.
-Only add a skill to `plugins/<plugin-name>/skills/` or `.agents/skills/` after reviewing that the
-instructions are actually Codex-safe.
+Only add `Codex` to a skill's `compatibility` frontmatter after reviewing that the instructions are
+actually Codex-safe. In this repo, Codex-compatible skills must also be exposed through
+`scripts/codex/catalog.json`.
 
 When adding a new skill, or when upgrading an existing skill to support Codex, make sure the
 Codex packaging layer is updated in the same change:
@@ -249,7 +251,7 @@ Codex packaging layer is updated in the same change:
   be installable through the repo marketplace.
 - Ensure the wrapper plugin manifest and `.agents/plugins/marketplace.json` still reflect the
   intended Codex plugin set.
-- Update `scripts/codex/catalog.json` and run `./scripts/codex-packaging.sh sync-repo` so the
+- Update `scripts/codex/catalog.json`, run `./scripts/validate-codex.sh`, and run `./scripts/codex-packaging.sh sync-repo` so the
   generated wrapper layer stays in sync.
 - Update `README.md` if the exposed Codex skill set or plugin group contents changed.
 

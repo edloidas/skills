@@ -3,7 +3,7 @@ name: skills-release
 description: >
   Release workflow for the edloidas/skills collection. Validates git state,
   analyzes commits since last tag, recommends a version bump (major/minor/patch),
-  updates plugin.json and marketplace.json, commits, tags, and pushes.
+  updates Claude and Codex packaging metadata, commits, tags, and pushes.
   Use when the user asks to release, version, or tag this skills repository.
 license: MIT
 compatibility: Claude Code
@@ -20,7 +20,7 @@ Automate the release process for this skills repository:
 
 - Pre-flight validation and safety checks
 - Conventional commit analysis with version bump recommendation
-- Version update in all plugin.json and marketplace.json files
+- Version update in Claude plugin manifests, the Codex catalog, and generated Codex plugin manifests
 - Git commit, tag, and push with user approval gates
 
 ## When to Use This Skill
@@ -37,10 +37,10 @@ Use this skill when the user:
 
 This skill includes helper scripts in the `scripts/` directory:
 
-1. **release-prepare.sh** — Validates git status, branch, config files, and version consistency
+1. **release-prepare.sh** — Validates git status, Claude/Codex packaging state, and version consistency
 2. **release-analyze.sh** — Analyzes commits since last tag, counts by type, recommends bump
-3. **release-bump.sh** — Bumps version in all config files, commits, and tags (no push)
-4. **release-execute.sh** — Full flow: bump, commit, tag, and push (use `release-bump.sh` + manual push instead for approval gates)
+3. **release-bump.sh** — Bumps version in all Claude and Codex release files, commits, and tags (no push)
+4. **release-execute.sh** — Full flow: bump, regenerate Codex wrappers, commit, tag, and push (use `release-bump.sh` + manual push instead for approval gates)
 
 ## Release Workflow
 
@@ -59,9 +59,14 @@ This checks:
 - Current branch is `master` or `main`
 - Working tree is clean (no uncommitted changes)
 - `.claude-plugin/marketplace.json` exists
+- `scripts/codex/catalog.json` exists
 - Each plugin's `.claude-plugin/plugin.json` exists
+- Each generated Codex wrapper plugin manifest exists and matches the catalog version
 - `jq` is available
-- Versions across all config files match
+- `bash .github/scripts/validate-skills.sh` passes
+- `./scripts/validate-codex.sh` passes
+- `./scripts/codex-packaging.sh sync-repo` leaves the working tree clean
+- Versions across all Claude and Codex release files match
 
 If checks fail, report the problem and suggest a fix. Do not proceed.
 
@@ -117,7 +122,7 @@ If user selects **Cancel**, stop the workflow.
 
 ### Step 4: Bump, Commit, and Tag
 
-Run the bump script to update all config files, commit, and tag:
+Run the bump script to update all Claude and Codex release files, regenerate the wrapper manifests, commit, and tag:
 
 ```bash
 bash scripts/release-bump.sh {{VERSION}}

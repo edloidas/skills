@@ -50,6 +50,7 @@ Codex follows symlinked skill folders, so updates from `git pull` flow through a
 The Codex wrapper layer is defined in `scripts/codex/catalog.json` and can be regenerated from the repo root:
 
 ```bash
+./scripts/validate-codex.sh
 ./scripts/codex-packaging.sh sync-repo
 ```
 

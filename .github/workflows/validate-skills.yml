@@ -15,3 +15,11 @@ jobs:
 
       - name: Validate skills list
         run: bash .github/scripts/validate-skills.sh
+
+      - name: Validate Codex compatibility contract
+        run: ./scripts/validate-codex.sh
+
+      - name: Verify generated Codex wrapper files
+        run: |
+          ./scripts/codex-packaging.sh sync-repo
+          git diff --exit-code

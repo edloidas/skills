@@ -35,11 +35,33 @@ if ! command -v jq &> /dev/null; then
   exit 1
 fi
 
+# Validate skill registries before checking versions
+echo "Validating skill registries..."
+bash .github/scripts/validate-skills.sh
+./scripts/validate-codex.sh
+
+# Verify generated Codex wrapper files are in sync
+echo "Checking generated Codex wrapper files..."
+./scripts/codex-packaging.sh sync-repo
+
+if [[ -n $(git status --porcelain) ]]; then
+  echo "ERROR: Uncommitted or unsynced changes detected after Codex sync"
+  echo "Run ./scripts/codex-packaging.sh sync-repo and commit the generated changes before releasing"
+  git status --short
+  exit 1
+fi
+
 # Verify marketplace.json exists
 MARKETPLACE_JSON=".claude-plugin/marketplace.json"
+CODEX_CATALOG="scripts/codex/catalog.json"
 
 if [[ ! -f "$MARKETPLACE_JSON" ]]; then
   echo "ERROR: $MARKETPLACE_JSON not found"
+  exit 1
+fi
+
+if [[ ! -f "$CODEX_CATALOG" ]]; then
+  echo "ERROR: $CODEX_CATALOG not found"
   exit 1
 fi
 
@@ -72,6 +94,26 @@ for i in $(seq 0 $((PLUGIN_COUNT - 1))); do
   echo "Plugin '$name': marketplace=$mp_version, plugin.json=$pj_version"
   VERSIONS+=("$mp_version" "$pj_version")
 done
+
+CODEX_VERSION=$(jq -r '.version' "$CODEX_CATALOG")
+echo "Codex catalog: $CODEX_VERSION"
+VERSIONS+=("$CODEX_VERSION")
+
+while IFS= read -r plugin_name; do
+  [[ -n "$plugin_name" ]] || continue
+  plugin_json="plugins/$plugin_name/.codex-plugin/plugin.json"
+
+  if [[ ! -f "$plugin_json" ]]; then
+    echo "ERROR: $plugin_json not found"
+    exit 1
+  fi
+
+  pj_version=$(jq -r '.version' "$plugin_json")
+  echo "Codex plugin '$plugin_name': $pj_version"
+  VERSIONS+=("$pj_version")
+done <<EOF
+$(jq -r '.plugins[].name' "$CODEX_CATALOG")
+EOF
 
 # Check all versions match
 FIRST="${VERSIONS[0]}"
