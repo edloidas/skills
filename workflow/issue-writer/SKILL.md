@@ -250,7 +250,7 @@ Use this comprehensive template for Full format issues (includes all sections as
 
 ---
 
-## Rationale
+### Rationale
 
 {{Include only if the "why" isn't obvious}}
 
@@ -258,7 +258,7 @@ Use this comprehensive template for Full format issues (includes all sections as
 
 ---
 
-## References
+### References
 
 {{Include if there are relevant links}}
 
@@ -266,7 +266,7 @@ Use this comprehensive template for Full format issues (includes all sections as
 
 ---
 
-## Things to Consider
+### Things to Consider
 
 {{Include if there are important edge cases or decisions}}
 
@@ -274,7 +274,7 @@ Use this comprehensive template for Full format issues (includes all sections as
 
 ---
 
-## Implementation
+### Implementation
 
 > [!IMPORTANT]
 > This is not a step-by-step guide — it's a functional checklist ordered logically.
@@ -291,7 +291,7 @@ Use this comprehensive template for Full format issues (includes all sections as
 
 ---
 
-## Acceptance Criteria
+### Acceptance Criteria
 
 {{Always include — defines "done"}}
 
@@ -299,7 +299,7 @@ Use this comprehensive template for Full format issues (includes all sections as
 
 ---
 
-## Testing Steps
+### Testing Steps
 
 {{Include if testing isn't obvious}}
 
@@ -307,7 +307,7 @@ Use this comprehensive template for Full format issues (includes all sections as
 
 ---
 
-## Examples
+### Examples
 
 {{Include if visual examples help clarify}}
 
@@ -317,7 +317,7 @@ Use this comprehensive template for Full format issues (includes all sections as
 
 ---
 
-## Out of Scope _(Optional)_
+### Out of Scope _(Optional)_
 
 {{Include only if scope boundaries need explicit definition}}
 
@@ -325,7 +325,7 @@ Use this comprehensive template for Full format issues (includes all sections as
 
 ---
 
-## Technical Constraints _(Optional)_
+### Technical Constraints _(Optional)_
 
 {{Include only if there are specific technical requirements}}
 
@@ -350,20 +350,20 @@ Use this minimal template for Short format issues. No section headers, no horizo
 
 #### Default Issue Template
 
-Use this template for Default format issues. Use h5 headers, no horizontal rules:
+Use this template for Default format issues. Use h4 headers, no horizontal rules:
 
 ```markdown
 {{DESCRIPTION — 4-8 sentences: what the issue is, what it affects, how to reproduce (when applicable), what's impacted. Keep the user's original phrasing.}}
 
-##### Rationale
+#### Rationale
 
 {{WHY_NEEDED — explain why this needs to be fixed or implemented}}
 
-##### References
+#### References
 
 {{Include only if there are relevant links or related issues}}
 
-##### Implementation Notes
+#### Implementation Notes
 
 {{Include only if the approach is already known — brief notes on what needs to be done}}
 
