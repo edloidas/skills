@@ -151,7 +151,7 @@ remove_stale_entries() {
 
   for entry in "$directory"/* "$directory"/.*; do
     case "$entry" in
-      "$directory/*" | "$directory/." | "$directory/..")
+      "$directory/*" | "$directory/.*" | "$directory/." | "$directory/..")
         continue
         ;;
     esac
