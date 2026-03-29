@@ -2,8 +2,8 @@
 name: comment-audit
 description: Analyze code comments in changed files for quality, relevance, and adherence to best practices. Manual invocation only.
 license: MIT
-compatibility: Claude Code
-allowed-tools: Bash Read Glob Grep Task
+compatibility: Claude Code, Codex
+allowed-tools: Bash Read Glob Grep
 arguments: "files"
 argument-hint: "[all or file paths]"
 model: claude-haiku-4-5
@@ -40,16 +40,15 @@ git diff --name-only HEAD~1..HEAD
 
 Filter to code files only (exclude: `*.md`, `*.json`, `*.lock`, `dist/`, `build/`).
 
-### Step 2: Spawn Comment Scanner
+### Step 2: Collect Comment Candidates
 
-Use Task tool with claude-haiku-4-5 model to scan specific files:
+Use your normal search and read tools to scan the selected files for comments.
+Collect each candidate comment with:
 
-```
-Task:
-- subagent_type: general-purpose
-- model: claude-haiku-4-5
-- prompt: "Scan the following files for comments and extract all comments with their line numbers and context. Files: [file list]"
-```
+- file path
+- line number
+- the comment text
+- enough surrounding code to judge whether the comment is useful or stale
 
 ### Step 3: Evaluate Comments
 

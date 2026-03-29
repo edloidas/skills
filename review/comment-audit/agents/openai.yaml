@@ -1,0 +1,6 @@
+interface:
+  display_name: "Comment Audit"
+  short_description: "Review code comments in changed files for staleness, redundancy, and clarity."
+  default_prompt: "Use $comment-audit to inspect changed code comments and report issues plus improvement suggestions."
+policy:
+  allow_implicit_invocation: false
