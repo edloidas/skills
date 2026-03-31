@@ -30,8 +30,8 @@ This skill spawns two subagents via the Task tool:
 
 | Subagent | Type | Purpose |
 |----------|------|---------|
-| `review-build` | Custom agent | Runs project checks (typecheck, lint, build, test), returns TOOLING_REPORT |
-| `review-rules` | Custom agent | Checks files against project conventions, returns CONVENTION_REPORT |
+| `review:review-build` | Custom agent | Runs project checks (typecheck, lint, build, test), returns TOOLING_REPORT |
+| `review:review-rules` | Custom agent | Checks files against project conventions, returns CONVENTION_REPORT |
 
 Bundled with the `review` plugin — deployed automatically when the plugin is installed. If unavailable, Claude Code falls back to `general-purpose` behavior.
 
@@ -70,11 +70,11 @@ Use Task tool to spawn both agents in a single message:
 
 ```
 Agent 1: review-build
-- subagent_type: review-build
+- subagent_type: review:review-build
 - prompt: "Run project checks and return TOOLING_REPORT"
 
 Agent 2: review-rules
-- subagent_type: review-rules
+- subagent_type: review:review-rules
 - prompt: "Check these files against project conventions: [file list]"
 ```
 

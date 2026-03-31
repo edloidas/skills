@@ -305,7 +305,8 @@ When multiple locations define an agent with the same `name`, higher-priority lo
 ### Naming and invocation
 
 - Agents appear in the UI as `<plugin-name>:<agent-name>` (e.g. `review:review-build`)
-- `subagent_type` in code uses the plain `name` without namespace (e.g. `subagent_type: "review-build"`)
+- `subagent_type` for plugin-distributed agents requires the namespaced form (e.g. `subagent_type: "review:review-build"`)
+- `subagent_type` for built-in agents uses the plain name (e.g. `subagent_type: "general-purpose"`)
 - Agent `name` in frontmatter must match the filename (without `.md`)
 
 ## Avoid
