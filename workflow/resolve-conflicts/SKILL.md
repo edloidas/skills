@@ -116,7 +116,7 @@ Same as Local Mode but:
 
 1. Run `scripts/classify-conflicts.sh` from the skill directory
 2. Parse the output — extract counts and file lists per status code
-3. If there are UU files: dispatch the `conflict-analyzer` agent with the UU file list
+3. If there are UU files: dispatch the `workflow:conflict-analyzer` agent with the UU file list
    - The agent reads each UU file and classifies as trivial/simple/complex
    - Parse the agent's output to get the UU subgroups
 4. Combine bash output (DU/UD/DD/AA/AU/UA) with agent output (UU trivial/simple/complex)
