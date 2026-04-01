@@ -1,6 +1,6 @@
 {
   "name": "edloidas-review",
-  "version": "2.18.0",
+  "version": "2.19.0",
   "description": "A curated Codex-safe review bundle for React analysis, comment quality audits, PR feedback triage, and post-change cleanup.",
   "author": {
     "name": "Mikita Taukachou",
