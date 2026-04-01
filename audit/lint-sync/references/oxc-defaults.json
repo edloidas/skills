@@ -1,0 +1,69 @@
+{
+  "_meta": {
+    "description": "Opinionated default configurations for Oxlint and Oxfmt. Only includes values that differ from tool defaults. Conditional sections are applied based on project dependencies.",
+    "source": "https://oxc.rs/docs/guide/usage/linter/config and https://oxc.rs/docs/guide/usage/formatter/config.html",
+    "updatedAt": "2026-04-01"
+  },
+  "oxlint": {
+    "_comment": "Oxlint default: only 'correctness' category enabled with 'warn'. This config promotes correctness to error and enables additional categories.",
+    "categories": {
+      "correctness": "error",
+      "suspicious": "warn",
+      "perf": "warn"
+    },
+    "plugins": {
+      "_comment": "Default plugins: eslint, typescript, unicorn, oxc. Add import always; react/jsx-a11y only if React is in deps.",
+      "always": ["eslint", "typescript", "unicorn", "oxc", "import"],
+      "ifReact": ["react", "react-hooks", "jsx-a11y"]
+    },
+    "rules": {
+      "no-console": "warn",
+      "no-debugger": "error",
+      "prefer-const": "error",
+      "no-var": "error",
+      "eqeqeq": "error",
+      "no-eval": "error",
+      "no-unused-vars": ["error", { "argsIgnorePattern": "^_", "varsIgnorePattern": "^_" }],
+      "import/no-cycle": "error",
+      "import/no-self-import": "error",
+      "import/no-duplicates": "warn",
+      "typescript/no-explicit-any": "warn",
+      "typescript/consistent-type-imports": "warn"
+    },
+    "env": {
+      "_comment": "Default: { builtin: true }. Add browser and es6 for web projects.",
+      "builtin": true,
+      "browser": true,
+      "es6": true
+    },
+    "options": {
+      "reportUnusedDisableDirectives": "warn"
+    }
+  },
+  "oxfmt": {
+    "_comment": "Only non-default values. Oxfmt defaults: printWidth 100, tabWidth 2, useTabs false, semi true, singleQuote false, trailingComma all, bracketSpacing true, arrowParens always, endOfLine lf, sortPackageJson true.",
+    "singleQuote": true,
+    "sortImports": {
+      "ignoreCase": true,
+      "order": "asc",
+      "newlinesBetween": true,
+      "groups": [
+        "builtin",
+        "external",
+        ["internal", "subpath"],
+        ["parent", "sibling", "index"],
+        "style",
+        "unknown"
+      ]
+    }
+  },
+  "oxfmt_ifTailwind": {
+    "_comment": "Apply when tailwindcss is in project dependencies. Sorts Tailwind utility classes in className, class, and common helper functions.",
+    "sortTailwindcss": {
+      "attributes": ["className", "class"],
+      "functions": ["clsx", "cn", "cva", "tw", "twMerge", "twJoin"],
+      "preserveDuplicates": false,
+      "preserveWhitespace": false
+    }
+  }
+}

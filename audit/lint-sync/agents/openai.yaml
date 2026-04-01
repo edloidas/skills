@@ -1,6 +1,6 @@
 interface:
   display_name: "Lint Sync"
-  short_description: "Compare ESLint rules against Biome coverage and migration options"
-  default_prompt: "Use $lint-sync to compare active ESLint rules against Biome coverage before changing lint configuration."
+  short_description: "Migrate ESLint/Prettier rules to Biome or Oxc with rule-by-rule comparison"
+  default_prompt: "Use $lint-sync to compare active ESLint rules against Biome or Oxc coverage before changing lint configuration."
 policy:
   allow_implicit_invocation: true

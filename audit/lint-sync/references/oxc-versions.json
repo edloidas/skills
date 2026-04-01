@@ -1,0 +1,84 @@
+{
+  "_meta": {
+    "description": "Oxc version changelog: new rules, category changes, new features per Oxlint/Oxfmt version. Used to detect update opportunities and suggest modernization.",
+    "trackedRange": "0.x – 1.x",
+    "updatedAt": "2026-04-01"
+  },
+  "versions": {
+    "0.15": {
+      "highlights": [
+        "Initial stable Oxlint release",
+        "705 rules across 11 plugins",
+        "108 default rules (correctness category only)",
+        "249 rules with auto-fix support"
+      ],
+      "newPlugins": ["eslint", "typescript", "unicorn", "oxc", "react", "react-hooks", "react-perf", "import", "jest", "vitest", "jsx-a11y", "nextjs", "jsdoc", "promise", "node"],
+      "newRules": [],
+      "newFeatures": [
+        "eslint-plugin-oxlint for gradual migration",
+        "@oxlint/migrate CLI for automatic config generation",
+        "JS plugin support (alpha) for custom ESLint plugins"
+      ]
+    },
+    "1.0": {
+      "highlights": [
+        "Type-aware linting via oxlint-tsgolint",
+        "Vue plugin support",
+        "Config extends support",
+        "TypeScript config format (oxlint.config.ts)"
+      ],
+      "newPlugins": ["vue"],
+      "newRules": [
+        "typescript/await-thenable",
+        "typescript/no-floating-promises",
+        "typescript/no-misused-promises",
+        "typescript/no-unnecessary-type-assertion",
+        "typescript/prefer-find",
+        "typescript/prefer-includes",
+        "typescript/strict-boolean-expressions",
+        "typescript/switch-exhaustiveness-check",
+        "typescript/unbound-method"
+      ],
+      "newFeatures": [
+        "Type-aware rules (40 rules via oxlint-tsgolint)",
+        "oxlint.config.ts support (Node v22.18+)",
+        "Config extends for shared configs",
+        "Vue template linting (17 rules)"
+      ]
+    },
+    "oxfmt-0.1": {
+      "highlights": [
+        "Initial Oxfmt release",
+        "Prettier-compatible formatting",
+        "Built-in import sorting, Tailwind class sorting, package.json sorting"
+      ],
+      "newFeatures": [
+        "printWidth defaults to 100 (vs Prettier's 80)",
+        "objectWrap: preserve (Oxfmt-only)",
+        "Built-in sortImports (no plugin needed)",
+        "Built-in sortTailwindcss (no plugin needed)",
+        "Built-in sortPackageJson (enabled by default)",
+        "Built-in JSDoc formatting",
+        "oxfmt --migrate=prettier for automatic migration",
+        "oxfmt --migrate=biome for Biome→Oxfmt migration"
+      ]
+    }
+  },
+  "recommendedConfig": {
+    "_comment": "Categories and rules worth enabling beyond defaults. These are off by default but catch real issues.",
+    "categories": {
+      "suspicious": "Rules that detect likely bugs and questionable patterns. Safe to enable as warnings.",
+      "perf": "Performance-related rules. Catch common performance pitfalls."
+    },
+    "rules": {
+      "eslint/no-console": "Prevent console.log leaking to production",
+      "eslint/eqeqeq": "Require strict equality operators",
+      "eslint/no-eval": "Disallow eval() for security",
+      "import/no-cycle": "Detect circular imports",
+      "import/no-self-import": "Prevent modules importing themselves",
+      "import/no-duplicates": "Merge duplicate import statements",
+      "typescript/no-explicit-any": "Flag untyped escape hatches",
+      "typescript/consistent-type-imports": "Enforce type-only imports"
+    }
+  }
+}

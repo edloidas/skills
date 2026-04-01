@@ -1,0 +1,110 @@
+{
+  "_meta": {
+    "description": "Biome version changelog: nursery promotions, new rules, new formatter options. Used to detect stale nursery refs in user configs and suggest modernization.",
+    "trackedRange": "2.0 – 2.4",
+    "updatedAt": "2026-04-01"
+  },
+  "versions": {
+    "2.0": {
+      "highlights": [
+        "Type-aware linting without TS compiler",
+        "Multi-file analysis",
+        "Linter plugins (experimental)",
+        "HTML formatter (experimental)",
+        "Linter domains (framework-aware rule groups)"
+      ],
+      "promotedFromNursery": [],
+      "newRules": [
+        "correctness/noFloatingPromises",
+        "correctness/noUnresolvedImports"
+      ],
+      "newFormatterOptions": [],
+      "newDomains": ["react", "next", "solid", "test", "project"]
+    },
+    "2.1": {
+      "highlights": [
+        "7 new rules",
+        "noAlert, noImplicitCoercion, noMagicNumbers",
+        "noMisusedPromises, noUnassignedVariables",
+        "useReadonlyClassProperties, useUnifiedTypeSignature"
+      ],
+      "promotedFromNursery": [],
+      "newRules": [
+        "nursery/noAlert",
+        "nursery/noImplicitCoercion",
+        "nursery/noMagicNumbers",
+        "nursery/noMisusedPromises",
+        "nursery/noUnassignedVariables",
+        "nursery/useReadonlyClassProperties",
+        "nursery/useUnifiedTypeSignature"
+      ],
+      "newFormatterOptions": [],
+      "newDomains": []
+    },
+    "2.3": {
+      "highlights": [
+        "Vue/Svelte/Astro support (experimental)",
+        "Tailwind v4 CSS support",
+        "React v19 support",
+        "lineEnding: auto option"
+      ],
+      "promotedFromNursery": [
+        { "from": "nursery/noNonNullAssertedOptionalChain", "to": "correctness/noNonNullAssertedOptionalChain" },
+        { "from": "nursery/useReactFunctionComponents", "to": "correctness/useReactFunctionComponents" },
+        { "from": "nursery/useImageSize", "to": "a11y/useImageSize" },
+        { "from": "nursery/useConsistentTypeDefinitions", "to": "style/useConsistentTypeDefinitions" },
+        { "from": "nursery/noSecrets", "to": "security/noSecrets" }
+      ],
+      "newRules": [],
+      "newFormatterOptions": [
+        { "option": "formatter.lineEnding", "value": "auto", "description": "Auto-detect line endings" }
+      ],
+      "newDomains": ["vue", "qwik", "playwright", "drizzle", "turborepo"]
+    },
+    "2.4": {
+      "highlights": [
+        "Embedded CSS/GraphQL formatting",
+        "15 new HTML a11y rules",
+        "types domain (type-aware nursery rules)",
+        "24 rules promoted from nursery",
+        "trailingNewline formatter option"
+      ],
+      "promotedFromNursery": [
+        { "from": "nursery/noUnresolvedImports", "to": "correctness/noUnresolvedImports" },
+        { "from": "nursery/noImportCycles", "to": "suspicious/noImportCycles" },
+        { "from": "nursery/noDeprecatedImports", "to": "suspicious/noDeprecatedImports" },
+        { "from": "nursery/noReactForwardRef", "to": "suspicious/noReactForwardRef" },
+        { "from": "nursery/noUnusedExpressions", "to": "suspicious/noUnusedExpressions" },
+        { "from": "nursery/noEmptySource", "to": "suspicious/noEmptySource" },
+        { "from": "nursery/useDeprecatedDate", "to": "suspicious/useDeprecatedDate" },
+        { "from": "nursery/noDuplicateDependencies", "to": "suspicious/noDuplicateDependencies" },
+        { "from": "nursery/noUselessUndefined", "to": "complexity/noUselessUndefined" },
+        { "from": "nursery/useMaxParams", "to": "complexity/useMaxParams" },
+        { "from": "nursery/noUselessCatchBinding", "to": "complexity/noUselessCatchBinding" },
+        { "from": "nursery/useConsistentArrowReturn", "to": "style/useConsistentArrowReturn" },
+        { "from": "nursery/noJsxLiterals", "to": "style/noJsxLiterals" },
+        { "from": "nursery/noVueReservedProps", "to": "correctness/noVueReservedProps" },
+        { "from": "nursery/noVueReservedKeys", "to": "correctness/noVueReservedKeys" },
+        { "from": "nursery/noVueDataObjectDeclaration", "to": "correctness/noVueDataObjectDeclaration" },
+        { "from": "nursery/noNextAsyncClientComponent", "to": "correctness/noNextAsyncClientComponent" },
+        { "from": "nursery/noVueDuplicateKeys", "to": "correctness/noVueDuplicateKeys" },
+        { "from": "nursery/noVueSetupPropsReactivityLoss", "to": "correctness/noVueSetupPropsReactivityLoss" },
+        { "from": "nursery/useQwikMethodUsage", "to": "correctness/useQwikMethodUsage" },
+        { "from": "nursery/useQwikValidLexicalScope", "to": "correctness/useQwikValidLexicalScope" }
+      ],
+      "newRules": [
+        "nursery/useArraySortCompare",
+        "nursery/useAwaitThenable",
+        "nursery/useFind",
+        "nursery/useRegexpExec",
+        "nursery/noUnnecessaryConditions",
+        "nursery/noMisusedPromises",
+        "nursery/noFloatingPromises"
+      ],
+      "newFormatterOptions": [
+        { "option": "formatter.trailingNewline", "value": true, "description": "Trailing newline at EOF" }
+      ],
+      "newDomains": ["types"]
+    }
+  }
+}
