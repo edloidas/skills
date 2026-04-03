@@ -1,6 +1,6 @@
 {
   "name": "edloidas-workflow",
-  "version": "2.19.0",
+  "version": "2.20.0",
   "description": "A Codex-safe workflow bundle for instruction-file sync, issue drafting and triage, release prep, commit summaries, label management, and Git worktree management.",
   "author": {
     "name": "Mikita Taukachou",
