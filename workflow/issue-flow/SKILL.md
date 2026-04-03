@@ -136,11 +136,33 @@ If `repo-context.sh` found projects, use `AskUserQuestion` to ask which project 
 
 ### Milestone
 
-Check the target repo's CLAUDE.md for milestone configuration:
+**Trigger:** Check milestones when either:
+- The user explicitly asks to assign a milestone
+- The target repo's CLAUDE.md mentions milestones (any mention — section headers, instructions, config)
 
-- If CLAUDE.md specifies a milestone name → use it directly with `--milestone "<name>"`
-- If CLAUDE.md says milestones should be used but no specific name → fetch active milestones via `gh api repos/<owner>/<repo>/milestones?state=open --jq '.[].title'` (`<owner>/<repo>` from `repo-context.sh` first line), then `AskUserQuestion` to pick one
-- If CLAUDE.md says nothing about milestones → skip silently
+If neither trigger matches, skip silently.
+
+**When triggered**, fetch open milestones:
+
+```bash
+gh api "repos/<owner>/<repo>/milestones?state=open" --jq '.[] | {number, title, state, open_issues, closed_issues, due_on}'
+```
+
+Then apply:
+- **0 milestones**: skip silently
+- **1 milestone**: assign automatically — inform the user which milestone was used
+- **2+ milestones**: use `AskUserQuestion` to pick one:
+
+```
+Which milestone for this issue?
+1. "<title1>" (Recommended) — X open / Y closed, due YYYY-MM-DD
+2. "<title2>" — X open / Y closed, due YYYY-MM-DD
+3. No milestone
+```
+
+Order by due date (soonest first). The first non-closed milestone is recommended.
+
+Assign via `--milestone "<title>"` in the `gh issue create` command.
 
 ### Create
 
@@ -240,11 +262,13 @@ When the user asks to create multiple issues at once (e.g., an epic with child i
 ### Summary Table Format
 
 ```
-| #     | Title                   | URL                                              |
-| ----- | ----------------------- | ------------------------------------------------ |
-| 10023 | AnchorDialog for Editor | https://github.com/owner/repo/issues/10023       |
-| ...   | ...                     | ...                                              |
+| Issue | Title                   | Milestone   |
+| ----- | ----------------------- | ----------- |
+| [#10023](https://github.com/owner/repo/issues/10023) | AnchorDialog for Editor | Alpha (MVP) |
+| [#10024](https://github.com/owner/repo/issues/10024) | Toolbar refactor        | Alpha (MVP) |
 ```
+
+Omit the Milestone column if no milestone was assigned to any issue.
 
 ## Step 2: Create Branch
 
