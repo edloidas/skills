@@ -265,6 +265,9 @@ Codex packaging layer is updated in the same change:
 - Add the skill symlink in `.agents/skills/` if it is part of the repo-local Codex skill set.
 - Add the skill symlink in the appropriate `plugins/<plugin-name>/skills/` wrapper plugin if it should
   be installable through the repo marketplace.
+- If a Codex-exposed skill mirrors a Claude plugin agent via a prompt reference
+  (for example `references/*-prompt.md`), update the Claude agent file and the
+  Codex prompt reference together so the two hosts do not drift out of sync.
 - Ensure the wrapper plugin manifest and `.agents/plugins/marketplace.json` still reflect the
   intended Codex plugin set.
 - Update `scripts/codex/catalog.json`, run `./scripts/validate-codex.sh`, and run `./scripts/codex-packaging.sh sync-repo` so the
