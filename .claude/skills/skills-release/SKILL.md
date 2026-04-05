@@ -51,7 +51,7 @@ Follow these steps in order. Stop immediately if any step fails.
 Run the preparation script to validate everything:
 
 ```bash
-bash scripts/release-prepare.sh
+bash .claude/skills/skills-release/scripts/release-prepare.sh
 ```
 
 This checks:
@@ -75,7 +75,7 @@ If checks fail, report the problem and suggest a fix. Do not proceed.
 Run the analysis script to understand what changed:
 
 ```bash
-bash scripts/release-analyze.sh
+bash .claude/skills/skills-release/scripts/release-analyze.sh
 ```
 
 This will:
@@ -125,7 +125,7 @@ If user selects **Cancel**, stop the workflow.
 Run the bump script to update all Claude and Codex release files, regenerate the wrapper manifests, commit, and tag:
 
 ```bash
-bash scripts/release-bump.sh {{VERSION}}
+bash .claude/skills/skills-release/scripts/release-bump.sh {{VERSION}}
 ```
 
 This script updates all `plugin.json` and `marketplace.json` files, verifies the updates, stages, commits as `Release v{{VERSION}}`, and creates the `v{{VERSION}}` tag. It does **not** push.
