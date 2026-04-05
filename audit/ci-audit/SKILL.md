@@ -109,7 +109,18 @@ jobs:
 
 **Time savings:** Independent jobs run simultaneously instead of sequentially.
 
+**Note on unified check commands:** If your toolchain provides a combined command (e.g., Vite+'s `vp check` handles lint, format, and typecheck together), parallel job splitting adds overhead without benefit. Check whether the toolchain already parallelizes internally before splitting jobs.
+
 ### Step 3: Check Caching Configuration
+
+#### Vite+ (voidzero-dev/setup-vp)
+```yaml
+# One action handles node, pnpm, and caching
+- uses: voidzero-dev/setup-vp@v1
+  with:
+    node-version: 24
+    cache: true
+```
 
 #### Node.js/pnpm Caching
 ```yaml
@@ -152,6 +163,7 @@ jobs:
   with:
     name: build
     path: dist/
+    retention-days: 30  # Default is 90 days; set explicitly to control storage
 
 # In dependent job
 - uses: actions/download-artifact@v4
@@ -163,16 +175,18 @@ jobs:
 ### Step 4: Check Concurrency Settings
 
 ```yaml
-# Good: Cancel outdated runs
+# Good: Scoped to workflow name, handles PR head branches correctly
 concurrency:
-  group: ci-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
   cancel-in-progress: true
 
-# For deployment (don't cancel)
+# For deployment (don't cancel in-progress deploys)
 concurrency:
-  group: deploy-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
   cancel-in-progress: false
 ```
+
+Using `github.workflow` in the group prevents different workflows from accidentally sharing a concurrency slot. `github.head_ref || github.ref` correctly uses the PR branch name on pull_request events and falls back to the ref on push events.
 
 ### Step 5: Check Conditional Execution
 
@@ -248,11 +262,15 @@ on: [push, pull_request]  # Runs twice on PR
 
 ### Step 9: Check for Optimizations
 
-#### Shallow Clone
+#### Shallow Clone vs Full History
 ```yaml
+# Default: shallow clone (fast, sufficient for most CI)
+- uses: actions/checkout@v4
+
+# Full history: required for release/tag workflows (changelog generation, git describe, gh release --generate-notes)
 - uses: actions/checkout@v4
   with:
-    fetch-depth: 1  # Default, shallow clone
+    fetch-depth: 0
 ```
 
 #### Install Optimization
@@ -265,6 +283,21 @@ on: [push, pull_request]  # Runs twice on PR
 
 # yarn
 - run: yarn --frozen-lockfile
+```
+
+#### Monorepo Working Directory
+```yaml
+# Set once per job instead of repeating working-directory on every step
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/web
+    steps:
+      - uses: actions/checkout@v4
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
 ```
 
 ### Step 10: Generate Report
@@ -290,7 +323,8 @@ on: [push, pull_request]  # Runs twice on PR
 3. Use artifact caching for build outputs
 ```
 
-See `references/ci-template.yaml` for an optimized GitHub Actions CI workflow with parallel jobs, path filters, and concurrency control.
+See `references/ci-template.yaml` for an optimized pnpm workflow with parallel jobs, path filters, and concurrency control.
+See `references/ci-template-vp.yaml` for a Vite+ (`voidzero-dev/setup-vp`) variant.
 
 ## Keywords
 
