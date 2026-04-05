@@ -62,6 +62,7 @@ How well the skill declares and uses tools, models, and integrations.
 - [ ] `allowed-tools` aren't overly permissive (e.g., bare `Bash` when `Bash(git:*)` would suffice)
 - [ ] `model` override (if present) is justified — not using expensive model for simple tasks
 - [ ] Task tool (subagents) used where parallel independent work would genuinely benefit
+- [ ] Multi-agent skills give a fallback for agent-specific tools (for example, `AskUserQuestion` fallback to direct chat, or Claude `Task` fallback to Codex `spawn_agent` / sequential audit)
 - [ ] Scripts (if any) are well-integrated into the workflow, not orphaned
 - [ ] `user-invocable` field present when skill is meant to be invoked by user
 - [ ] `arguments` field present when skill accepts user input
@@ -147,6 +148,36 @@ Correctness and consistency of YAML, Markdown, and code formatting.
 | 2 | YAML issues that could cause parse failures, or broken file references. |
 | 1 | Frontmatter is invalid YAML, or formatting severely impacts readability. |
 
+## 7. Codex Integration
+
+Conditional checks for skills that declare Codex support or are exposed through the repo's Codex packaging layer.
+
+**Apply this category when any are true:**
+- `compatibility` includes `Codex`
+- `agents/openai.yaml` exists
+- the skill appears in `scripts/codex/catalog.json`
+
+Otherwise, score this category as `N/A` and exclude it from the overall average.
+
+**Checks:**
+- [ ] `agents/openai.yaml` exists when the skill is Codex-compatible in this repo
+- [ ] `agents/openai.yaml` includes `interface.display_name`, `interface.short_description`, and `policy.allow_implicit_invocation`
+- [ ] `compatibility` includes `Codex` when the skill is exposed through the Codex catalog
+- [ ] the skill appears in `scripts/codex/catalog.json` when it claims Codex support in this repo
+- [ ] the catalog entry places the skill under the correct source group
+- [ ] generated outputs (`.agents/skills/`, wrapper plugin symlinks, plugin manifests, marketplace manifest) reflect the source contract rather than a hand-maintained parallel source of truth
+- [ ] instructions point contributors to `scripts/codex/catalog.json` and `scripts/codex-packaging.sh sync-repo`, not direct edits to generated wrapper files
+- [ ] if `scripts/validate-codex.sh` exists, its checks align with the skill's claimed Codex readiness
+
+**Scoring anchors:**
+| Score | Criteria |
+|-------|----------|
+| 5 | Codex metadata, compatibility, catalog exposure, and generated layer are aligned. No contract gaps. |
+| 4 | One minor Codex metadata or exposure gap, but the contract is still mostly aligned. |
+| 3 | Partial Codex readiness. Metadata exists but catalog or generated-layer contract is incomplete or stale. |
+| 2 | Multiple Codex contract mismatches, or the skill claims Codex support without a clear packaging path. |
+| 1 | Skill is presented as Codex-ready but core contract files are missing or contradictory. |
+
 ## General Scoring Guidelines
 
 - **Be specific**: Every score must cite line numbers, quotes, or file paths as evidence.
@@ -154,3 +185,4 @@ Correctness and consistency of YAML, Markdown, and code formatting.
 - **Be consistent**: Apply the same standards across all skills. A 4 for one skill should mean the same quality bar as a 4 for another.
 - **Prioritize impact**: Issues that affect the user's experience or the skill's correctness matter more than cosmetic concerns.
 - **Context matters**: A skill's complexity should be proportional to its task. A simple text-fixing skill doesn't need subagents.
+- **Agent-awareness matters**: Do not penalize Claude-specific frontmatter extensions themselves, but do flag instructions that require an agent-specific tool without telling another supported agent what to do instead.

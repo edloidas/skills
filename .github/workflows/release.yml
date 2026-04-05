@@ -17,7 +17,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Validate skills list
+      - name: Validate Claude marketplace and source plugins
         run: bash .github/scripts/validate-skills.sh
 
       - name: Validate Codex compatibility contract

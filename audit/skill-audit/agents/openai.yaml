@@ -1,0 +1,6 @@
+interface:
+  display_name: "Skill Audit"
+  short_description: "Audit skills for quality, compliance, and Codex readiness"
+  default_prompt: "Use $skill-audit to audit one or more skills for specification quality and Codex integration gaps."
+policy:
+  allow_implicit_invocation: true

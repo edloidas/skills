@@ -46,15 +46,16 @@
       "group": "audit",
       "name": "edloidas-audit",
       "displayName": "Edloidas Audit",
-      "description": "A Codex-safe audit bundle for GitHub Actions, ESLint and Biome overlap, package scripts, and monorepo workspace configuration.",
-      "shortDescription": "Audit CI, lint overlap, scripts, and workspace setup.",
-      "longDescription": "Install the audit bundle from edloidas/skills to inspect CI workflows, ESLint and Biome overlap, package scripts, and pnpm workspace configuration from Codex.",
+      "description": "A Codex-safe audit bundle for skill quality, GitHub Actions, ESLint and Biome overlap, package scripts, and monorepo workspace configuration.",
+      "shortDescription": "Audit skills, CI, lint overlap, scripts, and workspace setup.",
+      "longDescription": "Install the audit bundle from edloidas/skills to inspect skill quality, CI workflows, ESLint and Biome overlap, package scripts, and pnpm workspace configuration from Codex.",
       "category": "Coding",
       "websiteURL": "https://github.com/edloidas/skills",
       "keywords": [
         "skills",
         "codex",
         "audit",
+        "quality",
         "ci",
         "scripts",
         "workspace",
@@ -64,6 +65,7 @@
       "skills": [
         "audit/ci-audit",
         "audit/lint-sync",
+        "audit/skill-audit",
         "audit/scripts-audit",
         "audit/workspace-audit"
       ]

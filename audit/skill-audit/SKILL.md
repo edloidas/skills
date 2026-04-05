@@ -2,13 +2,14 @@
 name: skill-audit
 description: >
   Audit Agent Skills for quality, compliance, and best practices. Evaluates skills
-  against the Agent Skills specification across 6 categories: Specification Compliance,
-  Instruction Quality, Tool & Integration Design, Context Efficiency, Safety & Robustness,
-  and Formatting & Syntax. Produces scored reports with evidence-backed findings.
-  Use when the user asks to audit, evaluate, review, or check skill quality.
+  against the Agent Skills specification across 6 core categories plus a conditional
+  Codex Integration category covering `agents/openai.yaml`, Codex compatibility,
+  catalog exposure, and wrapper sync. Produces scored reports with evidence-backed
+  findings. Use when the user asks to audit, evaluate, review, or check skill quality
+  or Codex readiness.
 license: MIT
-compatibility: Claude Code
-allowed-tools: Read Glob Grep Task Bash(bash:audit/skill-audit/*)
+compatibility: Claude Code, Codex
+allowed-tools: Read Glob Grep Task Bash(bash:audit/skill-audit/*) Bash(bash:scripts/validate-codex.sh)
 user-invocable: true
 arguments: "skills"
 argument-hint: "[all or skill names]"
@@ -20,7 +21,7 @@ metadata:
 
 ## Purpose
 
-Systematically evaluate skills against the Agent Skills specification and AI instruction best practices. Spawns parallel subagents (one per skill) and aggregates results into a scored report.
+Systematically evaluate skills against the Agent Skills specification, AI instruction best practices, and this repo's Codex packaging contract. Audit the skill itself first, then audit repo-level Codex exposure only when the target skill claims Codex support or is exposed through the Codex catalog.
 
 ## When to Use This Skill
 
@@ -30,8 +31,10 @@ Use when the user asks to:
 - "Check skills against the spec"
 - "Review skill compliance"
 - "Score skill X"
+- "Check whether a skill is Codex-ready"
+- "Audit Codex compatibility for a skill"
 
-Trigger phrases: "skill audit", "audit skills", "evaluate skills", "skill quality", "skill review", "skill score"
+Trigger phrases: "skill audit", "audit skills", "evaluate skills", "skill quality", "skill review", "skill score", "codex ready", "codex compatibility"
 
 ## Commands
 
@@ -53,6 +56,7 @@ When the user's intent is ambiguous (e.g., "audit the skills"), default to all-s
 | 4 | Context Efficiency | Progressive disclosure, token budget, reference usage |
 | 5 | Safety & Robustness | Mutation gates, error handling, dependency docs |
 | 6 | Formatting & Syntax | YAML validity, markdown consistency, code blocks |
+| 7 | Codex Integration | `agents/openai.yaml`, Codex compatibility, catalog exposure, wrapper sync (conditional) |
 
 Full criteria and scoring anchors are in `references/evaluation-rubric.md`.
 
@@ -66,7 +70,7 @@ Full criteria and scoring anchors are in `references/evaluation-rubric.md`.
 | 2 | Needs Work | Major issues; fix before publishing |
 | 1 | Broken | Critical problems; unusable or misleading |
 
-Overall score: equal-weight average of all 6 categories. The minimum category score is highlighted separately — a skill scoring 5 everywhere but 1 on Safety is not "4.3 overall, ship it."
+Overall score: equal-weight average of all applicable categories. Most skills use the 6 core categories. Skills that declare Codex support, ship `agents/openai.yaml`, or appear in `scripts/codex/catalog.json` use 7 categories with Codex Integration included. The minimum applicable category score is highlighted separately — a skill scoring 5 everywhere but 1 on Safety is not "4.3 overall, ship it."
 
 Every score must cite specific lines, quotes, or file paths. A score without evidence is invalid.
 
@@ -92,35 +96,76 @@ The script finds `*/SKILL.md` relative to CWD, extracts directory names, and app
 
 If no skills match the scope, output a message and stop.
 
-### Step 3: Load Subagent Prompt
+### Step 3: Detect Codex Contract Context
+
+Read `references/codex-contracts.md` before auditing. It defines the repo-specific Codex contract and the source-of-truth files for Codex exposure.
+
+Treat Codex Integration as **applicable** for a target skill when any of these are true:
+- `compatibility` in `SKILL.md` includes `Codex`
+- `agents/openai.yaml` exists in the skill directory
+- The skill path appears in `scripts/codex/catalog.json`
+
+If the repo does not contain `scripts/codex/catalog.json`, skip Codex wrapper checks and audit only any local `agents/openai.yaml` metadata present.
+
+### Step 4: Run Repo-Level Codex Validation Once
+
+If `scripts/validate-codex.sh` exists, run it from the repo root before spawning per-skill subagents:
+
+```bash
+bash scripts/validate-codex.sh
+```
+
+Capture both success and failure output.
+
+- **Pass**: treat it as strong evidence that the generated wrapper layer matches the source contract at the time of the audit
+- **Fail**: preserve the exact failing lines, map them to affected skills when paths are explicit, and include unmatched failures under cross-cutting Codex issues
+- **Unavailable dependencies or execution failure**: continue with manual inspection and note reduced confidence for Codex Integration scoring
+
+This skill is still report-only. Do **not** run `scripts/codex-packaging.sh sync-repo` during an audit.
+
+### Step 5: Load Subagent Prompt
 
 Read `references/subagent-prompt.md` — it contains the complete prompt template with a condensed rubric baked in. This is what gets injected into each subagent.
 
-The full rubric (`references/evaluation-rubric.md`) remains as a detailed human-readable reference for spec lookups but is not injected into subagents.
+The full rubric (`references/evaluation-rubric.md`) and Codex contract reference (`references/codex-contracts.md`) remain detailed human-readable references for spec lookups but are not injected verbatim into subagents.
 
-### Step 4: Spawn Subagents
+### Step 6: Spawn Subagents
 
-Spawn **all** subagents in a **single message** using the Task tool so they execute in parallel. Use one `haiku` subagent per skill.
+Spawn **all** subagents in parallel when the host agent supports it. Use one lightweight read-only subagent per skill.
 
 For each skill, take the prompt template from `references/subagent-prompt.md`, replace `{{SKILL_NAME}}` and `{{REPO_ROOT}}` with actual values, and pass the result as the subagent prompt.
 
-**Subagent configuration** (also documented in the reference file):
+**Claude Code path**:
+- Use the `Task` tool
+- Spawn all subagents in a single message
 - `subagent_type`: `general-purpose`
 - `model`: `haiku`
 - `max_turns`: 10
 
+**Codex path**:
+- Use `spawn_agent`
+- Prefer `agent_type: explorer` for read-only repository inspection
+- Prefer a lightweight model such as `gpt-5.4-mini`
+- Use `reasoning_effort: medium`
+- Launch all skill audits first, then wait for results
+
+**Fallback path**:
+- If subagents are unavailable, audit sequentially in the main agent using the same rubric and output format
+
 If a subagent fails or returns unparseable output, mark that skill as **"Audit Incomplete"** with the reason.
 
-### Step 5: Collect and Validate Results
+### Step 7: Collect and Validate Results
 
 For each subagent result:
 1. Parse the structured output (SKILL, SCORES, ISSUES, STRENGTHS, RECOMMENDATIONS)
 2. Validate that each score has accompanying evidence
 3. Reject scores without evidence — flag as incomplete
-4. Calculate overall score (average of 6 category scores, rounded to 1 decimal)
-5. Identify minimum category score
+4. Treat `Codex Integration: N/A` as non-applicable and exclude it from the average
+5. Calculate overall score (average of all numeric category scores, rounded to 1 decimal)
+6. Identify minimum applicable category score
+7. Merge in any repo-level `scripts/validate-codex.sh` failures that affect the skill
 
-### Step 6: Generate Report
+### Step 8: Generate Report
 
 **All-skills mode — Summary table:**
 
@@ -129,9 +174,9 @@ For each subagent result:
 
 **Skills audited: N | Average: X.X / 5 | Lowest: <skill> (X.X)**
 
-| Skill | Spec | Quality | Tools | Context | Safety | Format | Overall | Min |
-|-------|------|---------|-------|---------|--------|--------|---------|-----|
-| name  | X    | X       | X     | X       | X      | X      | X.X     | X   |
+| Skill | Spec | Quality | Tools | Context | Safety | Format | Codex | Overall | Min |
+|-------|------|---------|-------|---------|--------|--------|-------|---------|-----|
+| name  | X    | X       | X     | X       | X      | X      | X/-   | X.X     | X   |
 ```
 
 Sort table by overall score (ascending — worst first).
@@ -142,6 +187,8 @@ Sort table by overall score (ascending — worst first).
 ### Cross-Cutting Issues
 1. Issue description (affects N skills)
 ```
+
+Use this section for repo-level Codex validation failures that affect multiple skills or generated wrapper artifacts rather than a single skill.
 
 **Top recommendations** (most impactful across all skills):
 
@@ -167,6 +214,7 @@ Sort table by overall score (ascending — worst first).
 | Context Efficiency | X | ... |
 | Safety & Robustness | X | ... |
 | Formatting & Syntax | X | ... |
+| Codex Integration | X or N/A | ... |
 
 **Issues:**
 1. [Category] Description — location
@@ -185,16 +233,21 @@ Sort table by overall score (ascending — worst first).
 - **Very large SKILL.md (>500 lines)**: Flag in Context Efficiency, still evaluate fully
 - **Binary files in assets/**: Skip binary files when computing content, still check for references
 - **Subagent timeout/failure**: Mark as "Audit Incomplete", continue with other skills
+- **Codex contract files absent**: Skip wrapper-layer checks; score Codex Integration only from local metadata if applicable
+- **`scripts/validate-codex.sh` fails because `jq` or another dependency is missing**: Continue with manual inspection and say Codex confidence is reduced
+- **Generated wrapper layer appears stale**: Report it as a contract issue; do not regenerate files during the audit
 - **No skills match scope**: Output "No skills to audit" and stop
 
 ## Rules
 
-- **Parallel execution**: Always spawn all subagents in a single message
+- **Parallel when possible**: Spawn all subagents together when the host supports it
 - **Evidence required**: Never accept a score without cited evidence
 - **Self-exclusion**: Exclude `skill-audit` in all-skills mode; allow explicit audit via name
 - **No fixes**: Report only — do not modify any skill files
+- **No generated-file edits**: Audit generated Codex wrapper outputs, but treat `scripts/codex/catalog.json` and source skills as the editable contract
+- **Agent-specific fallbacks**: Do not penalize Claude-only frontmatter extensions, but do flag multi-agent skills that require agent-specific tools without a fallback
 - **Worst-first**: Sort and prioritize by lowest scores
 
 ## Keywords
 
-skill audit, evaluate, quality, compliance, specification, score, rubric, review skills
+skill audit, evaluate, quality, compliance, specification, score, rubric, review skills, codex ready, codex compatibility

@@ -14,13 +14,15 @@ Self-contained prompt for per-skill audit subagents. Replace `{{SKILL_NAME}}` an
 You are a skill auditor. Evaluate the skill "{{SKILL_NAME}}" located at {{REPO_ROOT}}/{{SKILL_NAME}}/ against the evaluation rubric below.
 
 INSTRUCTIONS:
-1. Read ALL files in the skill directory: SKILL.md plus any files in scripts/, references/, assets/
+1. Read ALL files in the skill directory: SKILL.md plus any files in agents/, scripts/, references/, assets/
 2. Use ONLY these tools: Read (for file content), Glob (for file discovery), Grep (for searching). Do NOT use Bash commands — no wc, sed, cat, head, tail, or any shell utilities.
-3. Evaluate the skill against each of the 6 categories in the rubric
-4. For each category, assign a score (1-5) and provide specific evidence (line numbers, quotes, file paths)
-5. A score without evidence is INVALID — you must cite what you observed
-6. List up to 5 top issues, up to 3 strengths, and up to 3 recommendations
-7. Use EXACTLY the output format specified below
+3. If the skill declares Codex compatibility, ships agents/openai.yaml, or appears in {{REPO_ROOT}}/scripts/codex/catalog.json, also inspect the repo-level Codex contract files described in references/codex-contracts.md
+4. Evaluate the skill against each rubric category. Score Codex Integration as N/A only when the skill has no Codex contract surface at all
+5. For each category, assign a score (1-5, or N/A for Codex Integration only) and provide specific evidence (line numbers, quotes, file paths)
+6. For multi-agent skills, treat agent-specific tool instructions without a fallback as an integration flaw
+7. A score without evidence is INVALID — you must cite what you observed
+8. List up to 5 top issues, up to 3 strengths, and up to 3 recommendations
+9. Use EXACTLY the output format specified below
 
 EVALUATION RUBRIC:
 
@@ -47,7 +49,7 @@ EVALUATION RUBRIC:
    | 3 | Some tool mismatch (declared but unused, or used but undeclared). Or overly permissive Bash. |
    | 2 | Significant tool mismatches. Scripts exist but aren't referenced in workflow. |
    | 1 | No allowed-tools despite using tools, or tools dangerously over-permissive. |
-   Checks: allowed-tools match actual usage, not overly permissive, model override justified, subagents used appropriately, scripts integrated, arguments field present when accepting input.
+   Checks: allowed-tools match actual usage, not overly permissive, model override justified, subagents used appropriately, scripts integrated, arguments field present when accepting input, multi-agent skills provide fallbacks for agent-specific tools.
 
 4. Context Efficiency — progressive disclosure, token budget, reference usage
    | 5 | Lean body, heavy content in references, description under ~100 tokens. |
@@ -74,11 +76,21 @@ EVALUATION RUBRIC:
    | 1 | Frontmatter is invalid YAML, or formatting severely impacts readability. |
    Checks: valid YAML, consistent heading hierarchy (h1 > h2 > h3), code blocks tagged, no mixed HTML/markdown, tables aligned, no broken file references, consistent list style.
 
+7. Codex Integration — conditional Codex metadata and packaging contract
+   Score N/A only when the skill does not declare Codex compatibility, has no agents/openai.yaml, and is absent from the Codex catalog.
+   | 5 | Codex metadata, compatibility, catalog exposure, and generated layer are aligned. |
+   | 4 | One minor Codex metadata or exposure gap. |
+   | 3 | Partial Codex readiness. Metadata exists but exposure or wrapper sync is incomplete. |
+   | 2 | Multiple Codex contract mismatches. |
+   | 1 | Skill is presented as Codex-ready but core contract files are missing or contradictory. |
+   Checks: agents/openai.yaml present when Codex applies; required interface fields present; compatibility aligns with catalog exposure; skill appears in scripts/codex/catalog.json when appropriate; generated layer follows the source contract; contributor guidance points to catalog + sync scripts instead of hand-editing generated wrappers.
+
 GENERAL GUIDELINES:
 - Every score must cite specific lines, quotes, or file paths. A score without evidence is invalid.
 - Read-only skills without scripts have less to evaluate in Safety — don't penalize for absence of risk surface.
 - Apply the same standards across all skills consistently.
 - Prioritize impact over cosmetics.
+- Do not penalize Claude-specific frontmatter extensions themselves. Penalize only missing fallback guidance in multi-agent skills.
 
 OUTPUT FORMAT (follow exactly):
 
@@ -91,6 +103,7 @@ SCORES:
 - Context Efficiency: <1-5> | <evidence>
 - Safety & Robustness: <1-5> | <evidence>
 - Formatting & Syntax: <1-5> | <evidence>
+- Codex Integration: <1-5 or N/A> | <evidence>
 
 TOP ISSUES (max 5, most impactful first):
 1. [Category] Description — file:line or quote
