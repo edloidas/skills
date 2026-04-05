@@ -247,6 +247,16 @@ Only add `Codex` to a skill's `compatibility` frontmatter after reviewing that t
 actually Codex-safe. In this repo, Codex-compatible skills must also be exposed through
 `scripts/codex/catalog.json`.
 
+Some skills are intentionally Claude-only and should stay out of the Codex
+catalog unless their actual workflow changes:
+
+- `workflow/permissions-cleanup` — it operates on Claude Code
+  `settings.json` / `settings.local.json` permission files rather than Codex
+  config.
+- `review/codex` — it shells out to the Codex CLI from Claude Code to get an
+  external opinion, so exposing it inside Codex would be recursive rather than
+  a real Codex-native workflow.
+
 When adding a new skill, or when upgrading an existing skill to support Codex, make sure the
 Codex packaging layer is updated in the same change:
 
