@@ -1,5 +1,6 @@
 interface:
   display_name: "Scripts Audit"
-  short_description: "Audit package scripts for consistency and speed"
+  short_description: "Audit package scripts for naming, composition, and speed"
+  default_prompt: "Use $scripts-audit to classify the package role, prefer Vite Plus patterns when `vp` or `vite-plus` is present, and then evaluate whether the script names, composition, lifecycle hooks, and CI variants form a clear and usable public script interface."
 policy:
   allow_implicit_invocation: true

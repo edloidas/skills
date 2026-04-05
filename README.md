@@ -133,7 +133,7 @@ CI, lint, script, skill, and workspace auditing skills.
 | ----------------------------------------------------------- | ------------------------------------------------------------------------- | ------------- |
 | [ci-audit](./audit/ci-audit/)                               | Analyze GitHub Actions workflows for optimization                         | Claude, Codex |
 | [lint-sync](./audit/lint-sync/)                              | Compare ESLint rules against Biome for overlap                            | Claude, Codex |
-| [scripts-audit](./audit/scripts-audit/)                     | Analyze package.json scripts for consistency                              | Claude, Codex |
+| [scripts-audit](./audit/scripts-audit/)                     | Analyze package.json scripts for naming, composition, and consistency     | Claude, Codex |
 | [skill-audit](./audit/skill-audit/)                         | Audit skills for quality, specification compliance, and Codex readiness   | Claude, Codex |
 | [workspace-audit](./audit/workspace-audit/)                 | Analyze pnpm workspace and monorepo setup                                 | Claude, Codex |
 
