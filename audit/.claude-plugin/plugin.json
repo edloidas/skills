@@ -1,7 +1,7 @@
 {
   "name": "audit",
   "version": "2.21.0",
-  "description": "CI, lint, script, skill, and workspace auditing skills",
+  "description": "CI, script, skill, and workspace auditing skills",
   "author": {
     "name": "Mikita Taukachou",
     "url": "https://edloidas.io"
@@ -13,7 +13,6 @@
     "skills",
     "audit",
     "ci",
-    "lint",
     "workspace",
     "scripts"
   ]

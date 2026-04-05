@@ -2,7 +2,7 @@
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "edloidas",
   "metadata": {
-    "description": "Skills for code review, auditing, development workflows, and external tools"
+    "description": "Skills for planning, building, code review, auditing, maintenance, shipping, assistance, and Obsidian"
   },
   "owner": {
     "name": "Mikita Taukachou",
@@ -10,9 +10,31 @@
   },
   "plugins": [
     {
+      "name": "plan",
+      "source": "./plan",
+      "description": "Issue drafting, analysis, triage, and full issue lifecycle skills",
+      "version": "2.21.0",
+      "author": {
+        "name": "Mikita Taukachou",
+        "url": "https://edloidas.io"
+      },
+      "category": "plan"
+    },
+    {
+      "name": "build",
+      "source": "./build",
+      "description": "Git worktree management, conflict resolution, commit summaries, and findings fixes",
+      "version": "2.21.0",
+      "author": {
+        "name": "Mikita Taukachou",
+        "url": "https://edloidas.io"
+      },
+      "category": "build"
+    },
+    {
       "name": "review",
       "source": "./review",
-      "description": "Code review, cleanup, and quality improvement skills",
+      "description": "Code review, cleanup, critical review board, and quality improvement skills",
       "version": "2.21.0",
       "author": {
         "name": "Mikita Taukachou",
@@ -23,7 +45,7 @@
     {
       "name": "audit",
       "source": "./audit",
-      "description": "CI, lint, script, skill, and workspace auditing skills",
+      "description": "CI, script, skill, and workspace auditing skills",
       "version": "2.21.0",
       "author": {
         "name": "Mikita Taukachou",
@@ -32,15 +54,37 @@
       "category": "audit"
     },
     {
-      "name": "workflow",
-      "source": "./workflow",
-      "description": "Git, GitHub, release, and development workflow skills",
+      "name": "maintain",
+      "source": "./maintain",
+      "description": "Label sync, instruction file sync, permissions cleanup, lint migration, and comment auditing",
       "version": "2.21.0",
       "author": {
         "name": "Mikita Taukachou",
         "url": "https://edloidas.io"
       },
-      "category": "workflow"
+      "category": "maintain"
+    },
+    {
+      "name": "ship",
+      "source": "./ship",
+      "description": "Release workflows and deployment tools for npm packages and Railway services",
+      "version": "2.21.0",
+      "author": {
+        "name": "Mikita Taukachou",
+        "url": "https://edloidas.io"
+      },
+      "category": "ship"
+    },
+    {
+      "name": "assist",
+      "source": "./assist",
+      "description": "External opinion and assistance tools including Codex CLI integration",
+      "version": "2.21.0",
+      "author": {
+        "name": "Mikita Taukachou",
+        "url": "https://edloidas.io"
+      },
+      "category": "assist"
     },
     {
       "name": "obsidian",
@@ -52,17 +96,6 @@
         "url": "https://edloidas.io"
       },
       "category": "productivity"
-    },
-    {
-      "name": "tools",
-      "source": "./tools",
-      "description": "Skills for working with specific external tools and CLIs",
-      "version": "2.21.0",
-      "author": {
-        "name": "Mikita Taukachou",
-        "url": "https://edloidas.io"
-      },
-      "category": "tools"
     }
   ]
 }

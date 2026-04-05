@@ -1,0 +1,33 @@
+{
+  "name": "edloidas-ship",
+  "version": "2.21.0",
+  "description": "A Codex-safe shipping bundle for npm package releases and Railway deployment inspection.",
+  "author": {
+    "name": "Mikita Taukachou",
+    "url": "https://edloidas.io"
+  },
+  "homepage": "https://github.com/edloidas/skills",
+  "repository": "https://github.com/edloidas/skills",
+  "license": "MIT",
+  "keywords": [
+    "skills",
+    "codex",
+    "ship",
+    "release",
+    "npm",
+    "railway",
+    "deploy"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Edloidas Ship",
+    "shortDescription": "npm releases and Railway deployment inspection.",
+    "longDescription": "Install the shipping bundle from edloidas/skills for validating npm releases and inspecting Railway services, logs, and deployment status from Codex.",
+    "developerName": "Mikita Taukachou",
+    "category": "Coding",
+    "websiteURL": "https://github.com/edloidas/skills",
+    "brandColor": "#FD3DB5",
+    "composerIcon": "./assets/logo.png",
+    "logo": "./assets/logo.png"
+  }
+}

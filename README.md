@@ -10,11 +10,14 @@ Add the marketplace and install the plugin groups you need:
 
 ```
 /plugin marketplace add edloidas/skills
+/plugin install edloidas@plan
+/plugin install edloidas@build
 /plugin install edloidas@review
 /plugin install edloidas@audit
-/plugin install edloidas@workflow
+/plugin install edloidas@maintain
+/plugin install edloidas@ship
+/plugin install edloidas@assist
 /plugin install edloidas@obsidian
-/plugin install edloidas@tools
 ```
 
 Install all groups for the full set, or pick only the groups relevant to your workflow.
@@ -36,11 +39,13 @@ When you open this repository in Codex, it exposes two Codex-native integration 
 
 Available Codex plugin groups in this repo marketplace:
 
+- `Edloidas Plan`
+- `Edloidas Build`
 - `Edloidas Review`
 - `Edloidas Audit`
-- `Edloidas Workflow`
+- `Edloidas Maintain`
+- `Edloidas Ship`
 - `Edloidas Obsidian`
-- `Edloidas Tools`
 
 These wrapper plugins expose the Codex-vetted subset of each source group, not every skill in the
 repository.
@@ -61,7 +66,7 @@ Treat `.agents/plugins/marketplace.json`, `plugins/<plugin-name>/.codex-plugin/p
 To install one or more Codex skill groups into your home-level `~/.agents/skills` without copying:
 
 ```bash
-./scripts/codex-packaging.sh install-links review workflow
+./scripts/codex-packaging.sh install-links review build
 ```
 
 For user-scoped installation outside the repo, you can still install individual skills directly into `~/.codex/skills`:
@@ -111,50 +116,79 @@ See the full [Agent Skills specification](https://agentskills.io/specification) 
 
 ## Available Skills
 
+### Plan
+
+Issue drafting, analysis, triage, and full issue lifecycle skills.
+
+| Skill                                                       | Description                                                               | Agent         |
+| ----------------------------------------------------------- | ------------------------------------------------------------------------- | ------------- |
+| [issue-writer](./plan/issue-writer/)                        | Draft and update well-structured GitHub issues                            | Claude, Codex |
+| [issue-analyze](./plan/issue-analyze/)                      | Analyze issue scope and produce an implementation task list               | Claude, Codex |
+| [next-issue](./plan/next-issue/)                            | Find the most relevant next GitHub issue to work on                       | Claude, Codex |
+| [issue-flow](./plan/issue-flow/)                            | Full issue lifecycle: create, branch, commit, push, PR, merge             | Claude        |
+
+### Build
+
+Git worktree management, conflict resolution, commit summaries, and findings fixes.
+
+| Skill                                                       | Description                                                               | Agent         |
+| ----------------------------------------------------------- | ------------------------------------------------------------------------- | ------------- |
+| [git-worktree](./build/git-worktree/)                      | Manage Git worktrees with configurable storage and agent settings copying  | Claude, Codex |
+| [resolve-conflicts](./build/resolve-conflicts/)             | Semi-automatic merge and rebase conflict resolution                       | Claude, Codex |
+| [commit-summary](./build/commit-summary/)                   | Generate formatted Git commit message summaries                           | Claude, Codex |
+| [fix-findings](./build/fix-findings/)                       | Triage and fix problems from reviews, consilium, or debugging             | Claude        |
+
 ### Review
 
-Code review, cleanup, and quality improvement skills.
+Code review, cleanup, critical review board, and quality improvement skills.
 
 | Skill                                                       | Description                                                               | Agent         |
 | ----------------------------------------------------------- | ------------------------------------------------------------------------- | ------------- |
 | [changes-review](./review/changes-review/)                  | Deep logic analysis of code changes                                       | Claude, Codex |
 | [code-cleanup](./review/code-cleanup/)                      | Post-implementation cleanup of comments and artifacts                     | Claude, Codex |
-| [codex](./review/codex/)                                    | Quick external opinion from Codex CLI                                     | Claude        |
-| [comment-audit](./review/comment-audit/)                    | Analyze code comments for quality and relevance                           | Claude, Codex |
 | [consilium](./review/consilium/)                            | Critical review board — up to 6 reviewers (2 core + 4 on-demand)         | Claude        |
 | [react-review](./review/react-review/)                      | Review React code for effects, conventions, and patterns                  | Claude, Codex |
 | [review-comments](./review/review-comments/)                | Analyze PR review comments — triage into fix/skip with reasoning          | Claude, Codex |
 
 ### Audit
 
-CI, lint, script, skill, and workspace auditing skills.
+CI, script, skill, and workspace auditing skills.
 
 | Skill                                                       | Description                                                               | Agent         |
 | ----------------------------------------------------------- | ------------------------------------------------------------------------- | ------------- |
 | [ci-audit](./audit/ci-audit/)                               | Analyze GitHub Actions workflows for optimization                         | Claude, Codex |
-| [lint-sync](./audit/lint-sync/)                              | Compare ESLint rules against Biome for overlap                            | Claude, Codex |
 | [scripts-audit](./audit/scripts-audit/)                     | Analyze package.json scripts for naming, composition, and consistency     | Claude, Codex |
 | [skill-audit](./audit/skill-audit/)                         | Audit skills for quality, specification compliance, and Codex readiness   | Claude, Codex |
 | [workspace-audit](./audit/workspace-audit/)                 | Analyze pnpm workspace and monorepo setup                                 | Claude, Codex |
 
-### Workflow
+### Maintain
 
-Git, GitHub, release, and development workflow skills.
+Label sync, instruction file sync, permissions cleanup, lint migration, and comment auditing.
 
 | Skill                                                       | Description                                                               | Agent         |
 | ----------------------------------------------------------- | ------------------------------------------------------------------------- | ------------- |
-| [claude-md-sync](./workflow/claude-md-sync/)                | Detect and fix stale references in project CLAUDE.md or AGENTS.md         | Claude, Codex |
-| [commit-summary](./workflow/commit-summary/)                | Generate formatted Git commit message summaries                           | Claude, Codex |
-| [fix-findings](./workflow/fix-findings/)                    | Triage and fix problems from reviews, consilium, or debugging             | Claude        |
-| [git-worktree](./workflow/git-worktree/)                    | Manage Git worktrees with configurable storage and agent settings copying | Claude, Codex |
-| [issue-flow](./workflow/issue-flow/)                        | Full issue lifecycle: create, branch, commit, push, PR, merge            | Claude        |
-| [issue-analyze](./workflow/issue-analyze/)                  | Analyze issue scope and produce an implementation task list               | Claude, Codex |
-| [issue-writer](./workflow/issue-writer/)                    | Draft and update well-structured GitHub issues                            | Claude, Codex |
-| [labels-sync](./workflow/labels-sync/)                      | Check, apply, or export GitHub repository labels as reusable JSON         | Claude, Codex |
-| [next-issue](./workflow/next-issue/)                        | Find the most relevant next GitHub issue to work on                       | Claude, Codex |
-| [npm-release](./workflow/npm-release/)                      | Guide npm/pnpm package release workflow                                   | Claude, Codex |
-| [permissions-cleanup](./workflow/permissions-cleanup/)       | Clean up stale permission entries from settings files                     | Claude        |
-| [resolve-conflicts](./workflow/resolve-conflicts/)          | Semi-automatic merge and rebase conflict resolution                      | Claude, Codex |
+| [labels-sync](./maintain/labels-sync/)                      | Check, apply, or export GitHub repository labels as reusable JSON         | Claude, Codex |
+| [claude-md-sync](./maintain/claude-md-sync/)                | Detect and fix stale references in project CLAUDE.md or AGENTS.md         | Claude, Codex |
+| [permissions-cleanup](./maintain/permissions-cleanup/)       | Clean up stale permission entries from settings files                     | Claude        |
+| [lint-sync](./maintain/lint-sync/)                          | Compare ESLint rules against Biome for overlap                            | Claude, Codex |
+| [comment-audit](./maintain/comment-audit/)                  | Analyze code comments for quality and relevance                           | Claude, Codex |
+
+### Ship
+
+Release workflows and deployment tools.
+
+| Skill                                                       | Description                                                               | Agent         |
+| ----------------------------------------------------------- | ------------------------------------------------------------------------- | ------------- |
+| [npm-release](./ship/npm-release/)                          | Guide npm/pnpm package release workflow                                   | Claude, Codex |
+| [railway](./ship/railway/)                                  | Interact with Railway deployments — status, logs, variables, deploy       | Claude, Codex |
+
+### Assist
+
+External opinion and assistance tools.
+
+| Skill                                                       | Description                                                               | Agent         |
+| ----------------------------------------------------------- | ------------------------------------------------------------------------- | ------------- |
+| [codex](./assist/codex/)                                    | Quick external opinion from Codex CLI                                     | Claude        |
 
 ### Obsidian
 
@@ -164,17 +198,9 @@ Obsidian vault organization and working document management skills.
 | ----------------------------------------------------------- | ------------------------------------------------------------------------- | ------------- |
 | [working-docs](./obsidian/working-docs/)                    | Organize working documents in Obsidian with two-tier system               | Claude, Codex |
 
-### Tools
-
-Skills for working with specific external tools and CLIs.
-
-| Skill                                                       | Description                                                               | Agent         |
-| ----------------------------------------------------------- | ------------------------------------------------------------------------- | ------------- |
-| [railway](./tools/railway/)                                 | Interact with Railway deployments — status, logs, variables, deploy       | Claude, Codex |
-
 ## Creating a Skill
 
-1. Choose the appropriate group directory (`review/`, `audit/`, `workflow/`, `obsidian/`, or `tools/`)
+1. Choose the appropriate group directory (`plan/`, `build/`, `review/`, `audit/`, `maintain/`, `ship/`, `assist/`, or `obsidian/`)
 2. Create a subdirectory matching the skill name
 3. Add a `SKILL.md` with required `name` and `description` frontmatter
 4. Write Markdown instructions in the body (keep under 500 lines)

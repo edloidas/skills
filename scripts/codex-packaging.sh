@@ -413,7 +413,7 @@ Commands:
 
 Examples:
   ./scripts/codex-packaging.sh sync-repo
-  ./scripts/codex-packaging.sh install-links review workflow
+  ./scripts/codex-packaging.sh install-links review build
   ./scripts/codex-packaging.sh install-links --dest "$HOME/.agents/skills" all
 EOF
 }

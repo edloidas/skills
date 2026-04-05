@@ -1,0 +1,32 @@
+{
+  "name": "edloidas-plan",
+  "version": "2.21.0",
+  "description": "A Codex-safe planning bundle for issue drafting, scope analysis, and backlog triage.",
+  "author": {
+    "name": "Mikita Taukachou",
+    "url": "https://edloidas.io"
+  },
+  "homepage": "https://github.com/edloidas/skills",
+  "repository": "https://github.com/edloidas/skills",
+  "license": "MIT",
+  "keywords": [
+    "skills",
+    "codex",
+    "plan",
+    "issues",
+    "github",
+    "triage"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Edloidas Plan",
+    "shortDescription": "Issue drafting, scope analysis, and backlog triage.",
+    "longDescription": "Install the planning bundle from edloidas/skills for drafting GitHub issues, analyzing issue scope, and triaging the backlog from Codex.",
+    "developerName": "Mikita Taukachou",
+    "category": "Coding",
+    "websiteURL": "https://github.com/edloidas/skills",
+    "brandColor": "#FD3DB5",
+    "composerIcon": "./assets/logo.png",
+    "logo": "./assets/logo.png"
+  }
+}

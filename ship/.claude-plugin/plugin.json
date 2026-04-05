@@ -1,0 +1,20 @@
+{
+  "name": "ship",
+  "version": "2.21.0",
+  "description": "Release workflows and deployment tools for npm packages and Railway services",
+  "author": {
+    "name": "Mikita Taukachou",
+    "url": "https://edloidas.io"
+  },
+  "repository": "https://github.com/edloidas/skills",
+  "license": "MIT",
+  "skills": "./",
+  "keywords": [
+    "skills",
+    "ship",
+    "release",
+    "npm",
+    "railway",
+    "deploy"
+  ]
+}

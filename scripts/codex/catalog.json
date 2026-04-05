@@ -18,12 +18,59 @@
   "license": "MIT",
   "plugins": [
     {
+      "group": "plan",
+      "name": "edloidas-plan",
+      "displayName": "Edloidas Plan",
+      "description": "A Codex-safe planning bundle for issue drafting, scope analysis, and backlog triage.",
+      "shortDescription": "Issue drafting, scope analysis, and backlog triage.",
+      "longDescription": "Install the planning bundle from edloidas/skills for drafting GitHub issues, analyzing issue scope, and triaging the backlog from Codex.",
+      "category": "Coding",
+      "websiteURL": "https://github.com/edloidas/skills",
+      "keywords": [
+        "skills",
+        "codex",
+        "plan",
+        "issues",
+        "github",
+        "triage"
+      ],
+      "skills": [
+        "plan/issue-writer",
+        "plan/issue-analyze",
+        "plan/next-issue"
+      ]
+    },
+    {
+      "group": "build",
+      "name": "edloidas-build",
+      "displayName": "Edloidas Build",
+      "description": "A Codex-safe build bundle for Git worktree management, merge-conflict resolution, and commit summaries.",
+      "shortDescription": "Git worktrees, conflict resolution, and commit summaries.",
+      "longDescription": "Install the build bundle from edloidas/skills for Git worktree management, semi-automatic merge-conflict resolution, and commit message summaries from Codex.",
+      "category": "Coding",
+      "websiteURL": "https://github.com/edloidas/skills",
+      "keywords": [
+        "skills",
+        "codex",
+        "build",
+        "git",
+        "worktree",
+        "conflicts",
+        "commits"
+      ],
+      "skills": [
+        "build/commit-summary",
+        "build/git-worktree",
+        "build/resolve-conflicts"
+      ]
+    },
+    {
       "group": "review",
       "name": "edloidas-review",
       "displayName": "Edloidas Review",
-      "description": "A curated Codex-safe review bundle for changeset analysis, React analysis, comment quality audits, PR feedback triage, and post-change cleanup.",
-      "shortDescription": "Changes review, React review, comment audits, triage, and cleanup.",
-      "longDescription": "Install the Codex-ready review bundle from edloidas/skills for changeset review, React code review, comment-quality audits, review-comment triage, and post-implementation cleanup.",
+      "description": "A curated Codex-safe review bundle for changeset analysis, React analysis, PR feedback triage, and post-change cleanup.",
+      "shortDescription": "Changes review, React review, triage, and cleanup.",
+      "longDescription": "Install the Codex-ready review bundle from edloidas/skills for changeset review, React code review, review-comment triage, and post-implementation cleanup.",
       "category": "Coding",
       "websiteURL": "https://github.com/edloidas/skills",
       "keywords": [
@@ -33,12 +80,10 @@
         "cleanup",
         "diff",
         "react",
-        "comments",
         "pull-request"
       ],
       "skills": [
         "review/changes-review",
-        "review/comment-audit",
         "review/code-cleanup",
         "review/react-review",
         "review/review-comments"
@@ -48,9 +93,9 @@
       "group": "audit",
       "name": "edloidas-audit",
       "displayName": "Edloidas Audit",
-      "description": "A Codex-safe audit bundle for skill quality, GitHub Actions, ESLint and Biome overlap, package scripts, and monorepo workspace configuration.",
-      "shortDescription": "Audit skills, CI, lint overlap, scripts, and workspace setup.",
-      "longDescription": "Install the audit bundle from edloidas/skills to inspect skill quality, CI workflows, ESLint and Biome overlap, package scripts, and pnpm workspace configuration from Codex.",
+      "description": "A Codex-safe audit bundle for skill quality, GitHub Actions, package scripts, and monorepo workspace configuration.",
+      "shortDescription": "Audit skills, CI, scripts, and workspace setup.",
+      "longDescription": "Install the audit bundle from edloidas/skills to inspect skill quality, CI workflows, package scripts, and pnpm workspace configuration from Codex.",
       "category": "Coding",
       "websiteURL": "https://github.com/edloidas/skills",
       "keywords": [
@@ -60,50 +105,61 @@
         "quality",
         "ci",
         "scripts",
-        "workspace",
-        "eslint",
-        "biome"
+        "workspace"
       ],
       "skills": [
         "audit/ci-audit",
-        "audit/lint-sync",
         "audit/skill-audit",
         "audit/scripts-audit",
         "audit/workspace-audit"
       ]
     },
     {
-      "group": "workflow",
-      "name": "edloidas-workflow",
-      "displayName": "Edloidas Workflow",
-      "description": "A Codex-safe workflow bundle for instruction-file sync, issue drafting and triage, release prep, merge-conflict resolution, commit summaries, label management, and Git worktree management.",
-      "shortDescription": "Instruction sync, issue flow, releases, conflicts, labels, and worktrees.",
-      "longDescription": "Install lightweight Git and GitHub workflow helpers from edloidas/skills for syncing repo instruction files, drafting and prioritizing issues, resolving merge and rebase conflicts, validating npm releases, summarizing commits, managing labels, and working across multiple worktrees.",
+      "group": "maintain",
+      "name": "edloidas-maintain",
+      "displayName": "Edloidas Maintain",
+      "description": "A Codex-safe maintenance bundle for label sync, instruction-file sync, lint migration, and comment quality audits.",
+      "shortDescription": "Label sync, instruction sync, lint migration, and comment audits.",
+      "longDescription": "Install the maintenance bundle from edloidas/skills for syncing GitHub labels, validating repo instruction files, migrating lint configs, and auditing code comments from Codex.",
       "category": "Coding",
       "websiteURL": "https://github.com/edloidas/skills",
       "keywords": [
         "skills",
         "codex",
-        "workflow",
-        "git",
-        "github",
-        "worktree",
+        "maintain",
         "labels",
-        "issues",
-        "release",
-        "instructions",
-        "conflicts"
+        "sync",
+        "lint",
+        "comments"
       ],
       "skills": [
-        "workflow/claude-md-sync",
-        "workflow/commit-summary",
-        "workflow/git-worktree",
-        "workflow/issue-analyze",
-        "workflow/issue-writer",
-        "workflow/labels-sync",
-        "workflow/next-issue",
-        "workflow/npm-release",
-        "workflow/resolve-conflicts"
+        "maintain/claude-md-sync",
+        "maintain/comment-audit",
+        "maintain/labels-sync",
+        "maintain/lint-sync"
+      ]
+    },
+    {
+      "group": "ship",
+      "name": "edloidas-ship",
+      "displayName": "Edloidas Ship",
+      "description": "A Codex-safe shipping bundle for npm package releases and Railway deployment inspection.",
+      "shortDescription": "npm releases and Railway deployment inspection.",
+      "longDescription": "Install the shipping bundle from edloidas/skills for validating npm releases and inspecting Railway services, logs, and deployment status from Codex.",
+      "category": "Coding",
+      "websiteURL": "https://github.com/edloidas/skills",
+      "keywords": [
+        "skills",
+        "codex",
+        "ship",
+        "release",
+        "npm",
+        "railway",
+        "deploy"
+      ],
+      "skills": [
+        "ship/npm-release",
+        "ship/railway"
       ]
     },
     {
@@ -124,26 +180,6 @@
       ],
       "skills": [
         "obsidian/working-docs"
-      ]
-    },
-    {
-      "group": "tools",
-      "name": "edloidas-tools",
-      "displayName": "Edloidas Tools",
-      "description": "A Codex-ready integration bundle for inspecting Railway services, logs, variables, and deploy state.",
-      "shortDescription": "Railway inspection and deploy-state helpers.",
-      "longDescription": "Install the Railway integration from edloidas/skills to inspect services, logs, environment variables, and deployment status from Codex.",
-      "category": "Productivity",
-      "websiteURL": "https://github.com/edloidas/skills",
-      "keywords": [
-        "skills",
-        "codex",
-        "tools",
-        "railway",
-        "deployments"
-      ],
-      "skills": [
-        "tools/railway"
       ]
     }
   ]

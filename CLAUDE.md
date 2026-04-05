@@ -44,18 +44,23 @@ plugins/
 ```
 
 **Plugin groups:**
-- `review/` — Code review, cleanup, and quality improvement (5 skills)
-- `audit/` — CI, lint, script, skill, and workspace auditing (5 skills)
-- `workflow/` — Git, GitHub, release, and development workflows (12 skills)
+- `plan/` — Issue drafting, analysis, triage, and full issue lifecycle (4 skills)
+- `build/` — Git worktree management, conflict resolution, commit summaries, and findings fixes (4 skills)
+- `review/` — Code review, cleanup, critical review board, and quality improvement (5 skills)
+- `audit/` — CI, script, skill, and workspace auditing (4 skills)
+- `maintain/` — Label sync, instruction file sync, permissions cleanup, lint migration, and comment auditing (5 skills)
+- `ship/` — Release workflows and deployment tools (2 skills)
+- `assist/` — External opinion and assistance tools (1 skill)
 - `obsidian/` — Obsidian vault organization and working document management (1 skill)
-- `tools/` — Skills for working with specific external tools and CLIs (1 skill)
 
 Wrapper plugin names and display names for Codex:
+- `plugins/edloidas-plan/` → `edloidas-plan` / `Edloidas Plan`
+- `plugins/edloidas-build/` → `edloidas-build` / `Edloidas Build`
 - `plugins/edloidas-review/` → `edloidas-review` / `Edloidas Review`
 - `plugins/edloidas-audit/` → `edloidas-audit` / `Edloidas Audit`
-- `plugins/edloidas-workflow/` → `edloidas-workflow` / `Edloidas Workflow`
+- `plugins/edloidas-maintain/` → `edloidas-maintain` / `Edloidas Maintain`
+- `plugins/edloidas-ship/` → `edloidas-ship` / `Edloidas Ship`
 - `plugins/edloidas-obsidian/` → `edloidas-obsidian` / `Edloidas Obsidian`
-- `plugins/edloidas-tools/` → `edloidas-tools` / `Edloidas Tools`
 
 The Codex wrapper layer is driven from `scripts/codex/catalog.json`. After changing the Codex-exposed
 skill set or plugin metadata, run:
@@ -214,7 +219,7 @@ The `description` determines when an agent activates the skill. Be specific and 
 
 ## Creating a New Skill
 
-1. Choose the appropriate group directory (`review/`, `audit/`, `workflow/`, `obsidian/`, or `tools/`)
+1. Choose the appropriate group directory (`plan/`, `build/`, `review/`, `audit/`, `maintain/`, `ship/`, `assist/`, or `obsidian/`)
 2. Create a subdirectory: `mkdir <group>/<skill-name>`
 3. Create `<group>/<skill-name>/SKILL.md` with required frontmatter and instructions
 4. Add `scripts/`, `references/`, or `assets/` directories as needed
@@ -232,8 +237,8 @@ Skills are discovered automatically from the path declared in `plugin.json`. No 
 
 ## Codex Wrapper Plugins
 
-Do not add `.codex-plugin/plugin.json` directly to the source group directories (`review/`,
-`audit/`, `workflow/`, `obsidian/`, `tools/`).
+Do not add `.codex-plugin/plugin.json` directly to the source group directories (`plan/`,
+`build/`, `review/`, `audit/`, `maintain/`, `ship/`, `assist/`, `obsidian/`).
 
 Use wrapper plugins under `plugins/<plugin-name>/` instead:
 
@@ -250,10 +255,10 @@ actually Codex-safe. In this repo, Codex-compatible skills must also be exposed 
 Some skills are intentionally Claude-only and should stay out of the Codex
 catalog unless their actual workflow changes:
 
-- `workflow/permissions-cleanup` — it operates on Claude Code
+- `maintain/permissions-cleanup` — it operates on Claude Code
   `settings.json` / `settings.local.json` permission files rather than Codex
   config.
-- `review/codex` — it shells out to the Codex CLI from Claude Code to get an
+- `assist/codex` — it shells out to the Codex CLI from Claude Code to get an
   external opinion, so exposing it inside Codex would be recursive rather than
   a real Codex-native workflow.
 

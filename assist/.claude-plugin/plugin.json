@@ -1,0 +1,19 @@
+{
+  "name": "assist",
+  "version": "2.21.0",
+  "description": "External opinion and assistance tools including Codex CLI integration",
+  "author": {
+    "name": "Mikita Taukachou",
+    "url": "https://edloidas.io"
+  },
+  "repository": "https://github.com/edloidas/skills",
+  "license": "MIT",
+  "skills": "./",
+  "keywords": [
+    "skills",
+    "assist",
+    "codex",
+    "opinion",
+    "external"
+  ]
+}

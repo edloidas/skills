@@ -1,0 +1,20 @@
+{
+  "name": "plan",
+  "version": "2.21.0",
+  "description": "Issue drafting, analysis, triage, and full issue lifecycle skills",
+  "author": {
+    "name": "Mikita Taukachou",
+    "url": "https://edloidas.io"
+  },
+  "repository": "https://github.com/edloidas/skills",
+  "license": "MIT",
+  "skills": "./",
+  "keywords": [
+    "skills",
+    "plan",
+    "issues",
+    "github",
+    "triage",
+    "lifecycle"
+  ]
+}

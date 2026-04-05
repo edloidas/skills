@@ -1,0 +1,21 @@
+{
+  "name": "maintain",
+  "version": "2.21.0",
+  "description": "Label sync, instruction file sync, permissions cleanup, lint migration, and comment auditing",
+  "author": {
+    "name": "Mikita Taukachou",
+    "url": "https://edloidas.io"
+  },
+  "repository": "https://github.com/edloidas/skills",
+  "license": "MIT",
+  "skills": "./",
+  "keywords": [
+    "skills",
+    "maintain",
+    "labels",
+    "sync",
+    "lint",
+    "permissions",
+    "comments"
+  ]
+}

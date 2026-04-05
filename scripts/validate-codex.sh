@@ -7,11 +7,14 @@ REPO_ROOT=$(cd -- "$SCRIPT_DIR/.." && pwd)
 CATALOG_PATH="$SCRIPT_DIR/codex/catalog.json"
 
 SOURCE_GROUPS=(
+  plan
+  build
   review
   audit
-  workflow
+  maintain
+  ship
+  assist
   obsidian
-  tools
 )
 
 errors=0
