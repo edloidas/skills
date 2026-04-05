@@ -2,6 +2,10 @@
 
 A collection of Claude Code and other agents skills following the [Agent Skills specification](https://agentskills.io/specification).
 
+**Never commit or push changes unless explicitly asked.** Never commit directly to the main branch unless explicitly asked.
+
+**No AI footers:** Do not add "Drafted with AI assistance" or similar lines to issue or PR bodies.
+
 ## Canonical Repo Instructions
 
 `CLAUDE.md` is the canonical repo instructions file. The repo root also contains an `AGENTS.md`
@@ -345,13 +349,26 @@ When multiple locations define an agent with the same `name`, higher-priority lo
 
 Specs and plans are stored in `docs/superpowers/` (gitignored). Delete the spec and plan files for a feature once it is fully implemented.
 
-## Commit Messages
+## Releases
 
-Use [Conventional Commits](https://www.conventionalcommits.org/) format: `<type>: <description>`
+No `package.json` — skip `release-prepare.sh` and run version bump, commit, tag, push manually.
 
-Common types: `feat:`, `fix:`, `docs:`, `chore:`, `refactor:`, `test:`, `style:`, `ci:`
+## Git & GitHub
 
-**One commit per feature.** When adding a new skill or feature, do all work first (writing, reviewing, fixing) and produce a single clean commit at the end. Do not create intermediate commits during the process — squash everything into one before committing.
+Conventional commits: `feat`, `fix`, `docs`, `chore`, `refactor`, `test`, `style`, `ci`.
+
+When working on an issue, create a new branch named `issue-<number>`.
+
+### Commits
+
+- **With issue:** `<Issue Title> #<number>` — e.g. `feat: add ask skill #12`
+- **Without issue:** `<type>: <description>`
+- **One commit per feature.** Do all work first, then produce a single clean commit. No intermediate commits.
+
+### Pull Requests
+
+- **Title:** `<type>: <description> #<number>`
+- **Body:** concise what/why, no emojis, one blank line between sections. End with `Closes #<number>`.
 
 ## License
 

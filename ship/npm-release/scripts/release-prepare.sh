@@ -12,6 +12,13 @@ if ! git rev-parse --git-dir > /dev/null 2>&1; then
   exit 1
 fi
 
+# Check for package.json
+if [ ! -f "package.json" ]; then
+  echo "ERROR: No package.json found in $(pwd)"
+  echo "This script must be run from an npm/pnpm project root"
+  exit 1
+fi
+
 # Get current branch
 CURRENT_BRANCH=$(git branch --show-current)
 echo "Branch: $CURRENT_BRANCH"
