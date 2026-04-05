@@ -152,6 +152,12 @@ Skills using `AskUserQuestion` must follow these rules:
 4. Maximum 4 options — "Other" is added automatically by Claude Code
 5. Headers ≤12 characters, labels 1-5 words
 
+For any skill compatible with both Claude Code and Codex that uses `AskUserQuestion`,
+include a local fallback in `SKILL.md`. If `AskUserQuestion` is unavailable, present
+the same decision in normal chat as a short numbered list of 2-5 concise options,
+keep the recommended option first, and wait for the user's reply so they can answer
+with just the option number.
+
 ### Multi-Agent Convention
 
 Skills for different agents (Claude Code, Codex, etc.) live in the same group directories — no nesting by agent. Agent compatibility is declared via the `compatibility` frontmatter field.

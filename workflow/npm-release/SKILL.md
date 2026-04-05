@@ -192,10 +192,11 @@ Present a summary to the user (each on a new line):
 - **What happens next:** Push commits and tags, CI/CD will publish
 
 Ask for approval with these options. Use `AskUserQuestion` when it is
-available; otherwise ask directly in normal chat:
+available; otherwise ask directly in normal chat with a short numbered list and
+wait for the user's reply:
 
-- **Yes** - Proceed with pushing and releasing
-- **No** - Cancel the release (keep local changes for review)
+1. `Yes` (Recommended) — Proceed with pushing and releasing
+2. `No` — Cancel the release and keep local changes for review
 
 The user can also select "Other" to provide custom instructions (e.g., change version type, add more changes first).
 
@@ -205,7 +206,7 @@ AskUserQuestion:
   question: "Ready to push v{{VERSION}} and release?"
   header: "Release"
   options:
-    - label: "Yes"
+    - label: "Yes (Recommended)"
       description: "Push commits and tags to trigger CI/CD publishing"
     - label: "No"
       description: "Cancel release (local commit and tag will remain)"

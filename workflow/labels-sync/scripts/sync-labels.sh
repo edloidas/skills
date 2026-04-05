@@ -2,9 +2,11 @@
 # sync-labels.sh
 # Generic GitHub labels synchronization script
 #
-# Reads label definitions from stdin (JSON array) and syncs with repository.
+# Reads label definitions from stdin (JSON array) and syncs with repository,
+# or exports the current repository labels in the same reusable JSON format.
 #
 # Usage: echo "$LABELS_JSON" | sync-labels.sh [--apply]
+#        sync-labels.sh --get
 #
 # Input format (stdin):
 #   [
@@ -13,7 +15,8 @@
 #   ]
 #
 # Flags:
-#   --apply     Apply changes (default: dry-run, show what would change)
+#   --apply          Apply changes (default: dry-run, show what would change)
+#   --get, --export  Print the current repository labels as reusable JSON
 #
 # Output: JSON report of changes to stdout
 #
@@ -21,11 +24,32 @@
 #   echo "$LABELS" | sync-labels.sh            # Dry-run
 #   echo "$LABELS" | sync-labels.sh --apply    # Apply changes
 #   cat labels.json | sync-labels.sh --apply   # From file
+#   sync-labels.sh --get                       # Export current repo labels
 
 set -e
 
 # Parse arguments
 APPLY=false
+EXPORT=false
+
+usage() {
+    cat >&2 <<'EOF'
+Usage:
+  echo '$LABELS_JSON' | sync-labels.sh [--apply]
+  sync-labels.sh --get
+
+Flags:
+  --apply          Apply changes (default: dry-run, show what would change)
+  --get, --export  Print current repository labels as reusable JSON
+EOF
+}
+
+fetch_current_labels() {
+    gh label list --json name,description,color || {
+        echo "ERROR: Failed to fetch labels. Check 'gh auth status' and repo access." >&2
+        exit 1
+    }
+}
 
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -33,18 +57,41 @@ while [[ $# -gt 0 ]]; do
             APPLY=true
             shift
             ;;
+        --get|--export)
+            EXPORT=true
+            shift
+            ;;
         *)
             echo "ERROR: Unknown argument: $1" >&2
-            echo "Usage: echo '\$LABELS_JSON' | sync-labels.sh [--apply]" >&2
+            usage
             exit 1
             ;;
     esac
 done
 
+if [[ "$APPLY" = true && "$EXPORT" = true ]]; then
+    echo "ERROR: --apply cannot be combined with --get/--export" >&2
+    usage
+    exit 1
+fi
+
+if [[ "$EXPORT" = true ]]; then
+    CURRENT_LABELS=$(fetch_current_labels)
+    echo "$CURRENT_LABELS" | jq '
+        map({
+            name,
+            description: (.description // ""),
+            color: ((.color // "") | ascii_upcase | ltrimstr("#"))
+        })
+        | sort_by(.name | ascii_downcase)
+    '
+    exit 0
+fi
+
 # Read labels from stdin
 if [[ -t 0 ]]; then
     echo "ERROR: No labels provided via stdin" >&2
-    echo "Usage: echo '\$LABELS_JSON' | sync-labels.sh [--apply]" >&2
+    usage
     exit 1
 fi
 
@@ -56,11 +103,7 @@ if ! echo "$DEFINED_LABELS_JSON" | jq empty 2>/dev/null; then
     exit 1
 fi
 
-# Fetch current labels from repository
-CURRENT_LABELS=$(gh label list --json name,description,color) || {
-    echo "ERROR: Failed to fetch labels. Check 'gh auth status' and repo access." >&2
-    exit 1
-}
+CURRENT_LABELS=$(fetch_current_labels)
 
 # Use jq to compute all differences
 RESULT=$(jq -n \

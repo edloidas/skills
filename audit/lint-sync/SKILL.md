@@ -7,7 +7,7 @@ description: >
   Use when asked to sync lint rules, migrate linters, modernize configs, or update tool settings.
 license: MIT
 compatibility: Claude Code, Codex
-allowed-tools: Bash Read Glob Grep WebFetch Write
+allowed-tools: Bash Read Glob Grep WebFetch Write AskUserQuestion
 user-invocable: true
 arguments: "mode"
 argument-hint: "[sync, audit, or update]"
@@ -84,7 +84,8 @@ grep -l "from ['\"]vite-plus['\"]" vite.config.ts 2>/dev/null
 
 **Vite+ counts as Oxc** in the table above. When `$VITEPLUS=true`, all Oxc config reads/writes target the `lint` and `fmt` blocks in `vite.config.ts` instead of standalone config files.
 
-When asking target choice, use AskUserQuestion:
+When asking target choice, use `AskUserQuestion` when available. Otherwise ask
+in normal chat with this short numbered list and wait for the user's reply:
 
 ```
 Which tool would you like to migrate to?

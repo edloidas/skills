@@ -18,6 +18,12 @@ metadata:
 
 Detect and fix stale references in a project's root instruction file (`CLAUDE.md` or `AGENTS.md`) — commands, paths, directory structures, and counts that have drifted from the actual project state.
 
+## Interaction Fallback
+
+When `AskUserQuestion` is available, use it for confirmations and ambiguous
+choices. Otherwise present 2-5 short numbered options in normal chat, keep the
+recommended option first, and wait for the user's reply before continuing.
+
 ## Arguments
 
 | Argument | Description                                                   |
@@ -50,7 +56,8 @@ Resolve the target file in this order:
 
 1. If both `AGENTS.md` and `CLAUDE.md` exist and one is a symlink to the other, treat them as the same document and edit the canonical target file.
 2. If only one of `AGENTS.md` or `CLAUDE.md` exists, use that file.
-3. If both exist as separate regular files with different contents, stop and ask the user which file is authoritative before making edits.
+3. If both exist as separate regular files with different contents, stop and ask
+   the user which file is authoritative before making edits.
 
 Never touch global instruction files such as `~/.claude/CLAUDE.md` or `~/.codex/AGENTS.md`.
 

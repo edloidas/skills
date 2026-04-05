@@ -20,6 +20,12 @@ Help users draft and update well-structured GitHub issues by:
 - Producing a comprehensive description using the project template
 - Updating existing issues on GitHub
 
+## Interaction Fallback
+
+When `AskUserQuestion` is available, use it. Otherwise ask concise questions in
+normal chat. For discrete choices, present 2-5 short numbered options, keep the
+recommended option first, and wait for the user's reply before continuing.
+
 ## When to Use This Skill
 
 Use this skill when the user:
