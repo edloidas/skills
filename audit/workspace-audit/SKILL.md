@@ -1,20 +1,20 @@
 ---
 name: workspace-audit
-description: Analyze pnpm workspace configuration and monorepo setup for optimization
+description: Analyze pnpm 10+ workspace configuration and monorepo setup for optimization
 license: MIT
 compatibility: Claude Code, Codex
 allowed-tools: Bash(pnpm:*) Bash(npm:*) Bash(node:*) Bash(npx:*) Bash(turbo:*) Read Glob Grep
 ---
 
-# Workspace Audit (pnpm/npm/yarn)
+# Workspace Audit (pnpm 10+)
 
 ## Purpose
 
-Analyze monorepo workspace configuration to:
+Analyze pnpm monorepo workspace configuration to:
 - Optimize dependency management
-- Check workspace protocol usage
-- Verify build order and dependencies
-- Audit `.npmrc` settings
+- Check workspace protocol and catalog usage
+- Audit build hook and dependency rule configuration
+- Identify cargo-culted or outdated settings
 
 ## When to Use This Skill
 
@@ -30,22 +30,16 @@ Trigger phrases: "workspace audit", "monorepo", "pnpm workspace", "workspaces"
 
 ### Step 1: Identify Workspace Type
 
-Check for workspace configuration:
-
 ```bash
-# pnpm
 cat pnpm-workspace.yaml 2>/dev/null
-
-# npm/yarn
-cat package.json | jq '.workspaces'
-
-# Check for Nx or Turbo
+cat package.json | jq '.packageManager, .engines'
 ls -la nx.json turbo.json 2>/dev/null
 ```
 
+Check the `packageManager` field — it tells you the exact pnpm version. Audit advice below assumes pnpm 10+; call out version-gated settings when the project is on an older minor.
+
 ### Step 2: Analyze Workspace Structure
 
-#### pnpm-workspace.yaml
 ```yaml
 # Good: Explicit patterns
 packages:
@@ -58,21 +52,12 @@ packages:
   - '**'
 ```
 
-#### package.json workspaces (npm/yarn)
-```json
-{
-  "workspaces": [
-    "packages/*",
-    "apps/*"
-  ]
-}
-```
+**Config-only workspace:** A `pnpm-workspace.yaml` without a `packages:` field is valid for single-package projects that still want catalog, overrides, or build hook config.
 
 ### Step 3: Check Workspace Protocol Usage
 
-**Good: Using workspace protocol**
+**Good:**
 ```json
-// packages/app/package.json
 {
   "dependencies": {
     "@myorg/shared": "workspace:*",
@@ -81,191 +66,273 @@ packages:
 }
 ```
 
-**Problems:**
-- `"workspace:*"` - Always uses local version
-- Hardcoded versions instead of workspace protocol
-- Missing internal dependencies
+**Audit:**
+- Flag hardcoded versions (`"^1.0.0"`) for internal packages — should use `workspace:*`
 
-**Check all package.json files:**
 ```bash
-# Find internal package references
+# Find all package.json files and check for org-scoped internal refs
 fd -t f 'package.json' packages apps | xargs grep -l '@myorg/'
 ```
 
 ### Step 4: Check Dependency Hoisting
 
-#### .npmrc settings
+Pnpm uses isolated `node_modules` by default — no hoisting. Check `.npmrc` for overrides:
+
 ```ini
-# pnpm hoisting settings
-hoist=true
-shamefully-hoist=true  # Only if needed for compatibility
-
-# Strict mode (recommended)
-strict-peer-dependencies=true
-auto-install-peers=true
-
-# Performance
-prefer-frozen-lockfile=true
+hoist=true            # enables hoisting to .pnpm/node_modules
+shamefully-hoist=true # makes node_modules flat like npm — last resort
 ```
 
-#### Check for hoisting issues
-```bash
-# List what's hoisted
-pnpm list --depth 0
+**Audit:** `shamefully-hoist=true` is a red flag. It bypasses pnpm's isolation model. Should only be present if a specific tool requires it, with a comment explaining why.
 
-# Check for duplicate packages
+```bash
 pnpm dedupe --check
 ```
 
-### Step 5: Check Catalog Usage (pnpm 9+)
+### Step 5: Check Catalog Configuration
 
-**pnpm-workspace.yaml with catalog:**
+#### Catalog definition
 ```yaml
-packages:
-  - 'packages/*'
-
+# pnpm-workspace.yaml
 catalog:
-  react: ^18.2.0
-  typescript: ^5.4.0
-  vitest: ^1.6.0
+  react: ^19.0.0
+  react-dom: ^19.0.0
+  typescript: ^5.0.0
+  vite: ^6.0.0
+  vitest: ^3.0.0
+
+  # npm: prefix aliases a name to a different package implementation
+  # vite: npm:@org/custom-vite-fork@^1.0.0
 ```
 
-**Using in packages:**
+#### Usage in packages
 ```json
 {
-  "dependencies": {
-    "react": "catalog:"
-  },
-  "devDependencies": {
-    "typescript": "catalog:",
-    "vitest": "catalog:"
-  }
+  "dependencies": { "react": "catalog:", "react-dom": "catalog:" },
+  "devDependencies": { "vite": "catalog:", "vitest": "catalog:", "typescript": "catalog:" }
 }
 ```
 
-**Benefits:**
-- Single source of truth for versions
-- Easy version updates
-- Consistent versions across packages
+#### Audit checks
+- All shared deps should use `catalog:`, not hardcoded versions in individual packages
+- Avoid `@latest` in catalog entries — defeats reproducibility and conflicts with `minimumReleaseAge`
+- `npm:` aliases must be intentional and version-pinned (not `@latest`)
+- `catalogMode: force` (10.12.1+) — enforces that all packages use `catalog:` for any dep in the catalog; flag if shared deps exist but this is not enabled
+- `cleanupUnusedCatalogs: true` (10.15+) — automatically removes stale catalog entries on install; flag if catalog has grown large and this is not set
 
 ### Step 6: Check Build Order
 
-Verify package dependencies are correctly defined:
+Verify cross-package dependencies are declared:
 
 ```json
-// packages/app/package.json
 {
   "name": "@myorg/app",
   "dependencies": {
-    "@myorg/ui": "workspace:*",      // Depends on ui
-    "@myorg/utils": "workspace:*"    // Depends on utils
+    "@myorg/ui": "workspace:*",
+    "@myorg/utils": "workspace:*"
   }
 }
 ```
 
-**Check build order:**
 ```bash
-# pnpm topological sort
-pnpm -r exec echo
-
-# Or with Turbo
-turbo run build --dry-run
+pnpm -r run build        # respects topological order
+turbo run build --dry-run  # if Turbo is used
 ```
 
-### Step 7: Check ignoredBuiltDependencies
+### Step 7: Check Build Hook Configuration
 
-Optimize install time by skipping native builds:
+Build hook config belongs in `pnpm-workspace.yaml`, **not** `package.json`.
 
-```json
-// package.json
-{
-  "pnpm": {
-    "ignoredBuiltDependencies": [
-      "@tailwindcss/oxide",
-      "esbuild",
-      "unrs-resolver",
-      "sharp"
-    ]
-  }
-}
+#### pnpm 10.0–10.25
+
+```yaml
+# Blacklist: skip post-install scripts for these
+ignoredBuiltDependencies:
+  - unrs-resolver
+  - sharp
+
+# Whitelist: only these packages may run post-install scripts
+onlyBuiltDependencies:
+  - esbuild
 ```
 
-**When to use:**
-- Native dependencies that come pre-built
-- Dependencies with slow post-install scripts
-- Packages that don't need building in dev
+Don't use both together — pick the model that fits the project's security posture.
 
-### Step 8: Check .npmrc Configuration
+#### pnpm 10.26+ — `allowBuilds`
 
-**Recommended settings:**
+Replaces `ignoredBuiltDependencies` and `onlyBuiltDependencies` with a single explicit map:
+
+```yaml
+allowBuilds:
+  esbuild: true
+  unrs-resolver: false
+  sharp: false
+```
+
+#### `strictDepBuilds` (10.3+)
+
+Fails the install if any dependency tries to run a build script that isn't covered by the allow/ignore config:
+
+```yaml
+strictDepBuilds: true
+```
+
+**Audit:** If neither `onlyBuiltDependencies` / `allowBuilds` nor `strictDepBuilds` is set, build scripts run unchecked — flag as a supply-chain risk.
+
+### Step 8: Check Dependency Rules
+
+All of these belong in `pnpm-workspace.yaml`.
+
+#### minimumReleaseAge (10.16+) / minimumReleaseAgeExclude (10.17+)
+
+Prevents installing packages published less than N minutes ago:
+
+```yaml
+minimumReleaseAge: 1440  # 24 hours
+
+minimumReleaseAgeExclude:
+  - '@typescript/native-preview'  # bleeding-edge, exempt by design
+```
+
+Audit: missing entirely is a risk signal. `1440` (24h) is a reasonable default.
+
+#### trustPolicy (10.21+)
+
+Enforces publisher trust levels — complements `minimumReleaseAge` with a signature/provenance check:
+
+```yaml
+trustPolicy: audit       # audit | warn | off
+
+trustPolicyExclude:      # (10.22+) exempt specific packages
+  - '@myorg/internal'
+
+trustPolicyIgnoreAfter: 525600  # (10.27+) ignore trust for packages older than 1 year
+```
+
+Audit: flag if `trustPolicy` is absent and the project has `minimumReleaseAge` set — both are supply-chain controls that complement each other.
+
+#### blockExoticSubdeps (10.26+)
+
+Restricts git, file, and URL dependencies to direct dependencies only — prevents transitive exotic sources:
+
+```yaml
+blockExoticSubdeps: true
+```
+
+Audit: flag if git or file deps appear in the dependency tree and this is not enabled.
+
+#### overrides
+
+Pin or replace transitive dependency versions, including `catalog:` references:
+
+```yaml
+overrides:
+  vite: 'catalog:'    # force transitive consumers to use the catalog version
+  vitest: 'catalog:'
+  lodash: '^4.17.21' # pin vulnerable transitive dep
+```
+
+Audit: check for outdated pinned versions, or missing overrides where catalog versions are inconsistent across the dep tree.
+
+#### peerDependencyRules
+
+Suppress spurious peer dep warnings — common with custom toolchain forks:
+
+```yaml
+peerDependencyRules:
+  allowAny:
+    - vite
+    - vitest
+  allowedVersions:
+    vite: '*'
+    vitest: '*'
+```
+
+Audit: flag `allowAny: ['*']` — that's too broad. Specific package names are fine.
+
+### Step 9: Check .npmrc
+
+Most `.npmrc` settings commonly copy-pasted into projects are redundant defaults or belong elsewhere:
+
+| Setting | Issue |
+|---|---|
+| `auto-install-peers=true` | Default in pnpm 9+ — redundant |
+| `prefer-frozen-lockfile=true` | Default in pnpm 10 — redundant; use `--frozen-lockfile` CLI flag in CI for hard-fail behavior |
+| `prefer-workspace-packages=true` | Superseded by `workspace:` protocol |
+| `strict-peer-dependencies=true` | Not default; use only if you want hard failures on peer mismatches — evaluate per-project |
+
+**Audit: flag `.npmrc` entries that are no-ops or have better homes.**
+
+Valid reasons to use `.npmrc`:
 ```ini
-# Use strict mode
-strict-peer-dependencies=true
-auto-install-peers=true
+# Private registry for scoped packages
+@myorg:registry=https://npm.myorg.com/
 
-# Performance
-prefer-frozen-lockfile=true
-prefer-workspace-packages=true
-
-# Security
-ignore-scripts=false  # Or true if you don't trust scripts
-
-# Registry (if using private)
-# @myorg:registry=https://npm.myorg.com/
+# Windows cross-platform script compatibility
+shell-emulator=true
 ```
 
-### Step 9: Check for Common Issues
+### Step 10: Check for Common Issues
 
-#### Missing workspace: prefix
-```json
-// BAD: Hardcoded version
-"@myorg/utils": "^1.0.0"
-
-// GOOD: Workspace protocol
-"@myorg/utils": "workspace:*"
+#### Inconsistent dep versions (not in catalog)
+```bash
+npx syncpack list-mismatches
 ```
 
 #### Circular dependencies
 ```bash
-# Check with madge
 npx madge --circular packages/*/src
 ```
 
-#### Inconsistent versions
+#### Stale catalog entries
+Set `cleanupUnusedCatalogs: true` in `pnpm-workspace.yaml`, or run:
 ```bash
-# Check with syncpack
-npx syncpack list-mismatches
+pnpm install  # removes stale entries if cleanupUnusedCatalogs is enabled
 ```
 
-### Step 10: Generate Report
+### Step 11: Generate Report
 
 ```markdown
 ## Workspace Audit Report
 
 ### Structure
-- Type: pnpm workspace
+- pnpm version: 10.x
 - Packages: 5 (3 apps, 2 libs)
 
 ### Workspace Protocol
-- [x] Using workspace:* for internal deps
-- [ ] 2 packages use hardcoded versions
+- [x] workspace:* used for all internal deps
+- [ ] 2 packages use hardcoded versions for internal deps
 
-### Dependencies
-- [ ] Missing catalog for shared versions
-- [x] No circular dependencies detected
+### Catalog
+- [x] Shared deps pinned in catalog
+- [ ] @latest used in 1 catalog entry — defeats reproducibility
+- [ ] catalogMode not set — consider force to enforce catalog usage
+
+### Build Hooks
+- [x] onlyBuiltDependencies configured in pnpm-workspace.yaml
+- [ ] Build hook config found in package.json — move to pnpm-workspace.yaml
+- [ ] strictDepBuilds not set — unchecked build scripts
+
+### Dependency Rules
+- [ ] minimumReleaseAge not set (supply-chain risk)
+- [ ] trustPolicy not set (complements minimumReleaseAge)
+- [x] overrides pin transitive deps to catalog versions
+- [ ] blockExoticSubdeps not set — exotic transitive sources unchecked
 
 ### Configuration
-- [x] .npmrc has strict settings
-- [ ] Missing ignoredBuiltDependencies
+- [x] .npmrc is minimal — no cargo-culted settings
+- [ ] prefer-frozen-lockfile=true in .npmrc — already the default, remove it
 
 ### Recommendations
-1. Add catalog to pnpm-workspace.yaml
-2. Update @myorg/utils to use workspace:*
-3. Add esbuild to ignoredBuiltDependencies
+1. Set minimumReleaseAge: 1440 in pnpm-workspace.yaml
+2. Set trustPolicy: audit alongside minimumReleaseAge
+3. Move build hook config from package.json to pnpm-workspace.yaml
+4. Enable strictDepBuilds: true
+5. Replace hardcoded internal dep versions with workspace:*
 ```
 
-See `references/workspace-template.md` for optimized pnpm-workspace.yaml, root package.json, and .npmrc templates.
+See `references/workspace-template.md` for an optimized pnpm-workspace.yaml template.
 
 ## Keywords
 
-pnpm, npm, yarn, workspace, monorepo, dependencies, hoisting, catalog, turbo, nx
+pnpm, workspace, monorepo, dependencies, hoisting, catalog, turbo, nx
