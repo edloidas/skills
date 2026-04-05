@@ -1,6 +1,6 @@
 {
   "name": "audit",
-  "version": "2.20.0",
+  "version": "2.21.0",
   "description": "CI, lint, script, skill, and workspace auditing skills",
   "author": {
     "name": "Mikita Taukachou",
