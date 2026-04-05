@@ -117,7 +117,7 @@ Code review, cleanup, and quality improvement skills.
 
 | Skill                                                       | Description                                                               | Agent         |
 | ----------------------------------------------------------- | ------------------------------------------------------------------------- | ------------- |
-| [changes-review](./review/changes-review/)                  | Deep logic analysis of code changes                                       | Claude        |
+| [changes-review](./review/changes-review/)                  | Deep logic analysis of code changes                                       | Claude, Codex |
 | [code-cleanup](./review/code-cleanup/)                      | Post-implementation cleanup of comments and artifacts                     | Claude, Codex |
 | [codex](./review/codex/)                                    | Quick external opinion from Codex CLI                                     | Claude        |
 | [comment-audit](./review/comment-audit/)                    | Analyze code comments for quality and relevance                           | Claude, Codex |

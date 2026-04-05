@@ -1,7 +1,7 @@
 {
   "name": "edloidas-review",
   "version": "2.20.0",
-  "description": "A curated Codex-safe review bundle for React analysis, comment quality audits, PR feedback triage, and post-change cleanup.",
+  "description": "A curated Codex-safe review bundle for changeset analysis, React analysis, comment quality audits, PR feedback triage, and post-change cleanup.",
   "author": {
     "name": "Mikita Taukachou",
     "url": "https://edloidas.io"
@@ -14,6 +14,7 @@
     "codex",
     "review",
     "cleanup",
+    "diff",
     "react",
     "comments",
     "pull-request"
@@ -21,8 +22,8 @@
   "skills": "./skills/",
   "interface": {
     "displayName": "Edloidas Review",
-    "shortDescription": "React review, comment audits, PR feedback triage, and cleanup.",
-    "longDescription": "Install the Codex-ready review bundle from edloidas/skills for React code review, comment-quality audits, review-comment triage, and post-implementation cleanup.",
+    "shortDescription": "Changes review, React review, comment audits, triage, and cleanup.",
+    "longDescription": "Install the Codex-ready review bundle from edloidas/skills for changeset review, React code review, comment-quality audits, review-comment triage, and post-implementation cleanup.",
     "developerName": "Mikita Taukachou",
     "category": "Coding",
     "websiteURL": "https://github.com/edloidas/skills",
