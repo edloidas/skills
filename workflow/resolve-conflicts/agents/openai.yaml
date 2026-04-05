@@ -1,0 +1,6 @@
+interface:
+  display_name: "Resolve Conflicts"
+  short_description: "Resolve active merge or rebase conflicts locally or for a GitHub PR branch."
+  default_prompt: "Use $resolve-conflicts to classify and resolve active merge or rebase conflicts, or to rebase a conflicted PR branch."
+policy:
+  allow_implicit_invocation: false
