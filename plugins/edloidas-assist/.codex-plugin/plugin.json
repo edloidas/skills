@@ -1,0 +1,32 @@
+{
+  "name": "edloidas-assist",
+  "version": "2.21.0",
+  "description": "A Codex-ready assistance bundle for explanations, independent verification, and decision pressure-testing.",
+  "author": {
+    "name": "Mikita Taukachou",
+    "url": "https://edloidas.io"
+  },
+  "homepage": "https://github.com/edloidas/skills",
+  "repository": "https://github.com/edloidas/skills",
+  "license": "MIT",
+  "keywords": [
+    "skills",
+    "codex",
+    "assist",
+    "ask",
+    "explain",
+    "verify"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Edloidas Assist",
+    "shortDescription": "Explain concepts, verify claims, and challenge decisions.",
+    "longDescription": "Install the assistance bundle from edloidas/skills for clear explanations, independent verification, and decision pressure-testing from Codex.",
+    "developerName": "Mikita Taukachou",
+    "category": "Coding",
+    "websiteURL": "https://github.com/edloidas/skills",
+    "brandColor": "#FD3DB5",
+    "composerIcon": "./assets/logo.png",
+    "logo": "./assets/logo.png"
+  }
+}

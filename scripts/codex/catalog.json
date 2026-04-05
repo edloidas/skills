@@ -163,6 +163,27 @@
       ]
     },
     {
+      "group": "assist",
+      "name": "edloidas-assist",
+      "displayName": "Edloidas Assist",
+      "description": "A Codex-ready assistance bundle for explanations, independent verification, and decision pressure-testing.",
+      "shortDescription": "Explain concepts, verify claims, and challenge decisions.",
+      "longDescription": "Install the assistance bundle from edloidas/skills for clear explanations, independent verification, and decision pressure-testing from Codex.",
+      "category": "Coding",
+      "websiteURL": "https://github.com/edloidas/skills",
+      "keywords": [
+        "skills",
+        "codex",
+        "assist",
+        "ask",
+        "explain",
+        "verify"
+      ],
+      "skills": [
+        "assist/ask"
+      ]
+    },
+    {
       "group": "obsidian",
       "name": "edloidas-obsidian",
       "displayName": "Edloidas Obsidian",

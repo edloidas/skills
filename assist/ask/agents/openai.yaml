@@ -1,0 +1,6 @@
+interface:
+  display_name: "Ask"
+  short_description: "Explain concepts or pressure-test a decision"
+  default_prompt: "Use $ask to explain a concept clearly, verify a claim, or challenge a technical decision."
+policy:
+  allow_implicit_invocation: false

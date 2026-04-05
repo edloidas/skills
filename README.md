@@ -45,6 +45,7 @@ Available Codex plugin groups in this repo marketplace:
 - `Edloidas Audit`
 - `Edloidas Maintain`
 - `Edloidas Ship`
+- `Edloidas Assist`
 - `Edloidas Obsidian`
 
 These wrapper plugins expose the Codex-vetted subset of each source group, not every skill in the
@@ -188,6 +189,7 @@ External opinion and assistance tools.
 
 | Skill                                                       | Description                                                               | Agent         |
 | ----------------------------------------------------------- | ------------------------------------------------------------------------- | ------------- |
+| [ask](./assist/ask/)                                        | Explain concepts, verify claims, or challenge decisions                   | Claude, Codex |
 | [codex](./assist/codex/)                                    | Quick external opinion from Codex CLI                                     | Claude        |
 
 ### Obsidian

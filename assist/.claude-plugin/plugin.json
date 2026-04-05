@@ -1,7 +1,7 @@
 {
   "name": "assist",
   "version": "2.21.0",
-  "description": "External opinion and assistance tools including Codex CLI integration",
+  "description": "External opinion, assistance, and Q&A tools including Codex CLI integration",
   "author": {
     "name": "Mikita Taukachou",
     "url": "https://edloidas.io"

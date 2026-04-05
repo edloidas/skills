@@ -50,7 +50,7 @@ plugins/
 - `audit/` — CI, script, skill, and workspace auditing (4 skills)
 - `maintain/` — Label sync, instruction file sync, permissions cleanup, lint migration, and comment auditing (5 skills)
 - `ship/` — Release workflows and deployment tools (2 skills)
-- `assist/` — External opinion and assistance tools (1 skill)
+- `assist/` — External opinion and assistance tools (2 skills)
 - `obsidian/` — Obsidian vault organization and working document management (1 skill)
 
 Wrapper plugin names and display names for Codex:
@@ -60,6 +60,7 @@ Wrapper plugin names and display names for Codex:
 - `plugins/edloidas-audit/` → `edloidas-audit` / `Edloidas Audit`
 - `plugins/edloidas-maintain/` → `edloidas-maintain` / `Edloidas Maintain`
 - `plugins/edloidas-ship/` → `edloidas-ship` / `Edloidas Ship`
+- `plugins/edloidas-assist/` → `edloidas-assist` / `Edloidas Assist`
 - `plugins/edloidas-obsidian/` → `edloidas-obsidian` / `Edloidas Obsidian`
 
 The Codex wrapper layer is driven from `scripts/codex/catalog.json`. After changing the Codex-exposed
