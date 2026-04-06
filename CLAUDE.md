@@ -80,6 +80,11 @@ Treat `.agents/plugins/marketplace.json`, `plugins/<plugin-name>/.codex-plugin/p
 skills and `scripts/codex/catalog.json`, then regenerate the wrapper layer instead of editing those files
 by hand.
 
+The generated Codex wrapper layer is symlink-based and should be treated as repo-local when this
+repository is open in Codex. For user-scoped or cross-repo Codex usage, install skills via
+`./scripts/codex-packaging.sh install-links --dest "$HOME/.agents/skills" ...` or direct installs
+into `~/.codex/skills` rather than assuming the wrapper plugin cache will be portable.
+
 ## How Skills Load (Progressive Disclosure)
 
 Skills use progressive disclosure to manage context efficiently:

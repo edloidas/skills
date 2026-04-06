@@ -6,6 +6,9 @@ A public collection of [Claude Code](https://docs.anthropic.com/en/docs/claude-c
 
 ### Claude Code
 
+These `/plugin ...` commands are for Claude Code. Codex uses the separate repo-local and
+user-scoped flows in the `Codex` section below.
+
 Add the marketplace and install the plugin groups you need:
 
 ```
@@ -32,10 +35,10 @@ Install all groups for the full set, or pick only the groups relevant to your wo
 
 ### Codex
 
-When you open this repository in Codex, it exposes two Codex-native integration paths:
+When you open this repository in Codex, it exposes two repo-local integration paths:
 
-- Repo skills via `.agents/skills/` — curated symlinks to Codex-vetted skills for live repo-local use
-- Repo marketplace via `.agents/plugins/marketplace.json` — grouped wrapper plugins with Codex install metadata
+- Repo skills via `.agents/skills/` — curated symlinks to Codex-vetted skills for use while this repo is open in Codex
+- Repo marketplace via `.agents/plugins/marketplace.json` — repo-local wrapper plugin metadata for those same bundles
 
 Available Codex plugin groups in this repo marketplace:
 
@@ -49,9 +52,12 @@ Available Codex plugin groups in this repo marketplace:
 - `Edloidas Obsidian`
 
 These wrapper plugins expose the Codex-vetted subset of each source group, not every skill in the
-repository.
+repository. The generated wrapper layer is symlink-based and should be treated as repo-local.
 
-Codex follows symlinked skill folders, so updates from `git pull` flow through automatically. If new skills or plugin changes do not appear, restart Codex.
+Codex follows symlinked skill folders, so updates from `git pull` flow through automatically while
+you are working inside this repository. For cross-repo or user-scoped use, install the skills into
+a home-level directory instead of relying on the repo-local wrapper cache. If new repo-local skills
+or plugin changes do not appear, restart Codex.
 
 The Codex wrapper layer is defined in `scripts/codex/catalog.json` and can be regenerated from the repo root:
 
@@ -67,7 +73,13 @@ Treat `.agents/plugins/marketplace.json`, `plugins/<plugin-name>/.codex-plugin/p
 To install one or more Codex skill groups into your home-level `~/.agents/skills` without copying:
 
 ```bash
-./scripts/codex-packaging.sh install-links review build
+./scripts/codex-packaging.sh install-links --dest "$HOME/.agents/skills" review build
+```
+
+To install the full Codex-safe set for use across repositories:
+
+```bash
+./scripts/codex-packaging.sh install-links --dest "$HOME/.agents/skills" all
 ```
 
 For user-scoped installation outside the repo, you can still install individual skills directly into `~/.codex/skills`:
