@@ -1,6 +1,6 @@
 {
   "name": "assist",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "description": "External opinion, assistance, and Q&A tools including Codex CLI integration",
   "author": {
     "name": "Mikita Taukachou",
