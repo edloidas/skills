@@ -30,7 +30,6 @@ Located in `scripts/` relative to this skill:
 | `resolve-project-token.sh` | Resolve token: GH_PROJECTS_TOKEN → gh auth      |
 | `add-to-project.sh`        | Add issue to GitHub Projects V2                 |
 | `project-status.sh`        | Update project board status                     |
-| `wait-checks.sh`          | Poll PR check status until complete or timeout   |
 
 Run scripts from the skill directory:
 
@@ -41,10 +40,23 @@ bash "<skill-dir>/scripts/detect-base.sh"
 bash "<skill-dir>/scripts/repo-context.sh"
 bash "<skill-dir>/scripts/add-to-project.sh" <issue-number> <project-title> [status]
 bash "<skill-dir>/scripts/project-status.sh" <issue-number> <status>
-bash "<skill-dir>/scripts/wait-checks.sh" <pr-number> [timeout-seconds]
 ```
 
 ## Step Router
+
+Before routing, detect current state in parallel:
+
+```bash
+# Run all three in parallel (independent calls)
+git branch --show-current                    # → current branch name
+git status --short                           # → working tree state (staged, unstaged, untracked)
+git log --oneline -1                         # → latest commit context
+```
+
+Use the current branch name to determine which steps are already done:
+- On `issue-<N>` branch → Steps 1-2 are done, detect entry from there
+- On base branch (main/master/etc.) with no changes → nothing to do
+- On base branch with changes → full flow from Step 1
 
 Determine entry step from user intent, check prerequisites, then proceed forward. Do NOT re-run earlier completed steps.
 
@@ -62,13 +74,11 @@ Determine entry step from user intent, check prerequisites, then proceed forward
 
 ### No Arguments (Full Flow from Changes)
 
-When invoked without arguments, assume a full flow based on current working tree changes:
+When invoked without arguments, use the state detected above:
 
-1. Check for staged files: `git diff --cached --name-only`
-2. If no staged files, check for all changed/untracked files: `git diff --name-only` and `git ls-files --others --exclude-standard`
-3. If no changes found at all, stop and tell the user there's nothing to commit
-4. Analyze the changes (diff content) to infer issue type and description
-5. Run the full flow (Steps 1–6) using the detected files — stage only the identified files in Step 3
+1. If `git status --short` shows no output, stop — nothing to commit
+2. If there are changes, analyze the diff content to infer issue type and description
+3. Run the full flow (Steps 1–6) — stage only the identified files in Step 3
 
 When the user says "full flow" or asks to go from issue to merge, run all steps sequentially. Otherwise, start at the detected step and ask whether to continue to the next step after each one completes.
 
@@ -89,7 +99,16 @@ When the user explicitly provides values for labels, assignee, project, or other
 
 ## Step 1: Create Issue
 
-Run `check-env.sh` to validate environment. Run `repo-context.sh` to fetch labels, collaborators, and projects.
+Run these in parallel (they are independent):
+
+```bash
+# Parallel batch
+bash "<skill-dir>/scripts/check-env.sh"
+bash "<skill-dir>/scripts/resolve-tmp.sh"      # → save output as <TMPDIR>
+bash "<skill-dir>/scripts/repo-context.sh"
+```
+
+Wait for all three before proceeding. `detect-base.sh` is not needed until Step 2.
 
 ### Title
 
@@ -166,13 +185,7 @@ Assign via `--milestone "<title>"` in the `gh issue create` command.
 
 ### Create
 
-Resolve the temp directory (run once at start, reuse throughout):
-
-```bash
-bash "<skill-dir>/scripts/resolve-tmp.sh"
-```
-
-Use the output as `<TMPDIR>` in all subsequent file paths. Use the **Write tool** to save the issue body to `<TMPDIR>/body.md`, then create the issue with `--body-file`:
+Use the `<TMPDIR>` from the parallel setup batch. Use the **Write tool** to save the issue body to `<TMPDIR>/body.md`, then create the issue with `--body-file`:
 
 ```bash
 gh issue create --title "<title>" --body-file <TMPDIR>/body.md --label "<label>" --assignee "<assignee>" [--milestone "<name>"]
@@ -461,20 +474,18 @@ gh pr view <pr-number> --json state,mergeable
 - If PR is not open: report current state and **stop**.
 - If there are conflicts: rebase onto base, force-push, then continue to step 2.
 
-2. Wait for CI checks:
+2. Wait for CI checks using `gh pr checks --watch` (use a 5-minute Bash timeout):
 
 ```bash
-bash "<skill-dir>/scripts/wait-checks.sh" <pr-number> 300
+gh pr checks <pr-number> --watch --fail-fast
 ```
 
 - Exit 0 (all passed/skipped) → proceed to step 3
 - Exit 1 (failure) → report failed checks, **stop**. Do not merge.
-- Exit 2 (timeout) → report timeout, ask user via `AskUserQuestion`:
+- Bash timeout → report timeout, ask user via `AskUserQuestion`:
   1. "Merge anyway" — proceed to step 3
-  2. "Wait longer" — re-run `wait-checks.sh` with another 300s
+  2. "Wait longer" — re-run `gh pr checks --watch --fail-fast` with another 5-minute timeout
   3. "Abort" — stop
-
-Print the "Waiting for Checks" report while polling (see `references/report-format.md`).
 
 3. After checks pass, verify mergeability one more time:
 
@@ -490,9 +501,10 @@ If conflicts appeared, rebase and re-run checks.
 gh pr merge --rebase --delete-branch
 ```
 
-Close the issue if not auto-closed by `Closes #<number>`:
+`Closes #<number>` in the PR body auto-closes the issue when merging into the default branch. Only verify and manually close if the merge target is a non-default branch (e.g., epic-* or next):
 
 ```bash
+# Only run this if base branch is NOT the default branch
 gh issue close <number>
 ```
 

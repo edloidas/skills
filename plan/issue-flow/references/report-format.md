@@ -71,10 +71,10 @@ Commit: <short-sha> <commit-subject> (<N> files, +<insertions>/-<deletions>)
 
 ```
 ### [6] Waiting for Checks
-PR #<pr-number>: <N> checks pending...
+PR #<pr-number>: waiting for CI...
 ```
 
-Print while `wait-checks.sh` is polling. After checks pass, print the merged report below.
+Print before running `gh pr checks --watch`. After checks pass, print the merged report below.
 
 ### Step 6: Merged
 
