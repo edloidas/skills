@@ -11,7 +11,6 @@ license: MIT
 compatibility: Claude Code, Codex
 allowed-tools: Read Glob Grep Task Bash(bash:audit/skill-audit/*) Bash(bash:scripts/validate-codex.sh)
 user-invocable: true
-arguments: "skills"
 argument-hint: "[all or skill names]"
 metadata:
   author: edloidas

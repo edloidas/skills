@@ -7,7 +7,6 @@ description: >
 license: MIT
 compatibility: Claude Code, Codex
 allowed-tools: Bash(pnpm:*) Bash(npx:*) Bash(timeout:*) Bash(git:*) Task Read Glob Grep
-arguments: "path"
 argument-hint: "[file, directory, or empty]"
 ---
 

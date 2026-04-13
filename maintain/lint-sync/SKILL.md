@@ -9,7 +9,6 @@ license: MIT
 compatibility: Claude Code, Codex
 allowed-tools: Bash Read Glob Grep WebFetch Write AskUserQuestion
 user-invocable: true
-arguments: "mode"
 argument-hint: "[sync, audit, or update]"
 ---
 

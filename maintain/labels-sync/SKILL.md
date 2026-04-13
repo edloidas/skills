@@ -8,7 +8,6 @@ license: MIT
 compatibility: Claude Code, Codex
 allowed-tools: Bash Read AskUserQuestion
 user-invocable: true
-arguments: "mode"
 argument-hint: "[apply|check|get]"
 ---
 

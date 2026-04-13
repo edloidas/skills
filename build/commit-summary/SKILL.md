@@ -4,7 +4,6 @@ description: Generate commit message body summaries from git changes. Produces t
 license: MIT
 compatibility: Claude Code, Codex
 allowed-tools: Read Bash(git status:*) Bash(git diff:*) Bash(git log:*) Bash(git show:*)
-arguments: "scope"
 argument-hint: "['staged only', instructions, or empty]"
 ---
 

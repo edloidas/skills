@@ -10,7 +10,6 @@ license: MIT
 compatibility: Claude Code, Codex
 allowed-tools: Read Edit Glob Grep Bash AskUserQuestion
 user-invocable: true
-arguments: "mode"
 argument-hint: "[check|apply]"
 metadata:
   author: edloidas

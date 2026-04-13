@@ -8,7 +8,6 @@ license: MIT
 compatibility: Claude Code
 allowed-tools: Bash(bash:assist/codex/*) Write(*/codex-*)
 user-invocable: true
-arguments: "review"
 argument-hint: "[review, or empty for ask mode]"
 metadata:
   author: edloidas

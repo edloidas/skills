@@ -4,7 +4,6 @@ description: This skill should be used when the user asks to release, publish, o
 license: MIT
 compatibility: Claude Code, Codex
 allowed-tools: Bash Read Glob AskUserQuestion
-arguments: "version"
 argument-hint: "[major, minor, or patch]"
 ---
 

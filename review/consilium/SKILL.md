@@ -12,7 +12,6 @@ license: MIT
 compatibility: Claude Code
 allowed-tools: Read Write(*/consilium-*) Edit(*/consilium-*) Glob Grep Task Bash(bash:review/consilium/*) Bash(cat:*/consilium-*) Bash(codex:*)
 user-invocable: true
-arguments: "focus-area brainstorm"
 argument-hint: "[focus area, brainstorm, or empty]"
 metadata:
   author: edloidas

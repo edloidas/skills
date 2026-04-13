@@ -9,7 +9,6 @@ description: >
 license: MIT
 compatibility: Claude Code, Codex
 allowed-tools: Bash(gh:*) Bash(git:*) Read Glob Grep
-arguments: "issue-number"
 argument-hint: "[issue-number or URL]"
 metadata:
   author: edloidas

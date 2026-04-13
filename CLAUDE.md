@@ -121,7 +121,7 @@ Optional fields:
 | `license`       | License name or reference to a bundled LICENSE file                                                                   |
 | `compatibility` | 1–500 chars; target agent and/or environment needs (see Multi-Agent Convention)                                       |
 | `metadata`      | Key-value mapping; use reasonably unique key names to prevent conflicts                                               |
-| `arguments`     | Short space-separated parameter names for autocomplete tokens. Each word becomes a `[word]` token in Claude Code's autocomplete. Match the `argument-hint` pattern without brackets (e.g. `"command branch"`, `"mode"`, `"files --dry-run"`). **Avoid regex metacharacters** (`[`, `]`, `|`, `<`, `>`, etc.) — Claude Code parses this field as a regex and will throw `SyntaxError: Invalid regular expression`. |
+| `arguments`     | Space-separated parameter names for autocomplete tokens. **Caution:** makes arguments mandatory for marketplace-installed plugin skills — users cannot submit with Enter unless they provide arguments. Only use for skills that genuinely cannot function without explicit input (e.g. an issue number that can't be derived from context). For optional arguments, use `argument-hint` only. See [Arguments Behavior](#arguments-behavior) below. |
 | `allowed-tools` | **Experimental.** Space-delimited list of pre-approved tools (e.g. `Bash(git:*) Read`)                                |
 
 Claude Code extension fields (ignored by other agents, safe to use in any skill):
@@ -156,6 +156,16 @@ metadata:
   author: edloidas
 ---
 ```
+
+### Arguments Behavior
+
+For marketplace-installed plugin skills, `arguments` makes arguments **mandatory** (Enter is
+blocked until provided) and `argument-hint` is **not displayed**. Direct skills
+(`~/.claude/skills/`) are unaffected — both fields work as expected.
+
+Only use `arguments` when the skill genuinely cannot function without explicit input (e.g. an
+issue number). Prefer `argument-hint` alone for optional hints. `$ARGUMENTS` works regardless
+of whether `arguments` is declared.
 
 ### AskUserQuestion Conventions
 

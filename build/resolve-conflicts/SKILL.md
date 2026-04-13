@@ -8,8 +8,7 @@ description: >
 license: MIT
 compatibility: Claude Code, Codex
 allowed-tools: Bash(git:*) Bash(gh:*) Read Edit Task AskUserQuestion
-arguments: source
-argument-hint: [PR number, PR URL, issue number, or issue URL]
+argument-hint: "[PR number, PR URL, issue number, or issue URL]"
 metadata:
   author: edloidas
 ---

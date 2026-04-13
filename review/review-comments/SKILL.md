@@ -7,7 +7,6 @@ description: >
 license: MIT
 compatibility: Claude Code, Codex
 allowed-tools: Bash Read Glob Grep
-arguments: "number"
 argument-hint: "[PR number or empty for auto-detect]"
 metadata:
   author: edloidas

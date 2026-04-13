@@ -9,7 +9,6 @@ description: >
 license: MIT
 compatibility: Claude Code, Codex
 allowed-tools: Bash(git:*,rsync:*) Read Glob Grep
-arguments: "command branch"
 argument-hint: "[command] [branch]"
 ---
 

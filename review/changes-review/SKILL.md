@@ -8,7 +8,6 @@ description: >
 license: MIT
 compatibility: Claude Code, Codex
 allowed-tools: Bash Read Glob Grep Task
-arguments: "scope"
 argument-hint: "[commits, path, range, or empty]"
 metadata:
   author: edloidas

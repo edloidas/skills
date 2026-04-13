@@ -6,7 +6,6 @@ description: >
   Triages findings into tasks and works through each with user approval.
 license: MIT
 compatibility: Claude Code
-arguments: auto instructions
 argument-hint: "[auto] [additional instructions]"
 allowed-tools: Bash Read Write Edit Glob Grep Task AskUserQuestion
 metadata:

@@ -8,7 +8,6 @@ description: >
 license: MIT
 compatibility: Claude Code
 allowed-tools: Bash(gh:*) Bash(git:*) Bash(bash:*) Read Write Glob Grep AskUserQuestion
-arguments: "issue-number description"
 argument-hint: "[issue-number or description]"
 metadata:
   author: edloidas
