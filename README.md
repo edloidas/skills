@@ -4,10 +4,25 @@ A public collection of [Claude Code](https://docs.anthropic.com/en/docs/claude-c
 
 ## Installation
 
-### Claude Code
+### npx skills
 
-These `/plugin ...` commands are for Claude Code. Codex uses the separate repo-local and
-user-scoped flows in the `Codex` section below.
+Install skills to any supported agent using the [skills CLI](https://github.com/vercel-labs/skills):
+
+```bash
+# List available skills
+npx skills add edloidas/skills --list
+
+# Install all skills for all agents
+npx skills add edloidas/skills --all
+
+# Install a single skill to a specific agent
+npx skills add edloidas/skills --skill changes-review -a claude-code
+```
+
+See the [skills CLI documentation](https://github.com/vercel-labs/skills) for the full list of
+flags and supported source formats.
+
+### Claude Code
 
 Add the marketplace and install the plugin groups you need:
 
@@ -25,13 +40,22 @@ Add the marketplace and install the plugin groups you need:
 
 Install all groups for the full set, or pick only the groups relevant to your workflow.
 
-### Scopes
+#### Scopes
 
 | Scope          | Command                                          | Use case                |
 | -------------- | ------------------------------------------------ | ----------------------- |
 | User (default) | `/plugin install edloidas@review`                | Personal — all projects |
 | Project        | `/plugin install edloidas@review --scope project`| Team — shared via Git   |
 | Local          | `/plugin install edloidas@review --scope local`  | Project — gitignored    |
+
+### Manually
+
+Clone the repo and load plugin groups with `--plugin-dir` (per-session, not persistent):
+
+```bash
+git clone https://github.com/edloidas/skills.git
+claude --plugin-dir ./skills/review --plugin-dir ./skills/build
+```
 
 ### Codex
 
