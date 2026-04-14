@@ -1,6 +1,6 @@
 {
   "name": "build",
-  "version": "3.0.4",
+  "version": "3.0.5",
   "description": "Git worktree management, conflict resolution, commit summaries, and findings fixes",
   "author": {
     "name": "Mikita Taukachou",

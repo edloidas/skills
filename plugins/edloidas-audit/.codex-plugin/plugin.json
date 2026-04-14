@@ -1,6 +1,6 @@
 {
   "name": "edloidas-audit",
-  "version": "3.0.4",
+  "version": "3.0.5",
   "description": "A Codex-safe audit bundle for skill quality, GitHub Actions, package scripts, and monorepo workspace configuration.",
   "author": {
     "name": "Mikita Taukachou",
