@@ -7,7 +7,7 @@ set -euo pipefail
 # - .claude-plugin/marketplace.json exists and is valid JSON
 # - each marketplace entry points at a source group directory
 # - each source group ships .claude-plugin/plugin.json with the expected
-#   auto-discovery configuration ("skills": "./")
+#   auto-discovery configuration ("skills": ".")
 # - each source group contains discoverable skills
 # - source groups do not embed Codex wrapper manifests directly
 #
@@ -129,8 +129,8 @@ for i in $(seq 0 $((plugin_count - 1))); do
     error "Plugin '$name': marketplace name does not match $plugin_manifest name '$manifest_name'"
   fi
 
-  if [ "$manifest_skills" != "./" ]; then
-    error "Plugin '$name': expected $plugin_manifest to declare \"skills\": \"./\" for source-group auto-discovery (got '$manifest_skills')"
+  if [ "$manifest_skills" != "." ]; then
+    error "Plugin '$name': expected $plugin_manifest to declare \"skills\": \".\" for source-group auto-discovery (got '$manifest_skills')"
   fi
 
   # Find all SKILL.md files inside the plugin source directory
