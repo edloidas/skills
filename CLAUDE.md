@@ -20,7 +20,7 @@ Skills are organized into plugin groups. Each group has a `.claude-plugin/plugin
 ```
 <group>/
 ├── .claude-plugin/
-│   └── plugin.json       # Plugin metadata — "skills": "./" enables auto-discovery
+│   └── plugin.json       # Plugin metadata — skills auto-discovered from plugin root
 ├── <skill-name>/
 │   ├── SKILL.md          # Required — frontmatter + instructions
 │   ├── scripts/          # Optional — executable code (bash, python, js)
@@ -251,9 +251,9 @@ The `description` determines when an agent activates the skill. Be specific and 
 `marketplace.json` and `plugin.json` have **different schemas** — do not mix their fields.
 
 - **`marketplace.json`** — marketplace registry entry. Plugin objects support: `commands`, `agents`, `hooks`, `mcpServers`, `lspServers`. **No `skills` field.** Adding `skills` here causes validation error: `plugins.0.skills: Invalid input`.
-- **`plugin.json`** — plugin manifest. Declares `skills` as a path (e.g. `"skills": "./"`) for skill directory discovery.
+- **`plugin.json`** — plugin manifest. Skills are auto-discovered from subdirectories containing `SKILL.md`. Do not declare a `skills` field — it is no longer supported.
 
-Skills are discovered automatically from the path declared in `plugin.json`. No per-skill registration is needed in either file.
+Skills are discovered automatically from the plugin root directory. No per-skill registration is needed in either file.
 
 ## Codex Wrapper Plugins
 
