@@ -6,6 +6,7 @@ description: >
   to recommend what to pick up next. Use when the user asks which
   issue to work on, what's next, or wants to pick an issue from the backlog.
 license: MIT
+model: claude-sonnet-4-6
 compatibility: Claude Code, Codex
 allowed-tools: Bash(gh:*) Bash(git:*) Read Glob Grep AskUserQuestion
 metadata:

@@ -6,6 +6,7 @@ description: >
   mentions Railway, deployed apps, production logs, or environment variables
   for hosted services.
 license: MIT
+model: claude-sonnet-4-6
 compatibility: Claude Code, Codex
 allowed-tools: Bash(railway:*) Read
 metadata:

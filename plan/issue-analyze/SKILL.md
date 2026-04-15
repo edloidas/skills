@@ -7,6 +7,7 @@ description: >
   task list. Use before starting work on any issue to understand what needs to be
   built and plan implementation steps.
 license: MIT
+model: claude-sonnet-4-6
 compatibility: Claude Code, Codex
 allowed-tools: Bash(gh:*) Bash(git:*) Read Glob Grep
 argument-hint: "[issue-number or URL]"
