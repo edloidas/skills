@@ -186,6 +186,7 @@ Code review, cleanup, critical review board, and quality improvement skills.
 | [consilium](./review/consilium/)                            | Critical review board — up to 6 reviewers (2 core + 4 on-demand)         | Claude        |
 | [react-review](./review/react-review/)                      | Review React code for effects, conventions, and patterns                  | Claude, Codex |
 | [review-comments](./review/review-comments/)                | Analyze PR review comments — triage into fix/skip with reasoning          | Claude, Codex |
+| [spec-extractor](./review/spec-extractor/)                  | Extract a behavioral spec from a codebase (1 file up to 500+ files)       | Claude        |
 
 ### Audit
 
