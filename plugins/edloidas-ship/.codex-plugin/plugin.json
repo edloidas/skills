@@ -1,6 +1,6 @@
 {
   "name": "edloidas-ship",
-  "version": "3.0.6",
+  "version": "3.1.0",
   "description": "A Codex-safe shipping bundle for npm package releases and Railway deployment inspection.",
   "author": {
     "name": "Mikita Taukachou",
