@@ -20,13 +20,25 @@ Skills are organized into plugin groups. Each group has a `.claude-plugin/plugin
 ```
 <group>/
 ├── .claude-plugin/
-│   └── plugin.json       # Plugin metadata — skills auto-discovered from plugin root
+│   └── plugin.json                      # Plugin metadata
 ├── <skill-name>/
-│   ├── SKILL.md          # Required — frontmatter + instructions
-│   ├── scripts/          # Optional — executable code (bash, python, js)
-│   ├── references/       # Optional — additional docs loaded on demand
-│   └── assets/           # Optional — templates, images, data files
+│   ├── SKILL.md                         # Required — frontmatter + instructions
+│   ├── scripts/                         # Optional — executable code
+│   ├── references/                      # Optional — docs loaded on demand
+│   └── assets/                          # Optional — templates, images, data
+├── skills/
+│   └── <skill-name> -> ../<skill-name>  # Required for Claude Code discovery
 └── ...
+```
+
+**Plugin discovery requires the `<group>/skills/<skill-name>` symlink.** Claude Code's
+plugin loader looks inside the plugin's `skills/` directory, not the plugin root. A skill
+without its symlink in `<group>/skills/` is invisible to the plugin — even though
+`SKILL.md`, `plugin.json`, and the marketplace entry all exist. When adding a new skill,
+create the mirror symlink in the same step:
+
+```bash
+cd <group>/skills && ln -s ../<skill-name> <skill-name>
 ```
 
 Codex packaging is layered on top of these source groups using wrapper plugins and repo-local
@@ -243,8 +255,10 @@ The `description` determines when an agent activates the skill. Be specific and 
 2. Create a subdirectory: `mkdir <group>/<skill-name>`
 3. Create `<group>/<skill-name>/SKILL.md` with required frontmatter and instructions
 4. Add `scripts/`, `references/`, or `assets/` directories as needed
-5. Update the appropriate "Available Skills" table in `README.md`
-6. Validate via `skill-audit` skill if available
+5. Create the plugin discovery symlink: `cd <group>/skills && ln -s ../<skill-name> <skill-name>`
+6. Update the appropriate "Available Skills" table in `README.md`
+7. Run `bash .github/scripts/validate-skills.sh` to verify marketplace, manifests, and discovery symlinks
+8. Validate via `skill-audit` skill if available
 
 ## Plugin Manifests (`.claude-plugin/`)
 

@@ -9,6 +9,7 @@ set -euo pipefail
 # - each source group ships .claude-plugin/plugin.json with the expected
 #   matching name and valid JSON structure
 # - each source group contains discoverable skills
+# - each skill has its matching discovery symlink at <group>/skills/<name>
 # - source groups do not embed Codex wrapper manifests directly
 #
 # The Codex wrapper contract is validated separately by scripts/validate-codex.sh.
@@ -136,11 +137,31 @@ for i in $(seq 0 $((plugin_count - 1))); do
     [ -n "$skill_md" ] || continue
     skill_count=$((skill_count + 1))
     skill_dir=$(dirname "$skill_md")
+    skill_name=$(basename "$skill_dir")
+
+    # Skip the skills/ mirror directory itself — entries in there are symlinks to real skills
+    if [ "$skill_name" = "skills" ]; then
+      skill_count=$((skill_count - 1))
+      continue
+    fi
+
+    # Every skill must have a discovery symlink at <group>/skills/<name> — Claude Code's
+    # plugin loader looks in the plugin's skills/ subdirectory, not the plugin root
+    expected_link="$source/skills/$skill_name"
+    if [ ! -L "$expected_link" ]; then
+      error "Plugin '$name': missing discovery symlink '$expected_link -> ../$skill_name'"
+    else
+      link_target=$(readlink "$expected_link")
+      if [ "$link_target" != "../$skill_name" ]; then
+        error "Plugin '$name': '$expected_link' points at '$link_target', expected '../$skill_name'"
+      fi
+    fi
+
     if skill_has_codex_compatibility "$skill_dir"; then
       codex_compatible_count=$((codex_compatible_count + 1))
     fi
   done <<EOF
-$(find "$source" -mindepth 2 -maxdepth 2 -name SKILL.md -print | sort)
+$(find "$source" -mindepth 2 -maxdepth 2 -name SKILL.md -not -path "$source/skills/*" -print | sort)
 EOF
 
   if [ "$skill_count" -eq 0 ]; then
