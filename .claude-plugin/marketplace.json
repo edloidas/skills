@@ -13,7 +13,7 @@
       "name": "plan",
       "source": "./plan",
       "description": "Issue drafting, analysis, triage, and full issue lifecycle skills",
-      "version": "3.2.0",
+      "version": "3.2.1",
       "author": {
         "name": "Mikita Taukachou",
         "url": "https://edloidas.io"
@@ -24,7 +24,7 @@
       "name": "build",
       "source": "./build",
       "description": "Git worktree management, conflict resolution, commit summaries, and findings fixes",
-      "version": "3.2.0",
+      "version": "3.2.1",
       "author": {
         "name": "Mikita Taukachou",
         "url": "https://edloidas.io"
@@ -35,7 +35,7 @@
       "name": "review",
       "source": "./review",
       "description": "Code review, cleanup, critical review board, and quality improvement skills",
-      "version": "3.2.0",
+      "version": "3.2.1",
       "author": {
         "name": "Mikita Taukachou",
         "url": "https://edloidas.io"
@@ -46,7 +46,7 @@
       "name": "audit",
       "source": "./audit",
       "description": "CI, script, skill, and workspace auditing skills",
-      "version": "3.2.0",
+      "version": "3.2.1",
       "author": {
         "name": "Mikita Taukachou",
         "url": "https://edloidas.io"
@@ -57,7 +57,7 @@
       "name": "maintain",
       "source": "./maintain",
       "description": "Label sync, instruction file sync, permissions cleanup, lint migration, and comment auditing",
-      "version": "3.2.0",
+      "version": "3.2.1",
       "author": {
         "name": "Mikita Taukachou",
         "url": "https://edloidas.io"
@@ -68,7 +68,7 @@
       "name": "ship",
       "source": "./ship",
       "description": "Release workflows and deployment tools for npm packages and Railway services",
-      "version": "3.2.0",
+      "version": "3.2.1",
       "author": {
         "name": "Mikita Taukachou",
         "url": "https://edloidas.io"
@@ -79,7 +79,7 @@
       "name": "assist",
       "source": "./assist",
       "description": "External opinion and assistance tools including Codex CLI integration",
-      "version": "3.2.0",
+      "version": "3.2.1",
       "author": {
         "name": "Mikita Taukachou",
         "url": "https://edloidas.io"
@@ -90,7 +90,7 @@
       "name": "obsidian",
       "source": "./obsidian",
       "description": "Obsidian vault organization and working document management skills",
-      "version": "3.2.0",
+      "version": "3.2.1",
       "author": {
         "name": "Mikita Taukachou",
         "url": "https://edloidas.io"
