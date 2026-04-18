@@ -227,6 +227,7 @@ External opinion and assistance tools.
 | ----------------------------------------------------------- | ------------------------------------------------------------------------- | ------------- |
 | [ask](./assist/ask/)                                        | Explain concepts, verify claims, or challenge decisions                   | Claude, Codex |
 | [codex](./assist/codex/)                                    | Quick external opinion from Codex CLI                                     | Claude        |
+| [polish-prompt](./assist/polish-prompt/)                    | Iteratively polish a prompt via blind-judged tournament rounds            | Claude        |
 
 ### Obsidian
 
