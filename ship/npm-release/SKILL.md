@@ -1,6 +1,6 @@
 ---
 name: npm-release
-description: This skill should be used when the user asks to release, publish, or create a new version of an npm/pnpm package. It guides through version bumping, validation, git tagging, and publishing with proper safety checks and user approval.
+description: This skill should be used when the user asks to release, publish, or create a new version of an npm/pnpm/bun package. It guides through version bumping, validation, git tagging, and publishing with proper safety checks and user approval.
 license: MIT
 model: claude-sonnet-4-6
 compatibility: Claude Code, Codex
@@ -8,11 +8,23 @@ allowed-tools: Bash Read Glob AskUserQuestion
 argument-hint: "[major, minor, or patch]"
 ---
 
-# NPM/PNPM Package Release Workflow
+# pnpm / Bun / npm Package Release Workflow
+
+## Package manager detection
+
+Detect the active package manager by lockfile first. Priority order:
+
+1. `pnpm-lock.yaml` → **pnpm**
+2. `bun.lock` or `bun.lockb` → **bun**
+3. `package-lock.json` → **npm**
+
+If no lockfile is present, fall back to tool availability in the same preference order: pnpm → bun → npm. If a lockfile is present but its tool is missing, error out — don't silently switch managers.
+
+`release-prepare.sh` runs this check and prints `Package manager: <name>`. Read that output and use the same manager consistently in every later step. All command blocks below list pnpm first, then bun, then npm — pick the one for the detected manager.
 
 ## Purpose
 
-Automate the release process for npm/pnpm packages with:
+Automate the release process for pnpm / bun / npm packages with:
 
 - Pre-flight validation and safety checks
 - Intelligent version bump recommendations
@@ -45,7 +57,7 @@ bash scripts/release-analyze.sh
 bash scripts/release-execute.sh
 ```
 
-These scripts work with any npm/pnpm project and don't require project-specific setup.
+These scripts work with any pnpm/bun/npm project and don't require project-specific setup.
 
 ## Prerequisites
 - `jq` installed (used by release-analyze.sh and release-execute.sh)
@@ -54,6 +66,24 @@ These scripts work with any npm/pnpm project and don't require project-specific 
 ## Release Workflow
 
 Follow these steps in order. Create an in-memory plan at the start.
+
+### Step 0: Read Project Conventions
+
+Before doing anything else, read the project's instruction files to honor local conventions. Check, in order:
+
+1. `CLAUDE.md` at the repo root
+2. `AGENTS.md` at the repo root
+3. `.agents/` or `.claude/` rule files if they exist
+
+Extract and apply whatever applies to this release:
+
+- **Release commit message format** — e.g. `chore: release v<version>` or a project-specific template. This overrides the default `Release v<version>` used in Step 5.
+- **Pre-release prerequisites** — e.g. updating `CHANGELOG.md` via a separate skill, regenerating docs, running a project-specific validation script. Run these **before** bumping the version so `release:dry` in Step 2 can gate on them.
+- **Branch policy** — some projects allow releases only from `master`, some from version branches (`x.y`), some restrict by environment.
+- **Tag format** — default is `v<version>`. If the project documents something else, use it.
+- **Dist-tag policy** — how prerelease versions are routed (`alpha`/`beta`/`rc`/`next`).
+
+If `CLAUDE.md` / `AGENTS.md` doesn't exist or doesn't say anything about releases, fall back to the defaults below. Never guess — if an instruction is ambiguous, ask the user with `AskUserQuestion`.
 
 ### Step 1: Pre-flight Checks
 
@@ -84,6 +114,8 @@ git status --porcelain
 # Verify build and packaging
 pnpm release:dry
 # or
+bun run release:dry
+# or
 npm publish --dry-run
 ```
 
@@ -93,6 +125,8 @@ Run dry-run release to ensure everything builds correctly:
 
 ```bash
 pnpm release:dry
+# or
+bun run release:dry
 # or
 npm publish --dry-run
 ```
@@ -140,35 +174,49 @@ git diff $(git describe --tags --abbrev=0)..HEAD -- [key-files]
 
 ### Step 4: Bump Version
 
-Update package.json version using pnpm or npm:
+Update `package.json` version. Use the detected package manager; always pass the flag that disables the automatic commit/tag (we create those manually in later steps).
 
 ```bash
-# For minor bump
-pnpm version minor
-# or
-npm version minor --no-git-tag-version
+# pnpm
+pnpm version minor --no-git-tag-version
+pnpm version patch --no-git-tag-version
 
-# For patch bump
-pnpm version patch
-# or
+# Bun (uses bun pm version)
+bun pm version minor --no-git-tag-version
+bun pm version patch --no-git-tag-version
+
+# npm
+npm version minor --no-git-tag-version
 npm version patch --no-git-tag-version
 ```
 
-**Important:** Use `--no-git-tag-version` flag with npm to prevent automatic commit/tag creation (we'll do this manually).
+**Prerelease bumps** (alpha/beta/rc) use `prerelease` with an explicit preid:
+
+```bash
+# pnpm / npm
+pnpm version prerelease --preid=alpha --no-git-tag-version
+npm  version prerelease --preid=alpha --no-git-tag-version
+# Bun
+bun pm version prerelease --preid=alpha --no-git-tag-version
+```
+
+**Important:** `--no-git-tag-version` prevents automatic commit/tag creation — we create them explicitly in Steps 5 and 6.
 
 ### Step 5: Commit Version Bump
 
-Create a commit with the standardized release message:
+Use the **release commit message format captured in Step 0**. Only fall back to the generic `Release v<version>` if the project did not specify one.
 
 ```bash
-# Read new version from package.json
-git add package.json package-lock.json pnpm-lock.yaml
+# Stage package.json and whichever lockfile exists
+git add package.json pnpm-lock.yaml bun.lock bun.lockb package-lock.json 2>/dev/null || true
 
-# Commit with release message
-git commit -m "Release v{{VERSION}}"
+# Commit with the format from Step 0 (examples — pick ONE):
+git commit -m "Release v{{VERSION}}"              # fallback default
+git commit -m "chore: release v{{VERSION}}"       # Conventional Commits
+git commit -m "release: v{{VERSION}}"             # project-specific alternative
 ```
 
-Example: If version is `0.16.0`, the commit message should be `Release v0.16.0`
+If the project uses a non-obvious template (commit body, trailers, sign-off), reproduce it exactly as documented. Never invent a format the project didn't specify.
 
 ### Step 6: Create Git Tag
 
@@ -252,9 +300,9 @@ The three bundled scripts provide complete release workflow support:
 
 - Validates current branch is master/main
 - Checks for uncommitted changes
-- Runs dry-run release to verify build
+- Detects package manager via lockfile first (pnpm → bun → npm), falls back to tool availability, and prints the result
+- Runs dry-run release to verify build (`pnpm release:dry` / `bun run release:dry` / `npm publish --dry-run`)
 - Provides clear error messages and suggestions
-- Works with both npm and pnpm
 
 ### scripts/release-analyze.sh
 
@@ -294,8 +342,9 @@ If any step fails:
 **Failed dry-run:**
 
 - Build errors: Fix and retry
-- Lint errors: Run `pnpm lint:fix` then retry
+- Lint errors: Run the project's lint-fix script (`pnpm lint:fix` / `bun run lint:fix` / `npm run lint:fix`) then retry
 - Type errors: Fix TypeScript issues first
+- Project-specific gate failures (e.g. missing CHANGELOG section): see what Step 0 surfaced and resolve before retrying
 
 **No tags found:**
 
@@ -309,6 +358,8 @@ If CI/CD is not configured or manual publishing is needed:
 ```bash
 # After pushing tags
 pnpm publish --access public
+# or
+bun publish --access public
 # or
 npm publish --access public
 ```
@@ -326,4 +377,4 @@ This skill is self-contained and requires no project-specific setup. However:
 
 ## Keywords
 
-release, publish, version, bump, tag, npm, pnpm, package, deploy, ship, new version, create release
+release, publish, version, bump, tag, npm, pnpm, bun, package, deploy, ship, new version, create release
