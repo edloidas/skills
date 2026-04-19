@@ -10,7 +10,8 @@ license: MIT
 model: claude-sonnet-4-6
 compatibility: Claude Code, Codex
 allowed-tools: Bash(gh:*) Bash(git:*) Read Glob Grep
-argument-hint: "[issue-number or URL]"
+arguments: issue
+argument-hint: "<issue-number or URL>"
 metadata:
   author: edloidas
 ---
@@ -171,7 +172,8 @@ gh api graphql -f query='{
 of a larger epic, these are the parents.
 
 Also try blocked-by relationships. GitHub stores these via node-ID-based relationships
-(same mechanism as `addBlockedBy` / `removeBlockedBy` mutations). Query them directly:
+(same mechanism as `addBlockedBy` / `removeBlockedBy` mutations). Query them directly as
+a **separate** call so a failure here does not affect the `trackedInIssues` result:
 
 ```bash
 gh api graphql -f query='{
@@ -185,14 +187,21 @@ gh api graphql -f query='{
       }
     }
   }
-}' 2>/dev/null
+}' 2>&1 || true
 ```
 
 `blockedByIssues` — what is blocking this issue (must be resolved first).
 `blockingIssues` — what this issue blocks (expects deliverables from this one).
 
-These fields may not be available on all repos or GitHub plans — skip silently if query
-fails or returns null.
+These fields are part of GitHub's issue dependencies preview and are not available on
+most repos or plans. When unavailable, `gh api` exits with code 1 and prints an
+`undefinedField` GraphQL error on **stdout** (not stderr). Handle this silently:
+
+- The `|| true` above prevents the non-zero exit from surfacing as a tool error.
+- If the response contains an `errors` field, or any `undefinedField` / `Field '...'
+  doesn't exist` message, treat it as "not available" and skip this section.
+- Only parse `data.repository.issue.blockedByIssues` / `blockingIssues` when the
+  response has no `errors` field.
 
 If all queries fail or return no data, skip silently.
 
