@@ -121,10 +121,10 @@ Invalid: `PDF-Processing` (uppercase), `-pdf` (leading hyphen), `pdf--processing
 
 Required fields:
 
-| Field         | Constraint                                           |
-| ------------- | ---------------------------------------------------- |
-| `name`        | 1–64 chars, matches directory name                   |
-| `description` | 1–1024 chars, describes what the skill does and when |
+| Field         | Constraint                                                                                                       |
+| ------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `name`        | 1–64 chars, matches directory name                                                                               |
+| `description` | ≤1,024 chars; when paired with `when_to_use`, the combined discovery entry is capped at 1,536 chars and truncated |
 
 Optional fields:
 
@@ -133,8 +133,9 @@ Optional fields:
 | `license`       | License name or reference to a bundled LICENSE file                                                                   |
 | `compatibility` | 1–500 chars; target agent and/or environment needs (see Multi-Agent Convention)                                       |
 | `metadata`      | Key-value mapping; use reasonably unique key names to prevent conflicts                                               |
+| `when_to_use`   | Trigger phrases and scenarios for activation. Appended to `description` at discovery; combined cap 1,536 chars        |
 | `arguments`     | Space-separated parameter names for autocomplete tokens. **Caution:** makes arguments mandatory for marketplace-installed plugin skills — users cannot submit with Enter unless they provide arguments. Only use for skills that genuinely cannot function without explicit input (e.g. an issue number that can't be derived from context). For optional arguments, use `argument-hint` only. See [Arguments Behavior](#arguments-behavior) below. |
-| `allowed-tools` | **Experimental.** Space-delimited list of pre-approved tools (e.g. `Bash(git:*) Read`)                                |
+| `allowed-tools` | **Experimental.** Pre-approved tools, as a space-separated string (`Bash(git:*) Read`) or a YAML list                  |
 
 Claude Code extension fields (ignored by other agents, safe to use in any skill):
 
@@ -144,12 +145,26 @@ Claude Code extension fields (ignored by other agents, safe to use in any skill)
 | `disable-model-invocation` | `true` prevents Claude from auto-loading the skill; invoke manually with `/skill-name`. Default: `false`            |
 | `user-invocable`           | `false` hides from the `/` menu; Claude can still load it when relevant. Default: `true`                            |
 | `model`                    | Model to use when skill is active (e.g. `claude-sonnet-4-5`)                                                        |
+| `effort`                   | Override session effort while the skill is active: `low`, `medium`, `high`, `xhigh`, or `max`                       |
+| `paths`                    | Glob string or YAML list that scopes auto-activation to matching file paths (e.g. `".github/workflows/**/*.yml"`)   |
+| `shell`                    | `bash` (default) or `powershell`; gates the shell used for `` !`command` `` and ` ```! ` injection blocks            |
 | `context`                  | `fork` runs the skill in a forked subagent context                                                                  |
 | `agent`                    | Subagent type when `context: fork` (e.g. `Explore`, `Plan`, `general-purpose`, or a custom `.claude/agents/` agent) |
 | `hooks`                    | Hooks scoped to skill lifecycle. See [Claude Code hooks docs](https://code.claude.com/docs/en/hooks)                |
 
-String substitutions available in skill body: `$ARGUMENTS`, `$ARGUMENTS[N]` / `$N`, `${CLAUDE_SESSION_ID}`.
+String substitutions available in skill body: `$ARGUMENTS`, `$ARGUMENTS[N]` / `$N`, `${CLAUDE_SESSION_ID}`, `${CLAUDE_SKILL_DIR}` (absolute path to the skill's `SKILL.md` directory — useful for invoking bundled scripts regardless of cwd).
 Dynamic context injection: `` !`command` `` runs a shell command and inserts its output before Claude sees the skill content.
+
+#### Claude-only vs Agent Skills spec
+
+The Agent Skills [spec](https://agentskills.io/specification) defines a portable subset. The following fields and features are Claude Code extensions — they are silently ignored by the spec but **must not be relied on for skills exposed to Codex** via `scripts/codex/catalog.json`. Using them on a `compatibility: Claude Code, Codex` skill risks silent behavior differences across hosts:
+
+- `` !`command` `` dynamic injection and ` ```! ` blocks
+- Skill-scoped `hooks:`
+- `effort`, `paths`, `shell`
+- `${CLAUDE_SKILL_DIR}` substitution (host support varies — verify before using on Codex-exposed skills)
+
+When a Codex-exposed skill needs bundled-script paths, keep the current `<skill-dir>` prose placeholder and let Claude resolve it contextually. Save `${CLAUDE_SKILL_DIR}` for Claude-only skills.
 
 Example frontmatter:
 
