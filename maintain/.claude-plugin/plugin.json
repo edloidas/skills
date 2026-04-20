@@ -1,6 +1,6 @@
 {
   "name": "maintain",
-  "version": "3.3.0",
+  "version": "3.4.0",
   "description": "Label sync, instruction file sync, permissions cleanup, lint migration, and comment auditing",
   "author": {
     "name": "Mikita Taukachou",
