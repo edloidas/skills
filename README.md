@@ -166,12 +166,13 @@ Issue drafting, analysis, triage, and full issue lifecycle skills.
 
 ### Build
 
-Git worktree management, conflict resolution, commit summaries, and findings fixes.
+Git worktree management, conflict resolution, commit summaries, quick commits, and findings fixes.
 
 | Skill                                                       | Description                                                               | Agent         |
 | ----------------------------------------------------------- | ------------------------------------------------------------------------- | ------------- |
 | [git-worktree](./build/git-worktree/)                      | Manage Git worktrees with configurable storage and agent settings copying  | Claude, Codex |
 | [resolve-conflicts](./build/resolve-conflicts/)             | Semi-automatic merge and rebase conflict resolution                       | Claude, Codex |
+| [commit](./build/commit/)                                   | Fast staged-or-scoped commit with conventional message (Haiku)             | Claude        |
 | [commit-summary](./build/commit-summary/)                   | Generate formatted Git commit message summaries                           | Claude, Codex |
 | [fix-findings](./build/fix-findings/)                       | Triage and fix problems from reviews, consilium, or debugging             | Claude        |
 

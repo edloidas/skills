@@ -61,7 +61,7 @@ plugins/
 
 **Plugin groups:**
 - `plan/` — Issue drafting, analysis, triage, and full issue lifecycle (4 skills)
-- `build/` — Git worktree management, conflict resolution, commit summaries, and findings fixes (4 skills)
+- `build/` — Git worktree management, conflict resolution, commit summaries, quick commits, and findings fixes (5 skills)
 - `review/` — Code review, cleanup, critical review board, and quality improvement (5 skills)
 - `audit/` — CI, script, skill, and workspace auditing (4 skills)
 - `maintain/` — Label sync, instruction file sync, permissions cleanup, lint migration, and comment auditing (5 skills)
