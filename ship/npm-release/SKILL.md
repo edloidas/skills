@@ -63,6 +63,15 @@ These scripts work with any pnpm/bun/npm project and don't require project-speci
 - `jq` installed (used by release-analyze.sh and release-execute.sh)
 - Git repository with at least one prior commit
 
+## Asking the User
+
+User prompts occur at **Step 0** (ambiguous conventions) and **Step 7** (release approval). At each prompt site, in order:
+
+1. Try `AskUserQuestion`. If its schema is deferred, load it first via `ToolSearch` with query `select:AskUserQuestion`, then call it.
+2. If the tool is unavailable or the call errors, fall back to chat: post a short numbered list (2–5 options, recommended first) and wait for the reply. See Step 7 for the canonical format.
+
+Do not proceed past either prompt without a user reply. Never guess ambiguous conventions. Never push without approval.
+
 ## Release Workflow
 
 Follow these steps in order. Create an in-memory plan at the start.
@@ -83,7 +92,7 @@ Extract and apply whatever applies to this release:
 - **Tag format** — default is `v<version>`. If the project documents something else, use it.
 - **Dist-tag policy** — how prerelease versions are routed (`alpha`/`beta`/`rc`/`next`).
 
-If `CLAUDE.md` / `AGENTS.md` doesn't exist or doesn't say anything about releases, fall back to the defaults below. Never guess — if an instruction is ambiguous, ask the user with `AskUserQuestion`.
+If `CLAUDE.md` / `AGENTS.md` doesn't exist or doesn't say anything about releases, fall back to the defaults below. If an instruction is ambiguous, ask the user — see [Asking the User](#asking-the-user).
 
 ### Step 1: Pre-flight Checks
 
@@ -239,16 +248,14 @@ Present a summary to the user (each on a new line):
 - **Changes summary:** 2-4 bullet points of key changes based on your analysis
 - **What happens next:** Push commits and tags, CI/CD will publish
 
-Ask for approval with these options. Use `AskUserQuestion` when it is
-available; otherwise ask directly in normal chat with a short numbered list and
-wait for the user's reply:
+Ask for approval following [Asking the User](#asking-the-user). Options:
 
 1. `Yes` (Recommended) — Proceed with pushing and releasing
 2. `No` — Cancel the release and keep local changes for review
 
-The user can also select "Other" to provide custom instructions (e.g., change version type, add more changes first).
+With `AskUserQuestion`, "Other" is added automatically and lets the user provide custom instructions. With the chat fallback, the user can always reply with free text instead of picking a number.
 
-Example tool usage:
+Example `AskUserQuestion` call (after loading its schema via `ToolSearch` if deferred):
 ```
 AskUserQuestion:
   question: "Ready to push v{{VERSION}} and release?"
@@ -258,6 +265,13 @@ AskUserQuestion:
       description: "Push commits and tags to trigger CI/CD publishing"
     - label: "No"
       description: "Cancel release (local commit and tag will remain)"
+```
+
+Example chat fallback:
+```
+Ready to push v{{VERSION}}?
+1. Yes — push commits and tags to trigger release
+2. No — keep local commit and tag for review
 ```
 
 **If user selects:**
