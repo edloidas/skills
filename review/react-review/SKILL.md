@@ -5,7 +5,6 @@ description: >
   Runs react-doctor, Haiku subagents for mechanical checks, and deep Sonnet analysis in parallel.
   Use when reviewing React components, finishing a feature, or refactoring.
 license: MIT
-model: claude-sonnet-4-6
 compatibility: Claude Code, Codex
 allowed-tools: Bash(pnpm:*) Bash(npx:*) Bash(timeout:*) Bash(git:*) Task Read Glob Grep
 argument-hint: "[file, directory, or empty]"

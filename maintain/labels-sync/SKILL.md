@@ -5,7 +5,6 @@ description: >
   Compares, creates, updates, deletes, or reads labels as reusable JSON definitions.
   Use when the user asks to sync, check, manage, or export GitHub labels.
 license: MIT
-model: claude-sonnet-4-6
 compatibility: Claude Code, Codex
 allowed-tools: Bash Read AskUserQuestion
 user-invocable: true

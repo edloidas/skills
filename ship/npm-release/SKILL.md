@@ -2,7 +2,6 @@
 name: npm-release
 description: This skill should be used when the user asks to release, publish, or create a new version of an npm/pnpm/bun package. It guides through version bumping, validation, git tagging, and publishing with proper safety checks and user approval.
 license: MIT
-model: claude-sonnet-4-6
 compatibility: Claude Code, Codex
 allowed-tools: Bash Read Glob AskUserQuestion
 argument-hint: "[major, minor, or patch]"

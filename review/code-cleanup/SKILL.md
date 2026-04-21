@@ -2,7 +2,6 @@
 name: code-cleanup
 description: Post-implementation cleanup. Removes obvious comments, AI artifacts, improves JSDoc, fixes trivial TODOs, and flags misleading comments.
 license: MIT
-model: claude-sonnet-4-6
 compatibility: Claude Code, Codex
 allowed-tools: Bash(git:*) Read Edit Glob Grep
 argument-hint: "[files] [--dry-run]"

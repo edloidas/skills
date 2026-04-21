@@ -6,7 +6,6 @@ description: >
   and compact step reports. Use when asked to create issues, start work on issues,
   create PRs, push changes, or merge PRs. Supports entering at any step.
 license: MIT
-model: claude-sonnet-4-6
 compatibility: Claude Code
 allowed-tools: Bash(gh:*) Bash(git:*) Bash(bash:*) Read Write Glob Grep AskUserQuestion
 argument-hint: "[issue-number or description]"

@@ -5,7 +5,6 @@ license: MIT
 compatibility: Claude Code, Codex
 allowed-tools: Bash Read Glob Grep
 argument-hint: "[all or file paths]"
-model: claude-haiku-4-5
 disable-model-invocation: true
 ---
 

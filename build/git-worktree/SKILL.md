@@ -7,7 +7,6 @@ description: >
   over. Use when the user asks to create a worktree, work on multiple branches,
   or clean up worktrees.
 license: MIT
-model: claude-sonnet-4-6
 compatibility: Claude Code, Codex
 allowed-tools: Bash(git:*,rsync:*) Read Glob Grep
 argument-hint: "[command] [branch]"
