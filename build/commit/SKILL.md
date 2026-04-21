@@ -7,12 +7,10 @@ description: >
   "only staged", "relevant", or "amend".
 license: MIT
 compatibility: Claude Code
-model: claude-haiku-4-5-20251001
 effort: medium
-disable-model-invocation: true
 user-invocable: true
 argument-hint: "[instructions]"
-allowed-tools: Read Grep Bash(git:*)
+allowed-tools: Read Grep Bash(git:*) Agent
 metadata:
   author: edloidas
 ---
@@ -92,6 +90,27 @@ cache-like dir, editor backup) and is untracked, skip it and list it in the
 final report. If ambiguous, ask by skipping and reporting, not by prompting.
 
 Never use `git add .`, `git add -A`, or `git add -f`. Stage with explicit paths.
+
+## Heavy-diff delegation
+
+The injected `git diff --stat` blocks above show the size. Handle the common
+case in-thread. Only delegate when the staged OR unstaged diff exceeds
+**~500 changed lines** or **~20 files** AND you need actual diff content
+(not just stats) to decide scope, classify files, or compose the body.
+
+When delegating, dispatch one subagent:
+
+- `subagent_type: Explore`
+- Fork has no conversation history — pass the exact `git diff` output (or the
+  subset you need) in the prompt.
+- Ask a single narrow question. Good shapes:
+  - *"From this diff, which files belong to scope: `<scope from $ARGUMENTS>`? Return file paths only."*
+  - *"Summarize the distinct changes in this diff as 3-5 past-participle bullets, no prose."*
+- Use the returned answer directly. Do not ask the subagent to write the
+  commit message — that stays in-thread with full project context.
+
+Do not delegate for small diffs. The round-trip is slower than reading the
+diff inline, and the main thread already has the conventions context.
 
 ## Steps
 
