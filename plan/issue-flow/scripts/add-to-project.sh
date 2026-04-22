@@ -15,7 +15,7 @@ if [[ -z "$ISSUE_NUMBER" || -z "$PROJECT_TITLE" ]]; then
 fi
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-GH_TOKEN=$(bash "$SCRIPT_DIR/resolve-project-token.sh" 2>/dev/null) || true
+GH_TOKEN=$(bash "$SCRIPT_DIR/_resolve-project-token.sh" 2>/dev/null) || true
 export GH_TOKEN
 
 if [[ -z "$GH_TOKEN" ]]; then

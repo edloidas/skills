@@ -2,7 +2,7 @@
 
 ## Token Configuration
 
-GitHub Projects V2 API requires a token with `read:project` scope. The bundled `resolve-project-token.sh` resolves tokens in this order:
+GitHub Projects V2 API requires a token with `read:project` scope. The internal `_resolve-project-token.sh` helper (called by the project scripts) resolves tokens in this order:
 
 1. **`GH_PROJECTS_TOKEN`** environment variable — set a fine-grained PAT with `read:project` scope
 2. **`gh auth token`** — falls back to the current gh CLI token (may lack project scope)

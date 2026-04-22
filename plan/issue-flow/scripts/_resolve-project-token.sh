@@ -1,5 +1,5 @@
 #!/bin/bash
-# resolve-project-token.sh
+# _resolve-project-token.sh (internal — called by other scripts, not from SKILL.md flow)
 # Resolve a GitHub token with read:project scope for Projects V2 API.
 #
 # Resolution order:
@@ -7,7 +7,7 @@
 #   2. Current gh auth token (may lack read:project scope)
 #
 # Usage:
-#   TOKEN=$(bash scripts/resolve-project-token.sh)
+#   TOKEN=$(bash scripts/_resolve-project-token.sh)      # internal use only
 #
 # Token is printed to stdout. Diagnostics go to stderr.
 

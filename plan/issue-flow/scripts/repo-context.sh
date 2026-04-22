@@ -32,7 +32,7 @@ OWNER=$(echo "$REPO" | cut -d/ -f1)
 NAME=$(echo "$REPO" | cut -d/ -f2)
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
-PROJECT_TOKEN=$(bash "$SCRIPT_DIR/resolve-project-token.sh" 2>/dev/null) || true
+PROJECT_TOKEN=$(bash "$SCRIPT_DIR/_resolve-project-token.sh" 2>/dev/null) || true
 
 if [[ -z "$PROJECT_TOKEN" ]]; then
   echo "(no token with read:project scope available)"

@@ -26,7 +26,6 @@ Located in `scripts/` relative to this skill:
 | `check-env.sh`             | Validate git repo, gh CLI, authentication       |
 | `detect-base.sh`           | Detect base branch (main/master/next/epic-*)    |
 | `repo-context.sh`          | Fetch labels, collaborators, projects           |
-| `resolve-project-token.sh` | Resolve token: GH_PROJECTS_TOKEN → gh auth      |
 | `add-to-project.sh`        | Add issue to GitHub Projects V2                 |
 | `project-status.sh`        | Update project board status                     |
 
