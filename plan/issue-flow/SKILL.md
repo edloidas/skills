@@ -7,7 +7,7 @@ description: >
   create PRs, push changes, or merge PRs. Supports entering at any step.
 license: MIT
 compatibility: Claude Code
-allowed-tools: Bash(gh:*) Bash(git:*) Bash(bash:*) Read Write Glob Grep AskUserQuestion
+allowed-tools: Bash(gh:*) Bash(git:*) Bash(bash:*) Bash(mktemp:*) Read Write Glob Grep AskUserQuestion
 argument-hint: "[issue-number or description]"
 metadata:
   author: edloidas
@@ -33,7 +33,6 @@ Located in `scripts/` relative to this skill:
 Run scripts from the skill directory:
 
 ```bash
-bash "<skill-dir>/scripts/resolve-tmp.sh"          # creates unique temp dir, use output as <TMPDIR>
 bash "<skill-dir>/scripts/check-env.sh"
 bash "<skill-dir>/scripts/detect-base.sh"
 bash "<skill-dir>/scripts/repo-context.sh"
@@ -103,7 +102,7 @@ Run these in parallel (they are independent):
 ```bash
 # Parallel batch
 bash "<skill-dir>/scripts/check-env.sh"
-bash "<skill-dir>/scripts/resolve-tmp.sh"      # → save output as <TMPDIR>
+mktemp -d                                       # → save output as <TMPDIR>
 bash "<skill-dir>/scripts/repo-context.sh"
 ```
 
@@ -262,7 +261,7 @@ When the user asks to create multiple issues at once (e.g., an epic with child i
 
 ### Workflow
 
-1. Resolve `<TMPDIR>` once via `resolve-tmp.sh`
+1. Resolve `<TMPDIR>` once via `mktemp -d`
 2. Create the parent/epic issue first (if applicable)
 3. Write all child issue body files with unique slugs: `<TMPDIR>/<slug>-body.md`
 4. Create all child issues in parallel (`gh issue create` calls)
