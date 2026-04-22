@@ -36,6 +36,7 @@ Add the marketplace and install the plugin groups you need:
 /plugin install edloidas@ship
 /plugin install edloidas@assist
 /plugin install edloidas@obsidian
+/plugin install edloidas@workflow
 ```
 
 Install all groups for the full set, or pick only the groups relevant to your workflow.
@@ -239,9 +240,17 @@ Obsidian vault organization and working document management skills.
 | ----------------------------------------------------------- | ------------------------------------------------------------------------- | ------------- |
 | [working-docs](./obsidian/working-docs/)                    | Organize working documents in Obsidian with two-tier system               | Claude, Codex |
 
+### Workflow
+
+End-to-end workflows that orchestrate multiple skills into a single command.
+
+| Skill                                                       | Description                                                               | Agent         |
+| ----------------------------------------------------------- | ------------------------------------------------------------------------- | ------------- |
+| [solve-issue](./workflow/solve-issue/)                      | Full issue workflow: analyze, branch, plan, implement, verify, commit, push/PR/merge | Claude |
+
 ## Creating a Skill
 
-1. Choose the appropriate group directory (`plan/`, `build/`, `review/`, `audit/`, `maintain/`, `ship/`, `assist/`, or `obsidian/`)
+1. Choose the appropriate group directory (`plan/`, `build/`, `review/`, `audit/`, `maintain/`, `ship/`, `assist/`, `obsidian/`, or `workflow/`)
 2. Create a subdirectory matching the skill name
 3. Add a `SKILL.md` with required `name` and `description` frontmatter
 4. Write Markdown instructions in the body (keep under 500 lines)

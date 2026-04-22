@@ -96,6 +96,17 @@
         "url": "https://edloidas.io"
       },
       "category": "productivity"
+    },
+    {
+      "name": "workflow",
+      "source": "./workflow",
+      "description": "End-to-end issue workflows that orchestrate analysis, planning, implementation, verification, and shipping",
+      "version": "3.4.2",
+      "author": {
+        "name": "Mikita Taukachou",
+        "url": "https://edloidas.io"
+      },
+      "category": "workflow"
     }
   ]
 }

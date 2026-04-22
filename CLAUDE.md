@@ -68,6 +68,7 @@ plugins/
 - `ship/` — Release workflows and deployment tools (2 skills)
 - `assist/` — External opinion and assistance tools (3 skills)
 - `obsidian/` — Obsidian vault organization and working document management (1 skill)
+- `workflow/` — End-to-end workflows that orchestrate multiple skills (1 skill)
 
 Wrapper plugin names and display names for Codex:
 - `plugins/edloidas-plan/` → `edloidas-plan` / `Edloidas Plan`
@@ -266,7 +267,7 @@ The `description` determines when an agent activates the skill. Be specific and 
 
 ## Creating a New Skill
 
-1. Choose the appropriate group directory (`plan/`, `build/`, `review/`, `audit/`, `maintain/`, `ship/`, `assist/`, or `obsidian/`)
+1. Choose the appropriate group directory (`plan/`, `build/`, `review/`, `audit/`, `maintain/`, `ship/`, `assist/`, `obsidian/`, or `workflow/`)
 2. Create a subdirectory: `mkdir <group>/<skill-name>`
 3. Create `<group>/<skill-name>/SKILL.md` with required frontmatter and instructions
 4. Add `scripts/`, `references/`, or `assets/` directories as needed
@@ -287,7 +288,7 @@ Skills are discovered automatically from the plugin root directory. No per-skill
 ## Codex Wrapper Plugins
 
 Do not add `.codex-plugin/plugin.json` directly to the source group directories (`plan/`,
-`build/`, `review/`, `audit/`, `maintain/`, `ship/`, `assist/`, `obsidian/`).
+`build/`, `review/`, `audit/`, `maintain/`, `ship/`, `assist/`, `obsidian/`, `workflow/`).
 
 Use wrapper plugins under `plugins/<plugin-name>/` instead:
 
@@ -310,6 +311,10 @@ catalog unless their actual workflow changes:
 - `assist/codex` — it shells out to the Codex CLI from Claude Code to get an
   external opinion, so exposing it inside Codex would be recursive rather than
   a real Codex-native workflow.
+- `workflow/solve-issue` — orchestrates Claude-only skills (`/issue-analyze`,
+  `/next-issue`, `/issue-flow`, `/commit-summary`) via the Skill tool and uses
+  `AskUserQuestion` for plan/endgame gates; the full group has no Codex
+  wrapper plugin.
 
 When adding a new skill, or when upgrading an existing skill to support Codex, make sure the
 Codex packaging layer is updated in the same change:
