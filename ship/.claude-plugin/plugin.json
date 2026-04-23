@@ -1,6 +1,6 @@
 {
   "name": "ship",
-  "version": "3.5.0",
+  "version": "3.5.1",
   "description": "Release workflows and deployment tools for npm packages and Railway services",
   "author": {
     "name": "Mikita Taukachou",

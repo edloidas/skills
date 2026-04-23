@@ -1,6 +1,6 @@
 {
   "name": "edloidas-maintain",
-  "version": "3.5.0",
+  "version": "3.5.1",
   "description": "A Codex-safe maintenance bundle for label sync, instruction-file sync, lint migration, and comment quality audits.",
   "author": {
     "name": "Mikita Taukachou",
