@@ -159,8 +159,10 @@ If user selects **Other**, follow their instructions.
 Only after user approves:
 
 ```bash
-git push && git push --tags
+git push --follow-tags
 ```
+
+`--follow-tags` pushes the commit and the reachable annotated release tag together in one round-trip — avoids torn state and won't publish stale local tags the way `--tags` does.
 
 After pushing, get the remote URL and print:
 

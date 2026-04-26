@@ -138,6 +138,6 @@ git add "${FILES_TO_STAGE[@]}"
 git commit -m "Release $TAG_NAME"
 echo "Committed: Release $TAG_NAME"
 
-# Create tag
-git tag "$TAG_NAME"
+# Create an annotated tag (required for --follow-tags on push)
+git tag -a "$TAG_NAME" -m "Release $TAG_NAME"
 echo "Tagged: $TAG_NAME"

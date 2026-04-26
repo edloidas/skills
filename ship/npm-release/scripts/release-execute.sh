@@ -37,8 +37,8 @@ if git tag -l | grep -q "^$TAG_NAME$"; then
   echo "WARNING: Tag $TAG_NAME already exists locally"
   echo "INFO: Skipping tag creation"
 else
-  # Create the tag
-  git tag "$TAG_NAME"
+  # Create an annotated tag (required for --follow-tags)
+  git tag -a "$TAG_NAME" -m "Release $TAG_NAME"
   echo "SUCCESS: Tag $TAG_NAME created"
 fi
 
@@ -52,20 +52,12 @@ fi
 
 echo "Remote: $REMOTE"
 
-# Push commits and tags
-echo "Pushing commits..."
-if git push "$REMOTE" HEAD; then
-  echo "SUCCESS: Commits pushed"
+# Push commits and the reachable annotated tag in a single atomic push
+echo "Pushing commits and tag..."
+if git push --follow-tags --atomic "$REMOTE" HEAD; then
+  echo "SUCCESS: Commits and tag pushed"
 else
-  echo "ERROR: Failed to push commits"
-  exit 1
-fi
-
-echo "Pushing tags..."
-if git push "$REMOTE" --tags; then
-  echo "SUCCESS: Tags pushed"
-else
-  echo "ERROR: Failed to push tags"
+  echo "ERROR: Failed to push commits and tag"
   exit 1
 fi
 

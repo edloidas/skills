@@ -228,13 +228,13 @@ If the project uses a non-obvious template (commit body, trailers, sign-off), re
 
 ### Step 6: Create Git Tag
 
-Tag the release commit:
+Tag the release commit with an **annotated** tag (required for `--follow-tags` and standard for releases — preserves tagger, date, and message):
 
 ```bash
-git tag v{{VERSION}}
+git tag -a v{{VERSION}} -m "Release v{{VERSION}}"
 ```
 
-Example: `git tag v0.16.0`
+Example: `git tag -a v0.16.0 -m "Release v0.16.0"`
 
 ### Step 7: User Review & Approval
 
@@ -291,8 +291,10 @@ bash scripts/release-execute.sh
 **Or manual push:**
 
 ```bash
-git push && git push --tags
+git push --follow-tags
 ```
+
+`--follow-tags` pushes commits plus any **annotated** tags reachable from them in a single round-trip. It avoids the torn state of two separate pushes and won't accidentally publish stale local tags from other branches the way `git push --tags` does.
 
 ### Step 9: Confirm Completion
 
