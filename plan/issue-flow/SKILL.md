@@ -27,6 +27,8 @@ Located in `scripts/` relative to this skill:
 | `detect-base.sh`           | Detect base branch (main/master/next/epic-*)    |
 | `repo-context.sh`          | Fetch labels, collaborators, projects           |
 | `add-to-project.sh`        | Add issue to GitHub Projects V2                 |
+| `get-issue-projects.sh`    | List projects an issue is already a member of   |
+| `suggest-projects.sh`      | Rank up to 4 likely projects (USED + RELATED)   |
 | `project-status.sh`        | Update project board status                     |
 
 Run scripts from the skill directory:
@@ -36,6 +38,8 @@ bash "<skill-dir>/scripts/check-env.sh"
 bash "<skill-dir>/scripts/detect-base.sh"
 bash "<skill-dir>/scripts/repo-context.sh"
 bash "<skill-dir>/scripts/add-to-project.sh" <issue-number> <project-title> [status]
+bash "<skill-dir>/scripts/get-issue-projects.sh" <issue-number>
+bash "<skill-dir>/scripts/suggest-projects.sh" [<owner>/<repo>]
 bash "<skill-dir>/scripts/project-status.sh" <issue-number> <status>
 ```
 
@@ -61,6 +65,7 @@ Determine entry step from user intent, check prerequisites, then proceed forward
 | ------------------------------------ | ---------- | ------------------------ |
 | No arguments / empty invocation      | Step 1     | Staged or changed files  |
 | "create issue", "new issue"          | Step 1     | gh authenticated         |
+| "create issue linked to #N", "create sub-issue of #N" | Step 1 + Project Inheritance | Parent #N exists |
 | "add sub-issues to #N", "link issues to #N" | Sub-issues | Parent issue exists |
 | "X blocks #N", "block #N with #M", "unblock #N" | Blocked-by | Both issues exist |
 | "start work on #N", "branch for #N"  | Step 2     | Issue exists             |
@@ -148,7 +153,15 @@ Check if the repository supports issue types: `gh issue create --type bug --dry-
 
 ### Project
 
-If `repo-context.sh` found projects, use `AskUserQuestion` to ask which project (if any). If no projects found, skip silently. On selection, run `add-to-project.sh`.
+If creating a child of an existing parent (linked, attached, or sub-issue of #N), follow **## Project Inheritance From Parent** instead.
+
+Otherwise, rank candidates via `suggest-projects.sh` (output: `<bucket>\t<id>\t<title>\t<note>` per row; `USED` = projects from your recent issues, `RELATED` = other active projects):
+
+```bash
+bash "<skill-dir>/scripts/suggest-projects.sh"
+```
+
+Compose `AskUserQuestion`: slot 1 (Recommended) = first row, slots 2–4 = next rows, with `<note>` as each option's description. Backfill the last slot with "No project" when fewer than 4 rows exist; skip silently when zero rows. On selection, run `add-to-project.sh <issue-number> "<project-title>"`.
 
 ### Milestone
 
@@ -224,6 +237,31 @@ done
 gh api repos/<owner>/<repo>/issues/<parent_number>/sub_issues --jq '.[].number'
 ```
 
+When a **newly created** issue is being linked as a child of an existing parent, also follow **## Project Inheritance From Parent** so the child lands on the same project board(s) as the parent.
+
+## Project Inheritance From Parent
+
+When a new issue is being created as a child of an existing parent (sub-issue link, "attach to #N", "linked to #N"), inherit the parent's project membership instead of using the generic Project picker.
+
+Fetch the parent's projects (output: `<id>\t<title>`):
+
+```bash
+bash "<skill-dir>/scripts/get-issue-projects.sh" <parent_number>
+```
+
+Apply based on count:
+
+- **0** — fall through to the generic Project subsection.
+- **1** — add automatically and tell the user which project was inherited.
+- **2+** — `AskUserQuestion`:
+  1. "Add to all <N> parent projects" (Recommended)
+  2. "Pick individually" — follow-up yes/no per project
+  3. "Skip projects"
+
+Run `add-to-project.sh <child_number> "<title>"` sequentially per selected project (parallel calls hit Projects V2 rate limits).
+
+When linking many children to the same parent (see **## Batch Issue Creation**), fetch the parent's projects once and reuse the decision for every child — do not prompt per child.
+
 ## Blocked-By
 
 Use when child issues have dependencies between them — e.g., issue B cannot start until issue A is done. Requires GraphQL **node IDs** (not issue numbers or integer IDs) — see `references/github-relationships.md`. Use `<owner>/<repo>` from `repo-context.sh` first line.
@@ -265,7 +303,7 @@ When the user asks to create multiple issues at once (e.g., an epic with child i
 3. Write all child issue body files with unique slugs: `<TMPDIR>/<slug>-body.md`
 4. Create all child issues in parallel (`gh issue create` calls)
 5. Batch-link sub-issues to parent (if applicable) — use the for loop from **## Sub-Issues**
-6. Add all issues to project sequentially — run `add-to-project.sh` in a for loop, one at a time (parallel calls cause API rate-limit failures and require retries)
+6. Add all issues to project sequentially — run `add-to-project.sh` in a for loop, one at a time (parallel calls cause API rate-limit failures and require retries). When children are linked to an **existing** parent, resolve the project set via **## Project Inheritance From Parent** instead of asking generically.
 7. Ask about initial project status (e.g., "Backlog", "Current Sprint") via `AskUserQuestion` — then batch-update via `project-status.sh`
 8. Print a summary table at the end instead of per-issue Step 1 reports
 
