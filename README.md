@@ -203,7 +203,7 @@ CI, script, skill, and workspace auditing skills.
 
 ### Maintain
 
-Label sync, instruction file sync, permissions cleanup, lint migration, and comment auditing.
+Label sync, instruction file sync, permissions cleanup, lint migration, comment auditing, and session retros.
 
 | Skill                                                       | Description                                                               | Agent         |
 | ----------------------------------------------------------- | ------------------------------------------------------------------------- | ------------- |
@@ -212,6 +212,7 @@ Label sync, instruction file sync, permissions cleanup, lint migration, and comm
 | [permissions-cleanup](./maintain/permissions-cleanup/)       | Clean up stale permission entries from settings files                     | Claude        |
 | [lint-sync](./maintain/lint-sync/)                          | Compare ESLint rules against Biome for overlap                            | Claude, Codex |
 | [comment-audit](./maintain/comment-audit/)                  | Analyze code comments for quality and relevance                           | Claude, Codex |
+| [retro](./maintain/retro/)                                  | Reflect on the current session and produce a structured retro report      | Claude        |
 
 ### Ship
 

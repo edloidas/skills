@@ -64,7 +64,7 @@ plugins/
 - `build/` — Git worktree management, conflict resolution, commit summaries, quick commits, and findings fixes (5 skills)
 - `review/` — Code review, cleanup, critical review board, and quality improvement (5 skills)
 - `audit/` — CI, script, skill, and workspace auditing (4 skills)
-- `maintain/` — Label sync, instruction file sync, permissions cleanup, lint migration, and comment auditing (5 skills)
+- `maintain/` — Label sync, instruction file sync, permissions cleanup, lint migration, comment auditing, and session retros (6 skills)
 - `ship/` — Release workflows and deployment tools (2 skills)
 - `assist/` — External opinion and assistance tools (4 skills)
 - `obsidian/` — Obsidian vault organization and working document management (1 skill)
