@@ -26,6 +26,8 @@ Located in `scripts/` relative to this skill:
 | `check-env.sh`             | Validate git repo, gh CLI, authentication       |
 | `detect-base.sh`           | Detect base branch (main/master/next/epic-*)    |
 | `repo-context.sh`          | Fetch labels, collaborators, projects           |
+| `pr-reviewers.sh`          | Rank top PR reviewers by recent review activity |
+| `issue-assignees.sh`       | Rank top issue assignees by recent assignments  |
 | `add-to-project.sh`        | Add issue to GitHub Projects V2                 |
 | `get-issue-projects.sh`    | List projects an issue is already a member of   |
 | `suggest-projects.sh`      | Rank up to 4 likely projects (USED + RELATED)   |
@@ -37,6 +39,8 @@ Run scripts from the skill directory:
 bash "<skill-dir>/scripts/check-env.sh"
 bash "<skill-dir>/scripts/detect-base.sh"
 bash "<skill-dir>/scripts/repo-context.sh"
+bash "<skill-dir>/scripts/pr-reviewers.sh" [<owner>/<repo>] [<limit>]
+bash "<skill-dir>/scripts/issue-assignees.sh" [<owner>/<repo>] [<limit>]
 bash "<skill-dir>/scripts/add-to-project.sh" <issue-number> <project-title> [status]
 bash "<skill-dir>/scripts/get-issue-projects.sh" <issue-number>
 bash "<skill-dir>/scripts/suggest-projects.sh" [<owner>/<repo>]
@@ -142,10 +146,20 @@ Auto-detect label from the issue type (e.g., `feat` → `feature` or `enhancemen
 
 ### Assignee
 
-Use `AskUserQuestion` with options:
+Run `issue-assignees.sh` to find users with actual recent assignment activity:
+
+```bash
+bash "<skill-dir>/scripts/issue-assignees.sh"
+```
+
+Output: `<user>\t<count>` per row, up to 3 rows (excludes self and bots). Compose `AskUserQuestion`:
+
 1. `@me` (Recommended)
-2. Up to 2 collaborators from `repo-context.sh`
-3. "No assignee"
+2. First result, description: `"Assigned to <count> of last 100 issues"`
+3. Second result, description: `"Assigned to <count> of last 100 issues"`
+4. "No assignee"
+
+If `issue-assignees.sh` returns nothing, show only `@me` and "No assignee". Do **not** fall back to the generic `repo-context.sh` collaborator list — those are repo members ranked by nothing meaningful, and inventing labels like "Frequent collaborator" misleads the user.
 
 ### Type
 
@@ -435,10 +449,21 @@ Closes #<number>
 
 ### Assignee and Reviewer
 
-Check the target repo's CLAUDE.md for reviewer rules (e.g., "PRs to main should be reviewed by @username", default reviewer for specific branches). If a matching rule exists, use that reviewer directly. If no rules found, fall back to `AskUserQuestion`:
+Check the target repo's CLAUDE.md for reviewer rules (e.g., "PRs to main should be reviewed by @username", default reviewer for specific branches). If a matching rule exists, use that reviewer directly.
 
-1. Up to 2 collaborators from `repo-context.sh`
-2. "No reviewer"
+Otherwise, run `pr-reviewers.sh` to find users with actual recent PR review activity:
+
+```bash
+bash "<skill-dir>/scripts/pr-reviewers.sh"
+```
+
+Output: `<user>\t<count>` per row, up to 3 rows (excludes self and bots; counts both reviews submitted and review-requests received across the last 100 PRs in any state).
+
+- **0 results**: skip the prompt entirely and create the PR without `--reviewer`. Do **not** fall back to the generic `repo-context.sh` collaborator list — repo members with zero review history are not real reviewer candidates, and inventing labels like "Frequent collaborator" misleads the user.
+- **1+ results**: compose `AskUserQuestion`:
+  1. First result (Recommended), description: `"Reviewed <count> of last 100 PRs"`
+  2. Second result (if any), description: `"Reviewed <count> of last 100 PRs"`
+  3. "No reviewer"
 
 Check if the selected reviewer is the same as the PR creator:
 
