@@ -228,13 +228,15 @@ If the project uses a non-obvious template (commit body, trailers, sign-off), re
 
 ### Step 6: Create Git Tag
 
-Tag the release commit with an **annotated** tag (required for `--follow-tags` and standard for releases — preserves tagger, date, and message):
+Tag the release commit with a **signed** tag (`-s` implies `-a`, so the tag is also annotated — required for `--follow-tags`, preserves tagger/date/message, and provides a verifiable signature regardless of the user's `tag.gpgSign` config):
 
 ```bash
-git tag -a v{{VERSION}} -m "Release v{{VERSION}}"
+git tag -s v{{VERSION}} -m "Release v{{VERSION}}"
 ```
 
-Example: `git tag -a v0.16.0 -m "Release v0.16.0"`
+Example: `git tag -s v0.16.0 -m "Release v0.16.0"`
+
+If the user has no signing key configured, `git tag -s` fails with a gpg/ssh error. In that case, advise them to configure SSH or GPG signing (`user.signingkey`, `gpg.format`) before retrying.
 
 ### Step 7: User Review & Approval
 

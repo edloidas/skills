@@ -37,8 +37,8 @@ if git tag -l | grep -q "^$TAG_NAME$"; then
   echo "WARNING: Tag $TAG_NAME already exists locally"
   echo "INFO: Skipping tag creation"
 else
-  # Create an annotated tag (required for --follow-tags)
-  git tag -a "$TAG_NAME" -m "Release $TAG_NAME"
+  # Create a signed annotated tag (-s implies -a; required for --follow-tags)
+  git tag -s "$TAG_NAME" -m "Release $TAG_NAME"
   echo "SUCCESS: Tag $TAG_NAME created"
 fi
 
