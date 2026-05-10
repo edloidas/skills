@@ -8,7 +8,7 @@ description: >
 license: MIT
 compatibility: Claude Code, Codex
 allowed-tools: Bash Read Glob Grep Task
-argument-hint: "[commits, path, range, or empty]"
+argument-hint: "[commits, path, range, or empty] [--no-build] [--no-issue]"
 metadata:
   author: edloidas
 ---
@@ -64,6 +64,23 @@ This skill runs two supporting passes before the logic review:
 | `/code:review-changes path/` | Changes in directory |
 | `/code:review-changes file.ext` | Specific file |
 | `/code:review-changes HEAD~N..HEAD` | Commit range |
+| `/code:review-changes --no-build` | Skip the tooling/build pass (combinable with any scope above) |
+| `/code:review-changes --no-issue` | Skip the issue/PR context pass (combinable with any scope above) |
+
+**Skip-build flag:** Pass `--no-build` (or `--skip-build`) anywhere in the arguments to bypass
+the tooling pass. Natural-language equivalents are also accepted when the user phrases the
+request directly: "no build", "skip build", "without build", "don't run build", "skip tooling".
+When matched, omit the flag/phrase from the scope before resolving paths or commit ranges.
+
+**Skip-issue flag:** Pass `--no-issue` (or `--skip-issue`) anywhere in the arguments to bypass
+issue/PR context fetching. Natural-language equivalents: "no issue", "skip issue",
+"without issue", "no PR", "skip PR", "no context", "don't fetch issue". When matched, omit
+the flag/phrase from the scope before resolving paths or commit ranges.
+
+**Issue context is auto-detected.** Unless `--no-issue` is set, the skill always tries to
+resolve an issue/PR for the current branch — no user input required. See "Issue context
+pass" in Step 2 for the detection chain. If nothing resolves, the pass produces no output
+and the audit step is skipped.
 
 ## Workflow
 
@@ -82,9 +99,18 @@ Filter out: `*-lock.*`, `dist/`, `build/`, `.next/`, `*.d.ts`, `*.min.js`, `*.ma
 
 **Trivial diffs:** If ONLY version bumps, formatting, lock files → "Trivial changes only. No review needed." and stop.
 
-**Step 2: Run Tooling + Convention Passes (parallel)**
+**Step 2: Run Tooling + Convention + Issue Context Passes (parallel)**
 
-Use the same target file list for both passes.
+Use the same target file list for the tooling and convention passes.
+
+If the user passed `--no-build` (or any natural-language skip-build phrase from the
+"Skip-build flag" note above), skip the tooling pass entirely. Run only the convention
+pass, set `TOOLING_REPORT = SKIPPED (user requested --no-build)`, and continue.
+
+Always dispatch the issue context pass (see below) unless the user passed `--no-issue` (or
+any natural-language skip-issue phrase from the "Skip-issue flag" note above). When skipped,
+set `ISSUE_CONTEXT = SKIPPED (user requested --no-issue)` and continue. Otherwise the pass
+auto-detects an issue/PR from the current branch and exits silently when nothing resolves.
 
 **Claude Code path**
 
@@ -108,9 +134,24 @@ Use the same target file list for both passes.
 - Use it as the prompt body for a built-in `explorer` subagent and append:
   - the same target file list
 
-Wait for both reports before proceeding.
+Wait for all dispatched reports before proceeding.
+
+**Issue context pass**
+
+Dispatch a parallel subagent (Claude Code: `general-purpose`; Codex: `explorer`) that
+runs `scripts/fetch-issue-context.sh` from this skill directory with no arguments.
+
+The script auto-detects an issue/PR for the current branch in this order:
+1. Open PR for the current branch (and its linked closing issue, if any)
+2. Branch name matching `issue-<N>`
+3. `#<N>` in the last commit message
+
+Capture stdout as `ISSUE_CONTEXT`. Empty stdout means nothing resolved — treat as no
+context, skip the requirements audit, and do not surface this in the final review.
 
 **Step 2.5: Refresh Diff After Autofix**
+
+Skip this step entirely when the tooling pass was skipped via `--no-build`.
 
 If the tooling pass reports autofixes or otherwise changed files:
 - rerun the scope detection commands
@@ -133,6 +174,17 @@ If replacing existing functionality:
 - Behavior gaps vs reference
 - Error recovery failures
 - Edge cases
+
+**Requirements audit (when `ISSUE_CONTEXT` is non-empty):**
+
+Read `ISSUE_CONTEXT` and cross-check it against the diff:
+- Issue description → does the diff implement what's asked? Missing behavior → flag.
+- Out-of-scope items mentioned in description or comments → respected? Violation → flag.
+- Unresolved review threads → addressed in the current diff? If not, surface as a finding
+  referencing the file:line and reviewer.
+- PR conversation comments → any pending decisions or scope changes the diff ignores?
+
+When `ISSUE_CONTEXT` is empty or `SKIPPED`, skip this audit silently.
 
 **Reference Reading (if applicable):**
 
@@ -172,9 +224,10 @@ ERROR_FLOW [action]:
 ### Phase 3: Aggregate & Output
 
 Combine from:
-1. **TOOLING_REPORT** (review-build) → Type errors, lint, build/test failures
+1. **TOOLING_REPORT** (review-build) → Type errors, lint, build/test failures. When skipped via `--no-build`, note "Tooling pass skipped per user request" in the summary instead.
 2. **CONVENTION_REPORT** (review-rules) → Pattern violations
-3. **Logic Analysis** (this review) → Behavior gaps, missing features
+3. **ISSUE_CONTEXT** (issue-context pass, when non-empty) → Requirements coverage, unresolved PR feedback, open questions. Omit silently when empty.
+4. **Logic Analysis** (this review) → Behavior gaps, missing features
 
 ## Output Format
 
