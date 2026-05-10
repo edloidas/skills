@@ -111,6 +111,7 @@
         "audit/ci-audit",
         "audit/skill-audit",
         "audit/scripts-audit",
+        "audit/three-audit",
         "audit/workspace-audit"
       ]
     },

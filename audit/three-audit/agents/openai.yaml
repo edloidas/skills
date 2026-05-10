@@ -1,0 +1,6 @@
+interface:
+  display_name: "Three.js Audit"
+  short_description: "Audit Three.js / React Three Fiber code for performance and best-practice issues"
+  default_prompt: "Use $three-audit to walk through the Three.js / R3F performance and correctness checks against the current repo. Detect renderer entry points, run each check from the catalog, and report findings grouped by severity."
+policy:
+  allow_implicit_invocation: false
