@@ -136,7 +136,8 @@
         "maintain/claude-md-sync",
         "maintain/comment-audit",
         "maintain/labels-sync",
-        "maintain/lint-sync"
+        "maintain/lint-sync",
+        "maintain/rules-sync"
       ]
     },
     {

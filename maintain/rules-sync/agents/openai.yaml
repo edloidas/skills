@@ -1,0 +1,6 @@
+interface:
+  display_name: "Rules Sync"
+  short_description: "Init or update agent rules in .claude/rules or .agents/rules from a canonical set"
+  default_prompt: "Use $rules-sync to initialize or refresh agent rule files in the current repo. Detects whether .claude/rules or .agents/rules is the real directory, overwrites canonical rules already present, adds missing canonical rules only when the project actually uses the relevant tech, and preserves any project-specific rule files."
+policy:
+  allow_implicit_invocation: false
