@@ -33,12 +33,13 @@ Trigger phrases: "rules sync", "rules-sync", "sync rules", "init rules",
 
 ## Canonical Set
 
-Eight rule files, all stored in `assets/rules/`:
+Nine rule files, all stored in `assets/rules/`:
 
 | File | Applies when |
 |------|--------------|
 | `comments.md` | `tsconfig.json` exists, or `typescript` in `package.json` |
 | `typescript.md` | same as above |
+| `frontend-structure.md` | `react` or `preact` in deps |
 | `react.md` | `react` in deps |
 | `radix.md` | `radix-ui` or `@radix-ui/*` in deps |
 | `storybook.md` | `@storybook/*` in deps, or `.storybook/` exists |
