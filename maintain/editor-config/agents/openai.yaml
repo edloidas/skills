@@ -1,0 +1,6 @@
+interface:
+  display_name: "Editor Config"
+  short_description: "Initialize .zed and .vscode editor configs in a repo from a canonical set"
+  default_prompt: "Use $editor-config to initialize or refresh editor configuration files (.zed/settings.json, .vscode/settings.json, .vscode/extensions.json) in the current repo. Asks which editors to set up, writes missing files, and deep-merges existing ones with our values winning conflicts."
+policy:
+  allow_implicit_invocation: false

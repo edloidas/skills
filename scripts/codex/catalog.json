@@ -136,6 +136,7 @@
       "skills": [
         "maintain/claude-md-sync",
         "maintain/comment-audit",
+        "maintain/editor-config",
         "maintain/labels-sync",
         "maintain/lint-sync",
         "maintain/rules-sync"

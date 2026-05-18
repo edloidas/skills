@@ -204,12 +204,13 @@ CI, script, skill, workspace, and Three.js auditing skills.
 
 ### Maintain
 
-Label sync, instruction file sync, permissions cleanup, lint migration, comment auditing, agent rule sync, and session retros.
+Label sync, instruction file sync, permissions cleanup, lint migration, comment auditing, agent rule sync, editor config sync, and session retros.
 
 | Skill                                                       | Description                                                               | Agent         |
 | ----------------------------------------------------------- | ------------------------------------------------------------------------- | ------------- |
 | [labels-sync](./maintain/labels-sync/)                      | Check, apply, or export GitHub repository labels as reusable JSON         | Claude, Codex |
 | [claude-md-sync](./maintain/claude-md-sync/)                | Detect and fix stale references in project CLAUDE.md or AGENTS.md         | Claude, Codex |
+| [editor-config](./maintain/editor-config/)                  | Init or merge `.zed` / `.vscode` editor configs from a canonical set      | Claude, Codex |
 | [permissions-cleanup](./maintain/permissions-cleanup/)       | Clean up stale permission entries from settings files                     | Claude        |
 | [lint-sync](./maintain/lint-sync/)                          | Compare ESLint rules against Biome for overlap                            | Claude, Codex |
 | [comment-audit](./maintain/comment-audit/)                  | Analyze code comments for quality and relevance                           | Claude, Codex |
