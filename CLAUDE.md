@@ -66,7 +66,7 @@ plugins/
 - `audit/` — CI, script, skill, workspace, and Three.js auditing (5 skills)
 - `maintain/` — Label sync, instruction file sync, permissions cleanup, lint migration, comment auditing, agent rule sync, editor config sync, and session retros (8 skills)
 - `ship/` — Release workflows and deployment tools (2 skills)
-- `assist/` — External opinion and assistance tools (4 skills)
+- `assist/` — External opinion and assistance tools (5 skills)
 - `obsidian/` — Obsidian vault organization and working document management (1 skill)
 - `workflow/` — End-to-end workflows that orchestrate multiple skills (1 skill)
 

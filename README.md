@@ -235,6 +235,7 @@ External opinion and assistance tools.
 | [ask](./assist/ask/)                                        | Explain concepts, verify claims, or challenge decisions                   | Claude, Codex |
 | [codex](./assist/codex/)                                    | Quick external opinion from Codex CLI                                     | Claude        |
 | [discuss](./assist/discuss/)                                | Iterative discussion mode — analyze, push back, and polish, no code edits | Claude        |
+| [handoff](./assist/handoff/)                                | Compact the session into a handoff — inline text or per-project doc file  | Claude        |
 | [polish-prompt](./assist/polish-prompt/)                    | Iteratively polish a prompt via blind-judged tournament rounds            | Claude        |
 
 ### Obsidian
