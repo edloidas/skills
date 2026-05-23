@@ -22,6 +22,8 @@ grep -hE 'uses: [^@]+@' .github/workflows/*.yml \
 - Reusable workflows from the same org (`./.github/workflows/reusable.yml` or `<org>/<same-repo>/.github/workflows/...`).
 - `actions/*` from GitHub itself — pinning is still recommended but lower priority than third-party actions.
 
+**Companion:** `repo-settings-checklist.md` item 2 (`sha_pinning_required`). Enabling that setting after the per-file pass guarantees no future PR can regress to tag-pinned actions.
+
 ## 2. Workflow-level `permissions:`
 
 **Detection:** workflow file has no top-level `permissions:` block.
@@ -43,6 +45,8 @@ permissions:
 ```
 
 Then expand per-job as needed (`pages: write`, `id-token: write`, `pull-requests: write`).
+
+**Companion:** `repo-settings-checklist.md` item 1 (`default_workflow_permissions`). Setting that to `read` ensures workflows without an explicit `permissions:` block still default to least-privilege.
 
 ## 3. `actions/checkout` Credentials
 

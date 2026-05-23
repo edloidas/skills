@@ -19,6 +19,8 @@ on:
   workflow_dispatch:
 ```
 
+**Companion:** `repo-settings-checklist.md` item 6 (tag protection ruleset). The trigger scope alone does not prevent attackers from pushing `v*` tags to arbitrary commits; the tag ruleset is what restricts who can create, move, or delete tags in the release namespace.
+
 ## 2. Tag/Commit Precheck
 
 **Detection:** release workflow publishes without verifying the tagged commit is reachable from a trusted branch.

@@ -1,0 +1,282 @@
+# Repository Settings Security Checklist
+
+Detailed criteria for the Repo Settings audit subagent. These are settings exposed via the GitHub REST API, not workflow file content. Fixes are `gh api -X PUT` / `POST` calls, not PRs.
+
+Throughout this checklist, `<owner>/<repo>` is the target repository. All `gh api` calls assume the current user has admin scope on the repo.
+
+## 1. Default `GITHUB_TOKEN` Permissions
+
+**Detection:**
+```bash
+gh api repos/<owner>/<repo>/actions/permissions/workflow
+```
+
+Look for `default_workflow_permissions` and `can_approve_pull_request_reviews`.
+
+**Severity:** high if `write` or `can_approve_pull_request_reviews: true`.
+
+**Why:** Any workflow that doesn't declare its own `permissions:` block inherits this default. With `write`, a malicious or buggy workflow can mutate the repo. With `can_approve_pull_request_reviews: true`, workflows can approve their own PRs and merge them past branch protection's approval rule.
+
+**Fix:**
+```bash
+gh api -X PUT repos/<owner>/<repo>/actions/permissions/workflow \
+  -f default_workflow_permissions=read \
+  -F can_approve_pull_request_reviews=false
+```
+
+**Companion check:** `actions-checklist.md` item 2 (workflow-level `permissions:`). The two together implement defence in depth: explicit workflow-level `permissions:` on every file PLUS a `read` default for anything new.
+
+## 2. `sha_pinning_required`
+
+**Detection:**
+```bash
+gh api repos/<owner>/<repo>/actions/permissions
+```
+
+Look for `sha_pinning_required`.
+
+**Severity:** high if `false` AND `actions-checklist.md` item 1 has already been remediated. Low if workflows are not yet SHA-pinned.
+
+**Why:** Runtime guard that refuses to start any workflow run containing a tag-pinned `uses:` line. Prevents regression: once enabled, no contributor can land a PR that introduces `@v1`-style pinning, because the workflow run breaks immediately on the failing PR.
+
+**Fix:**
+```bash
+gh api -X PUT repos/<owner>/<repo>/actions/permissions \
+  -F enabled=true \
+  -f allowed_actions=all \
+  -F sha_pinning_required=true
+```
+
+**Sequencing warning:** Enabling this BEFORE workflows are SHA-pinned will break every workflow run. Verify `actions-checklist.md` item 1 is satisfied (every `uses:` is a 40-char hex SHA) before flipping this on.
+
+**Companion check:** `actions-checklist.md` item 1 (per-file SHA pinning).
+
+## 3. `allowed_actions`
+
+**Detection:** same call as item 2, look for `allowed_actions`.
+
+**Severity:** informational.
+
+**Why:** `"all"` allows any GitHub Action to run. `"selected"` restricts to a curated allow-list. Most repos run with `"all"`. `"selected"` is appropriate for high-security environments (publishing infrastructure, secrets-heavy releases) but adds friction.
+
+**Fix:** Only restrict if the security posture requires it. Configure via the GitHub UI under Settings → Actions → General → "Allow select actions".
+
+## 4. Branch Protection Rulesets
+
+**Detection:**
+```bash
+gh api repos/<owner>/<repo>/rulesets
+# Then for each ruleset of target=branch:
+gh api repos/<owner>/<repo>/rulesets/<id>
+```
+
+Audit findings:
+
+- **Default branch not in any branch ruleset** — critical.
+- **Active release-source branches (e.g., `x.y` version branches) not covered** — high.
+- **Force-push permitted on protected branches (no `non_fast_forward` rule)** — high.
+- **Branch deletion permitted (no `deletion` rule)** — medium.
+- **No `required_status_checks` rule on the default branch** — medium.
+- **No `required_linear_history` rule** — low (process choice).
+
+**Severity:** see per-finding above.
+
+**Why:** Rulesets are the only mechanism that prevents direct pushes to release-source branches. The release workflow may have a tag-precheck (`release-checklist.md` item 2) requiring tags to be reachable from trusted branches — that precheck is undermined if the trusted branches themselves are unprotected.
+
+**Fix pattern — create or extend the protection ruleset:**
+
+```bash
+gh api -X PUT repos/<owner>/<repo>/rulesets/<existing_id> --input - <<'EOF'
+{
+  "name": "Protect default and version branches",
+  "target": "branch",
+  "enforcement": "active",
+  "conditions": {
+    "ref_name": {
+      "include": ["~DEFAULT_BRANCH", "refs/heads/1.0"],
+      "exclude": []
+    }
+  },
+  "rules": [
+    {"type": "deletion"},
+    {"type": "non_fast_forward"},
+    {"type": "required_status_checks", "parameters": {"required_status_checks": [{"context": "CI", "integration_id": 15368}]}},
+    {"type": "required_linear_history"}
+  ],
+  "bypass_actors": [
+    {"actor_id": 5, "actor_type": "RepositoryRole", "bypass_mode": "always"}
+  ]
+}
+EOF
+```
+
+`integration_id: 15368` is GitHub Actions (the most common status-check provider). The branch pattern uses fnmatch — `*` matches anything including `/`, so prefer explicit paths over broad globs.
+
+**Listing all version branches:** prefer explicit `refs/heads/<version>` over a glob like `refs/heads/?.*`. Patterns with `?` and `*` can accidentally catch unrelated branches. Add new release branches to the include list as they are cut.
+
+## 5. PR Approval Rule
+
+**Detection:** in the rulesets above, look for the `pull_request` rule and its `required_approving_review_count`.
+
+**Severity:** medium if `0` on a release-source branch.
+
+**Why:** Without required approvals, any contributor with write access can self-merge an unreviewed PR. For one-maintainer repos this is process choice, not security — but for any repo with multiple contributors it is a real gap.
+
+**Fix:** add or update the `pull_request` rule:
+
+```json
+{"type": "pull_request", "parameters": {
+  "required_approving_review_count": 1,
+  "dismiss_stale_reviews_on_push": false,
+  "required_reviewers": [],
+  "require_code_owner_review": false,
+  "require_last_push_approval": false,
+  "required_review_thread_resolution": false,
+  "allowed_merge_methods": ["squash", "rebase"]
+}}
+```
+
+**Coupling with Dependabot auto-merge:** see section "Bypass actor patterns" below — naively adding the approval rule breaks Dependabot auto-merge unless bypass is configured correctly.
+
+## 6. Tag Protection Rulesets
+
+**Detection:**
+```bash
+gh api repos/<owner>/<repo>/rulesets --jq '.[] | select(.target=="tag")'
+```
+
+**Severity:** high if release workflow triggers on `v*` tag push AND no tag ruleset exists.
+
+**Why:** With no tag protection, anyone with repo write access can push a `v*` tag from any commit, which triggers the release workflow. Even with a precheck (`release-checklist.md` item 2) that requires the tagged commit to be on master/version branches, an unprotected tag namespace lets attackers move existing release tags to malicious commits via `--force`.
+
+**Fix:**
+```bash
+gh api -X POST repos/<owner>/<repo>/rulesets --input - <<'EOF'
+{
+  "name": "Protect release tags",
+  "target": "tag",
+  "enforcement": "active",
+  "conditions": {
+    "ref_name": {"include": ["refs/tags/v*"], "exclude": []}
+  },
+  "rules": [
+    {"type": "creation"},
+    {"type": "update"},
+    {"type": "deletion"}
+  ],
+  "bypass_actors": [
+    {"actor_id": 5, "actor_type": "RepositoryRole", "bypass_mode": "always"}
+  ]
+}
+EOF
+```
+
+`creation` blocks new tags, `update` blocks rewriting existing tags, `deletion` blocks deletion. Together they preserve the tag-as-immutable-release-marker contract.
+
+**Tag pattern scope:** match the regex in `release-checklist.md` item 2 — if the release workflow triggers on `v*`, protect `refs/tags/v*`. If it also accepts `alpha-*` or other patterns, extend the include list.
+
+## 7. Secret Scanning and Push Protection
+
+**Detection:**
+```bash
+gh api repos/<owner>/<repo> --jq '.security_and_analysis'
+```
+
+Look for `secret_scanning.status` and `secret_scanning_push_protection.status`.
+
+**Severity:** medium if either is `disabled` AND the plan supports them (free for public, enterprise for private).
+
+**Why:** Secret scanning detects committed credentials post-push; push protection blocks them at `git push` time. Catches accidental API key / token commits before they need rotation. Free for public repos; available for private repos in GitHub Enterprise plans.
+
+**Fix (where supported):**
+```bash
+gh api -X PATCH repos/<owner>/<repo> --input - <<'EOF'
+{
+  "security_and_analysis": {
+    "secret_scanning": {"status": "enabled"},
+    "secret_scanning_push_protection": {"status": "enabled"}
+  }
+}
+EOF
+```
+
+If the API returns a plan-related error (private repo without the required plan), record as informational and skip.
+
+## Bypass Actor Patterns
+
+This is a pattern reference, not a numbered finding. Use it when remediating items 4, 5, 6.
+
+### `bypass_mode: always` is all-or-nothing
+
+A bypass actor with `bypass_mode: always` bypasses **every rule in the ruleset it belongs to**. There is no per-rule granular bypass within a single ruleset. If you need an actor to bypass rule X but not rule Y, the rules must live in **separate rulesets**.
+
+### Well-known actor IDs
+
+| Actor | `actor_type` | `actor_id` | Notes |
+|---|---|---|---|
+| Repository Admin role | `RepositoryRole` | `5` | Standard admin bypass |
+| Repository Maintain role | `RepositoryRole` | `4` | One level below admin |
+| Repository Write role | `RepositoryRole` | `3` | Rarely used as bypass |
+| Dependabot GitHub App | `Integration` | `29110` | Same ID across all accounts (GitHub-owned app) |
+| GitHub Actions | `Integration` | `15368` | Used as `integration_id` for status check sources |
+
+### Granular bypass via ruleset splitting
+
+To grant Dependabot bypass on PR approval **but not** on status checks, split the rules into two rulesets:
+
+**Ruleset 1 — strict rules, no Dependabot bypass:**
+```json
+{
+  "name": "Protect default and version branches",
+  "rules": [
+    {"type": "deletion"},
+    {"type": "non_fast_forward"},
+    {"type": "required_status_checks", "parameters": {...}},
+    {"type": "required_linear_history"}
+  ],
+  "bypass_actors": [
+    {"actor_id": 5, "actor_type": "RepositoryRole", "bypass_mode": "always"}
+  ]
+}
+```
+
+**Ruleset 2 — approval only, Dependabot bypasses:**
+```json
+{
+  "name": "Require PR approval",
+  "rules": [
+    {"type": "pull_request", "parameters": {"required_approving_review_count": 1, "allowed_merge_methods": ["squash", "rebase"]}}
+  ],
+  "bypass_actors": [
+    {"actor_id": 5, "actor_type": "RepositoryRole", "bypass_mode": "always"},
+    {"actor_id": 29110, "actor_type": "Integration", "bypass_mode": "always"}
+  ]
+}
+```
+
+Result: Dependabot PRs must still pass status checks before auto-merge fires, but the approval requirement is bypassed.
+
+### Verifying bypass
+
+After applying, fetch the ruleset and inspect:
+```bash
+gh api repos/<owner>/<repo>/rulesets/<id> --jq '{bypass_actors, current_user_can_bypass}'
+```
+
+`current_user_can_bypass: "always"` confirms the calling user can bypass — useful sanity check before requiring approvals.
+
+## Quick Audit Block
+
+Run these in parallel during Step 1 to gather everything the subagent needs:
+
+```bash
+gh api repos/<owner>/<repo>/actions/permissions
+gh api repos/<owner>/<repo>/actions/permissions/workflow
+gh api repos/<owner>/<repo>/rulesets
+gh api repos/<owner>/<repo> --jq '{private, default_branch, security_and_analysis, allow_squash_merge, allow_rebase_merge, delete_branch_on_merge, allow_auto_merge}'
+```
+
+Then for each ruleset returned, fetch the full body:
+```bash
+gh api repos/<owner>/<repo>/rulesets/<id>
+```
