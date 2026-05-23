@@ -192,12 +192,13 @@ Code review, cleanup, critical review board, and quality improvement skills.
 
 ### Audit
 
-CI, script, skill, workspace, and Three.js auditing skills.
+CI, script, security, skill, workspace, and Three.js auditing skills.
 
 | Skill                                                       | Description                                                               | Agent         |
 | ----------------------------------------------------------- | ------------------------------------------------------------------------- | ------------- |
 | [ci-audit](./audit/ci-audit/)                               | Analyze GitHub Actions workflows for optimization                         | Claude, Codex |
 | [scripts-audit](./audit/scripts-audit/)                     | Analyze package.json scripts for naming, composition, and consistency     | Claude, Codex |
+| [security-audit](./audit/security-audit/)                   | Audit GitHub Actions and release config for supply-chain risks            | Claude, Codex |
 | [skill-audit](./audit/skill-audit/)                         | Audit skills for quality, specification compliance, and Codex readiness   | Claude, Codex |
 | [three-audit](./audit/three-audit/)                         | Audit Three.js / React Three Fiber code for perf and best-practice issues | Claude, Codex |
 | [workspace-audit](./audit/workspace-audit/)                 | Analyze pnpm workspace and monorepo setup                                 | Claude, Codex |
