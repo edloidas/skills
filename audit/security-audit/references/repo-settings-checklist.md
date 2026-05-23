@@ -202,6 +202,42 @@ EOF
 
 If the API returns a plan-related error (private repo without the required plan), record as informational and skip.
 
+## 9. Required Status Check Coverage
+
+**Detection:** for every branch covered by a branch ruleset, every required status check in that ruleset must be produced by a workflow whose trigger filter actually fires on that branch.
+
+```bash
+# Step 1: list protected branches and their required checks
+gh api repos/<owner>/<repo>/rulesets --jq '.[] | select(.target=="branch") | .id' \
+  | while read -r id; do
+      gh api "repos/<owner>/<repo>/rulesets/$id" \
+        --jq '{branches: .conditions.ref_name.include, checks: [.rules[] | select(.type=="required_status_checks") | .parameters.required_status_checks[].context]}'
+    done
+
+# Step 2: list workflow names and their trigger.branches filters
+grep -A4 '^on:' .github/workflows/*.yml
+```
+
+For each (branch, required-check) pair, identify the workflow producing that check and confirm its `on.pull_request.branches` (and `on.push.branches`) includes the protected branch. The check name in the ruleset maps to the workflow's `name:` field at the top of the YAML.
+
+**Severity:** high.
+
+**Why:** A required check that never fires leaves every PR in `mergeStateStatus: BLOCKED`. The only paths to merge are admin bypass (defeats the rule) or a manual workflow edit per PR. We hit this exact pattern when the protection ruleset was extended to cover `1.0` but `ci.yml` still triggered only on `master` — every backport PR needed a one-line trigger fix before CI could fire.
+
+**Fix:** extend the workflow's trigger filter to cover every protected branch the check is required on:
+
+```yaml
+on:
+  push:
+    branches: [master, '1.0']
+  pull_request:
+    branches: [master, '1.0']
+```
+
+Alternative: if the workflow legitimately should not run on the secondary branch, remove that branch from the ruleset's `required_status_checks` parameters instead — same alignment, different direction.
+
+**Companion:** `actions-checklist.md` (workflow trigger filters). The repo-settings auditor has access to both ruleset state and workflow files, so this check belongs here rather than splitting detection across two subagents.
+
 ## Bypass Actor Patterns
 
 This is a pattern reference, not a numbered finding. Use it when remediating items 4, 5, 6.
@@ -264,6 +300,25 @@ gh api repos/<owner>/<repo>/rulesets/<id> --jq '{bypass_actors, current_user_can
 ```
 
 `current_user_can_bypass: "always"` confirms the calling user can bypass — useful sanity check before requiring approvals.
+
+### How bypass appears in practice
+
+The "Review required" / "Required check missing" red banner stays visible on the PR page **even when the calling user has bypass**. The actual merge action lives under that banner as one of:
+
+- Web UI: a separate button labelled "Merge without waiting for requirements to be met (bypass rules)" appears under the warning. Visible only to users with bypass.
+- CLI: `gh pr merge <num> --admin --rebase --delete-branch` (or `--squash`). The `--admin` flag is the explicit bypass token; without it, the merge call fails with the same red-banner error.
+
+If a user reports "the bypass is broken — GitHub still says approval required", the most likely cause is they were looking at the warning rather than the button below it. The bypass is live as long as `current_user_can_bypass` returns `"always"`.
+
+### `--auto` interaction with bypass
+
+`gh pr merge --auto --squash` enables GitHub's auto-merge feature, which fires as soon as **all bypass-adjusted requirements** are satisfied. For an actor in `bypass_actors` (e.g., Dependabot in the approval-only ruleset), this means:
+
+- The required `Test` check still has to pass (Dependabot is not in the status-checks ruleset's bypass list).
+- The required approval count is bypassed.
+- Auto-merge fires immediately once tests pass — no manual approval needed.
+
+This is the intended outcome of the ruleset-splitting pattern above. Verify after applying by opening a test Dependabot-like PR and watching the merge queue behaviour.
 
 ## Quick Audit Block
 

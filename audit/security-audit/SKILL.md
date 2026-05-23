@@ -141,6 +141,7 @@ Resolve `<owner>/<repo>` via `gh repo view --json nameWithOwner --jq .nameWithOw
 6. Tag protection rulesets — if the release workflow triggers on `v*` tags, there MUST be a tag ruleset blocking `creation`, `update`, and `deletion` on `refs/tags/v*`, with bypass limited to Admins.
 7. Secret scanning + push protection — enabled where the plan supports it.
 8. Bypass actor patterns — flag every `bypass_mode: always` actor and warn that bypass is all-or-nothing per ruleset.
+9. Required status check coverage — for every branch covered by a branch ruleset, the required status checks named in `required_status_checks` MUST be produced by workflows whose trigger filters actually include that branch. Cross-reference ruleset condition `ref_name.include` against each workflow's `on.pull_request.branches` / `on.push.branches`. Mismatches put every PR to that branch into permanent `BLOCKED` state.
 
 Read the full checklist at `{{SKILL_DIR}}/references/repo-settings-checklist.md` — it contains the exact `gh api` commands for both detection and remediation, plus well-known actor IDs (Dependabot Integration = 29110, Admin RepositoryRole = 5) and the ruleset-splitting pattern for granular bypass.
 
@@ -201,6 +202,7 @@ If the user picks Apply Now and SHA-pinning is in the findings, prefer `pinact r
 | No tag ruleset on `refs/tags/v*` | high | Create tag ruleset blocking `creation`/`update`/`deletion` |
 | `required_approving_review_count: 0` (multi-contributor repo) | medium | Add `pull_request` rule with count `1`; split ruleset for Dependabot bypass |
 | Secret scanning disabled (plan supports it) | medium | `gh api -X PATCH .../<repo>` with `security_and_analysis.secret_scanning.status: enabled` |
+| Required status check named in ruleset but workflow trigger filter excludes the protected branch | high | Add the branch to `on.push.branches` / `on.pull_request.branches`, or drop the check from the ruleset |
 | Cache key without `github.sha` / `hashFiles` | medium | Add high-entropy component |
 | Release triggers on `push: branches` | critical | Switch to `tags: ['v*']` |
 
@@ -225,6 +227,8 @@ If the user picks Apply Now and SHA-pinning is in the findings, prefer `pinact r
 - **Treating cache scope as a separate cache per workflow.** Cache scope is per-repo; one workflow can poison another's restore.
 - **Enabling `sha_pinning_required` before files are pinned.** Breaks every workflow run. Always sequence Actions audit fixes first, then flip the setting.
 - **Assuming `bypass_mode: always` is per-rule.** It is per-ruleset. For granular bypass (e.g., Dependabot bypasses approval but not status checks), split the rules across separate rulesets.
+- **Adding a required status check without checking the workflow trigger covers the branch.** The check name in the ruleset must match a `name:` in a workflow whose `on:` includes the protected branch. Misalignment makes every PR to that branch permanently BLOCKED.
+- **Reporting "bypass is broken" when the red banner is still visible.** The "Review required" warning persists even for users with active bypass — the bypass action is the separate button under the banner (web) or `--admin` flag (CLI), not a change to the banner itself.
 
 ## Keywords
 
