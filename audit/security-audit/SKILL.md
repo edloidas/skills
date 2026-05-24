@@ -1,6 +1,6 @@
 ---
 name: security-audit
-description: Use when the user asks to audit a repository for security risks — supply-chain, CI, release, runtime, secrets, repository settings (rulesets, Actions defaults), or any combination. Aggregates findings from focused subagents across whichever audit areas the repo exposes. Trigger phrases include "audit security", "security audit", "check supply chain", "harden CI", "harden release", "harden settings", "audit rulesets", "review for vulnerabilities".
+description: Use when the user asks to audit a repository for security risks — supply-chain, CI, release, runtime, secrets, repository settings (rulesets, Actions defaults), package manager and install-time controls (pnpm/bun lifecycle scripts, release-age gating, dependency confusion), or any combination. Aggregates findings from focused subagents across whichever audit areas the repo exposes. Trigger phrases include "audit security", "security audit", "check supply chain", "harden CI", "harden release", "harden settings", "audit rulesets", "audit install scripts", "audit lifecycle scripts", "audit package manager", "review for vulnerabilities".
 license: MIT
 compatibility: Claude Code, Codex
 allowed-tools: Bash Read Agent
@@ -18,6 +18,7 @@ The architecture is designed to grow. Adding a new audit area means writing a ne
 - GitHub Actions workflows under `.github/workflows/` — see `references/actions-checklist.md`
 - Release configuration (`release.yml`, `package.json`, `dependabot.yml`, npm publishing) — see `references/release-checklist.md`
 - Repository settings exposed via the GitHub REST API (Actions defaults, branch and tag rulesets, secret scanning) — see `references/repo-settings-checklist.md`
+- Package manager and install-time supply-chain controls (pnpm/bun lifecycle scripts, `minimumReleaseAge`, scope→registry mapping) — see `references/package-manager-checklist.md`
 
 **Planned (not yet implemented):**
 - Non-GitHub CI providers (CircleCI, GitLab CI)
@@ -36,8 +37,9 @@ Use when the user asks to:
 - "Harden CI" or "harden actions"
 - "Audit release workflow" / "audit npm publishing"
 - "Harden settings" / "audit rulesets" / "audit repo settings"
+- "Audit install scripts" / "audit lifecycle scripts" / "audit package manager"
 
-Trigger phrases: `security audit`, `supply chain`, `ci hardening`, `harden actions`, `audit release`, `harden settings`, `audit rulesets`, `pwn request`, `sha pinning`.
+Trigger phrases: `security audit`, `supply chain`, `ci hardening`, `harden actions`, `audit release`, `harden settings`, `audit rulesets`, `audit install scripts`, `audit package manager`, `minimum release age`, `allowBuilds`, `trustedDependencies`, `pwn request`, `sha pinning`.
 
 **Not for:**
 - Generic code review → `review:changes-review`
@@ -53,7 +55,11 @@ Run in parallel:
 ```bash
 ls .github/workflows/ 2>/dev/null
 cat .github/dependabot.yml 2>/dev/null
-jq '{packageManager, scripts: (.scripts | keys), publishConfig, private}' package.json 2>/dev/null
+jq '{packageManager, trustedDependencies, scripts: (.scripts | keys), publishConfig, private}' package.json 2>/dev/null
+ls package-lock.json pnpm-lock.yaml yarn.lock bun.lock bun.lockb 2>/dev/null
+cat pnpm-workspace.yaml 2>/dev/null
+cat bunfig.toml 2>/dev/null
+cat .npmrc 2>/dev/null
 gh api repos/<owner>/<repo>/actions/permissions 2>/dev/null
 gh api repos/<owner>/<repo>/actions/permissions/workflow 2>/dev/null
 gh api repos/<owner>/<repo>/rulesets 2>/dev/null
@@ -62,7 +68,7 @@ gh api repos/<owner>/<repo> --jq '{private, default_branch, security_and_analysi
 
 Resolve `<owner>/<repo>` from `gh repo view --json nameWithOwner --jq .nameWithOwner`. If the API calls fail with `404` or auth errors, note it — repo-settings findings will be skipped for that area.
 
-If `.github/workflows/` is absent, skip the Actions subagent. If `package.json` is absent or `private: true`, note it — release findings about provenance change severity. If the GitHub API calls succeed, dispatch the Repo Settings subagent.
+If `.github/workflows/` is absent, skip the Actions subagent. If `package.json` is absent or `private: true`, note it — release findings about provenance change severity. If any of `package-lock.json`, `pnpm-lock.yaml`, `yarn.lock`, `bun.lock`, or `bun.lockb` exists, dispatch the Package Manager subagent. If the GitHub API calls succeed, dispatch the Repo Settings subagent.
 
 ### Step 2: Dispatch Audit Subagents in Parallel
 
@@ -148,6 +154,33 @@ Read the full checklist at `{{SKILL_DIR}}/references/repo-settings-checklist.md`
 Report findings grouped by severity, same format as the Actions audit. For each finding, include the exact `gh api` remediation command. Do not execute any commands.
 ```
 
+#### Subagent D — Package Manager auditor
+
+Read `references/package-manager-checklist.md`. Prompt template:
+
+```
+You are auditing Node.js package-manager configuration for install-time supply-chain hardening. The two managers that meet the bar are pnpm v10.26+ (v11+ recommended) and bun. npm and yarn (1 or berry) lack the per-package lifecycle allowlist and release-age gate that this audit requires.
+
+This audit distinguishes two kinds of "critical": (a) currently-exploitable misconfigurations (e.g., `verifyStoreIntegrity: false`), and (b) policy floors — the *absence* of a hardening primitive this audit treats as mandatory (e.g., running on npm/yarn). Label policy findings as "critical (policy)" or "high (policy)" so consumers can calibrate urgency.
+
+Read whichever of these exist: `package.json`, `pnpm-workspace.yaml`, `.npmrc`, `bunfig.toml`, `package-lock.json`, `pnpm-lock.yaml`, `yarn.lock`, `bun.lock`, `bun.lockb`. Then evaluate:
+
+1. Manager choice — npm or yarn present? Critical (policy) — they cannot satisfy items 3–5 of this audit. Multiple lockfiles? High — pick one.
+2. pnpm version floor — `packageManager` must pin pnpm `>= 10.26` (when `allowBuilds` first shipped); v11+ recommended since v11 removes the legacy split keys. If pnpm `< 11` and legacy keys (`onlyBuiltDependencies`, `neverBuiltDependencies`, `ignoredBuiltDependencies`, `ignoreDepScripts`) are still present, recommend the codemod `pnpx codemod run pnpm-v10-to-v11`.
+3. Lifecycle script allowlist:
+   - **pnpm:** v10.26+ denies scripts by default for unlisted packages. The finding is about the audit log (`allowBuilds`) and the fail-fast switch (`strictDepBuilds`). `strictDepBuilds: false` = high (silent skip masks new dep requests). `allowBuilds` undefined = medium (gate still on by default, but no written record of approved scripts). Entries without inline justification comments = low.
+   - **bun:** does NOT execute lifecycle scripts by default. `trustedDependencies` is an opt-in allowlist, with a built-in default allowlist for known-safe packages. The finding is about manual trust grants: any entry in `trustedDependencies` that is NOT in Bun's default allowlist and lacks a justification comment = medium. Absence of `trustedDependencies` and `ignoreScripts` is NOT a finding — defaults are safe.
+4. `minimumReleaseAge` floor — pnpm: ≥ 4320 (minutes; 3 days); v11 default is 1440 (24h); below 4320 = medium (policy). bun: ≥ 259200 (seconds; 3 days); default null = high (policy). Note the unit difference — pnpm minutes, bun seconds.
+   - Additionally for pnpm: pin `minimumReleaseAgeStrict: true` defensively (defaults to `true` only when `minimumReleaseAge` is configured). Note that `minimumReleaseAgeIgnoreMissingTime: true` (default) silently skips the gate for packages whose registry omits the `time` field — common on private registries. Recommend setting it to `false` only after confirming the internal registry returns `time`.
+5. `minimumReleaseAgeExclude` — if scoped internal packages (`@your-org/*`) appear in the lockfile, the exclude list should cover them. pnpm field is singular (`minimumReleaseAgeExclude`); bun field is plural (`minimumReleaseAgeExcludes`).
+6. Scope → registry mapping — for any `@scope/*` package in the lockfile, `registries:` (pnpm) or `[install.scopes]` (bun) must map the scope to the correct registry. Missing mapping = dependency confusion vector (high).
+7. Default downgrades — flag any explicit override of safe defaults: pnpm `verifyStoreIntegrity: false`, `blockExoticSubdeps: false`, `strictDepBuilds: false` — all high. Do NOT flag `enablePrePostScripts: true` (default): it governs `pnpm foo` → `prefoo`/`postfoo` in the current project's scripts, not dependency build scripts.
+
+Read the full checklist at `{{SKILL_DIR}}/references/package-manager-checklist.md` — it contains exact field names, units, defaults, the policy / exploitable distinction, and fix examples for both pnpm and bun.
+
+Report findings grouped by severity, same format as the Actions audit. For each finding, include the exact YAML/TOML snippet needed to remediate. Mark policy findings explicitly. Do not edit files.
+```
+
 ### Step 3: Aggregate Findings
 
 Wait for all dispatched subagents. Merge into a single report:
@@ -203,6 +236,16 @@ If the user picks Apply Now and SHA-pinning is in the findings, prefer `pinact r
 | `required_approving_review_count: 0` (multi-contributor repo) | medium | Add `pull_request` rule with count `1`; split ruleset for Dependabot bypass |
 | Secret scanning disabled (plan supports it) | medium | `gh api -X PATCH .../<repo>` with `security_and_analysis.secret_scanning.status: enabled` |
 | Required status check named in ruleset but workflow trigger filter excludes the protected branch | high | Add the branch to `on.push.branches` / `on.pull_request.branches`, or drop the check from the ruleset |
+| npm or yarn lockfile present | critical (policy) | Migrate to pnpm (`pnpm import`) or bun; remove old lockfile |
+| pnpm `strictDepBuilds: false` | high | Remove the override or set `true` — fail-fast on unreviewed build scripts |
+| pnpm without `allowBuilds` map | medium | Define `allowBuilds:` in `pnpm-workspace.yaml`; gate is already on, the map is the audit log |
+| bun `trustedDependencies` entry not in Bun's default allowlist and uncommented | medium | Add a justification comment or remove the entry |
+| pnpm `minimumReleaseAge` < 4320 (incl. default 1440) | medium (policy) | Set `minimumReleaseAge: 4320` and `minimumReleaseAgeStrict: true` in `pnpm-workspace.yaml` |
+| pnpm `minimumReleaseAge` unset on pnpm < 11 | high (policy) | Set `minimumReleaseAge: 4320` (3-day floor) |
+| bun `install.minimumReleaseAge` unset | high (policy) | Set `minimumReleaseAge = 259200` in `bunfig.toml [install]` (seconds, not minutes) |
+| pnpm < 10.26 in `packageManager` | high | Bump to `pnpm@11.x`; run `pnpx codemod run pnpm-v10-to-v11` |
+| pnpm 10.26 ≤ version < 11 with legacy keys still present | medium | Run the codemod and remove `onlyBuiltDependencies` / `neverBuiltDependencies` / `ignoredBuiltDependencies` / `ignoreDepScripts` |
+| Internal `@scope/*` in lockfile without `registries:` mapping | high | Add scope→registry mapping in `pnpm-workspace.yaml` or `bunfig.toml [install.scopes]` |
 | Cache key without `github.sha` / `hashFiles` | medium | Add high-entropy component |
 | Release triggers on `push: branches` | critical | Switch to `tags: ['v*']` |
 
@@ -229,7 +272,13 @@ If the user picks Apply Now and SHA-pinning is in the findings, prefer `pinact r
 - **Assuming `bypass_mode: always` is per-rule.** It is per-ruleset. For granular bypass (e.g., Dependabot bypasses approval but not status checks), split the rules across separate rulesets.
 - **Adding a required status check without checking the workflow trigger covers the branch.** The check name in the ruleset must match a `name:` in a workflow whose `on:` includes the protected branch. Misalignment makes every PR to that branch permanently BLOCKED.
 - **Reporting "bypass is broken" when the red banner is still visible.** The "Review required" warning persists even for users with active bypass — the bypass action is the separate button under the banner (web) or `--admin` flag (CLI), not a change to the banner itself.
+- **Copying pnpm's `minimumReleaseAge` value into bun's.** pnpm is **minutes** (4320 = 72h). bun is **seconds** (259200 = 72h). Setting bun's to 4320 gives 72 minutes of protection.
+- **Filling `allowBuilds` without comments.** Every `true` entry is an audited grant — the comment explaining why is the audit log. A bare list of names rots into "we don't know why core-js is allowed" within a quarter.
+- **Trusting pnpm v11's `minimumReleaseAge: 1440` default.** The default is 24h, not the recommended 72h. Set it explicitly so a future pnpm upgrade can't silently re-lower the floor.
+- **Forgetting `minimumReleaseAgeStrict` and `minimumReleaseAgeIgnoreMissingTime`.** Without `Strict: true`, pnpm may fall back to a too-fresh version to keep installation succeeding. `IgnoreMissingTime: true` (default) silently skips the gate for packages whose registry omits the `time` field — the typical private-registry state.
+- **Calling bun's lifecycle defaults a finding.** Bun denies dependency lifecycle scripts by default; `trustedDependencies` is an opt-in allowlist with built-in safe defaults. Missing `trustedDependencies` is *not* a finding — only unjustified manual grants are.
+- **Treating pnpm `enablePrePostScripts` as a supply-chain control.** It governs `pnpm foo` → `prefoo` / `postfoo` for the current project's own scripts. Dependency build scripts are gated by `allowBuilds` + `strictDepBuilds`.
 
 ## Keywords
 
-security audit, supply chain, github actions, sha pinning, pinact, persist-credentials, pull_request_target, pwn request, release security, npm provenance, oidc, trusted publishers, frozen lockfile, npm ci, prod flag, devDependencies, dependabot, harden ci, cache poisoning, branch protection, tag protection, rulesets, bypass actors, sha_pinning_required, default_workflow_permissions, secret scanning
+security audit, supply chain, github actions, sha pinning, pinact, persist-credentials, pull_request_target, pwn request, release security, npm provenance, oidc, trusted publishers, frozen lockfile, npm ci, prod flag, devDependencies, dependabot, harden ci, cache poisoning, branch protection, tag protection, rulesets, bypass actors, sha_pinning_required, default_workflow_permissions, secret scanning, package manager, pnpm, bun, allowBuilds, strictDepBuilds, trustedDependencies, minimumReleaseAge, minimumReleaseAgeExclude, lifecycle scripts, postinstall, dependency confusion, registries, scope mapping
