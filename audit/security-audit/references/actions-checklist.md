@@ -4,25 +4,38 @@ Detailed criteria for the Actions audit subagent. Each item: detection → sever
 
 ## 1. SHA Pinning
 
-**Detection:** any `uses:` line where the part after `@` is not a 40-char hex string.
+**Detection:** classify every `uses:` line by what follows the `@`:
+
+| Pin shape | Example | Severity |
+|---|---|---|
+| 40-char hex SHA | `actions/checkout@a81bbbf8298c0fa03ea29cdc473d45769f953675` | **pass** |
+| Version tag (`@v<digits>` / `@v<digits>.<digits>` / `@<semver>`) | `actions/checkout@v6`, `gradle/actions/setup-gradle@v4.0.1` | **high** |
+| Branch / floating ref (anything else: `@master`, `@main`, `@latest`, named branches) | `enonic/release-tools/release@master` | **critical** |
 
 ```bash
 grep -hE 'uses: [^@]+@' .github/workflows/*.yml \
-  | grep -vE '@[a-f0-9]{40}( |$)' \
-  | grep -v '^[[:space:]]*#'
+  | grep -v '^[[:space:]]*#' \
+  | awk -F'@' '
+      {
+        ref=$2; sub(/[[:space:]].*$/, "", ref);
+        if (ref ~ /^[a-f0-9]{40}$/) print "PASS  " $0;
+        else if (ref ~ /^v?[0-9]+(\.[0-9]+){0,2}([-.][a-zA-Z0-9]+)?$/) print "TAG   " $0;
+        else print "BRANCH " $0;
+      }
+    '
 ```
 
-**Severity:** high
+**Why two non-pass tiers:** moving a tag requires `git push --tags --force` (auditable, deliberate, and many CI policies block it). Moving a branch happens on every merge — a single compromised maintainer commit poisons the action. Branch pinning is therefore **categorically more dangerous** than tag pinning, not just a notch worse. Tag-pinning is the floor most repos sit at; branch-pinning is the failure mode that demands urgent action.
 
-**Why:** Floating tags can be moved by anyone who compromises the upstream action's repo. Both the TanStack npm compromise and the million repo poisoning used tag-floating as their entry point.
+The TanStack npm compromise and the "million repo" poisoning both used floating refs as their entry point — branches in some cases, force-moved tags in others.
 
-**Fix:** Run `pinact run` (`brew install pinact`). It rewrites every `uses:` to `<repo>@<sha> # <tag>` in place.
+**Fix:** Run `pinact run` (`brew install pinact`). It rewrites every `uses:` to `<repo>@<sha> # <tag-or-branch-at-resolve-time>` in place. Branch pins resolve to whatever commit the branch currently points at — pair the fix with a deliberate review of the action's recent commit history before merging.
 
 **Exceptions:**
-- Reusable workflows from the same org (`./.github/workflows/reusable.yml` or `<org>/<same-repo>/.github/workflows/...`).
-- `actions/*` from GitHub itself — pinning is still recommended but lower priority than third-party actions.
+- Reusable workflows from the same repo (`./.github/workflows/reusable.yml`) — these resolve to the calling commit, not to a moving ref. Not a finding.
+- First-party-org actions are **not** softened. An action owned by your own org pinned to `@master` is treated the same as a third-party action pinned to `@master`: critical. Trust does not change the mechanism by which a compromised commit ships.
 
-**Companion:** `repo-settings-checklist.md` item 2 (`sha_pinning_required`). Enabling that setting after the per-file pass guarantees no future PR can regress to tag-pinned actions.
+**Companion:** `repo-settings-checklist.md` item 2 (`sha_pinning_required`). Enabling that setting after every workflow's `uses:` is on a SHA guarantees no future PR can reintroduce a tag or branch pin.
 
 ## 2. Workflow-level `permissions:`
 

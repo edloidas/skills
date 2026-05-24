@@ -55,7 +55,7 @@ Run in parallel:
 ```bash
 ls .github/workflows/ 2>/dev/null
 cat .github/dependabot.yml 2>/dev/null
-jq '{packageManager, trustedDependencies, scripts: (.scripts | keys), publishConfig, private}' package.json 2>/dev/null
+jq '{name, packageManager, trustedDependencies, scripts: (.scripts | keys), publishConfig, private}' package.json 2>/dev/null
 ls package-lock.json pnpm-lock.yaml yarn.lock bun.lock bun.lockb 2>/dev/null
 cat pnpm-workspace.yaml 2>/dev/null
 cat bunfig.toml 2>/dev/null
@@ -66,9 +66,34 @@ gh api repos/<owner>/<repo>/rulesets 2>/dev/null
 gh api repos/<owner>/<repo> --jq '{private, default_branch, security_and_analysis}' 2>/dev/null
 ```
 
+**Extract org-scope context for Subagent D** (compute these in the orchestrator after the bash block above, then substitute into D's prompt):
+
+- `org_prefix` — derived from `package.json` `name:`. If the name is `@<prefix>/<pkg>`, the prefix is `<prefix>`. If the name is unscoped, leave `org_prefix` empty (no org scopes will be flagged).
+- `org_scope_patterns` — given a non-empty `org_prefix`, owned scopes are `@<prefix>/*` AND any scope matching `@<prefix>-*/*` (e.g., for `enonic`: `@enonic/*`, `@enonic-types/*`, `@enonic-cli/*`).
+- `already_covered_scopes` — union of:
+  - `minimumReleaseAgeExclude` entries from `pnpm-workspace.yaml` (use `yq`)
+  - `minimumReleaseAgeExcludes` entries from `bunfig.toml`
+  - `registries:` keys from `pnpm-workspace.yaml`
+  - `[install.scopes]` keys from `bunfig.toml`
+  - `@<scope>:registry=` lines from `.npmrc`
+
+These pre-approve scopes the team has already decided to trust. Subagent D treats them as covered and emits no finding for missing config.
+
+**Default posture: deny everything.** Subagent D flags missing exclude/registry config **only** for owned scopes (those matching `org_scope_patterns`) that appear in the lockfile and are not in `already_covered_scopes`. All other scopes stay under the release-age and dependency-confusion gates — that's the intended hardening. If `org_prefix` is empty, no scope-specific findings are emitted at all.
+
+**Extract release-target context for Subagent B** (compute these in the orchestrator after the bash block above, then substitute into B's prompt):
+
+- `release_publishes_to_npm` — `true` if any of these signals exist (the audit doesn't care WHICH non-npm publisher is used; only whether npm is involved):
+  - any `release.yml` / `release.yaml` file in `.github/workflows/` contains a literal `npm publish`, `pnpm publish`, `yarn publish`, or `bun publish` invocation
+  - `package.json` has a `publishConfig.registry` field
+  - `package.json` `scripts.publish` value contains any of the four publish commands above
+- `detected_build_systems` — list assembled from file presence at the repo root: `npm` if `package.json` + any lockfile, `gradle` if `build.gradle` or `build.gradle.kts`, `maven` if `pom.xml`, `cargo` if `Cargo.toml`, `pip` if `requirements.txt` or `pyproject.toml`, `docker` if `Dockerfile`. `github-actions` is always added when `.github/workflows/` exists. This list drives item 7 (dependabot.yml ecosystem coverage) so the audit recommends the right ecosystems regardless of stack.
+
+Subagent B uses `release_publishes_to_npm` to skip npm-only items (provenance, `--prod`) when npm isn't the publish target. Items that apply to every release model (trigger scope, tag precheck, frozen lockfile for install steps, token handling) run unconditionally.
+
 Resolve `<owner>/<repo>` from `gh repo view --json nameWithOwner --jq .nameWithOwner`. If the API calls fail with `404` or auth errors, note it — repo-settings findings will be skipped for that area.
 
-If `.github/workflows/` is absent, skip the Actions subagent. If `package.json` is absent or `private: true`, note it — release findings about provenance change severity. If any of `package-lock.json`, `pnpm-lock.yaml`, `yarn.lock`, `bun.lock`, or `bun.lockb` exists, dispatch the Package Manager subagent. If the GitHub API calls succeed, dispatch the Repo Settings subagent.
+If `.github/workflows/` is absent, skip the Actions subagent. Skip the Release subagent unless one of these is true: a `release.yml` / `release.yaml` exists in `.github/workflows/`, `package.json` has a `publishConfig` field, or `package.json` `scripts` has any of `publish`, `release`, `prepublishOnly`. If `package.json` is absent or `private: true`, note it — release findings about provenance change severity. If any of `package-lock.json`, `pnpm-lock.yaml`, `yarn.lock`, `bun.lock`, or `bun.lockb` exists, dispatch the Package Manager subagent. Dispatch the Repo Settings subagent if `gh api .../actions/permissions` returns a JSON object (HTTP 200); skip only on `404` or auth error. An empty `[]` from `/rulesets` is success — Subagent C treats the absence of rulesets as a finding, not a reason to skip.
 
 ### Step 2: Dispatch Audit Subagents in Parallel
 
@@ -104,6 +129,18 @@ Read every file under `.github/workflows/`. For each, evaluate:
 Read the full checklist at `{{SKILL_DIR}}/references/actions-checklist.md`.
 
 Report findings as a bullet list, grouped by severity (critical | high | medium | low | informational). For each finding: file:line — description — recommended fix. Include a "passes" section listing what is already hardened. Do not edit files.
+
+**Additionally emit a structured "Workflow Trigger Map" at the end of your report**, in this exact format — Step 3 uses it to cross-check against the Repo Settings audit's ruleset findings:
+
+```
+WORKFLOW_TRIGGER_MAP
+- <workflow-name-from-name-field>:
+    file: <relative path>
+    push_branches: [<branch>, ...]   # from on.push.branches; "*" for unfiltered; "none" if no push trigger
+    pr_branches:   [<branch>, ...]   # from on.pull_request.branches; same conventions
+```
+
+Emit one entry per workflow file. This is data, not a finding — do not bin it by severity.
 ```
 
 #### Subagent B — Release auditor
@@ -113,15 +150,17 @@ Read `references/release-checklist.md` and `references/install-flags.md`. Prompt
 ```
 You are auditing release configuration for supply-chain hardening.
 
+**Release target context** (substituted at dispatch): `release_publishes_to_npm = {{RELEASE_PUBLISHES_TO_NPM}}` and `detected_build_systems = {{DETECTED_BUILD_SYSTEMS}}`. If `release_publishes_to_npm` is `false`, skip items 4 and 5 entirely and state in the report header: "npm publish not detected — `--prod` and provenance items skipped." Items 1, 2, 3, 6, 7 always apply.
+
 Read `.github/workflows/release.yml` (or equivalent), `package.json`, `.github/dependabot.yml`, and any publishing scripts. Evaluate:
 
-1. Release trigger scope — only `tags: ['v*']` or `workflow_dispatch`, never `push: branches`.
-2. Tag/commit precheck — workflow verifies the tagged commit is reachable from a trusted branch.
-3. Frozen lockfile — `npm ci`, `pnpm install --frozen-lockfile`, `yarn install --immutable`, `bun install --frozen-lockfile`.
-4. `--prod` flag — only in runtime-artifact contexts (Docker runtime layer, deployable tarball). Not in build/test/publish steps.
-5. npm provenance — for public packages, Trusted Publishers (OIDC) and `--provenance` or pnpm OIDC.
-6. Token usage — secrets or OIDC only. No hardcoded tokens, no workflow_dispatch input tokens.
-7. `dependabot.yml` — must include `package-ecosystem: "github-actions"`.
+1. Release trigger scope — only `tags: ['v*']` or `workflow_dispatch`, never `push: branches`. (Always applies.)
+2. Tag/commit precheck — workflow verifies the tagged commit is reachable from a trusted branch. (Always applies.)
+3. Frozen lockfile — `npm ci`, `pnpm install --frozen-lockfile`, `yarn install --immutable`, `bun install --frozen-lockfile`. (Always applies when the workflow runs a Node install step, regardless of what gets published.)
+4. `--prod` flag — only in runtime-artifact contexts (Docker runtime layer, deployable tarball). Not in build/test/publish steps. **Skip when `release_publishes_to_npm` is false.**
+5. npm provenance — for public packages, Trusted Publishers (OIDC) and `--provenance` or pnpm OIDC. **Skip when `release_publishes_to_npm` is false** — the artifact isn't going to npm.
+6. Token usage — secrets or OIDC only. No hardcoded tokens, no workflow_dispatch input tokens. (Always applies.)
+7. `dependabot.yml` ecosystem coverage — always require `package-ecosystem: "github-actions"`. For each entry in `detected_build_systems` other than `github-actions`, recommend the matching Dependabot ecosystem: `npm` covers npm/pnpm/yarn/bun; `gradle`, `maven`, `cargo`, `pip`, `docker` map 1:1. Do NOT require `npm` when `release_publishes_to_npm` is false unless a Node lockfile is present (then it covers dev-dep updates).
 
 Read the full checklists at:
 - `{{SKILL_DIR}}/references/release-checklist.md`
@@ -140,18 +179,29 @@ You are auditing GitHub repository settings for supply-chain hardening. Findings
 Resolve `<owner>/<repo>` via `gh repo view --json nameWithOwner --jq .nameWithOwner` and call the GitHub REST API to evaluate:
 
 1. Default `GITHUB_TOKEN` permissions — `default_workflow_permissions` must be `read`, `can_approve_pull_request_reviews` must be `false`.
-2. `sha_pinning_required` — must be `true`, but ONLY after every workflow's `uses:` line is SHA-pinned (cross-check with the Actions audit). Enabling early breaks all workflow runs.
+2. `sha_pinning_required` — **report the current value verbatim** (e.g., `sha_pinning_required: false`). Do NOT recommend flipping it independently; whether enabling it is safe depends on the Actions audit verdict (item 1 of Subagent A). Step 3 of the orchestrator combines your report with Subagent A's pin status and emits the recommendation.
 3. `allowed_actions` — informational. `"all"` is common; `"selected"` is appropriate for high-security repos.
 4. Branch protection rulesets — the default branch and every active release-source branch (e.g., `x.y` version branches) must be covered by rules for `deletion`, `non_fast_forward`, `required_status_checks`, and ideally `required_linear_history`.
 5. PR approval rule — `required_approving_review_count >= 1` for multi-contributor repos. Flag the Dependabot interaction (see ruleset-splitting pattern in the checklist).
 6. Tag protection rulesets — if the release workflow triggers on `v*` tags, there MUST be a tag ruleset blocking `creation`, `update`, and `deletion` on `refs/tags/v*`, with bypass limited to Admins.
 7. Secret scanning + push protection — enabled where the plan supports it.
 8. Bypass actor patterns — flag every `bypass_mode: always` actor and warn that bypass is all-or-nothing per ruleset.
-9. Required status check coverage — for every branch covered by a branch ruleset, the required status checks named in `required_status_checks` MUST be produced by workflows whose trigger filters actually include that branch. Cross-reference ruleset condition `ref_name.include` against each workflow's `on.pull_request.branches` / `on.push.branches`. Mismatches put every PR to that branch into permanent `BLOCKED` state.
 
 Read the full checklist at `{{SKILL_DIR}}/references/repo-settings-checklist.md` — it contains the exact `gh api` commands for both detection and remediation, plus well-known actor IDs (Dependabot Integration = 29110, Admin RepositoryRole = 5) and the ruleset-splitting pattern for granular bypass.
 
 Report findings grouped by severity, same format as the Actions audit. For each finding, include the exact `gh api` remediation command. Do not execute any commands.
+
+**Additionally emit a structured "Ruleset Required Checks" map at the end of your report**, in this exact format — Step 3 uses it to cross-check against the Actions audit's Workflow Trigger Map for status-check coverage:
+
+```
+RULESET_REQUIRED_CHECKS
+- ruleset_id: <id>
+  target: branch
+  protected_branches: [<branch-pattern-from-ref_name.include>, ...]
+  required_checks: [<context-string>, ...]   # empty list if none
+```
+
+Emit one entry per branch-target ruleset. This is data, not a finding — do not bin it by severity. Step 3 matches `required_checks` against the Workflow Trigger Map and emits the "BLOCKED-PR" finding when a check is required on a branch no workflow triggers on.
 ```
 
 #### Subagent D — Package Manager auditor
@@ -172,9 +222,10 @@ Read whichever of these exist: `package.json`, `pnpm-workspace.yaml`, `.npmrc`, 
    - **bun:** does NOT execute lifecycle scripts by default. `trustedDependencies` is an opt-in allowlist, with a built-in default allowlist for known-safe packages. The finding is about manual trust grants: any entry in `trustedDependencies` that is NOT in Bun's default allowlist and lacks a justification comment = medium. Absence of `trustedDependencies` and `ignoreScripts` is NOT a finding — defaults are safe.
 4. `minimumReleaseAge` floor — pnpm: ≥ 4320 (minutes; 3 days); v11 default is 1440 (24h); below 4320 = medium (policy). bun: ≥ 259200 (seconds; 3 days); default null = high (policy). Note the unit difference — pnpm minutes, bun seconds.
    - Additionally for pnpm: pin `minimumReleaseAgeStrict: true` defensively (defaults to `true` only when `minimumReleaseAge` is configured). Note that `minimumReleaseAgeIgnoreMissingTime: true` (default) silently skips the gate for packages whose registry omits the `time` field — common on private registries. Recommend setting it to `false` only after confirming the internal registry returns `time`.
-5. `minimumReleaseAgeExclude` — if scoped internal packages (`@your-org/*`) appear in the lockfile, the exclude list should cover them. pnpm field is singular (`minimumReleaseAgeExclude`); bun field is plural (`minimumReleaseAgeExcludes`).
-6. Scope → registry mapping — for any `@scope/*` package in the lockfile, `registries:` (pnpm) or `[install.scopes]` (bun) must map the scope to the correct registry. Missing mapping = dependency confusion vector (high).
+5. `minimumReleaseAgeExclude` — **owned scopes only.** The orchestrator has substituted `{{ORG_PREFIX}}` (may be empty) and `{{ALREADY_COVERED_SCOPES}}` into this prompt. If `{{ORG_PREFIX}}` is non-empty, the owned scope patterns are `@{{ORG_PREFIX}}/*` AND `@{{ORG_PREFIX}}-*/*`. For each owned scope that appears in the lockfile AND is NOT in `{{ALREADY_COVERED_SCOPES}}`, flag it as a finding (medium). **Never flag non-owned scopes** — the release-age gate is correctly applied to them. pnpm field is singular (`minimumReleaseAgeExclude`); bun field is plural (`minimumReleaseAgeExcludes`).
+6. Scope → registry mapping — **owned scopes only.** Same gating as item 5: only flag owned scopes (matching `@{{ORG_PREFIX}}/*` or `@{{ORG_PREFIX}}-*/*`) in the lockfile that lack an entry in `registries:` (pnpm) or `[install.scopes]` (bun). Missing mapping for an owned scope = dependency-confusion vector (high). Public scopes (`@types/*`, `@biomejs/*`, etc.) are never findings here.
 7. Default downgrades — flag any explicit override of safe defaults: pnpm `verifyStoreIntegrity: false`, `blockExoticSubdeps: false`, `strictDepBuilds: false` — all high. Do NOT flag `enablePrePostScripts: true` (default): it governs `pnpm foo` → `prefoo`/`postfoo` in the current project's scripts, not dependency build scripts.
+8. Vuln-override hygiene — if `overrides:` in `pnpm-workspace.yaml` (or `pnpm.overrides` in `package.json`) contains **10 or more** entries whose left-hand side uses range operators (`<`, `<=`, `>=`, `=`, or version range syntax like `name@<x.y.z` / `name@>=x.y.z <a.b.c`), surface it in the "passes" section as a positive signal: `Vuln-override block: N CVE-shape pins in overrides:`. Do NOT validate the overrides against current CVE data — that is Dependabot's job. Below the threshold, emit nothing.
 
 Read the full checklist at `{{SKILL_DIR}}/references/package-manager-checklist.md` — it contains exact field names, units, defaults, the policy / exploitable distinction, and fix examples for both pnpm and bun.
 
@@ -183,10 +234,29 @@ Report findings grouped by severity, same format as the Actions audit. For each 
 
 ### Step 3: Aggregate Findings
 
-Wait for all dispatched subagents. Merge into a single report:
+Wait for all dispatched subagents. Apply the four aggregation rules below, then assemble the report.
+
+**Aggregation rule 1 — Pin-status cross-check (A ↔ C).** Reconcile Subagent A's pin findings with Subagent C's `sha_pinning_required` report:
+
+- If A reports zero pin findings (every `uses:` is SHA-pinned) AND C reports `sha_pinning_required: false` → emit **high**: "All actions are SHA-pinned but `sha_pinning_required` is off. Enable to prevent regression: `gh api -X PUT /repos/<owner>/<repo>/actions/permissions -F sha_pinning_required=true`."
+- If A has pin findings AND C reports `sha_pinning_required: false` → do NOT additionally flag the setting. The issue is the unpinned actions (already in A's report). In "Already hardened" add: "`sha_pinning_required` cannot be enabled until A's pin findings are fixed — re-run the audit afterward."
+- If C reports `sha_pinning_required: true` → "Already hardened: `sha_pinning_required` enforced."
+
+**Aggregation rule 2 — Required-status-check coverage (A ↔ C).** For each `{ruleset_id, protected_branches, required_checks}` entry in C's `RULESET_REQUIRED_CHECKS` map, for each `required_check` in the list, for each `protected_branch`:
+
+- Find workflow(s) in A's `WORKFLOW_TRIGGER_MAP` whose `name:` matches `required_check`.
+- If no workflow matches the name, OR if none of the matching workflows trigger on `protected_branch` (check both `push_branches` and `pr_branches`; treat `*` as a match for any branch), emit **high**: "Required check `<check>` on branch `<branch>` (ruleset `<id>`) is not produced by any workflow triggering on that branch. PRs to `<branch>` will be permanently BLOCKED. Either add the branch to the workflow's `on.push.branches` / `on.pull_request.branches`, or remove the check from the ruleset's `required_status_checks`."
+
+**Aggregation rule 3 — Pass collation.** Each subagent's report ends with a "passes" / "already hardened" section. Concatenate these into the report's `### Already hardened` section, prefixed with the source subagent: `[Actions] persist-credentials: false on all checkouts`, `[Repo Settings] secret_scanning enabled`, `[Package Manager] minimumReleaseAge: 4320 with Strict: true`, etc. For each subagent that was skipped per Step 1 routing, instead add: `[<area>] Skipped — <reason>` (e.g., `[Release] Skipped — no release.yml and no publishConfig in package.json`).
+
+**Aggregation rule 4 — Sequencing hints.** If any finding pair has a "fix A before C is actionable" relationship (rule 1's second case is the canonical example; the rule-2 BLOCKED-PR finding depends on the ruleset existing in the first place; D's `allowBuilds` fix may break installs until paired with strictDepBuilds), surface the ordering in a final `### Sequencing` section. Use this format: `1. Apply [Actions] findings → 2. Re-run audit → 3. Apply [Repo Settings] `sha_pinning_required` recommendation.` Render the section only if at least one sequencing relationship exists.
+
+**Report skeleton:**
 
 ```markdown
 ## Security Audit Report
+
+<one-line summary: areas audited, areas skipped>
 
 ### Critical
 - ...
@@ -201,27 +271,97 @@ Wait for all dispatched subagents. Merge into a single report:
 - ...
 
 ### Already hardened
-- ...
+- [Actions] ...
+- [Release] Skipped — <reason>
+- [Repo Settings] ...
+- [Package Manager] ...
+
+### Sequencing
+1. ...
+2. ...
 ```
 
-Order by severity. Keep file:line references intact. The "Already hardened" section is important — it tells the user what is already good and prevents over-prescribing.
+Sort findings within each severity bin worst-first (most exploitable first; policy findings after CVE-rated findings of the same severity). Keep file:line / API-path references intact from each subagent's report.
 
-### Step 4: Offer Fix Approach
+### Step 4: Hand Off Findings (Tasks + Planned Changes Report)
 
-Do not auto-apply. When `AskUserQuestion` is available, use it. Otherwise present the same options in normal chat as a numbered list and wait for the user's reply:
+This skill audits and reports; it does not mutate. Do not edit files, do not run `gh api` writes, do not create GitHub issues, do not invoke `/build:fix-findings` / `/plan:issue-flow` / any other skill on the user's behalf. Step 4 produces two artifacts side by side — a TaskList for downstream skills to consume, and a Planned Changes report for the user to read — and stops.
 
-1. `Apply fixes now` (Recommended) — work through findings interactively
-2. `Open one issue per finding` — invoke `plan:issue-flow` per finding
-3. `Open a single tracking issue` — bundle into one issue
+When `AskUserQuestion` is available, use it. Otherwise present the same options in normal chat as a numbered list and wait for the user's reply:
+
+1. `Emit tasks + planned-changes report` (Recommended) — one TaskCreate per finding, plus the report below
+2. `Emit tasks flagged for issue filing` — same as 1, with `intended_action: file_issue` metadata
+3. `Emit a single summary task` — one TaskCreate summarising all findings, suitable for a single tracking issue
 4. `Skip — just the report`
 
-If the user picks Apply Now and SHA-pinning is in the findings, prefer `pinact run` over manual edits.
+**All four options render the Planned Changes report** (so the user always sees the change plan and revert commands). Options 1–3 additionally emit tasks.
+
+#### Task emission rules (options 1, 2, 3)
+
+- One `TaskCreate` per finding from the Step 3 report (options 1, 2). For option 3, emit a single task whose description is a numbered list of all findings.
+- `subject`: short finding title (e.g., "Pin `actions/checkout@v6` to SHA").
+- `description`: severity (including any `(policy)` qualifier), source subagent (`[Actions]`, `[Release]`, `[Repo Settings]`, `[Package Manager]`), file:line or API path, the exact remediation snippet from the report.
+- `metadata`: minimum set — `severity`, `source_area` (`actions` / `release` / `repo_settings` / `package_manager`), `change_kind` (`code` for file edits / `server_state` for `gh api` writes), `intended_action` (`fix` for option 1, `file_issue` for option 2, `summary` for option 3). Keep metadata light — TaskList is a handoff queue, not the audit's persistence layer.
+- **Sequencing**: for any pair from Step 3's `### Sequencing` section, set the downstream task's `addBlockedBy` to the upstream task's ID. The fix-findings flow respects these dependencies natively.
+- Emit tasks worst-first within each severity, matching the report's order.
+
+#### Planned Changes report
+
+Render this directly in the chat output, grouped by source area. It is the audit's plan-of-record, not an execution transcript — phrasing matters. Use `Recommended command:` and `Revert command:` (never `Applied:`) because the audit does not observe what actually runs. Code edits get one line; server-state changes get three (title + recommended + revert).
+
+```markdown
+## Security Audit — Planned Changes
+
+Plan-of-record (not an execution transcript). Render of the Step 3 findings as code edits and `gh api` calls a downstream skill or human will apply.
+
+### [Actions] (N planned changes)
+- `.github/workflows/ci.yml` — pin 6 `uses:` lines via `pinact run`
+- `.github/workflows/release.yml` — add workflow-level `permissions: contents: read`
+- `.github/workflows/release.yml` — set `persist-credentials: false` on 1 `actions/checkout` step
+
+### [Release] (N planned changes)
+- (or: "No changes planned — audit area skipped per Step 1 routing")
+
+### [Repo Settings] (N planned changes)
+- Set `default_workflow_permissions: read` on <owner>/<repo>
+  - Recommended command: `gh api -X PUT /repos/<owner>/<repo>/actions/permissions/workflow -f default_workflow_permissions=read -F can_approve_pull_request_reviews=false`
+  - Revert command: `gh api -X PUT /repos/<owner>/<repo>/actions/permissions/workflow -f default_workflow_permissions=write -F can_approve_pull_request_reviews=true`
+- Enable secret scanning on <owner>/<repo>
+  - Recommended command: `gh api -X PATCH /repos/<owner>/<repo> -F security_and_analysis[secret_scanning][status]=enabled`
+  - Revert command: `gh api -X PATCH /repos/<owner>/<repo> -F security_and_analysis[secret_scanning][status]=disabled`
+
+### [Package Manager] (N planned changes)
+- `pnpm-workspace.yaml` — add `minimumReleaseAge: 4320`, `minimumReleaseAgeStrict: true`
+- `package.json` — add `packageManager: "pnpm@11.0.0"`
+
+### Deferred or skipped (informational)
+- [Actions] `pull_request_target` finding in `ci-fork.yml` — flagged in Step 3 as `informational`, no fix planned
+- [Repo Settings] `sha_pinning_required` — depends on `[Actions]` pin changes per Step 3 sequencing; re-run audit after applying those before changing this setting
+```
+
+**Format rules:**
+- Every area gets a section, even if empty (so the user can see at a glance which areas had nothing to apply or were skipped).
+- Code edits are one line: file path + short description. No `Recommended command:` block — the edit content is documented in the task description if a tool needs it.
+- Server-state changes are three lines: title, `Recommended command:`, `Revert command:`. Both commands are the literal `gh api` invocations from the Step 3 finding's remediation snippet.
+- A `### Deferred or skipped` section at the end captures anything the audit chose not to fix (e.g., `informational` items, sequencing-blocked items). Nothing is silently dropped.
+
+#### Handoff line
+
+After rendering the report and emitting tasks, print one of:
+
+- Option 1: "N tasks emitted. Run `/build:fix-findings` to walk through them."
+- Option 2: "N tasks emitted with `file_issue` flag. Run `/plan:issue-flow` per task when you're ready."
+- Option 3: "Single summary task emitted. Run `/plan:issue-flow` to file it as a tracking issue."
+- Option 4: "No tasks emitted; the report above is the full audit output."
+
+Then stop. Do not invoke any of those skills yourself.
 
 ## Quick Reference
 
 | Finding | Severity | Fix |
 |---|---|---|
-| `uses: foo/bar@v1` (floating tag) | high | `pinact run` |
+| `uses: foo/bar@v1` (version tag) | high | `pinact run` |
+| `uses: foo/bar@master` / `@main` / `@latest` (branch ref) | critical | `pinact run` after reviewing the action's recent commits — branch can change on every merge |
 | Workflow without `permissions:` | medium | Add `permissions: contents: read` at workflow level |
 | `actions/checkout` without `persist-credentials: false` (no `git push`) | medium | Add `with: persist-credentials: false` |
 | `pull_request_target` + checkout of PR ref | critical | Split trusted/untrusted parts; remove PR checkout |

@@ -185,48 +185,59 @@ Bun does not currently expose `Strict` or `IgnoreMissingTime` equivalents — th
 
 **Common Mistake:** copying pnpm's 4320 into bun's setting. 4320 seconds = 72 minutes. That is approximately no protection at all.
 
-## 5. minimumReleaseAgeExclude
+## 5. minimumReleaseAgeExclude (owned scopes only)
 
-The release-age gate blocks new versions of every package equally, including the team's own internal libraries. For workspaces with internal scoped packages (`@your-org/*`), this means every release of an internal lib is invisible to consuming repos for 3 days. Use the exclude list to bypass the gate for trusted scopes.
+The release-age gate blocks new versions of every package equally, including the team's own internal libraries. For workspaces that publish their own scoped packages, every release of an internal lib is invisible to consumers for 3 days. The exclude list bypasses the gate for trusted scopes — but **only for the team's own org scopes**, never for arbitrary `@scope/*` deps the audit happens to see.
+
+**Owned scope detection.** The audit defines "owned scope" deterministically:
+
+1. Read `name:` from the workspace root `package.json`. If it is `@<prefix>/<pkg>`, the owned prefix is `<prefix>`.
+2. Owned scope patterns are `@<prefix>/*` AND any scope matching `@<prefix>-*/*` (so for `enonic`, both `@enonic/*` and `@enonic-types/*`, `@enonic-cli/*` are owned).
+3. Already-covered scopes are anything appearing in `minimumReleaseAgeExclude` (pnpm), `minimumReleaseAgeExcludes` (bun), `registries:`/`[install.scopes]`, or `@scope:registry=` in `.npmrc` — these are user-approved and never flagged.
+
+If the workspace root has no scoped name, no owned scopes are detected and items 5–6 emit nothing. Maximum security default: every `@scope/*` package in the lockfile stays under the release-age and dependency-confusion gates.
+
+**Known limitation — owned-scope derivation is narrow by design.** Deriving owned scopes only from `package.json#name` gives clean false-negatives in three cases:
+
+- **Monorepos that publish to multiple unrelated scopes** (e.g., `@my-org/*` for libs and `@my-org-internal/*` for tooling) — only the root-package scope is detected.
+- **Repos mid-migration between org names** — the old scope's packages may still be in the lockfile but the root name has moved to the new scope.
+- **Repos with an unscoped root name that legitimately own a scope** (e.g., a starter repo that publishes scoped libs from `packages/*`).
+
+In those cases the audit will miss owned scopes and recommend nothing for them. The recovery path is intentional and lightweight: the user manually adds the missing scopes to `minimumReleaseAgeExclude` and `registries:`/`[install.scopes]`. Once present in those configs, the next audit run picks them up as already-covered scopes and the false-negative goes away. The audit accepts this trade-off to avoid the much louder false-positive of flagging every `@types/*` / `@biomejs/*` scope as needing registry config.
 
 ### 5a. pnpm
 
-**Detection:** if `pnpm-lock.yaml` references a `@scope/*` pattern that matches a private/internal registry (item 6), `pnpm-workspace.yaml` should set `minimumReleaseAgeExclude` to include that scope.
+**Detection:** for each owned scope pattern with packages in `pnpm-lock.yaml`, check that `pnpm-workspace.yaml` includes it in `minimumReleaseAgeExclude`.
 
 ```yaml
 # pnpm-workspace.yaml
 minimumReleaseAge: 4320
 minimumReleaseAgeExclude:
-  - '@your-org/*'
-  - some-fast-moving-but-trusted-pkg
-  - 'react@^19.0.0'   # also accepts name@range
+  - '@enonic/*'
+  - '@enonic-types/*'
+  - 'react@^19.0.0'   # also accepts name@range; only add public packages here intentionally
 ```
 
-**Severity:** **medium** if internal scope is present in lockfile without a matching exclude entry; **pass** otherwise.
+**Severity:** **medium** if an owned scope has packages in the lockfile but no matching exclude entry; **pass** otherwise. Non-owned scopes never trigger this finding.
 
-**Why:** Without the exclude, the team will paper over the gate by lowering `minimumReleaseAge` repo-wide or by manually deleting the lockfile entry each time — both undo item 4.
+**Why:** Without the exclude, the team will paper over the gate by lowering `minimumReleaseAge` repo-wide or by manually deleting the lockfile entry each time — both undo item 4. The "owned scope" gating prevents accidental allowlisting of every dep that happens to share an `@scope/` prefix with public packages.
 
 ### 5b. bun
 
-**Field is plural:** `install.minimumReleaseAgeExcludes` (note the `-s`).
+**Field is plural:** `install.minimumReleaseAgeExcludes` (note the `-s`). Same owned-scope gating as pnpm.
 
 ```toml
 # bunfig.toml
 [install]
 minimumReleaseAge = 259200
-minimumReleaseAgeExcludes = ["@your-org/*", "@types/bun"]
+minimumReleaseAgeExcludes = ["@enonic/*", "@enonic-types/*"]
 ```
 
-Same severity and fix logic as pnpm.
+## 6. Registry Scope Mapping (Dependency Confusion, owned scopes only)
 
-## 6. Registry Scope Mapping (Dependency Confusion)
+Same gating as item 5: the audit only flags **owned scopes** (matching `@<prefix>/*` or `@<prefix>-*/*` from the workspace's own `package.json` name) that lack a registry mapping. Public scopes like `@types/*` are never findings here — they correctly resolve from the default registry.
 
-**Detection:** if `pnpm-lock.yaml` or `bun.lock` references any `@scope/*` package, the workspace config should map that scope to a specific registry. A missing mapping means pnpm/bun falls back to the public npm registry — the classic dependency confusion vector.
-
-```bash
-# Surface scoped deps from lockfiles
-grep -hoE '@[a-z0-9-]+/[a-z0-9-]+' pnpm-lock.yaml bun.lock 2>/dev/null | sort -u
-```
+If the workspace has no scoped name, this item emits nothing.
 
 ### 6a. pnpm
 
@@ -235,12 +246,12 @@ grep -hoE '@[a-z0-9-]+/[a-z0-9-]+' pnpm-lock.yaml bun.lock 2>/dev/null | sort -u
 ```yaml
 registries:
   default: https://registry.npmjs.org/
-  '@your-org': https://npm.your-org.example/
+  '@enonic': https://npm.enonic.example/
 ```
 
-**Severity:** **high** if internal-looking scope is in the lockfile and no mapping exists; **pass** otherwise.
+**Severity:** **high** if an owned scope has packages in the lockfile and no mapping exists; **pass** otherwise.
 
-**Why:** A 2021 dependency-confusion attack on Apple, PayPal, and others worked by publishing a public package with the same name as an internal scoped package. Without explicit scope→registry mapping, package managers may resolve from whichever registry returns first — usually the public one.
+**Why:** A 2021 dependency-confusion attack on Apple, PayPal, and others worked by publishing a public package with the same name as an internal scoped package. Without explicit scope→registry mapping for the team's own scopes, package managers may resolve from whichever registry returns first — usually the public one, which the attacker controls.
 
 ### 6b. bun
 
@@ -249,10 +260,10 @@ bun uses the historical `.npmrc` or `bunfig.toml` `[install.scopes]` for per-sco
 ```toml
 # bunfig.toml
 [install.scopes]
-"@your-org" = { url = "https://npm.your-org.example/", token = "$NPM_TOKEN_YOUR_ORG" }
+"@enonic" = { url = "https://npm.enonic.example/", token = "$NPM_TOKEN_ENONIC" }
 ```
 
-Same severity and fix logic.
+Same severity and owned-scope gating as pnpm.
 
 **Companion:** verify the private registry actually requires auth and rejects anonymous reads, otherwise the mapping is cosmetic.
 
@@ -280,6 +291,25 @@ pnpm and bun ship sensible defaults for several supply-chain settings. Audit onl
 **Note on `enablePrePostScripts`:** the pnpm setting `enablePrePostScripts: true` is the default and is sometimes mistaken for a dependency-script control. It is not. It governs whether `pnpm foo` automatically runs `prefoo` / `postfoo` from the **current project's** `package.json` scripts — i.e., user-defined shell-script hooks around `pnpm run` invocations. Dependency build scripts are gated by `allowBuilds` + `strictDepBuilds` (item 3a). Do not treat `enablePrePostScripts` as a supply-chain finding.
 
 **Why:** Most teams won't ever set `verifyStoreIntegrity: false`. When they do, it's usually a stale workaround for a one-off CI issue from years ago, and nobody remembers to flip it back.
+
+## 8. Vuln-Override Hygiene (positive signal)
+
+Mature workspaces force-bump transitive deps past known CVE ranges using `overrides:` (pnpm-workspace.yaml top-level, or `package.json#pnpm.overrides`). A long override list is a strong indicator of active supply-chain maintenance — surface it as a positive signal, not silence.
+
+**Detection:** count entries whose left-hand side uses range operators. Plain `lodash: '^4.18.0'` is a transitive-dep alignment; `lodash@<4.17.23: '>=4.18.0'` is a CVE-shape pin (it overrides specifically the vulnerable range).
+
+```bash
+yq -r '.overrides // {} | to_entries | .[] | .key' pnpm-workspace.yaml 2>/dev/null \
+  | grep -cE '[<>=]|@[<>=]'
+```
+
+**Threshold:**
+- ≥ 10 CVE-shape entries → emit in the "passes" / "Already hardened" section: `Vuln-override block: N CVE-shape pins in overrides:`.
+- < 10 entries → no signal in either direction. A handful of overrides is normal noise.
+
+**What this is NOT.** The audit does not validate the overrides against current CVE databases. That is Dependabot's job — it watches the override list, files PRs to bump it, and reports vulnerable versions still in resolution. The audit's job here is just to recognize that the team has a maintained block, so the report doesn't read identically for "40 careful CVE pins" and "no overrides at all."
+
+**Companion:** `release-checklist.md` item 7 (`dependabot.yml` ecosystem coverage). The override block is only useful when paired with Dependabot watching the npm ecosystem.
 
 ## See Also
 
