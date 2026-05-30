@@ -62,6 +62,12 @@ export const Interactive: Story = {
 export const FocusNav: Story = {name: 'Behavior / Focus Nav', render: () => <Component />};
 ```
 
+## Styling
+
+When the project uses Tailwind, style stories with utility classes, not inline `style` objects, and prefer the default scale over arbitrary values (`w-2xl`, not `w-[700px]`). Otherwise follow the project's existing styling approach.
+
+Exception: fixture CSS simulating the embedding page's stylesheet — keep as a raw `<style>` block with a comment.
+
 ## Story wrapper
 
 When the story benefits from explanation (keyboard interaction, multi-variant comparison), wrap with the standard frame:
