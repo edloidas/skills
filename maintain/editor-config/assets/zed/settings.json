@@ -3,30 +3,41 @@
   "prettier": {
     "allowed": false
   },
+  "lsp": {
+    "oxlint": {
+      "binary": {
+        "path": "node_modules/vite-plus/bin/oxlint",
+        "arguments": ["--lsp"]
+      }
+    }
+  },
   "languages": {
     "JavaScript": {
-      "formatter": "language_server"
+      "formatter": { "language_server": { "name": "oxfmt" } }
     },
     "TypeScript": {
-      "formatter": "language_server"
+      "formatter": { "language_server": { "name": "oxfmt" } }
     },
     "TSX": {
-      "formatter": "language_server"
+      "formatter": { "language_server": { "name": "oxfmt" } }
     },
     "Svelte": {
-      "formatter": "language_server"
+      "formatter": { "language_server": { "name": "oxfmt" } }
     },
     "JSON": {
-      "formatter": "language_server"
+      "formatter": { "language_server": { "name": "oxfmt" } }
     },
     "JSONC": {
-      "formatter": "language_server"
+      "formatter": { "language_server": { "name": "oxfmt" } }
+    },
+    "CSS": {
+      "formatter": { "language_server": { "name": "oxfmt" } }
     },
     "YAML": {
-      "formatter": "language_server"
+      "formatter": { "language_server": { "name": "oxfmt" } }
     },
     "Markdown": {
-      "formatter": "language_server"
+      "formatter": { "language_server": { "name": "oxfmt" } }
     }
   }
 }
