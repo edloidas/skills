@@ -184,7 +184,7 @@ Code review, cleanup, critical review board, and quality improvement skills.
 | Skill                                                       | Description                                                               | Agent         |
 | ----------------------------------------------------------- | ------------------------------------------------------------------------- | ------------- |
 | [changes-review](./review/changes-review/)                  | Deep logic analysis of code changes                                       | Claude, Codex |
-| [code-cleanup](./review/code-cleanup/)                      | Post-implementation cleanup of comments and artifacts                     | Claude, Codex |
+| [code-cleanup](./review/code-cleanup/)                      | Trim AI comment noise — restated/rationale comments — keep real gotchas    | Claude, Codex |
 | [consilium](./review/consilium/)                            | Critical review board — up to 6 reviewers (2 core + 4 on-demand)         | Claude        |
 | [react-review](./review/react-review/)                      | Review React code for effects, conventions, and patterns                  | Claude, Codex |
 | [review-comments](./review/review-comments/)                | Analyze PR review comments — triage into fix/skip with reasoning          | Claude, Codex |
