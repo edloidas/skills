@@ -51,7 +51,7 @@ RULES_SOURCE="$(dirname "$SCRIPT_DIR")/assets/rules"
 [[ -d "$RULES_SOURCE" ]] || { echo "Canonical rules not found at $RULES_SOURCE" >&2; exit 1; }
 
 # Canonical rule set — the eight files we manage.
-RULE_FILES=(comments.md frontend-structure.md radix.md react.md storybook.md tailwind.md testing.md three.md typescript.md)
+RULE_FILES=(comments.md frontend-structure.md kotlin.md radix.md react.md storybook.md tailwind.md testing.md three.md typescript.md)
 
 # ---- Storage detection ----
 CLAUDE_RULES="$TARGET/.claude/rules"
@@ -151,11 +151,16 @@ uses_tailwind()   { has_dep '^(tailwindcss|@tailwindcss/)'; }
 uses_vitest()     { has_dep '^vitest$'; }
 uses_three()      { has_dep '^(three|@react-three/)'; }
 uses_react_like() { has_dep '^(react|preact)$'; }
+uses_kotlin() {
+  find "$TARGET/src" -name '*.kt' -print -quit 2>/dev/null | grep -q . \
+    || grep -q 'kotlin(' "$TARGET/build.gradle.kts" 2>/dev/null
+}
 
 applies() {
   case "$1" in
     comments.md|typescript.md) uses_typescript ;;
     frontend-structure.md) uses_react_like ;;
+    kotlin.md)    uses_kotlin ;;
     react.md)     uses_react ;;
     radix.md)     uses_radix ;;
     storybook.md) uses_storybook ;;

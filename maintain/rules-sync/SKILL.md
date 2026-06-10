@@ -33,7 +33,7 @@ Trigger phrases: "rules sync", "rules-sync", "sync rules", "init rules",
 
 ## Canonical Set
 
-Nine rule files, all stored in `assets/rules/`:
+Ten rule files, all stored in `assets/rules/`:
 
 | File | Applies when |
 |------|--------------|
@@ -46,6 +46,7 @@ Nine rule files, all stored in `assets/rules/`:
 | `tailwind.md` | `tailwindcss` or `@tailwindcss/*` in deps |
 | `testing.md` | `vitest` in deps (rule is Vitest-specific) |
 | `three.md` | `three` or `@react-three/*` in deps |
+| `kotlin.md` | `.kt` files under `src/`, or `kotlin(...)` plugin in `build.gradle.kts` |
 
 A rule is **applicable** when its detection check passes. Detection runs only
 for rules that need to be **added** — rules already present in the target are
