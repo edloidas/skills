@@ -68,9 +68,9 @@
       "group": "review",
       "name": "edloidas-review",
       "displayName": "Edloidas Review",
-      "description": "A curated Codex-safe review bundle for changeset analysis, React analysis, PR feedback triage, and post-change cleanup.",
-      "shortDescription": "Changes review, React review, triage, and cleanup.",
-      "longDescription": "Install the Codex-ready review bundle from edloidas/skills for changeset review, React code review, review-comment triage, and post-implementation cleanup.",
+      "description": "A curated Codex-safe review bundle for changeset analysis, React analysis, PR feedback triage, test quality, and post-change cleanup.",
+      "shortDescription": "Changes review, React review, triage, test quality, and cleanup.",
+      "longDescription": "Install the Codex-ready review bundle from edloidas/skills for changeset review, React code review, review-comment triage, test-suite quality work, and post-implementation cleanup.",
       "category": "Coding",
       "websiteURL": "https://github.com/edloidas/skills",
       "keywords": [
@@ -80,13 +80,16 @@
         "cleanup",
         "diff",
         "react",
-        "pull-request"
+        "pull-request",
+        "tests",
+        "test-quality"
       ],
       "skills": [
         "review/changes-review",
         "review/code-cleanup",
         "review/react-review",
-        "review/review-comments"
+        "review/review-comments",
+        "review/test-quality"
       ]
     },
     {

@@ -189,6 +189,7 @@ Code review, cleanup, critical review board, and quality improvement skills.
 | [react-review](./review/react-review/)                      | Review React code for effects, conventions, and patterns                  | Claude, Codex |
 | [review-comments](./review/review-comments/)                | Analyze PR review comments — triage into fix/skip with reasoning          | Claude, Codex |
 | [spec-extractor](./review/spec-extractor/)                  | Extract a behavioral spec from a codebase (1 file up to 500+ files)       | Claude        |
+| [test-quality](./review/test-quality/)                      | Write behavior-pinning tests; audit, fix, or delete bad ones             | Claude, Codex |
 
 ### Audit
 

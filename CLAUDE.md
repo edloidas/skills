@@ -62,7 +62,7 @@ plugins/
 **Plugin groups:**
 - `plan/` — Issue drafting, analysis, triage, and full issue lifecycle (4 skills)
 - `build/` — Git worktree management, conflict resolution, commit summaries, quick commits, and findings fixes (5 skills)
-- `review/` — Code review, cleanup, critical review board, and quality improvement (5 skills)
+- `review/` — Code review, cleanup, test quality, critical review board, and quality improvement (7 skills)
 - `audit/` — CI, script, security, skill, workspace, and Three.js auditing (6 skills)
 - `maintain/` — Label sync, instruction file sync, permissions cleanup, lint migration, comment auditing, agent rule sync, editor config sync, and session retros (8 skills)
 - `ship/` — Release workflows and deployment tools (2 skills)
