@@ -7,7 +7,7 @@ description: >
   Claude Code and built-in subagents in Codex.
 license: MIT
 compatibility: Claude Code, Codex
-allowed-tools: Bash Read Glob Grep Task
+allowed-tools: Bash Read Glob Grep Edit Write Task AskUserQuestion
 argument-hint: "[commits, path, range, or empty] [--no-build] [--no-issue]"
 metadata:
   author: edloidas
@@ -260,6 +260,78 @@ Use when: Style inconsistency, convention violation, missing helper
 
 Complexity: Low · Medium · High
 
+## Phase 4: Post-Review Actions
+
+After presenting the review, offer next actions. **Skip this phase entirely when there are no findings** — trivial or clean reviews just end.
+
+In Claude Code, prompt with `AskUserQuestion`. Where the host cannot prompt interactively (e.g. Codex), list the same options as plain text and act on the user's reply.
+
+**Top-level prompt (single choice):**
+
+- **Fix findings** — apply fixes to the working tree
+- **Comment in PR** — draft inline review comments on the branch's PR. Offer this option only when the issue-context pass resolved a PR; otherwise omit it.
+- **Skip** — stop; the user takes it from here
+
+Keep it single-choice. The user can re-run the skill to take another action.
+
+### Fix findings
+
+Build the severity options **adaptively from the tiers present this run** — never offer an empty bucket:
+
+- `Critical only` — when any critical exists
+- `Critical + Moderate` — when both exist
+- `Everything` — all present tiers
+- `Pick numbers…` — the user names finding numbers from the priority table
+
+Apply the selected fixes, then:
+- run the repo-native verify command (skip under `--no-build`)
+- report what changed and the check result
+
+### Comment in PR
+
+Resolve the PR from the issue-context pass (Phase 1), then:
+
+1. **Target a pending review.** If a pending review by the current user already exists on the PR, append to it; otherwise create a new pending review. **Leave it UNSUBMITTED** — the user reviews and submits.
+2. **Choose which findings to comment.** If the user already named findings or severities in their request to this skill, honor that without asking. Otherwise prompt, defaulting to: **Critical preselected (always include), Moderate optional, Suggestions off by default**, plus an option to specify finding numbers.
+3. **Write each comment** anchored to its `file:line`, following `## PR Comment Style`. Every comment body **starts with `✴️ `**.
+4. Report the pending review link and that it is left unsubmitted.
+
+Post with the host's PR tooling — e.g. `gh api .../pulls/{n}/reviews` to create a pending review, or GraphQL `addPullRequestReviewThread` against an existing pending review's node id to append to it.
+
+## PR Comment Style
+
+Applies to every PR comment the skill drafts. Each body starts with `✴️ ` — the only emoji allowed — so generated comments are easy to spot.
+
+**Order — what, then why, then fix:**
+
+1. **What** — the problem, in plain language: what happens.
+2. **Why** — the impact: why it matters (e.g. "makes the UX worse", "nothing gets seeded").
+3. **Fix** — a suggestion at the end, pointing to the specific symbol, line, or file.
+
+Write it as flowing prose, not labeled "Problem / Impact / Fix" scaffolding.
+
+**Rules:**
+
+- Be concise; don't inflate. Calibrate severity honestly ("not a hard error, but worse UX"). Length follows the finding — short by default, longer only when it needs it.
+- Direct, but never blame the developer. Assuming an oversight is fine; no fixed phrase is required.
+- Phrase asks neutrally: "Please implement…", "we need to…", or "`X` should…". Use "we / our" for shared conventions where it fits, but don't force it.
+- Backtick all code, symbols, and file names. You may link files and issues as markdown: `[text](url)`.
+- No emojis in the body beyond the leading `✴️`. Tone: collaborative, direct, no fluff.
+
+**Examples:**
+
+Critical — a bug that blocks the user:
+
+> ✴️ The dialog closes before `send()` resolves. If the request throws, the user can't resubmit and the error is lost — not a hard error, but worse UX. Move `dialog.close()` after the request succeeds.
+
+Moderate — fragile behavior:
+
+> ✴️ `Promise.all` rejects on the first failed request, so every successfully-fetched result is thrown away too and nothing gets seeded. This looks like an oversight — please collect the rest (`Promise.allSettled`) and handle the failures.
+
+Suggestion — convention:
+
+> ✴️ Async `sendAndParse` sits in a store file, which goes against `stores.md`. Async work should move to a service that subscribes and populates the fact store, like the other services do.
+
 ## Rules
 
 - **Run tooling and conventions first** - Get both reports before logic analysis
@@ -271,7 +343,8 @@ Complexity: Low · Medium · High
 - **Diff line-by-line** - "Similar" is not "same"
 - **Verify usage** - Variables must be used in logic
 - **Flag differences** - Don't rationalize them
-- **Present findings first** - User approves before fixes
+- **Present findings first** - Output the review, then run Phase 4 to offer actions (fix or PR comments). Never fix or comment before the user chooses.
+- **Mark drafted PR comments** - Every comment the skill writes starts with `✴️ ` and follows PR Comment Style
 
 **Anti-pattern:** Rationalization
 
