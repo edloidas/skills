@@ -135,7 +135,8 @@
         "labels",
         "sync",
         "lint",
-        "comments"
+        "comments",
+        "processes"
       ],
       "skills": [
         "maintain/claude-md-sync",
@@ -143,7 +144,8 @@
         "maintain/editor-config",
         "maintain/labels-sync",
         "maintain/lint-sync",
-        "maintain/rules-sync"
+        "maintain/rules-sync",
+        "maintain/stale-process-cleanup"
       ]
     },
     {

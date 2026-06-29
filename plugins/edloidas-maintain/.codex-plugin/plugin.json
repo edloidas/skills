@@ -16,7 +16,8 @@
     "labels",
     "sync",
     "lint",
-    "comments"
+    "comments",
+    "processes"
   ],
   "skills": "./skills/",
   "interface": {

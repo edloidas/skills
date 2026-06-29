@@ -1,0 +1,6 @@
+interface:
+  display_name: "Stale Process Cleanup"
+  short_description: "Find and reap orphaned dev servers, LSP, and MCP processes"
+  default_prompt: "Use $stale-process-cleanup to scan for orphaned dev servers, editor LSP servers, and duplicate MCP processes, report which are abandoned vs still live, and kill only the abandoned ones."
+policy:
+  allow_implicit_invocation: false
