@@ -51,9 +51,11 @@ Rebased onto origin/<base> | Force-pushed issue-<number>
 ```
 ### [5] PR Created
 PR #<pr-number>: <title>
-Base: <base> <- issue-<number> | Reviewer: @<login>
+Base: <base> <- issue-<number> | Reviewer: @<login> | Assignees: @<login>, @<login>
 <pr-url>
 ```
+
+Omit `Reviewer:` when none was set. List every assignee on `Assignees:` — `@me` plus the reviewer when one was set.
 
 ### Step 6: Pre-Merge Summary
 

@@ -473,12 +473,28 @@ gh api user --jq .login
 
 If same, skip `--reviewer` flag (GitHub doesn't allow self-review).
 
+### Assignees
+
+The PR creator (`@me`) is always an assignee. When a reviewer is set, **also add that reviewer to assignees** — the reviewer and the creator both end up on Assignees.
+
+- **Reviewer set** (and not the creator): assign `@me` **and** the reviewer.
+  - e.g. creator `edloidas` sets `octocat` as reviewer → Reviewers: `octocat`, Assignees: `octocat`, `edloidas`.
+- **No reviewer** (or reviewer is the creator / self-review): assign only `@me`.
+
 ### Create
 
 Use the **Write tool** to save the PR body to `<TMPDIR>/pr-body.md`, then create the PR with `--body-file`. Replace `<TMPDIR>` with the literal absolute path — do NOT use `TMPDIR=` as an env var prefix.
 
+With a reviewer (pass `--assignee` once per assignee):
+
 ```bash
-gh pr create --title "<title>" --body-file <TMPDIR>/pr-body.md --base <base> --assignee @me --reviewer <reviewer>
+gh pr create --title "<title>" --body-file <TMPDIR>/pr-body.md --base <base> --assignee @me --assignee <reviewer> --reviewer <reviewer>
+```
+
+Without a reviewer (or self-review):
+
+```bash
+gh pr create --title "<title>" --body-file <TMPDIR>/pr-body.md --base <base> --assignee @me
 ```
 
 Do NOT use `--body "$(cat <<'EOF'...)"` — the `$()` command substitution triggers a Claude Code safety prompt every time.
