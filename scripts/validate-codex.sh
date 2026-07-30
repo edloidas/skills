@@ -109,7 +109,7 @@ collect_exposed_skills() {
 collect_source_skills() {
   local group
   for group in "${SOURCE_GROUPS[@]}"; do
-    find "$REPO_ROOT/$group" -mindepth 2 -maxdepth 2 -name SKILL.md -print
+    find "$REPO_ROOT/$group/skills" -mindepth 2 -maxdepth 2 -name SKILL.md -print
   done | sort
 }
 
@@ -190,6 +190,41 @@ EOF
   done <<EOF
 $exposed_skills
 EOF
+
+  # Codex, OpenCode, and pi all read .agents/skills/, which carries the Codex-vetted set.
+  # Each non-Codex host additionally reads its own generated tree, so the set that host
+  # really sees is (its own tree ∪ the Codex tree). That union only equals the host's
+  # declared set when the Codex set is a subset of it — otherwise a skill would reach a
+  # host that never declared support for it. Enforce the subset relation here.
+  local host_label
+  local skill_md
+  for host_label in OpenCode Pi; do
+    while IFS= read -r skill_md; do
+      [ -n "$skill_md" ] || continue
+      skill_dir=$(dirname "$skill_md")
+      relative_skill_dir=${skill_dir#"$REPO_ROOT"/}
+
+      if ! skill_has_codex_compatibility "$skill_dir"; then
+        continue
+      fi
+
+      if ! read_frontmatter "$skill_dir" | awk -v label="$host_label" '
+        /^compatibility:/ {
+          sub(/^compatibility: */, "")
+          n = split($0, parts, ",")
+          for (i = 1; i <= n; i++) {
+            gsub(/^[ \t]+|[ \t]+$/, "", parts[i])
+            if (parts[i] == label) { found = 1 }
+          }
+        }
+        END { exit(found ? 0 : 1) }
+      '; then
+        error "Codex-compatible skill '$relative_skill_dir' does not declare $host_label; $host_label reads .agents/skills/ too, so the Codex set must be a subset of every host's set"
+      fi
+    done <<EOF
+$(collect_source_skills)
+EOF
+  done
 
   if [ "$errors" -ne 0 ]; then
     exit 1

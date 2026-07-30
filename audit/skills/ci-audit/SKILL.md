@@ -1,0 +1,331 @@
+---
+name: ci-audit
+description: Analyze GitHub Actions workflows for parallelization, caching, and optimization
+license: MIT
+compatibility: Claude Code, Codex, OpenCode, Pi
+allowed-tools: Bash(fd:*) Read Glob Grep
+---
+
+# CI/CD Audit (GitHub Actions)
+
+## Purpose
+
+Analyze GitHub Actions workflows to:
+- Identify parallelization opportunities
+- Optimize caching strategies
+- Reduce CI run time
+- Improve workflow efficiency
+
+## When to Use This Skill
+
+Use when the user asks to:
+- "Audit my CI/CD"
+- "Optimize GitHub Actions"
+- "Speed up CI"
+- "Review workflow performance"
+- "Parallelize CI jobs"
+
+Trigger phrases: "ci audit", "github actions", "workflow optimize", "ci performance"
+
+## Workflow
+
+### Step 1: Find Workflow Files
+
+```bash
+fd -t f '\.ya?ml$' .github/workflows/
+```
+
+Common workflow files:
+- `ci.yml` - Main CI pipeline
+- `release.yml` - Release/publish workflow
+- `deploy.yml` - Deployment workflow
+- `pr.yml` - Pull request checks
+
+### Step 2: Analyze Job Structure
+
+Look for sequential jobs that could run in parallel.
+
+**Problem: Sequential steps in one job**
+```yaml
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+      - run: npm install
+      - run: npm run typecheck    # Independent
+      - run: npm run lint         # Independent
+      - run: npm run format:check # Independent
+      - run: npm run build        # Depends on above
+      - run: npm run test         # Depends on build
+```
+
+**Solution: Parallel jobs**
+```yaml
+jobs:
+  typecheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          cache: 'npm'
+      - run: npm ci
+      - run: npm run typecheck
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          cache: 'npm'
+      - run: npm ci
+      - run: npm run lint
+
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          cache: 'npm'
+      - run: npm ci
+      - run: npm run format:check
+
+  build:
+    needs: [typecheck, lint, format]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          cache: 'npm'
+      - run: npm ci
+      - run: npm run build
+      - run: npm run test
+```
+
+**Time savings:** Independent jobs run simultaneously instead of sequentially.
+
+**Note on unified check commands:** If your toolchain provides a combined command (e.g., Vite+'s `vp check` handles lint, format, and typecheck together), parallel job splitting adds overhead without benefit. Check whether the toolchain already parallelizes internally before splitting jobs.
+
+### Step 3: Check Caching Configuration
+
+#### Vite+ (voidzero-dev/setup-vp)
+```yaml
+# One action handles node, pnpm, and caching
+- uses: voidzero-dev/setup-vp@v1
+  with:
+    node-version: 24
+    cache: true
+```
+
+#### Node.js/pnpm Caching
+```yaml
+# Good: Using setup-node cache
+- uses: actions/setup-node@v4
+  with:
+    node-version-file: '.node-version'
+    cache: 'pnpm'
+
+# pnpm requires action-setup first
+- uses: pnpm/action-setup@v4
+- uses: actions/setup-node@v4
+  with:
+    cache: 'pnpm'
+```
+
+#### Custom Caching
+```yaml
+# Cache node_modules (if not using setup-node cache)
+- uses: actions/cache@v4
+  with:
+    path: node_modules
+    key: ${{ runner.os }}-node-${{ hashFiles('**/pnpm-lock.yaml') }}
+    restore-keys: |
+      ${{ runner.os }}-node-
+
+# Turbo cache (for monorepos)
+- uses: actions/cache@v4
+  with:
+    path: .turbo
+    key: ${{ runner.os }}-turbo-${{ github.sha }}
+    restore-keys: |
+      ${{ runner.os }}-turbo-
+```
+
+#### Build Artifact Caching
+```yaml
+# Cache build outputs between jobs
+- uses: actions/upload-artifact@v4
+  with:
+    name: build
+    path: dist/
+    retention-days: 30  # Default is 90 days; set explicitly to control storage
+
+# In dependent job
+- uses: actions/download-artifact@v4
+  with:
+    name: build
+    path: dist/
+```
+
+### Step 4: Check Concurrency Settings
+
+```yaml
+# Good: Scoped to workflow name, handles PR head branches correctly
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+# For deployment (don't cancel in-progress deploys)
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: false
+```
+
+Using `github.workflow` in the group prevents different workflows from accidentally sharing a concurrency slot. `github.head_ref || github.ref` correctly uses the PR branch name on pull_request events and falls back to the ref on push events.
+
+### Step 5: Check Conditional Execution
+
+#### Path Filters
+```yaml
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'package.json'
+      - '.github/workflows/ci.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/**'
+```
+
+#### Job Conditions
+```yaml
+jobs:
+  deploy:
+    if: github.ref == 'refs/heads/main'
+    # ...
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    # ...
+```
+
+### Step 6: Check Matrix Builds
+
+For testing across multiple versions:
+```yaml
+jobs:
+  test:
+    strategy:
+      matrix:
+        node: [18, 20, 22]
+        os: [ubuntu-latest, macos-latest]
+      fail-fast: false
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+```
+
+### Step 7: Check Runner Selection
+
+| Runner | Use Case |
+|--------|----------|
+| `ubuntu-latest` | Most Node.js projects |
+| `macos-latest` | iOS/macOS builds |
+| `windows-latest` | Windows-specific tests |
+| Self-hosted | Special requirements |
+
+**Note:** `ubuntu-latest` is fastest and cheapest.
+
+### Step 8: Check Workflow Triggers
+
+```yaml
+# Good: Specific triggers
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Avoid: Too broad
+on: [push, pull_request]  # Runs twice on PR
+```
+
+### Step 9: Check for Optimizations
+
+#### Shallow Clone vs Full History
+```yaml
+# Default: shallow clone (fast, sufficient for most CI)
+- uses: actions/checkout@v4
+
+# Full history: required for release/tag workflows (changelog generation, git describe, gh release --generate-notes)
+- uses: actions/checkout@v4
+  with:
+    fetch-depth: 0
+```
+
+#### Install Optimization
+```yaml
+# npm
+- run: npm ci  # Faster than npm install
+
+# pnpm
+- run: pnpm install --frozen-lockfile
+
+# yarn
+- run: yarn --frozen-lockfile
+```
+
+#### Monorepo Working Directory
+```yaml
+# Set once per job instead of repeating working-directory on every step
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/web
+    steps:
+      - uses: actions/checkout@v4
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+```
+
+### Step 10: Generate Report
+
+```markdown
+## CI Audit Report
+
+### Parallelization
+- [ ] Jobs run sequentially that could be parallel
+- [ ] Estimated savings: ~30s per run
+
+### Caching
+- [x] Node modules cached via setup-node
+- [ ] Missing Turbo cache for monorepo
+
+### Efficiency
+- [x] Concurrency with cancel-in-progress
+- [ ] No path filters (runs on all changes)
+
+### Recommendations
+1. Split CI into parallel jobs (typecheck, lint, format)
+2. Add path filters to skip irrelevant runs
+3. Use artifact caching for build outputs
+```
+
+See `references/ci-template.yaml` for an optimized pnpm workflow with parallel jobs, path filters, and concurrency control.
+See `references/ci-template-vp.yaml` for a Vite+ (`voidzero-dev/setup-vp`) variant.
+
+## Keywords
+
+github actions, ci, cd, workflow, parallelization, caching, optimization, jobs, pipeline

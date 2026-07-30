@@ -1,0 +1,32 @@
+{
+  "name": "@edloidas/skills",
+  "version": "3.19.0",
+  "private": true,
+  "description": "Agent skills for planning, building, code review, auditing, maintenance, shipping, and assistance",
+  "keywords": [
+    "pi-package",
+    "skills",
+    "agent-skills",
+    "claude-code",
+    "codex",
+    "opencode"
+  ],
+  "license": "MIT",
+  "homepage": "https://github.com/edloidas/skills",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/edloidas/skills.git"
+  },
+  "bugs": {
+    "url": "https://github.com/edloidas/skills/issues"
+  },
+  "author": {
+    "name": "Mikita Taukachou",
+    "url": "https://edloidas.io"
+  },
+  "pi": {
+    "skills": [
+      "./.pi/skills"
+    ]
+  }
+}

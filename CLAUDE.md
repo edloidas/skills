@@ -20,44 +20,52 @@ Skills are organized into plugin groups. Each group has a `.claude-plugin/plugin
 ```
 <group>/
 ├── .claude-plugin/
-│   └── plugin.json                      # Plugin metadata
-├── <skill-name>/
-│   ├── SKILL.md                         # Required — frontmatter + instructions
-│   ├── scripts/                         # Optional — executable code
-│   ├── references/                      # Optional — docs loaded on demand
-│   └── assets/                          # Optional — templates, images, data
-├── skills/
-│   └── <skill-name> -> ../<skill-name>  # Required for Claude Code discovery
-└── ...
+│   └── plugin.json               # Plugin metadata
+└── skills/
+    └── <skill-name>/             # Canonical skill location — a REAL directory
+        ├── SKILL.md              # Required — frontmatter + instructions
+        ├── scripts/              # Optional — executable code
+        ├── references/           # Optional — docs loaded on demand
+        └── assets/               # Optional — templates, images, data
 ```
 
-**Plugin discovery requires the `<group>/skills/<skill-name>` symlink.** Claude Code's
-plugin loader looks inside the plugin's `skills/` directory, not the plugin root. A skill
-without its symlink in `<group>/skills/` is invisible to the plugin — even though
-`SKILL.md`, `plugin.json`, and the marketplace entry all exist. When adding a new skill,
-create the mirror symlink in the same step:
+**`<group>/skills/<skill-name>/` is the one canonical location for a skill, and it must be
+a real directory — never a symlink.** Two independent constraints force this:
 
-```bash
-cd <group>/skills && ln -s ../<skill-name> <skill-name>
-```
+1. Claude Code's plugin loader looks inside the plugin's `skills/` directory, not the
+   plugin root. A skill outside `<group>/skills/` is invisible to the plugin even though
+   `SKILL.md`, `plugin.json`, and the marketplace entry all exist.
+2. Agent skill CLIs (notably `npx skills`) discover skills with
+   `readdir(withFileTypes)` + `entry.isDirectory()`, which is **false** for a symlink. A
+   symlinked skill directory is invisible to them. They also hard-skip directories named
+   `node_modules`, `.git`, `dist`, `build`, and `__pycache__` — which is why the `build/`
+   group is only reachable through the `<group>/skills/` path that the marketplace
+   manifest points at.
 
-Codex packaging is layered on top of these source groups using wrapper plugins and repo-local
-skill symlinks:
+`.github/scripts/validate-skills.sh` enforces both: it rejects a symlinked skill directory
+and rejects a leftover pre-4.0 `<group>/<skill-name>` path.
+
+Distribution trees are generated symlinks into that canonical location. Claude Code, Codex,
+OpenCode, and pi all resolve symlinks, so only the canonical directory has to be real:
 
 ```
 .agents/
 ├── plugins/
 │   └── marketplace.json  # Repo-local Codex marketplace
 └── skills/
-    └── <skill-name> -> ../../<group>/<skill-name>
+    └── <skill-name> -> ../../<group>/skills/<skill-name>
 
 plugins/
 └── <plugin-name>/
     ├── .codex-plugin/
     │   └── plugin.json   # Codex wrapper plugin manifest
     └── skills/
-        └── <skill-name> -> ../../../<group>/<skill-name>
+        └── <skill-name> -> ../../../<group>/skills/<skill-name>
 ```
+
+Internal, repo-only skills stay out of the published set by living under `tools/` with a
+symlink into `.claude/skills/` — Claude Code follows the symlink, while `npx skills`
+skips it. `tools/skills-release` is the one current example.
 
 **Plugin groups:**
 - `plan/` — Issue drafting, analysis, triage, and full issue lifecycle (4 skills)
@@ -85,17 +93,17 @@ skill set or plugin metadata, run:
 
 ```bash
 ./scripts/validate-codex.sh
-./scripts/codex-packaging.sh sync-repo
+./scripts/skills-packaging.sh sync-repo
 ```
 
 Treat `.agents/plugins/marketplace.json`, `plugins/<plugin-name>/.codex-plugin/plugin.json`,
-`.agents/skills/`, and `plugins/<plugin-name>/skills/` as generated outputs. Update the source
-skills and `scripts/codex/catalog.json`, then regenerate the wrapper layer instead of editing those files
-by hand.
+`.agents/skills/`, `.opencode/skills/`, `.pi/skills/`, and `plugins/<plugin-name>/skills/` as
+generated outputs. Update the source skills, their `compatibility` frontmatter, and
+`scripts/codex/catalog.json`, then regenerate instead of editing those files by hand.
 
 The generated Codex wrapper layer is symlink-based and should be treated as repo-local when this
 repository is open in Codex. For user-scoped or cross-repo Codex usage, install skills via
-`./scripts/codex-packaging.sh install-links --dest "$HOME/.agents/skills" ...` or direct installs
+`./scripts/skills-packaging.sh install-links --dest "$HOME/.agents/skills" ...` or direct installs
 into `~/.codex/skills` rather than assuming the wrapper plugin cache will be portable.
 
 ## How Skills Load (Progressive Disclosure)
@@ -215,21 +223,54 @@ with just the option number.
 
 Skills for different agents (Claude Code, Codex, etc.) live in the same group directories — no nesting by agent. Agent compatibility is declared via the `compatibility` frontmatter field.
 
-**Agent-specific skill:**
+**`compatibility` is the single source of truth for host support.** It is not just
+documentation: `scripts/skills-packaging.sh sync-repo` parses it to decide which skills land
+in each host's generated tree, so editing it changes what ships.
+
+Recognised host tokens are `Claude Code`, `Codex`, `OpenCode`, and `Pi`, comma-separated:
 
 ```yaml
-compatibility: Claude Code
-```
-
-**Multi-agent skill:**
-
-```yaml
-compatibility: Claude Code, Codex
+compatibility: Claude Code                        # Claude-only — needs a documented reason
+compatibility: Claude Code, Codex, OpenCode, Pi   # fully portable (the common case)
 ```
 
 **Universal skill:** Omit `compatibility` entirely — the skill works with any agent.
 
+**The Codex set must be a subset of every other host's set.** Codex, OpenCode, and pi all
+read `.agents/skills/`, which carries the Codex-vetted set, and each non-Codex host also
+reads its own tree. So the set a host really sees is its own tree unioned with the Codex
+tree. If a skill declared `Codex` but not `Pi`, pi would still pick it up from
+`.agents/skills/` despite never declaring support. `scripts/validate-codex.sh` fails on
+that combination. In practice: a skill that is Codex-safe is portable, so declare all four.
+
+Adding a host to a skill is not free. Check that the body has no Claude-only dependency —
+`AskUserQuestion` without a chat fallback, `subagent_type`, Skill-tool orchestration,
+`${CLAUDE_SESSION_ID}`, or `~/.claude/...` paths.
+
 The README "Available Skills" tables include an **Agent** column for quick scanning.
+
+### Per-Host Skill Trees
+
+`sync-repo` generates one symlink tree per host, all pointing into the canonical
+`<group>/skills/<name>` directories:
+
+| Tree | Read by | Contents |
+| ---- | ------- | -------- |
+| `.agents/skills/` | Codex, OpenCode, pi | Codex-vetted set (from `scripts/codex/catalog.json`) |
+| `.opencode/skills/` | OpenCode | Every skill declaring `OpenCode` |
+| `.pi/skills/` | pi | Every skill declaring `Pi` |
+
+All three are **generated** — never edit them by hand. To install a host's set globally
+rather than repo-locally:
+
+```bash
+./scripts/skills-packaging.sh install-host opencode   # -> ~/.config/opencode/skills
+./scripts/skills-packaging.sh install-host pi         # -> ~/.pi/agent/skills
+./scripts/skills-packaging.sh install-host codex      # -> ~/.agents/skills
+```
+
+`install-host` prunes only links that point into this repo, so unrelated skills sharing the
+destination directory are left alone.
 
 ### Codex Metadata
 
@@ -268,13 +309,12 @@ The `description` determines when an agent activates the skill. Be specific and 
 ## Creating a New Skill
 
 1. Choose the appropriate group directory (`plan/`, `build/`, `review/`, `audit/`, `maintain/`, `ship/`, `assist/`, `obsidian/`, or `workflow/`)
-2. Create a subdirectory: `mkdir <group>/<skill-name>`
-3. Create `<group>/<skill-name>/SKILL.md` with required frontmatter and instructions
+2. Create a real directory: `mkdir -p <group>/skills/<skill-name>` (never a symlink)
+3. Create `<group>/skills/<skill-name>/SKILL.md` with required frontmatter and instructions
 4. Add `scripts/`, `references/`, or `assets/` directories as needed
-5. Create the plugin discovery symlink: `cd <group>/skills && ln -s ../<skill-name> <skill-name>`
-6. Update the appropriate "Available Skills" table in `README.md`
-7. Run `bash .github/scripts/validate-skills.sh` to verify marketplace, manifests, and discovery symlinks
-8. Validate via `skill-audit` skill if available
+5. Update the appropriate "Available Skills" table in `README.md`
+6. Run `bash .github/scripts/validate-skills.sh` to verify marketplace, manifests, and skill layout
+7. Validate via `skill-audit` skill if available
 
 ## Plugin Manifests (`.claude-plugin/`)
 
@@ -302,19 +342,27 @@ Only add `Codex` to a skill's `compatibility` frontmatter after reviewing that t
 actually Codex-safe. In this repo, Codex-compatible skills must also be exposed through
 `scripts/codex/catalog.json`.
 
-Some skills are intentionally Claude-only and should stay out of the Codex
-catalog unless their actual workflow changes:
+Seven skills are `compatibility: Claude Code`, each locked by what it actually does. They
+should stay Claude-only unless their workflow changes:
 
-- `maintain/permissions-cleanup` — it operates on Claude Code
-  `settings.json` / `settings.local.json` permission files rather than Codex
-  config.
-- `assist/codex` — it shells out to the Codex CLI from Claude Code to get an
-  external opinion, so exposing it inside Codex would be recursive rather than
-  a real Codex-native workflow.
-- `workflow/solve-issue` — orchestrates Claude-only skills (`/issue-analyze`,
-  `/next-issue`, `/issue-flow`, `/commit-summary`) via the Skill tool and uses
-  `AskUserQuestion` for plan/endgame gates; the full group has no Codex
-  wrapper plugin.
+- `maintain/skills/permissions-cleanup` — operates on Claude Code
+  `settings.json` / `settings.local.json` permission files rather than Codex config.
+- `maintain/skills/retro` — reads and writes Claude's own state: `~/.claude/CLAUDE.md`,
+  `.claude/rules/*.mdc`, and `~/.claude/projects/<encoded-cwd>/retro/`.
+- `review/skills/consilium` and `review/skills/spec-extractor` — dispatch fleets of
+  plugin-namespaced subagents via `subagent_type` and key temp files on
+  `${CLAUDE_SESSION_ID}`.
+- `assist/skills/polish-prompt` — runs a four-way parallel candidate tournament plus a
+  separate judge subagent, gates on `AskUserQuestion` at four points, and writes
+  `.claude/tmp/polish-*-<session-id>.md`. Fleet orchestration, same class as `consilium`.
+- `plan/skills/issue-flow` and `workflow/skills/solve-issue` — orchestrate other skills
+  through Claude's Skill tool and gate on `AskUserQuestion`.
+
+`assist/skills/codex` is the one skill that is portable but deliberately not Codex-exposed:
+running it inside Codex would be recursive, while it is genuinely useful from OpenCode and
+pi. Hence `compatibility: Claude Code, OpenCode, Pi`. This is exactly the case the per-host
+split exists for — before it, a Codex-specific exclusion also denied the skill to two
+unrelated hosts.
 
 When adding a new skill, or when upgrading an existing skill to support Codex, make sure the
 Codex packaging layer is updated in the same change:
@@ -329,7 +377,7 @@ Codex packaging layer is updated in the same change:
   Codex prompt reference together so the two hosts do not drift out of sync.
 - Ensure the wrapper plugin manifest and `.agents/plugins/marketplace.json` still reflect the
   intended Codex plugin set.
-- Update `scripts/codex/catalog.json`, run `./scripts/validate-codex.sh`, and run `./scripts/codex-packaging.sh sync-repo` so the
+- Update `scripts/codex/catalog.json`, run `./scripts/validate-codex.sh`, and run `./scripts/skills-packaging.sh sync-repo` so the
   generated wrapper layer stays in sync.
 - Update `README.md` if the exposed Codex skill set or plugin group contents changed.
 
@@ -400,7 +448,30 @@ Specs and plans are stored in `docs/superpowers/` (gitignored). Delete the spec 
 
 ## Releases
 
-No `package.json` — skip `release-prepare.sh` and run version bump, commit, tag, push manually.
+Use the `skills-release` skill (`tools/skills-release/`, surfaced to Claude Code through the
+`.claude/skills/skills-release` symlink). Its `release-prepare.sh` / `release-bump.sh` scripts
+handle every version-bearing file.
+
+The version is declared in **four kinds of file**, and every one must match the release tag:
+
+| File | Read by |
+| ---- | ------- |
+| `.claude-plugin/marketplace.json` (per plugin entry) | Claude Code marketplace |
+| `<group>/.claude-plugin/plugin.json` | Claude Code plugin loader |
+| `scripts/codex/catalog.json` | Codex wrapper generator |
+| `plugins/<plugin-name>/.codex-plugin/plugin.json` | Codex plugin loader (generated) |
+| `package.json` | pi package manifest |
+
+`.github/scripts/validate-version.sh` fails the release workflow if any of them drifts from the
+tag. Add new version-bearing files to that script, to `release-prepare.sh`, and to
+`release-bump.sh` in the same change — mutual agreement between manifests is not enough, since
+they can all go stale together.
+
+### `package.json`
+
+It exists only as the **pi package manifest** (`pi.skills` points at the nine `<group>/skills`
+directories) and as a version anchor. It is `"private": true` and is **never published to npm** —
+pi installs straight from git. Do not run `npm publish`, `npm version`, or add dependencies.
 
 ## Git & GitHub
 
@@ -417,7 +488,9 @@ When working on an issue, create a new branch named `issue-<number>`.
 ### Pull Requests
 
 - **Title:** `<type>: <description> #<number>`
-- **Body:** concise what/why, no emojis, one blank line between sections. End with `Closes #<number>`.
+- **Body:** concise what/why, no emojis, one blank line between sections.
+- Multiple issues go on one `Closes` line: `Closes #1 #23 #456`.
+- End with the session link as the last line, wrapped small: `<sub>[Claude Code session](<link>)</sub>`. It is the only attribution — never append a second generated footer, `---` rule, or promotional line, including on PRs created from the web.
 
 ## License
 

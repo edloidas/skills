@@ -9,7 +9,8 @@ set -euo pipefail
 # - each source group ships .claude-plugin/plugin.json with the expected
 #   matching name and valid JSON structure
 # - each source group contains discoverable skills
-# - each skill has its matching discovery symlink at <group>/skills/<name>
+# - each skill is a real directory at <group>/skills/<name>, not a symlink, and the
+#   pre-4.0 <group>/<name> authoring path is gone
 # - source groups do not embed Codex wrapper manifests directly
 #
 # The Codex wrapper contract is validated separately by scripts/validate-codex.sh.
@@ -139,29 +140,26 @@ for i in $(seq 0 $((plugin_count - 1))); do
     skill_dir=$(dirname "$skill_md")
     skill_name=$(basename "$skill_dir")
 
-    # Skip the skills/ mirror directory itself — entries in there are symlinks to real skills
-    if [ "$skill_name" = "skills" ]; then
-      skill_count=$((skill_count - 1))
-      continue
+    # The canonical skill directory is <group>/skills/<name>, and it must be a REAL
+    # directory rather than a symlink. Agent skill CLIs discover skills with
+    # readdir(withFileTypes) + entry.isDirectory(), which is false for a symlink, so a
+    # symlinked skill is invisible to them. Claude Code's plugin loader reads this same
+    # path, so one real directory serves every host.
+    if [ -L "$skill_dir" ]; then
+      error "Plugin '$name': '$skill_dir' is a symlink; it must be a real directory or agent skill CLIs cannot discover it"
     fi
 
-    # Every skill must have a discovery symlink at <group>/skills/<name> — Claude Code's
-    # plugin loader looks in the plugin's skills/ subdirectory, not the plugin root
-    expected_link="$source/skills/$skill_name"
-    if [ ! -L "$expected_link" ]; then
-      error "Plugin '$name': missing discovery symlink '$expected_link -> ../$skill_name'"
-    else
-      link_target=$(readlink "$expected_link")
-      if [ "$link_target" != "../$skill_name" ]; then
-        error "Plugin '$name': '$expected_link' points at '$link_target', expected '../$skill_name'"
-      fi
+    # Exactly one canonical location per skill — the pre-4.0 <group>/<name> authoring
+    # path must not come back, or the same skill gets discovered twice under two paths.
+    if [ -e "$source/$skill_name" ]; then
+      error "Plugin '$name': legacy skill path '$source/$skill_name' still exists; the canonical location is '$skill_dir'"
     fi
 
     if skill_has_codex_compatibility "$skill_dir"; then
       codex_compatible_count=$((codex_compatible_count + 1))
     fi
   done <<EOF
-$(find "$source" -mindepth 2 -maxdepth 2 -name SKILL.md -not -path "$source/skills/*" -print | sort)
+$(find "$source/skills" -mindepth 2 -maxdepth 2 -name SKILL.md -print | sort)
 EOF
 
   if [ "$skill_count" -eq 0 ]; then
