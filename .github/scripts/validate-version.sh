@@ -8,6 +8,7 @@ set -euo pipefail
 TAG_VERSION="${1:?Usage: validate-version.sh <version>}"
 MARKETPLACE=".claude-plugin/marketplace.json"
 CODEX_CATALOG="scripts/codex/catalog.json"
+PACKAGE_JSON="package.json"
 
 echo "Tag version: $TAG_VERSION"
 
@@ -85,6 +86,21 @@ if [ -f "$CODEX_CATALOG" ]; then
   done <<EOF
 $(jq -r '.plugins[].name' "$CODEX_CATALOG")
 EOF
+fi
+
+# Check the pi package manifest — pi reads the version from package.json, so it is a
+# release file like every plugin.json and must not drift from the tag.
+if [ ! -f "$PACKAGE_JSON" ]; then
+  echo "::error::$PACKAGE_JSON not found"
+  errors=1
+else
+  pkg_version=$(jq -r '.version' "$PACKAGE_JSON")
+  echo "pi package ($PACKAGE_JSON): $pkg_version"
+
+  if [ "$TAG_VERSION" != "$pkg_version" ]; then
+    echo "::error::Tag version ($TAG_VERSION) does not match $PACKAGE_JSON ($pkg_version)"
+    errors=1
+  fi
 fi
 
 if [ "$errors" -eq 1 ]; then

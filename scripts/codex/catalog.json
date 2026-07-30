@@ -35,9 +35,9 @@
         "triage"
       ],
       "skills": [
-        "plan/issue-writer",
-        "plan/issue-analyze",
-        "plan/next-issue"
+        "plan/skills/issue-writer",
+        "plan/skills/issue-analyze",
+        "plan/skills/next-issue"
       ]
     },
     {
@@ -59,9 +59,11 @@
         "commits"
       ],
       "skills": [
-        "build/commit-summary",
-        "build/git-worktree",
-        "build/resolve-conflicts"
+        "build/skills/commit-summary",
+        "build/skills/git-worktree",
+        "build/skills/resolve-conflicts",
+        "build/skills/commit",
+        "build/skills/fix-findings"
       ]
     },
     {
@@ -85,11 +87,11 @@
         "test-quality"
       ],
       "skills": [
-        "review/changes-review",
-        "review/code-cleanup",
-        "review/react-review",
-        "review/review-comments",
-        "review/test-quality"
+        "review/skills/changes-review",
+        "review/skills/code-cleanup",
+        "review/skills/react-review",
+        "review/skills/review-comments",
+        "review/skills/test-quality"
       ]
     },
     {
@@ -111,12 +113,12 @@
         "workspace"
       ],
       "skills": [
-        "audit/ci-audit",
-        "audit/skill-audit",
-        "audit/scripts-audit",
-        "audit/security-audit",
-        "audit/three-audit",
-        "audit/workspace-audit"
+        "audit/skills/ci-audit",
+        "audit/skills/skill-audit",
+        "audit/skills/scripts-audit",
+        "audit/skills/security-audit",
+        "audit/skills/three-audit",
+        "audit/skills/workspace-audit"
       ]
     },
     {
@@ -139,13 +141,13 @@
         "processes"
       ],
       "skills": [
-        "maintain/claude-md-sync",
-        "maintain/comment-audit",
-        "maintain/editor-config",
-        "maintain/labels-sync",
-        "maintain/lint-sync",
-        "maintain/rules-sync",
-        "maintain/stale-process-cleanup"
+        "maintain/skills/claude-md-sync",
+        "maintain/skills/comment-audit",
+        "maintain/skills/editor-config",
+        "maintain/skills/labels-sync",
+        "maintain/skills/lint-sync",
+        "maintain/skills/rules-sync",
+        "maintain/skills/stale-process-cleanup"
       ]
     },
     {
@@ -167,8 +169,8 @@
         "deploy"
       ],
       "skills": [
-        "ship/npm-release",
-        "ship/railway"
+        "ship/skills/npm-release",
+        "ship/skills/railway"
       ]
     },
     {
@@ -189,7 +191,9 @@
         "verify"
       ],
       "skills": [
-        "assist/ask"
+        "assist/skills/ask",
+        "assist/skills/discuss",
+        "assist/skills/handoff"
       ]
     },
     {
@@ -209,7 +213,7 @@
         "knowledge-base"
       ],
       "skills": [
-        "obsidian/working-docs"
+        "obsidian/skills/working-docs"
       ]
     }
   ]

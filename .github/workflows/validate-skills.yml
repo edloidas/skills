@@ -21,5 +21,8 @@ jobs:
 
       - name: Verify generated Codex wrapper files
         run: |
-          ./scripts/codex-packaging.sh sync-repo
+          ./scripts/skills-packaging.sh sync-repo
           git diff --exit-code
+
+      - name: Validate per-host discovery
+        run: bash .github/scripts/validate-discovery.sh

@@ -1,0 +1,6 @@
+interface:
+  display_name: "Commit"
+  short_description: "Stage safe changes and create one conventional commit"
+  default_prompt: "Use $commit to stage the current work, skipping generated artifacts, and create a single conventional commit."
+policy:
+  allow_implicit_invocation: false

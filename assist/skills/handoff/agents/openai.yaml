@@ -1,0 +1,6 @@
+interface:
+  display_name: "Handoff"
+  short_description: "Compact the session into a handoff for the next agent"
+  default_prompt: "Use $handoff to summarize this session so a fresh agent can pick up the work cold. Add 'doc' to write it to a file."
+policy:
+  allow_implicit_invocation: true
