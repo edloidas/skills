@@ -179,7 +179,7 @@ else
   # matters: several descriptions mention other skills by name ("commit", "codex", "ask"),
   # so searching the whole blob would let a description mask a genuinely missing skill.
   cli_names=$(printf '%s\n' "$cli_raw" |
-    sed -e $'s/\033\\[[0-9;]*[A-Za-z]//g' |
+    sed -e $'s/\033\\[[?0-9;]*[A-Za-z]//g' |
     sed -e 's/^[^[:alnum:]]*//' -e 's/[[:space:]]*$//' |
     grep -E '^[a-z0-9][a-z0-9-]*$' | sort -u)
 
