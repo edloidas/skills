@@ -13,18 +13,40 @@ Don't explain WHAT the code does — names already do that. Don't reference the 
 
 ## Prefixes
 
-Single-line prefixes. Never combine. Never use `// ----`, `// ====`, or numeric headers (`// ---- 1. Validate ----`).
+Four single-line prefixes, picked so a comment-highlighter plugin colors each one differently. The color is the point — it is what makes a prefix worth using over a plain comment. Never combine two. Never use `// ----`, `// ====`, or numeric headers (`// ---- 1. Validate ----`).
 
-- `// !` — critical (bug, security risk, breaking change)
-- `// ?` — uncertainty, open question, rationale for unusual pattern
-- `// *` — section divider; surround with blank `//` lines, header ≤ 4 words
-- `// TODO: [#123]` — actionable follow-up, imperative verb, issue ref when one exists
+| Prefix | Color | Use for |
+|--------|-------|---------|
+| `// !` | red | Important enough to stop a reader: bug, security risk, breaking change, sharp edge. |
+| `// *` | green | Section divider, or a header over a multi-line comment. |
+| `// ?` | blue | **Not settled**: a hack, a temporary fix, a guess, something still in doubt. |
+| `// TODO:` | — | Actionable follow-up. Imperative verb, `[#123]` when an issue exists. |
 
 ```ts
 // ! Potential race condition if fetch retries here
 // ? May need to memoize once this call becomes hot
 // TODO: [#123] Replace mock with live API
+```
 
+## `// ?` is for doubt, not for rationale
+
+This is the one that gets misused. A finished decision with a non-obvious reason is a plain comment. `// ?` means the code is still open — a flag to come back to, not an explanation.
+
+```ts
+// Stable sort — ties resolve by original insertion order.
+const sorted = [...items].sort(byRank);
+
+// ? Above V8's ~640k argument-list ceiling — revisit if that limit lifts.
+const merged = buildLargeBatch();
+```
+
+If removing the uncertainty would not change the comment, it should not be `// ?`.
+
+## `// *` sections
+
+Wrap in blank `//` lines. Header ≤ 4 words.
+
+```ts
 //
 // * Event Handlers
 //
