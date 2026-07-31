@@ -26,6 +26,7 @@ Located in `scripts/` relative to this skill:
 | `check-env.sh`             | Validate git repo, gh CLI, authentication       |
 | `detect-base.sh`           | Detect base branch (main/master/next/epic-*)    |
 | `repo-context.sh`          | Fetch labels, collaborators, projects           |
+| `repo-ownership.sh`        | Classify repo as personal / org / external      |
 | `pr-reviewers.sh`          | Rank top PR reviewers by recent review activity |
 | `issue-assignees.sh`       | Rank top issue assignees by recent assignments  |
 | `add-to-project.sh`        | Add issue to GitHub Projects V2                 |
@@ -39,6 +40,7 @@ Run scripts from the skill directory:
 bash "<skill-dir>/scripts/check-env.sh"
 bash "<skill-dir>/scripts/detect-base.sh"
 bash "<skill-dir>/scripts/repo-context.sh"
+bash "<skill-dir>/scripts/repo-ownership.sh" [<owner>/<repo>]
 bash "<skill-dir>/scripts/pr-reviewers.sh" [<owner>/<repo>] [<limit>]
 bash "<skill-dir>/scripts/issue-assignees.sh" [<owner>/<repo>] [<limit>]
 bash "<skill-dir>/scripts/add-to-project.sh" <issue-number> <project-title> [status]
@@ -103,6 +105,36 @@ Common types: `feat`, `fix`, `docs`, `chore`, `refactor`, `test`, `style`, `ci`
 
 When the user explicitly provides values for labels, assignee, project, or other options in their request, use those values directly — do NOT ask via `AskUserQuestion` to confirm what was already stated. Only ask about fields the user left unspecified.
 
+### Assignment Defaults
+
+**Nothing this skill creates is ever left unassigned by default.** Every issue and PR gets an assignee unless the user explicitly asked for none.
+
+"The current user" always means the authenticated `gh` account — resolve it, never assume a hardcoded login:
+
+```bash
+gh api user --jq .login
+```
+
+Prefer the literal `@me` in `gh` flags; use the resolved login only when a report or comparison needs the actual name.
+
+Classify the repo once per flow — at whichever step the flow is entered, if not already done:
+
+```bash
+bash "<skill-dir>/scripts/repo-ownership.sh"
+```
+
+`KIND` drives the default:
+
+| `KIND`     | Meaning                            | Default behaviour                                                     |
+| ---------- | ---------------------------------- | --------------------------------------------------------------------- |
+| `personal` | Owned by the current user          | Assign the current user (`@me`) silently — do **not** prompt           |
+| `org`      | Owned by an organization           | Ask via `AskUserQuestion`; the current user is the recommended default |
+| `external` | Another user's personal repo       | Same as `org` — ask, current user recommended                          |
+
+In every case the fallback is the current user: if the user skips the question, the prompt cannot be shown, or `repo-ownership.sh` fails, assign `@me` rather than nothing.
+
+An explicit instruction always wins — "assign to @octocat", "leave it unassigned", or a reviewer/assignee rule in the target repo's CLAUDE.md overrides everything above, in personal repos too.
+
 ## Step 1: Create Issue
 
 Run these in parallel (they are independent):
@@ -112,9 +144,10 @@ Run these in parallel (they are independent):
 bash "<skill-dir>/scripts/check-env.sh"
 mktemp -d                                       # → save output as <TMPDIR>
 bash "<skill-dir>/scripts/repo-context.sh"
+bash "<skill-dir>/scripts/repo-ownership.sh"
 ```
 
-Wait for all three before proceeding. `detect-base.sh` is not needed until Step 2.
+Wait for all four before proceeding. `detect-base.sh` is not needed until Step 2.
 
 ### Title
 
@@ -146,7 +179,11 @@ Auto-detect label from the issue type (e.g., `feat` → `feature` or `enhancemen
 
 ### Assignee
 
-Run `issue-assignees.sh` to find users with actual recent assignment activity:
+Follow **### Assignment Defaults**. The issue always gets an assignee unless the user explicitly asked for none.
+
+**`KIND=personal`** — assign `@me` via `--assignee "@me"` without prompting. Skip `issue-assignees.sh` entirely.
+
+**`KIND=org` or `KIND=external`** — run `issue-assignees.sh` to find users with actual recent assignment activity:
 
 ```bash
 bash "<skill-dir>/scripts/issue-assignees.sh"
@@ -160,6 +197,8 @@ Output: `<user>\t<count>` per row, up to 3 rows (excludes self and bots). Compos
 4. "No assignee"
 
 If `issue-assignees.sh` returns nothing, show only `@me` and "No assignee". Do **not** fall back to the generic `repo-context.sh` collaborator list — those are repo members ranked by nothing meaningful, and inventing labels like "Frequent collaborator" misleads the user.
+
+If the question is skipped or unanswered, default to `@me` — never create the issue with no assignee.
 
 ### Type
 
@@ -315,7 +354,7 @@ When the user asks to create multiple issues at once (e.g., an epic with child i
 1. Resolve `<TMPDIR>` once via `mktemp -d`
 2. Create the parent/epic issue first (if applicable)
 3. Write all child issue body files with unique slugs: `<TMPDIR>/<slug>-body.md`
-4. Create all child issues in parallel (`gh issue create` calls)
+4. Create all child issues in parallel (`gh issue create` calls) — apply **### Assignment Defaults** once and reuse the same assignee for every issue in the batch, including the parent. Do not prompt per issue.
 5. Batch-link sub-issues to parent (if applicable) — use the for loop from **## Sub-Issues**
 6. Add all issues to project sequentially — run `add-to-project.sh` in a for loop, one at a time (parallel calls cause API rate-limit failures and require retries). When children are linked to an **existing** parent, resolve the project set via **## Project Inheritance From Parent** instead of asking generically.
 7. Ask about initial project status (e.g., "Backlog", "Current Sprint") via `AskUserQuestion` — then batch-update via `project-status.sh`
@@ -449,6 +488,10 @@ Closes #<number>
 
 ### Assignee and Reviewer
 
+Follow **### Assignment Defaults**. Reviewer selection is separate from assignment: the current user is an assignee on every PR this skill creates, whatever the reviewer outcome.
+
+In a `KIND=personal` repo, skip the reviewer prompt entirely unless the repo's CLAUDE.md sets a reviewer rule or the user asked for one — a solo repo has no one else to review, and the reviewer question is the step where assignment silently gets dropped.
+
 Check the target repo's CLAUDE.md for reviewer rules (e.g., "PRs to main should be reviewed by @username", default reviewer for specific branches). If a matching rule exists, use that reviewer directly.
 
 Otherwise, run `pr-reviewers.sh` to find users with actual recent PR review activity:
@@ -475,11 +518,13 @@ If same, skip `--reviewer` flag (GitHub doesn't allow self-review).
 
 ### Assignees
 
-The PR creator (`@me`) is always an assignee. When a reviewer is set, **also add that reviewer to assignees** — the reviewer and the creator both end up on Assignees.
+The PR creator (`@me`, i.e. the current user) is **always** an assignee — in personal and org repos alike, with or without a reviewer. Setting a reviewer never replaces the creator on Assignees; it adds to it.
 
 - **Reviewer set** (and not the creator): assign `@me` **and** the reviewer.
-  - e.g. creator `edloidas` sets `octocat` as reviewer → Reviewers: `octocat`, Assignees: `octocat`, `edloidas`.
+  - e.g. creator `alice` sets `octocat` as reviewer → Reviewers: `octocat`, Assignees: `octocat`, `alice`.
 - **No reviewer** (or reviewer is the creator / self-review): assign only `@me`.
+
+There is no branch of this step that produces zero assignees. If a reviewer prompt is skipped or `pr-reviewers.sh` returns nothing, `@me` still goes on `--assignee`.
 
 ### Create
 
@@ -595,6 +640,8 @@ Print the Step 6 merged report.
 ## Error Handling
 
 - **Projects V2 fails**: Warn once, then skip all project operations for the rest of the flow. The core lifecycle works without project integration.
+- **`repo-ownership.sh` fails**: Treat as `personal` — assign the current user and continue. Do not prompt, and do not leave the issue or PR unassigned.
+- **Assignment rejected** (`gh` reports the assignee is not a valid collaborator): report which assignee was dropped, then continue. Do not abort the flow or retry with a different user.
 - **gh not authenticated**: Stop immediately, tell user to run `gh auth login`.
 - **Branch already exists**: Ask user via `AskUserQuestion` (switch vs. recreate).
 - **CI checks failing**: Report failed checks, do not attempt merge.
