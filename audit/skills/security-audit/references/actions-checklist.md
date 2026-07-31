@@ -147,3 +147,13 @@ grep -hE 'uses: [^@]+@' .github/workflows/*.yml \
 **Why:** Each non-first-party action is a trust dependency. Reviewing the list periodically catches "we depend on actions from a one-person repo with no maintainer activity."
 
 **Fix:** For each entry, decide: keep, replace, or move to a vendored copy. Always SHA-pin (item 1).
+
+## 8. Push-Triggered Deploys Holding Secrets
+
+**Detection:** a job references deploy-provider secrets (`secrets.CLOUDFLARE_*`, `secrets.VERCEL_*`, `secrets.AWS_*`, …) in a workflow triggered by `push:` with a broad branch filter, and the job declares no `environment:`.
+
+**Severity:** critical for production deploy targets.
+
+**Why:** push-event workflows execute the workflow file from the pushed ref — any branch push can rewrite the workflow and use repository-level secrets, including deploying that branch over production. Repository-level secrets are readable from every branch's workflow; only environment secrets can be branch-restricted.
+
+**Fix:** split the workflow into an uncredentialed `build` job (all branches) and a `deploy` job gated to the production branch and attached to a branch-restricted environment. Full remediation order (environment creation before workflow reference, write-only secret migration, repo-level secret deletion) lives in `repo-settings-checklist.md` item 10 — the settings auditor owns it; report the workflow-side finding and cross-reference.

@@ -146,6 +146,7 @@
         "maintain/skills/editor-config",
         "maintain/skills/labels-sync",
         "maintain/skills/lint-sync",
+        "maintain/skills/repo-hardening",
         "maintain/skills/rules-sync",
         "maintain/skills/stale-process-cleanup"
       ]

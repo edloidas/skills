@@ -202,6 +202,29 @@ EOF
 
 If the API returns a plan-related error (private repo without the required plan), record as informational and skip.
 
+## 8. Dependabot Updates, Vulnerability Reporting, CodeQL
+
+**Detection:**
+```bash
+gh api repos/<owner>/<repo> --jq '.security_and_analysis.dependabot_security_updates.status'
+gh api repos/<owner>/<repo>/private-vulnerability-reporting --jq '.enabled'
+gh api repos/<owner>/<repo>/code-scanning/default-setup --jq '.state'
+```
+
+**Severity:** medium each — but **high** when `SECURITY.md` advertises private vulnerability reporting while the feature is disabled: the documented reporting channel is a dead end, and researchers fall back to public issues.
+
+**Why:** Dependabot security updates turn alerts into PRs instead of a dashboard nobody checks. Private vulnerability reporting is the intake half of any security policy. CodeQL default setup is zero-maintenance code scanning for supported languages.
+
+**Fix (one call each, admin token):**
+```bash
+gh api -X PUT repos/<owner>/<repo>/vulnerability-alerts          # prerequisite for the next line
+gh api -X PUT repos/<owner>/<repo>/automated-security-fixes
+gh api -X PUT repos/<owner>/<repo>/private-vulnerability-reporting
+gh api -X PATCH repos/<owner>/<repo>/code-scanning/default-setup -f state=configured
+```
+
+Cross-check `SECURITY.md` in the same pass: whatever channel it names must actually be enabled.
+
 ## 9. Required Status Check Coverage
 
 **Detection:** for every branch covered by a branch ruleset, every required status check in that ruleset must be produced by a workflow whose trigger filter actually fires on that branch.
@@ -236,7 +259,41 @@ on:
 
 Alternative: if the workflow legitimately should not run on the secondary branch, remove that branch from the ruleset's `required_status_checks` parameters instead — same alignment, different direction.
 
+**Matrix legs are named verbatim:** required checks must list matrix job names exactly as they expand at run time (`Node.js Smoke Test (lts/*)`, not the template `Node.js Smoke Test (${{ matrix.node-version }})`). Renaming or reshaping the matrix silently orphans the required check and blocks every PR until the ruleset is updated to match. Flag rulesets whose required checks embed matrix parameters as a maintenance note.
+
 **Companion:** `actions-checklist.md` (workflow trigger filters). The repo-settings auditor has access to both ruleset state and workflow files, so this check belongs here rather than splitting detection across two subagents.
+
+## 10. Deploy Secrets Reachable from Arbitrary Branches
+
+**Detection:**
+```bash
+gh api repos/<owner>/<repo>/actions/secrets --jq '[.secrets[].name]'
+gh api repos/<owner>/<repo>/environments --jq '[.environments[] | {name, protection_rules, deployment_branch_policy}]'
+```
+
+Deploy-provider credentials (`CLOUDFLARE_*`, `VERCEL_*`, `AWS_*`, `NETLIFY_*`, `FLY_*`, `RAILWAY_*`, …) stored as **repository-level** secrets and referenced by a workflow triggered on `push:` with a broad branch filter (`'**'` or similar).
+
+**Severity:** critical when the deploy target is production.
+
+**Why:** Push-event workflows execute the workflow file **from the pushed ref**. Anyone who can push any branch can edit the workflow on that branch to do anything with repo-level secrets — deploy their branch over production (e.g. `wrangler pages deploy --branch <production-branch>`) or exfiltrate the token. Default-branch protection does not help; the attack never touches the default branch.
+
+**Fix — move the secrets into a branch-restricted environment, in this order:**
+
+1. **Create the environment before any workflow references it.** A workflow run that names a nonexistent environment auto-creates it **unprotected**:
+```bash
+gh api -X PUT repos/<owner>/<repo>/environments/<env-name> --input - <<'EOF'
+{"deployment_branch_policy": {"protected_branches": false, "custom_branch_policies": true}}
+EOF
+gh api -X POST repos/<owner>/<repo>/environments/<env-name>/deployment-branch-policies \
+  -f name=<default-branch> -f type=branch
+```
+2. **Secrets are write-only** — values cannot be copied out via API. The user re-enters them: `gh secret set <NAME> --env <env-name> -R <owner>/<repo>`.
+3. Update the workflow: split an uncredentialed `build` job (all branches) from a `deploy` job with `environment: <env-name>` and `if: github.ref == 'refs/heads/<default-branch>'`, passing the built output as an artifact.
+4. **Only then** delete the repository-level copies: `gh secret delete <NAME> -R <owner>/<repo>`. The hole stays open until they are gone — the environment alone does not stop a pushed-ref workflow from reading repo-level secrets.
+
+**Cost:** branch preview deploys die. Restoring them safely needs a second provider project with its own narrowly-scoped token in a separate unprotected environment — a leaked preview token then cannot touch production.
+
+**Companion — provider-side token scope:** the token itself should be least-privilege (e.g. a Cloudflare token with only `Account · Cloudflare Pages · Edit`, not account-wide). Not auditable from the repo; report as an ask-the-user verification item.
 
 ## Bypass Actor Patterns
 
@@ -329,6 +386,10 @@ gh api repos/<owner>/<repo>/actions/permissions
 gh api repos/<owner>/<repo>/actions/permissions/workflow
 gh api repos/<owner>/<repo>/rulesets
 gh api repos/<owner>/<repo> --jq '{private, default_branch, security_and_analysis, allow_squash_merge, allow_rebase_merge, delete_branch_on_merge, allow_auto_merge}'
+gh api repos/<owner>/<repo>/actions/secrets --jq '[.secrets[].name]'
+gh api repos/<owner>/<repo>/environments --jq '[.environments[].name]'
+gh api repos/<owner>/<repo>/private-vulnerability-reporting
+gh api repos/<owner>/<repo>/code-scanning/default-setup --jq '.state'
 ```
 
 Then for each ruleset returned, fetch the full body:

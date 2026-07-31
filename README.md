@@ -10,14 +10,14 @@
 
 <p align="center">
   <img src="https://img.shields.io/github/v/tag/edloidas/skills?style=flat-square&color=FD3DB5&label=release" alt="Release">
-  <img src="https://img.shields.io/badge/skills-40-FD3DB5?style=flat-square" alt="40 skills">
+  <img src="https://img.shields.io/badge/skills-41-FD3DB5?style=flat-square" alt="41 skills">
   <img src="https://img.shields.io/badge/agents-4-FD3DB5?style=flat-square" alt="4 agents">
   <img src="https://img.shields.io/badge/license-MIT-FD3DB5?style=flat-square" alt="MIT license">
 </p>
 
 ---
 
-40 skills for planning, building, reviewing, auditing, maintaining, and shipping software —
+41 skills for planning, building, reviewing, auditing, maintaining, and shipping software —
 written once and distributed to [Claude Code](https://docs.anthropic.com/en/docs/claude-code),
 [Codex](https://developers.openai.com/codex), [OpenCode](https://opencode.ai), and
 [pi](https://pi.dev), following the [Agent Skills specification](https://agentskills.io/specification).
@@ -31,7 +31,7 @@ it. Nothing runs in the background, nothing is injected into every prompt.
 | [build](#build) | Worktrees, conflict resolution, commits, findings fixes | 5 |
 | [review](#review) | Change review, cleanup, review board, spec extraction, test quality | 7 |
 | [audit](#audit) | CI, scripts, security, skills, workspace, Three.js | 6 |
-| [maintain](#maintain) | Label/rule/config sync, lint migration, comment audits, retros | 9 |
+| [maintain](#maintain) | Label/rule/config sync, lint migration, repo hardening, comment audits, retros | 10 |
 | [ship](#ship) | npm releases, Railway deployments | 2 |
 | [assist](#assist) | Explanations, external opinions, discussion, handoffs | 5 |
 | [obsidian](#obsidian) | Working documents in an Obsidian vault | 1 |
@@ -267,7 +267,7 @@ CI, script, security, skill, workspace, and Three.js auditing skills.
 
 ### Maintain
 
-Label sync, instruction file sync, permissions cleanup, lint migration, comment auditing, agent rule sync, editor config sync, stale process cleanup, and session retros.
+Label sync, instruction file sync, permissions cleanup, lint migration, comment auditing, agent rule sync, editor config sync, repo security hardening, stale process cleanup, and session retros.
 
 | Skill | Description | Agent |
 | ----- | ----------- | ----- |
@@ -278,6 +278,7 @@ Label sync, instruction file sync, permissions cleanup, lint migration, comment 
 | [lint-sync](./maintain/skills/lint-sync/) | Compare ESLint rules against Biome for overlap | All |
 | [comment-audit](./maintain/skills/comment-audit/) | Analyze code comments for quality and relevance | All |
 | [rules-sync](./maintain/skills/rules-sync/) | Init or update `.claude/rules` / `.agents/rules` from a canonical set | All |
+| [repo-hardening](./maintain/skills/repo-hardening/) | Apply a GitHub security baseline: rulesets, Actions defaults, environments | All |
 | [stale-process-cleanup](./maintain/skills/stale-process-cleanup/) | Find and reap orphaned dev servers, LSP, and MCP processes | All |
 | [retro](./maintain/skills/retro/) | Reflect on the current session and produce a structured retro report | Claude |
 

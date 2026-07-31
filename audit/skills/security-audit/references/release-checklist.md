@@ -12,7 +12,7 @@ The audit cares about one question per item: does this release publish to npm? I
 - `package.json` has `publishConfig.registry`.
 - `package.json` `scripts.publish` value contains any of the four publish commands above.
 
-If none match, the audit treats this repo as a non-npm publisher and skips items 4 and 5 entirely. The remaining items (trigger scope, precheck, frozen lockfile, token usage, dependabot ecosystem coverage) apply to any release workflow.
+If none match, the audit treats this repo as a non-npm publisher and skips items 4, 5, and 10 entirely. The remaining items (trigger scope, precheck, frozen lockfile, token usage, dependabot ecosystem coverage, artifact identity, minimal credentialed jobs) apply to any release workflow.
 
 **Build-system list** used by item 7 (`detected_build_systems`) is derived from file presence at repo root:
 
@@ -49,39 +49,44 @@ on:
 
 ## 2. Tag/Commit Precheck
 
-**Detection:** release workflow publishes without verifying the tagged commit is reachable from a trusted branch.
+**Detection:** release workflow publishes without verifying the tagged commit is reachable from a trusted branch — or a precheck exists but *skips* downstream jobs instead of failing the run.
 
-**Severity:** high
+**Severity:** high if missing; medium for skip-instead-of-fail.
 
 **Why:** Without a precheck, anyone with tag-push access can ship arbitrary code by pushing a `v*` tag to any commit (including a force-pushed feature branch). The precheck binds release tags to commits that already passed review on the trusted branches.
+
+**Skip-to-green is a defect, not a variant.** A precheck that emits an `allowed` output and gates downstream jobs with `if: needs.precheck.outputs.allowed == 'true'` produces a **green workflow** on an ineligible tag — every job "succeeds" by being skipped, and no one is alerted that a release attempt was rejected. The precheck must `exit 1` so the run goes red and downstream jobs fail through `needs`.
 
 **Fix pattern:**
 ```yaml
 jobs:
   precheck:
     runs-on: ubuntu-latest
-    outputs:
-      allowed: ${{ steps.contains.outputs.allowed }}
     steps:
       - uses: actions/checkout@<sha>
         with:
-          fetch-depth: 0
+          fetch-depth: 0          # all branch refs, so --contains sees every branch
           persist-credentials: false
-      - id: contains
-        shell: bash
+      - shell: bash
         run: |
-          git fetch --quiet origin '+refs/heads/*:refs/remotes/origin/*' || true
-          contains="$(git branch -r --contains "${GITHUB_SHA}")"
-          if echo "$contains" | grep -Eq '(main|master|[0-9]+\.[0-9]+)$'; then
-            echo "allowed=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "allowed=false" >> "$GITHUB_OUTPUT"
+          contains="$(git branch -r --contains "${GITHUB_SHA}" | sed 's/^[ *]*//')"
+          if [ -z "${contains}" ]; then
+            echo "::error::Could not resolve any branch containing ${GITHUB_SHA} — refusing to release."
+            exit 1
+          fi
+          if ! echo "${contains}" | grep -Eq '^origin/(main|master|[0-9]+\.[0-9]+)$'; then
+            echo "::error::Tag ${GITHUB_REF_NAME} is not on a trusted branch — refusing to release."
+            exit 1
           fi
 
   publish:
-    needs: precheck
-    if: needs.precheck.outputs.allowed == 'true'
+    needs: precheck   # precheck failure fails this job too — no `if:` gate
 ```
+
+Two details that look cosmetic but are not:
+
+- **Anchor the grep.** An unanchored `(main|master|…)$` also matches `origin/hackmain` or `feature/master` — any branch *ending* in a trusted name passes the gate.
+- **No `git fetch … || true`.** Checkout with `fetch-depth: 0` already fetched every branch ref; a re-fetch with a swallowed exit code adds nothing and masks failures. If a fetch is genuinely needed, let it fail loudly.
 
 ## 3. Frozen Lockfile
 
@@ -120,8 +125,9 @@ jobs:
 **Why:** Provenance binds the published artifact to a specific workflow run, repo, and commit, verifiable via sigstore. Consumers can confirm the published code came from the claimed source.
 
 **Fix:**
-- npm CLI: add `--provenance` and use `id-token: write` + Trusted Publishers.
+- npm CLI with Trusted Publishing: provenance is generated automatically once the job has `id-token: write` — no `--provenance` flag needed. The explicit flag is only required for legacy token-based publishes.
 - pnpm: provenance is automatic when OIDC + Trusted Publishers are configured.
+- Bun cannot publish via OIDC Trusted Publishing (oven-sh/bun#15601) — Bun-built packages should still publish the packed tarball with the npm CLI.
 
 **Exception:** Private packages cannot use sigstore provenance — the source repo must be public. For private packages, document this in `release.yml`:
 ```yaml
@@ -179,3 +185,39 @@ jobs:
 ```
 
 Grouping into one PR per week keeps noise low while preserving the update cadence.
+
+## 8. Artifact Identity — Smoke What Ships
+
+**Applies when the workflow publishes a packed artifact (npm tarball, archive, image).**
+
+**Detection:** the artifact that gets published is not the same bytes that were inspected, tested, or smoked. Common shapes:
+
+- `npm pack` runs after the test suite, and a test rebuilds `dist/` along the way — so the packed output comes from a state no check ever executed.
+- The validate job packs one tarball for inspection; the publish job packs a fresh one.
+- attw/publint/smoke checks run against the working tree or a rebuilt `dist/`, never against the packed tarball itself.
+- Packing runs on whatever npm the runner image ships that week (no pinned `setup-node` before `npm pack`).
+
+**Severity:** medium-high — every upstream check attests to a state of the tree, not to the file that ships.
+
+**Fix pattern:** pack **once** → upload as a workflow artifact → a dedicated smoke job downloads that exact artifact, installs it in a scratch project, and exercises the public entry points (ESM import, `require(esm)` where claimed, installed bin, browser bundle where claimed) → the publish job downloads the same artifact and publishes it verbatim (`npm publish <file>.tgz --ignore-scripts`). Pin the packing toolchain with `setup-node` + explicit `node-version`. The smoke job holds no credentials, so a full dev-dependency install there (e.g. for a lockfile-pinned esbuild) is safe.
+
+**Companion:** item 9 — the publish job stays minimal precisely because smoking happened elsewhere.
+
+## 9. Minimal Credentialed Publish Job
+
+**Detection:** the job holding `id-token: write` or a registry token also runs `actions/checkout`, dependency install, build, or test steps.
+
+**Severity:** medium
+
+**Why:** Everything that executes next to the publishing identity is in the blast radius — dev dependencies, lifecycle scripts, build plugins. A compromised transitive dependency running inside the credentialed job can publish arbitrary code; the same compromise in an uncredentialed job cannot.
+
+**Fix:** the publish job should contain exactly: registry auth setup (`setup-node` with `registry-url`), artifact download, and the publish command with `--ignore-scripts`. No checkout, no install, no cache. All building, checking, and smoking happens in earlier uncredentialed jobs (items 2 and 8).
+
+## 10. Publisher-Side Settings (npm)
+
+**Applies when `release_publishes_to_npm` is `true`.** Not auditable via `gh` — these live on npmjs.com's package settings page. Report as ask-the-user verification items:
+
+- **Trusted Publisher pinned exactly** to `owner/repo` + the release workflow filename. A publisher scoped wider than the one workflow widens who can mint publishes.
+- **Publishing access** set to *Require two-factor authentication and disallow bypass 2fa tokens* once OIDC is the only publish path. This kills the token fallback entirely and does not affect Trusted Publishing.
+
+**Why:** the tag ruleset and workflow hardening protect the OIDC path, but a leaked legacy automation token bypasses all of it unless token publishing is disallowed registry-side.

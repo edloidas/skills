@@ -17,7 +17,7 @@ The architecture is designed to grow. Adding a new audit area means writing a ne
 **Currently implemented:**
 - GitHub Actions workflows under `.github/workflows/` — see `references/actions-checklist.md`
 - Release configuration (`release.yml`, `package.json`, `dependabot.yml`, npm publishing) — see `references/release-checklist.md`
-- Repository settings exposed via the GitHub REST API (Actions defaults, branch and tag rulesets, secret scanning) — see `references/repo-settings-checklist.md`
+- Repository settings exposed via the GitHub REST API (Actions defaults, branch and tag rulesets, secret scanning and other security features, deploy environments and secrets) — see `references/repo-settings-checklist.md`
 - Package manager and install-time supply-chain controls (pnpm/bun lifecycle scripts, `minimumReleaseAge`, scope→registry mapping) — see `references/package-manager-checklist.md`
 
 **Planned (not yet implemented):**
@@ -125,6 +125,7 @@ Read every file under `.github/workflows/`. For each, evaluate:
 5. `actions/cache` keys — must include `${{ github.sha }}` or `hashFiles(...)` for entropy.
 6. `id-token: write` (OIDC) — restrict to publish/deploy workflows only.
 7. Third-party action sources — list non-first-party actions.
+8. Push-triggered deploys holding secrets — deploy-provider secrets referenced in a broad `push:`-triggered workflow without an `environment:` on the job. Critical for production targets; remediation is owned by the Repo Settings audit (its item 10) — report and cross-reference.
 
 Read the full checklist at `{{SKILL_DIR}}/references/actions-checklist.md`.
 
@@ -150,7 +151,7 @@ Read `references/release-checklist.md` and `references/install-flags.md`. Prompt
 ```
 You are auditing release configuration for supply-chain hardening.
 
-**Release target context** (substituted at dispatch): `release_publishes_to_npm = {{RELEASE_PUBLISHES_TO_NPM}}` and `detected_build_systems = {{DETECTED_BUILD_SYSTEMS}}`. If `release_publishes_to_npm` is `false`, skip items 4 and 5 entirely and state in the report header: "npm publish not detected — `--prod` and provenance items skipped." Items 1, 2, 3, 6, 7 always apply.
+**Release target context** (substituted at dispatch): `release_publishes_to_npm = {{RELEASE_PUBLISHES_TO_NPM}}` and `detected_build_systems = {{DETECTED_BUILD_SYSTEMS}}`. If `release_publishes_to_npm` is `false`, skip items 4, 5, and 10 entirely and state in the report header: "npm publish not detected — `--prod`, provenance, and npm publisher-side items skipped." Items 1, 2, 3, 6, 7, 8, 9 always apply.
 
 Read `.github/workflows/release.yml` (or equivalent), `package.json`, `.github/dependabot.yml`, and any publishing scripts. Evaluate:
 
@@ -161,6 +162,9 @@ Read `.github/workflows/release.yml` (or equivalent), `package.json`, `.github/d
 5. npm provenance — for public packages, Trusted Publishers (OIDC) and `--provenance` or pnpm OIDC. **Skip when `release_publishes_to_npm` is false** — the artifact isn't going to npm.
 6. Token usage — secrets or OIDC only. No hardcoded tokens, no workflow_dispatch input tokens. (Always applies.)
 7. `dependabot.yml` ecosystem coverage — always require `package-ecosystem: "github-actions"`. For each entry in `detected_build_systems` other than `github-actions`, recommend the matching Dependabot ecosystem: `npm` covers npm/pnpm/yarn/bun; `gradle`, `maven`, `cargo`, `pip`, `docker` map 1:1. Do NOT require `npm` when `release_publishes_to_npm` is false unless a Node lockfile is present (then it covers dev-dep updates).
+8. Artifact identity — the published artifact must be the exact bytes that were smoked/inspected: pack once, upload, smoke the downloaded artifact in a scratch project, publish that same artifact. Flag re-packing in the publish job, tests that rebuild the packed output, and unpinned packing toolchains. (Applies to any packed artifact.)
+9. Minimal credentialed publish job — the job holding `id-token: write` or registry tokens must contain only auth setup, artifact download, and the publish command with `--ignore-scripts`. No checkout, no install, no build. (Always applies.)
+10. Publisher-side npm settings — not API-auditable; emit as ask-the-user items: Trusted Publisher pinned to exact repo + workflow filename, and token-based publishing disallowed (require 2FA, no bypass tokens) once OIDC is the only path. **Skip when `release_publishes_to_npm` is false.**
 
 Read the full checklists at:
 - `{{SKILL_DIR}}/references/release-checklist.md`
@@ -185,7 +189,9 @@ Resolve `<owner>/<repo>` via `gh repo view --json nameWithOwner --jq .nameWithOw
 5. PR approval rule — `required_approving_review_count >= 1` for multi-contributor repos. Flag the Dependabot interaction (see ruleset-splitting pattern in the checklist).
 6. Tag protection rulesets — if the release workflow triggers on `v*` tags, there MUST be a tag ruleset blocking `creation`, `update`, and `deletion` on `refs/tags/v*`, with bypass limited to Admins.
 7. Secret scanning + push protection — enabled where the plan supports it.
-8. Bypass actor patterns — flag every `bypass_mode: always` actor and warn that bypass is all-or-nothing per ruleset.
+8. Dependabot security updates, private vulnerability reporting, CodeQL default setup — enabled where the plan supports them. **High** if `SECURITY.md` advertises private vulnerability reporting while the API reports it disabled.
+9. Deploy secrets reachable from arbitrary branches — deploy-provider credentials stored as repository-level secrets while a broad `push:`-triggered workflow references them. Critical for production targets. Remediation order matters (environment created before the workflow references it; secrets are write-only; repo-level copies deleted last) — follow checklist item 10 exactly.
+10. Bypass actor patterns — flag every `bypass_mode: always` actor and warn that bypass is all-or-nothing per ruleset.
 
 Read the full checklist at `{{SKILL_DIR}}/references/repo-settings-checklist.md` — it contains the exact `gh api` commands for both detection and remediation, plus well-known actor IDs (Dependabot Integration = 29110, Admin RepositoryRole = 5) and the ruleset-splitting pattern for granular bypass.
 
