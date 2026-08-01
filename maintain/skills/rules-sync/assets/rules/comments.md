@@ -40,14 +40,6 @@ The highlighter colors **per line**, so a prefix on the first line only leaves t
 const signal = controller.signal;
 ```
 
-Wrong — line two loses the color, and line three reads as part of the warning:
-
-```ts
-// ! Retries reuse the same AbortSignal.
-//   A signal already aborted makes every retry fail instantly.
-// Unrelated note.
-```
-
 ## `// ?` is for doubt, not for rationale
 
 This is the one that gets misused. A finished decision with a non-obvious reason is a plain comment. `// ?` means the code is still open — a flag to come back to, not an explanation.
