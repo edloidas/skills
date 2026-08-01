@@ -13,7 +13,7 @@ Don't explain WHAT the code does — names already do that. Don't reference the 
 
 ## Prefixes
 
-Four single-line prefixes, picked so a comment-highlighter plugin colors each one differently. The color is the point — it is what makes a prefix worth using over a plain comment. Never combine two. Never use `// ----`, `// ====`, or numeric headers (`// ---- 1. Validate ----`).
+Four single-line prefixes, picked so a comment-highlighter plugin colors each one differently. The color is the point — it is what makes a prefix worth using over a plain comment. Never combine two.
 
 | Prefix | Color | Use for |
 |--------|-------|---------|
@@ -26,6 +26,26 @@ Four single-line prefixes, picked so a comment-highlighter plugin colors each on
 // ! Potential race condition if fetch retries here
 // ? May need to memoize once this call becomes hot
 // TODO: [#123] Replace mock with live API
+```
+
+## Continuation lines
+
+The highlighter colors **per line**, so a prefix on the first line only leaves the rest of the block uncolored. Repeat the prefix on every line the block covers. Never continue with a bare indented `//` — that line loses the color and stops looking like part of the warning.
+
+```ts
+// ! Retries reuse the same AbortSignal.
+// ! A signal already aborted makes every retry fail instantly.
+
+// Unrelated note: no prefix, no indent, blank line between the two blocks.
+const signal = controller.signal;
+```
+
+Wrong — line two loses the color, and line three reads as part of the warning:
+
+```ts
+// ! Retries reuse the same AbortSignal.
+//   A signal already aborted makes every retry fail instantly.
+// Unrelated note.
 ```
 
 ## `// ?` is for doubt, not for rationale
@@ -44,7 +64,7 @@ If removing the uncertainty would not change the comment, it should not be `// ?
 
 ## `// *` sections
 
-Wrap in blank `//` lines. Header ≤ 4 words.
+Wrap in blank `//` lines. Header ≤ 4 words. Never `// ----`, `// ====`, or numbered headers (`// ---- 1. Validate ----`). The `*` stays on the header line alone — the blank `//` lines carry no text, so the continuation rule above does not apply to them.
 
 ```ts
 //
