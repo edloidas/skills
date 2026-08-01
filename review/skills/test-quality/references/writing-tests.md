@@ -42,7 +42,24 @@ Path enumeration is a non-goal. The tools:
   `@ParameterizedTest`, never a `for` loop (a loop hides which case failed).
 - **Property-based tests** for invariants on parsers, math, encoders — e.g. fast-check /
   jqwik: "result is always an integer, ≥ 0, ≤ subtotal". Properties catch the bug classes
-  example tables only sample.
+  example tables only sample — *if the oracle is tight*. Before keeping one, name the dumbest
+  implementation that satisfies it: `abs(x) >= 0` is satisfied by `() => 0`, `floor(x) <= x`
+  by a large negative constant. Tighten to a two-sided bound
+  (`floor(x) <= x && x < floor(x) + 1`) or a metamorphic relation — round-trip
+  (`parse(print(x)) === x`), agreement with a slow reference implementation, invariance under
+  reordering. A property nothing dumb survives is worth ten examples; a one-sided one is
+  worth less than the example table next to it.
+- **Exhaustiveness gates in the type system** for closed sets — error codes, discriminated
+  unions, state enums. A `Record<ErrorCode, Case>` case table (or a Java `EnumMap` /
+  exhaustive `switch`) turns "someone added a code without a test" into a compile error.
+  This is the one kind of completeness worth engineering deliberately, and unlike a coverage
+  threshold it cannot be satisfied by a test that asserts nothing.
+- **Golden vectors** where an exact output is a documented *external* promise — a seeded
+  RNG's sequence, a wire format, a hash, a payload other systems parse. They resemble
+  snapshots and are their opposite (anti-patterns 1.4): the values are chosen and reviewed,
+  and changing one is a breaking change. Pick vectors that hit the awkward paths (rejection
+  sampling, wide ranges, non-ASCII input, safe-integer boundaries), and say in the name that
+  the values are a compatibility contract so nobody "just regenerates" them.
 
 Five sharp tests beat forty exhaustive ones.
 
@@ -54,9 +71,17 @@ Five sharp tests beat forty exhaustive ones.
 - **Act** exactly once. Two Acts = two tests.
 - **Assert** the outcome with precise matchers. Expected values are **hand-computed
   constants** — `expect(total).toBe(7500)` with a comment if the arithmetic isn't obvious
-  (`// 10000 − 25%`). Never re-derive the expectation with the SUT's formula.
+  (`// 10000 − 25%`). Never re-derive the expectation with the SUT's formula, and never let
+  Arrange establish the very state Assert checks — then the SUT contributes nothing.
+- **Separate volatile detail from structure.** When a result carries both a stable shape and
+  churn-prone detail (source spans, ids, timestamps, formatting), assert them in different
+  tests. Otherwise a one-character shift produces a screen-sized structural diff and
+  reviewers start rubber-stamping. Isolate the volatile part — don't drop it.
 - **No logic** in test bodies: no `if`, no loops, no `try/catch` (use
-  `expect(...).toThrow` / `assertThatThrownBy`). Tests should be embarrassingly linear.
+  `expect(...).toThrow` / `assertThatThrownBy`). Tests should be embarrassingly linear. When
+  the assertion needs the error's *payload* (code, position, fields), use a helper that fails
+  if nothing threw and returns the typed error — a bare `try/catch` with the asserts inside
+  `catch` reports green the day the SUT stops throwing.
 - **DAMP over DRY**: a reader of a *failure* must understand the test without hopping files.
   Extract helpers for plumbing (firing events, building requests), keep the meaningful values
   visible in the test.
@@ -177,6 +202,11 @@ block — builders carry the defaults.
   contract.
 - Don't mock your own UI library to test a component built from it — that tests prop
   plumbing. Render the real thing; mock the data boundary.
+- Errors: `expect(...).toThrow(Type)` / `await expect(p).rejects.toThrow(Type)`. For payload
+  assertions write a typed helper (`expectAppError(fn)`) that throws when nothing threw; if a
+  raw `try` is unavoidable, put `expect.unreachable()` immediately after the call.
+- Run `--shuffle --repeat=5` before merging any suite-level change — order dependence is
+  cheap to find now and expensive to inherit.
 
 ### JUnit 5 / Mockito / AssertJ (Java)
 

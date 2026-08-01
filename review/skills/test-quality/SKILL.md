@@ -3,7 +3,8 @@ name: test-quality
 description: >
   Write behavior-pinning tests and audit existing test suites for anti-patterns — tautological
   mock round-trips, weak assertions (toBeDefined / assertNotNull), implementation coupling,
-  flaky timing, snapshot rubber-stamping — then tighten, rewrite, or delete the offenders.
+  flaky timing, snapshot rubber-stamping, and tests claiming guarantees they cannot provide —
+  then tighten, rewrite, or delete the offenders.
   Use when asked to write tests for new or existing code, review or audit test quality,
   improve a test suite, fix flaky or brittle tests, or decide whether tests should be kept,
   fixed, or removed.
@@ -25,7 +26,7 @@ Every bad test violates one direction of that biconditional:
 | Direction violated | Failure mode | Typical shapes |
 | --- | --- | --- |
 | Fails when nothing broke | **False alarm** — erodes trust, blocks refactoring | implementation coupling, over-mocking, flaky timing, order dependence |
-| Green when something broke | **False confidence** — coverage without protection | tautologies, weak asserts, snapshot rubber-stamps, trivia tests |
+| Green when something broke | **False confidence** — coverage without protection | tautologies, weak asserts, snapshot rubber-stamps, self-fulfilling setups, over-claimed guarantees, trivia tests |
 
 A suite that cries wolf gets ignored; a suite that never cries protects nothing. Both cost
 maintenance and return nothing — fewer, sharper tests beat either. **Deleting a bad test is a
@@ -33,18 +34,23 @@ quality improvement**, not a coverage regression.
 
 Corollary: coverage percentage measures neither direction. 0% on a module is real information
 (a gap); high coverage proves nothing. Never write a test whose only justification is a
-coverage number.
+coverage number — read *which* lines are uncovered instead. Uncovered defensive branches and
+exhaustiveness guards are correct; raise a threshold only for a gap in real behavior.
 
 ## The Five-Question Gate
 
 Every test — new or existing — must pass all five. Any "no" → fix or delete.
 
-1. **Contract** — which one-sentence promise of the public API does it pin? Can't name the
-   sentence → it tests implementation detail, a mock, or nothing.
+1. **Contract** — which one-sentence promise of the public API does it pin, and does the name
+   claim no *more* than the assert delivers? No sentence → it tests implementation detail, a
+   mock, or nothing. Name (or the CI job around it) over-claims → a false guarantee, worse
+   than no test.
 2. **Refactor-proof** — would it survive a behavior-preserving refactor of the internals?
    No → it's wrong by definition, regardless of what it has caught before. Non-negotiable.
-3. **Falsifiable** — would it fail for a realistic bug? Mentally flip a `<` to `<=`, break the
-   formula, swap an argument — does it go red?
+3. **Falsifiable** — would it fail for a realistic bug? Flip a `<` to `<=`, break the formula,
+   swap an argument. Sharpest form: name the dumbest implementation that still passes — if a
+   constant, the identity function, or the test's own Arrange step satisfies the assert, it
+   constrains nothing.
 4. **Diagnostic** — does the name plus the failure diff identify the broken rule without a
    debugger?
 5. **Deterministic** — same result every run, in any order: no real time, no real network,
@@ -90,8 +96,9 @@ Infer the mode from the request; explicit arguments override. "Write tests for X
    formula. No ifs, loops, or try/catch in test bodies.
 4. **Doubles** per the policy above. Fake timers instead of sleeps; clock as an argument where
    the design allows.
-5. **Verify**: run the suite. Then mutation spot-check the riskiest rule — break the SUT on
-   purpose (flip a boundary, change a constant), confirm the test goes red, revert.
+5. **Verify**: run the suite, then re-run it shuffled. Then mutation spot-check the riskiest
+   rule — break the SUT on purpose (flip a boundary, change a constant), confirm the test goes
+   red, revert. A new test that can't go red is theater regardless of how it reads.
 
 Details, naming rules, and a worked example: `references/writing-tests.md`.
 
@@ -100,9 +107,12 @@ Details, naming rules, and a worked example: `references/writing-tests.md`.
 1. **Scope**: explicit argument → that. Otherwise test files touched by uncommitted changes;
    otherwise ask, or sample the suite (mix of small/large, logic/mock-heavy files).
 2. **Mechanical scan** for grep-able smells (weak asserts, sleeps, `.skip`/`@Disabled`,
-   `.only`, loops in test bodies, mock round-trips) — commands in
+   `.only`, loops in test bodies, mock round-trips, catch-only error tests) — commands in
    `references/audit-procedure.md`.
-3. **Per-test pass**: run each test through the Five-Question Gate and the catalog in
+3. **Dynamic checks**: run the suite, then re-run it shuffled and repeated. Isolation,
+   flakiness, and runtime don't grep — a green shuffled run is evidence no static audit can
+   produce, and a red one is a High finding that names itself.
+4. **Per-test pass**: run each test through the Five-Question Gate and the catalog in
    `references/anti-patterns.md`. Assign a verdict:
 
    | Verdict | When |
@@ -112,7 +122,9 @@ Details, naming rules, and a worked example: `references/writing-tests.md`.
    | **Rewrite** | Real contract worth pinning, but the test pins implementation or a mock |
    | **Delete** | No contract sentence, duplicate coverage, trivia, rotting disabled test |
 
-4. **Report** using the template in `references/audit-procedure.md`. Audit mode never edits.
+5. **Report** using the template in `references/audit-procedure.md`. Name what the suite does
+   *well* alongside the defects — an unnamed good pattern is one refactor from deletion. Close
+   with an overall verdict and an ordered fix path. Audit runs the suite but never edits it.
 
 ### Improve
 
@@ -133,6 +145,11 @@ Details, naming rules, and a worked example: `references/writing-tests.md`.
 | Smell | Verdict → fix |
 | --- | --- |
 | Mock returns X, assert X comes back | Delete, or Rewrite against the translation the module performs |
+| Name/CI claims a property (complexity, perf, security) the assert can't measure | Rewrite to what it does pin + rename, or Delete the claim |
+| Arrange — or a grep of the SUT's own source — establishes what the Assert checks | Rewrite around the real producer: run it, inspect the artifact |
+| All assertions live inside `catch` | Tighten: `toThrow` / a helper that fails when nothing throws |
+| Property a constant or identity function would satisfy | Tighten to two-sided/metamorphic, or Delete |
+| N feature tests all re-proving one mechanism | Consolidate opportunistically — never a headline finding |
 | Expected value computed with SUT's formula | Tighten: replace with hand-computed constant |
 | `toBeDefined` / `assertNotNull` / `not.toThrow` as the only assert | Tighten: assert the precise value or shape |
 | Asserting internal call order/counts (undocumented) | Rewrite against observable output, or Delete |
@@ -167,6 +184,13 @@ Full catalog with mechanisms, detection, and worked fixes: `references/anti-patt
   implementation-coupled body is worse than before — the label lies.
 - **Auditing e2e suites with unit-test rules.** e2e tests legitimately chain steps and share a
   browser; hold them to determinism, explicit asserts, and independence — not to one-Act purity.
+- **Auditing statically only.** Order dependence, flakiness, and real-IO slowness are invisible
+  to grep. Run the suite; run it shuffled. One minute buys a claim you can defend.
+- **Reporting defects without calibration.** "12 findings" reads the same for an excellent
+  suite as for a rotten one. Name the strengths, rank the findings, and don't lead with
+  redundant deterministic tests — they cost little, and a pass to lower a test count costs
+  more review than it returns. Count measures effort; ask instead what each test is the only
+  one to catch.
 
 ## References
 

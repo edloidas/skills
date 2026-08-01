@@ -80,6 +80,11 @@ bundled into unrelated PRs.
 **Fix:** replace with explicit asserts on the few properties that are the contract. If no one
 can say which properties matter, the test has no contract — delete.
 
+**Not this:** *golden vectors* — exact expected outputs pinning a documented external promise
+(a seeded RNG's sequence, a wire format, a hash, a payload other systems parse). They look
+like snapshots and are their opposite: the values were chosen and reviewed, and changing one
+is a breaking change rather than a keystroke. Credit them in an audit, don't flag them.
+
 ### 1.5 Wait-as-assert (e2e)
 
 ```js
@@ -116,6 +121,99 @@ learns the wrong lesson. This is a bug-tracker entry wearing a test costume.
 **Fix:** file/locate the issue, link it, and either fix the behavior or mark the test
 explicitly (`it.fails`, `@Disabled("XP-1234: returns 5, should be 4")`) so green never
 endorses the wrong value. Surface these in any audit report — they're high-signal.
+
+### 1.8 Proxy metric sold as a guarantee
+
+```ts
+// complexity.test.ts — "guards against quadratic keep/drop"
+expect(rng.callCount).toBe(20);
+```
+
+**Mechanism:** the assertion pins a proxy (draw count, call count, byte size, line count)
+that merely correlates with the promised property (time/space complexity, performance,
+security, thread-safety). A quadratic implementation makes exactly the same number of draws.
+The test isn't wrong about its proxy — it's wrong about its *claim*, and the claim is what
+the file name, the CI job description, and the next maintainer act on. Worse than no test:
+it retires the question.
+
+**Detect:** file or test names containing `complexity`, `perf`, `performance`, `benchmark`,
+`memory`, `scalab*`, `security` whose assertions count something else. Read the CI docs
+alongside — a workflow that advertises a "performance gate" no assertion measures is the
+same defect one level up.
+
+**Fix:** split the claim from the measurement. Keep the count assertion under its true name
+(deterministic consumption and draw order — a real contract), and measure the promised
+property with the right instrument: instrumented operation counters, a benchmark with a
+regression threshold, or an explicit scaling assertion (10× input ⇒ < 20× operations). If
+none is practical, drop the claim rather than let CI keep advertising it.
+
+### 1.9 Self-fulfilling test
+
+```ts
+await chmod(cliPath, 0o755);                       // arrange
+expect((await stat(cliPath)).mode & 0o111).toBeTruthy();   // asserts what arrange just did
+
+expect(pkg.scripts.build).toContain('chmod +x');   // asserts the script's text, not its effect
+```
+
+**Mechanism:** two shapes of one failure — the code under test never influences the
+assertion. In the first, Arrange establishes the exact postcondition Assert checks, so
+deleting the build step entirely keeps it green. In the second the test greps the
+implementation's *source*, pinning one spelling of a step while proving nothing about the
+artifact it produces.
+
+**Detect:** an Arrange line writing the same state the assert reads (`chmod`/`mkdir`/`write`
+then `stat`/`exists`); assertions that read the SUT's own scripts, config, or source text;
+a test that runs the TypeScript entrypoint directly while claiming to check the built
+output.
+
+**Fix:** exercise the real producer — run the actual build/packaging command into a temp dir
+and inspect its untouched output. If that's too slow for the unit suite, move it to a
+build-verification job rather than faking it locally; a slow truth beats a fast lie.
+
+### 1.10 Error test that can pass without an error
+
+```ts
+try {
+  lex('2d');
+} catch (e) {
+  expect(e.code).toBe('UNEXPECTED_EOF');   // the only assertions live here
+}
+```
+
+**Mechanism:** when the SUT stops throwing — precisely the regression the test exists to
+catch — the `catch` block is skipped and the test reports green. Silent by construction: it
+can never fail, so it never reaches triage.
+
+**Detect:** `try {` in a test body with no `expect.unreachable()` / `fail()` / post-call
+assertion. Count the ratio across the tree — 65 `try` blocks against 11 guards is a
+systematic gap, not a one-off, and should be reported as one finding with a list, not 54.
+
+**Fix:** `expect(() => …).toThrow(X)` / `assertThatThrownBy` when the type is the contract.
+When the assertion needs the error's payload (code, position, fields), use a helper that
+fails if nothing threw and returns the typed error. Most repos already have one — find it
+(and check whether the repo's own rules already mandate it) before writing another.
+
+### 1.11 One-sided property oracle
+
+```ts
+fc.assert(fc.property(fc.double(), x => Number.isInteger(floor(x)) && floor(x) <= x));
+```
+
+**Mechanism:** property tests swap specific expectations for invariants, so a weak invariant
+constrains almost nothing across an enormous input space while reading as the most rigorous
+test in the file. The example above is satisfied by returning a large negative constant;
+`abs(x) >= 0` is satisfied by `() => 0`.
+
+**Detect:** a single-sided comparison, a type check, or a range check as the whole property.
+The test: name the dumbest implementation that satisfies it — constant, identity, "return
+the first argument". If one exists, the property is decorative.
+
+**Fix:** make the oracle two-sided (`floor(x) <= x && x < floor(x) + 1`) or metamorphic — a
+relation only the correct answer satisfies: round-trip (`parse(print(x)) === x`), agreement
+with a slow reference implementation, invariance under reordering, consistency with an exact
+example at chosen points. When exact example tests already pin the rule harder, delete the
+property rather than pad it.
 
 ---
 
@@ -239,7 +337,8 @@ wrong in interesting ways, and a loop reports "one of these failed" without sayi
 **Fix:** loops over cases → `it.each` / `@ParameterizedTest` (each case gets a name and an
 individual failure). Branching mocks → `mockReturnValueOnce` chains, or split into one test
 per scenario. `try/catch` asserting in `catch` → `expect(...).toThrow` /
-`assertThatThrownBy`.
+`assertThatThrownBy` — and note this one is not merely a diagnosis problem: it also passes
+silently when nothing throws (1.10), so it belongs in Group 1 severity-wise.
 
 ### 3.3 Setup labyrinth (mystery guest)
 
@@ -277,3 +376,22 @@ archaeology, not intent.
 
 **Fix:** fix it now, or delete it — git remembers. A disabled test may stay only with a
 linked issue and a reason in the annotation.
+
+### 3.6 One mechanism re-proved through many surfaces
+
+**Mechanism:** N tests titled after unrelated features that all bottom out in the same code
+path — seeded reproducibility asserted again for Fate dice, explosions, rerolls, and grouped
+rolls when a single RNG forwarding call does the work in every case. Unlike 3.4 the *text*
+differs, so it survives review; what repeats is the contract. The direct cost is small
+(runtime, one edit per contract change); the real cost is misreading — a four-digit test
+count taken as broad protection when the marginal test protects nothing new.
+
+**Detect:** for each test ask what it would be the *only* one to catch. No unique answer →
+redundant. Look for one fixture, seed, or helper threading through tests named after
+different features.
+
+**Fix:** keep the test that pins the mechanism directly, plus the feature tests that add a
+contract of their own; drop the rest **opportunistically** when next touching that area.
+Deterministic redundant tests are cheap — a dedicated cleanup pass to lower a test count
+costs more review than it returns, and this is never an audit's headline finding. Say so
+explicitly in the report so nobody reads "redundant" as "urgent".

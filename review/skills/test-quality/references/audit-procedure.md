@@ -1,6 +1,7 @@
 # Audit Procedure
 
-Mechanical scan → per-test gate pass → verdicts → report. Audit mode never edits files.
+Mechanical scan → dynamic checks → per-test gate pass → verdicts → report. Audit mode never
+edits files.
 
 ## 1. Scope and inventory
 
@@ -52,7 +53,45 @@ grep -rn "@Disabled\|@Ignore" --include="*Test.java"
 
 # Snapshots (1.4)
 fd -e snap | xargs wc -l 2>/dev/null | sort -rn | head
+
+# Catch-only error tests (1.10): compare try blocks against no-throw guards
+grep -rc "try {" --include="*.test.*" . | grep -v ":0$" | sort -t: -k2 -rn | head
+grep -rn "expect\.unreachable\|fail(\"\|Assertions\.fail" --include="*.test.*" | wc -l
+
+# Self-fulfilling setup (1.9): the test writes the state it then asserts,
+# or asserts the SUT's own source/scripts instead of its output
+grep -rn "chmod\|mkdirSync\|writeFileSync\|cpSync" --include="*.test.*"
+grep -rn "package\.json\|readFileSync(.*scripts\|toContain('chmod" --include="*.test.*"
+
+# Over-claiming names (1.8): does the assert measure what the name promises?
+fd -e test.ts -e test.tsx -e spec.ts | grep -Ei "complex|perf|benchmark|memory|scalab|secur"
+rg -n "performance|complexity|O\(n" .github/workflows/ 2>/dev/null   # claims one level up
+
+# Property oracles (1.11): read each property, name the dumbest passing implementation
+grep -rn "fc\.assert\|fc\.property\|@Property\|forAll(" --include="*.test.*"
 ```
+
+## 2b. Dynamic checks
+
+Isolation, flakiness, and runtime don't grep — they have to be observed. Three runs, usually
+under a minute, and they produce the only claims in the report backed by evidence rather
+than reading.
+
+```bash
+<test command>                              # baseline: green? how long for how many tests?
+<test command> --shuffle --repeat=5         # vitest; jest: --randomize, JUnit: random order
+<test command> --coverage                   # then open the report — read lines, not the %
+```
+
+| Observation | What it licenses you to say |
+| --- | --- |
+| Shuffle + repeat green | Concrete evidence against 2.4/2.5 — state it; most audits can only guess at isolation |
+| Shuffle red | An order dependence exists. **High** finding, and the failing pair names it |
+| Slow for its size | Real IO, sleeps, or a missing seam — go find which (2.3). A fast suite is evidence the boundary discipline held |
+| Coverage report | Judge the *uncovered lines*. Defensive branches and exhaustiveness guards uncovered = correct, say so. A whole error path or module uncovered = a real gap and a finding |
+
+Never report the coverage percentage as a finding in either direction, and don't recommend
+raising a threshold to round a number up — see the Core Principle corollary in SKILL.md.
 
 ## 3. Per-test gate pass
 
@@ -74,6 +113,16 @@ Shortcuts that usually settle a verdict fast:
 - Name is a method name or ticket → 3.1, **Tighten** (rename) — then re-check question 1:
   if no rule-sentence exists for it, escalate to **Rewrite/Delete**.
 - Sleeps / real clock → 2.3, **Tighten**.
+- Name or CI job promises a property no assertion measures → 1.8, **Rewrite + rename** (the
+  claim is the defect; the underlying assert is often worth keeping under an honest name).
+- Arrange writes the state the Assert reads, or the assert greps the SUT's own source →
+  1.9, **Rewrite** around the real artifact.
+- Every assertion inside a `catch` → 1.10, **Tighten**. Report the whole set as one finding
+  with a file list, not one finding per occurrence.
+- Property satisfied by a constant / identity / first-argument implementation → 1.11,
+  **Tighten** to a two-sided or metamorphic oracle; **Delete** if exact tests already pin it.
+- Feature-named tests that all exercise one mechanism → 3.6, **Delete opportunistically** —
+  list under suite-level observations, not under a severity heading.
 - Disabled without a linked issue (use git blame for age when it matters) → 3.5, **Delete**
   — unless its intent names a real, otherwise-uncovered promise, then **Rewrite**.
 - Asserts an acknowledged-wrong value → 1.7, **Surface separately** (it's a bug report).
@@ -90,9 +139,17 @@ Shortcuts that usually settle a verdict fast:
 Severity, for ordering the report:
 
 - **High** — false confidence on money/security/data-loss paths; pinned known-wrong values;
-  tautologies on critical modules.
-- **Medium** — change detectors blocking refactors; flaky tests; over-mocked orchestrators.
-- **Low** — naming, copy-paste arrange, weak asserts on low-risk paths.
+  tautologies on critical modules; a guarantee the project *relies on* (a CI gate, a
+  documented promise) that no assertion actually measures (1.8/1.9); a proven order
+  dependence.
+- **Medium** — change detectors blocking refactors; flaky tests; over-mocked orchestrators;
+  error suites that can pass without throwing (1.10).
+- **Low** — naming, copy-paste arrange, weak asserts on low-risk paths, weak property
+  oracles where exact tests already cover the rule.
+- **Not a finding** — redundant deterministic coverage (3.6). Suite-level observation only.
+
+A test that is technically fine but *claims* more than it delivers outranks a test that is
+merely weak: the weak test leaves the question open, the over-claiming one closes it wrongly.
 
 When criticality can't be judged from the test alone (unknown callers, unclear domain), place
 the finding at Medium and note what would raise it — don't guess High.
@@ -104,6 +161,12 @@ the finding at Medium and note what would raise it — don't guess High.
 
 Frameworks: vitest 3 (unit), wdio 9 (e2e)
 Verdicts: Keep 61 · Tighten 18 · Rewrite 7 · Delete 5
+Observed: 1,285 tests in 1.8s; shuffled ×5 green (6,425 runs, 4.2s); 99.9% lines covered
+
+One-paragraph calibration: where this suite sits, and what the substantive problems are.
+"Well above typical library quality but not yet SOTA — core coverage is unusually thoughtful;
+the weaknesses are three tests that claim protection they do not provide, plus avoidable
+duplication."
 
 ### High
 - `nodes.test.ts:54` — tautology: asserts mock's `total` round-trips (1.1) → Rewrite
@@ -128,10 +191,32 @@ Verdicts: Keep 61 · Tighten 18 · Rewrite 7 · Delete 5
 ### Suite-level observations
 - No error-path coverage in apis/exports
 - e2e specs share state via "Precondition" test (2.5)
+- `integration.test.ts` re-proves seeded reproducibility for six features through one RNG
+  forwarding path (3.6) — consolidate when next in the area, not as its own task
+
+### Strengths (protect these)
+- Randomness injected at the one unmanaged boundary; no mocking of owned modules
+- `Record<ErrorCode, Case>` makes a missing error-code test a compile error
+- Seeded-RNG golden vectors pin a documented compatibility promise, incl. rejection sampling
+- Part-tree structure asserted separately from source spans — span churn can't bury a
+  structural diff
+- Coverage threshold is correctly capped: the uncovered lines are defensive branches;
+  raising it would manufacture theater
+
+### Path to fixing
+1. Remove the false guarantees (1.8, 1.9) — highest value, smallest diff
+2. Make every error assertion impossible to pass silently (1.10)
+3. Strengthen or drop the weak properties (1.11)
+4. Consider mutation testing on the riskiest modules
+5. Prune duplication only when already touching the area
 ```
 
 Delete verdicts appear only in the Delete section (with a one-line justification each), not
 duplicated under severity headings.
+
+**Strengths are not padding.** They calibrate severity (twelve Low findings on an excellent
+suite ≠ twelve on a rotten one), and an unnamed good pattern is one refactor from deletion.
+Name the mechanism, not the vibe — "randomness injected at the boundary", not "good tests".
 
 ## 6. Improve pass (after an approved audit)
 
@@ -149,7 +234,8 @@ Work the report top-down by severity:
 Verification, in order:
 
 ```bash
-<test command>                  # full suite green
+<test command>                              # full suite green
+<test command> --shuffle --repeat=5         # rewrites and deletions didn't add coupling
 ```
 
 Then **mutation spot-check** every Rewrite: break the SUT rule the test claims to pin (flip
