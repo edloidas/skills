@@ -1,6 +1,6 @@
 {
   "name": "build",
-  "version": "4.2.1",
+  "version": "4.2.2",
   "description": "Git worktree management, conflict resolution, commit summaries, quick commits, and findings fixes",
   "author": {
     "name": "Mikita Taukachou",
