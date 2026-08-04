@@ -52,10 +52,18 @@ Rebased onto origin/<base> | Force-pushed issue-<number>
 ### [5] PR Created
 PR #<pr-number>: <title>
 Base: <base> <- issue-<number> | Reviewer: @<login> | Assignees: @<login>, @<login>
+Mergeable: yes
 <pr-url>
 ```
 
 Omit `Reviewer:` when none was set. List every assignee on `Assignees:` — `@me` plus the reviewer when one was set.
+
+`Mergeable:` is mandatory — it is the outcome of the Step 5 mergeability check. Values:
+
+- `yes` — `MERGEABLE` / `CLEAN`
+- `yes (<status>)` — mergeable but `mergeStateStatus` is not `CLEAN`, e.g. `yes (blocked — review required)`, `yes (unstable — checks running)`
+- `no — conflicts with <base>` — unresolved conflicts; the flow stops here
+- `unknown (GitHub still computing)` — settled at neither after 3 polls
 
 ### Step 6: Pre-Merge Summary
 

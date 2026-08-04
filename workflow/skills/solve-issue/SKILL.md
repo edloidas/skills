@@ -294,6 +294,19 @@ Let `/issue-flow` handle the per-step AskUserQuestion it already owns (squash
 confirmation, reviewer selection, merge pre-checks). Do not duplicate those
 prompts here.
 
+### Do not stop at "PR created"
+
+Both PR endgames must end with a mergeability verdict, not just a PR URL:
+
+- **PR + merge** — `/issue-flow` Step 6 waits on CI and merges. Report the
+  merged state, or the specific failing check that blocked it.
+- **PR only** — `/issue-flow` Step 5 still verifies mergeability. Report the
+  `Mergeable:` line it produces. Do not watch CI for this path, but do not
+  claim the PR is ready without that line either.
+
+If mergeability comes back `CONFLICTING`, the flow is not done: rebase,
+force-push, re-check, and report the resolved state.
+
 ## Error Handling
 
 | Situation                                | Action                                                          |

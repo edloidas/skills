@@ -550,7 +550,34 @@ Update project status to "Review":
 bash "<skill-dir>/scripts/project-status.sh" <number> "Review"
 ```
 
-Print the Step 5 report.
+### Verify mergeability
+
+**Always run this after creating a PR**, whether or not Step 6 will follow. A PR that cannot merge is not a finished step, and reporting "PR created" without checking hides that.
+
+GitHub computes `mergeable` asynchronously, so it returns `UNKNOWN` for the first second or two — poll until it settles:
+
+```bash
+for i in 1 2 3; do
+  state=$(gh pr view <pr-number> --json mergeable,mergeStateStatus --jq '.mergeable + " " + .mergeStateStatus')
+  case "$state" in UNKNOWN*) sleep 3 ;; *) break ;; esac
+done
+echo "$state"
+```
+
+| Result | Action |
+| ------ | ------ |
+| `MERGEABLE` | Report `Mergeable: yes` on the Step 5 report and continue. |
+| `CONFLICTING` | Rebase onto base (`git fetch origin && git rebase origin/<base>`), force-push, re-run the poll. If conflicts are not mechanical, invoke the `resolve-conflicts` skill; if still unresolved, report `Mergeable: no — conflicts with <base>` and **stop before Step 6**. |
+| `UNKNOWN` after 3 polls | Report `Mergeable: unknown (GitHub still computing)`. Do not treat as failure. |
+
+`mergeStateStatus` adds context worth reporting when it is not `CLEAN`:
+- `BEHIND` — base moved ahead; rebase and force-push.
+- `BLOCKED` — branch protection or a required review is pending. Not a conflict; report it as-is.
+- `UNSTABLE` — checks are failing or still running.
+
+Do **not** run `gh pr checks --watch` here. Check monitoring belongs to Step 6; a PR-only flow reports the mergeability state and ends.
+
+Print the Step 5 report, including the `Mergeable:` line.
 
 ## Step 6: Merge PR
 
@@ -559,7 +586,7 @@ Print the Step 5 report.
 Determine the current user: `gh api user --jq .login`. If the PR reviewer OR assignee is someone **other than** the current user, **skip Step 6**:
 
 ```
-PR #<number> is ready for review by @<reviewer>. Merge skipped — awaiting external review.
+PR #<number> is ready for review by @<reviewer> (mergeable: <state from Step 5>). Merge skipped — awaiting external review.
 ```
 
 If reviewer AND assignee are the current user (self-review), or user explicitly asked to merge, proceed below.
