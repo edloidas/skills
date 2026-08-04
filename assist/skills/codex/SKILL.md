@@ -91,10 +91,12 @@ If no scope flag is given, the script defaults to uncommitted changes.
    - On a feature branch → `--base main` (or the actual base branch)
    - Reviewing a specific commit → `--commit <sha>`
 
-2. **Run the script** (set Bash timeout to 620000ms — review takes 3-10 min):
+2. **Run the script** (review takes 3-10 min). Pass `540` so the script's own
+   timer fires first and can print its timeout message, and set the Bash timeout to its
+   600000ms maximum:
 
 ```bash
-bash assist/skills/codex/scripts/run-codex.sh review --uncommitted
+bash assist/skills/codex/scripts/run-codex.sh review --uncommitted 540
 ```
 
 3. **Present the output** as Codex's review findings.

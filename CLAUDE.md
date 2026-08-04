@@ -70,11 +70,11 @@ skips it. `tools/skills-release` is the one current example.
 **Plugin groups:**
 - `plan/` — Issue drafting, analysis, triage, and full issue lifecycle (4 skills)
 - `build/` — Git worktree management, conflict resolution, commit summaries, quick commits, and findings fixes (5 skills)
-- `review/` — Code review, cleanup, test quality, critical review board, and quality improvement (7 skills)
+- `review/` — Adversarial review, code review, cleanup, test quality, critical review board, and quality improvement (8 skills)
 - `audit/` — CI, script, security, skill, workspace, and Three.js auditing (6 skills)
 - `maintain/` — Label sync, instruction file sync, permissions cleanup, lint migration, comment auditing, agent rule sync, editor config sync, repo security hardening, stale process cleanup, and session retros (10 skills)
 - `ship/` — Release workflows and deployment tools (2 skills)
-- `assist/` — External opinion and assistance tools (5 skills)
+- `assist/` — External opinion and assistance tools (6 skills)
 - `obsidian/` — Obsidian vault organization and working document management (1 skill)
 - `workflow/` — End-to-end workflows that orchestrate multiple skills (1 skill)
 
@@ -342,7 +342,7 @@ Only add `Codex` to a skill's `compatibility` frontmatter after reviewing that t
 actually Codex-safe. In this repo, Codex-compatible skills must also be exposed through
 `scripts/codex/catalog.json`.
 
-Seven skills are `compatibility: Claude Code`, each locked by what it actually does. They
+Eight skills are `compatibility: Claude Code`, each locked by what it actually does. They
 should stay Claude-only unless their workflow changes:
 
 - `maintain/skills/permissions-cleanup` — operates on Claude Code
@@ -352,6 +352,10 @@ should stay Claude-only unless their workflow changes:
 - `review/skills/consilium` and `review/skills/spec-extractor` — dispatch fleets of
   plugin-namespaced subagents via `subagent_type` and key temp files on
   `${CLAUDE_SESSION_ID}`.
+- `review/skills/adversarial-review` — dispatches parallel reviewers through the Task tool
+  with per-agent `model` overrides. Role diversity survives a port; model diversity does not,
+  and the model split is half of why the reviewers disagree usefully. Widen only after
+  verifying a host can actually vary the model per subagent.
 - `assist/skills/polish-prompt` — runs a four-way parallel candidate tournament plus a
   separate judge subagent, gates on `AskUserQuestion` at four points, and writes
   `.claude/tmp/polish-*-<session-id>.md`. Fleet orchestration, same class as `consilium`.

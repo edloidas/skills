@@ -10,14 +10,14 @@
 
 <p align="center">
   <img src="https://img.shields.io/github/v/tag/edloidas/skills?style=flat-square&color=FD3DB5&label=release" alt="Release">
-  <img src="https://img.shields.io/badge/skills-41-FD3DB5?style=flat-square" alt="41 skills">
+  <img src="https://img.shields.io/badge/skills-43-FD3DB5?style=flat-square" alt="43 skills">
   <img src="https://img.shields.io/badge/agents-4-FD3DB5?style=flat-square" alt="4 agents">
   <img src="https://img.shields.io/badge/license-MIT-FD3DB5?style=flat-square" alt="MIT license">
 </p>
 
 ---
 
-41 skills for planning, building, reviewing, auditing, maintaining, and shipping software —
+43 skills for planning, building, reviewing, auditing, maintaining, and shipping software —
 written once and distributed to [Claude Code](https://docs.anthropic.com/en/docs/claude-code),
 [Codex](https://developers.openai.com/codex), [OpenCode](https://opencode.ai), and
 [pi](https://pi.dev), following the [Agent Skills specification](https://agentskills.io/specification).
@@ -29,11 +29,11 @@ it. Nothing runs in the background, nothing is injected into every prompt.
 | ----- | -------------- | -----: |
 | [plan](#plan) | Issue drafting, scope analysis, backlog triage, full issue lifecycle | 4 |
 | [build](#build) | Worktrees, conflict resolution, commits, findings fixes | 5 |
-| [review](#review) | Change review, cleanup, review board, spec extraction, test quality | 7 |
+| [review](#review) | Adversarial + contextual review, cleanup, review board, spec extraction | 8 |
 | [audit](#audit) | CI, scripts, security, skills, workspace, Three.js | 6 |
 | [maintain](#maintain) | Label/rule/config sync, lint migration, repo hardening, comment audits, retros | 10 |
 | [ship](#ship) | npm releases, Railway deployments | 2 |
-| [assist](#assist) | Explanations, external opinions, discussion, handoffs | 5 |
+| [assist](#assist) | Explanations, external opinions, discussion, handoffs | 6 |
 | [obsidian](#obsidian) | Working documents in an Obsidian vault | 1 |
 | [workflow](#workflow) | End-to-end issue workflow | 1 |
 
@@ -41,13 +41,13 @@ it. Nothing runs in the background, nothing is injected into every prompt.
 
 | Agent | Install | What you get |
 | ----- | ------- | ------------ |
-| Claude Code | `/plugin marketplace add edloidas/skills` | 9 plugin groups, all 40 skills |
-| Codex | `codex plugin marketplace add edloidas/skills` | 8 wrapper plugins, 32 skills |
-| pi | `pi install git:github.com/edloidas/skills` | 33 skills |
-| OpenCode | `./scripts/skills-packaging.sh install-host opencode` | 33 skills |
-| Other | `npx skills add edloidas/skills --all` | All 40 skills |
+| Claude Code | `/plugin marketplace add edloidas/skills` | 9 plugin groups, all 43 skills |
+| Codex | `codex plugin marketplace add edloidas/skills` | 8 wrapper plugins, 34 skills |
+| pi | `pi install git:github.com/edloidas/skills` | 35 skills |
+| OpenCode | `./scripts/skills-packaging.sh install-host opencode` | 35 skills |
+| Other | `npx skills add edloidas/skills --all` | All 43 skills |
 
-Counts differ because each skill declares which hosts it supports. Seven skills depend on
+Counts differ because each skill declares which hosts it supports. Eight skills depend on
 Claude-only features — subagent fleets, the Skill tool, Claude's own config files — and ship only
 there. See [How skills reach each agent](#how-skills-reach-each-agent).
 
@@ -112,7 +112,7 @@ Install the whole collection as a pi package:
 pi install git:github.com/edloidas/skills
 ```
 
-This resolves the 33 pi-compatible skills through the `pi.skills` manifest in `package.json`.
+This resolves the 35 pi-compatible skills through the `pi.skills` manifest in `package.json`.
 
 Add `-l` to install project-locally into `.pi/settings.json` instead of globally. Note that
 `pi list` only reports global packages, so a `-l` install shows up in `.pi/settings.json` rather
@@ -137,7 +137,7 @@ cd skills
 ./scripts/skills-packaging.sh install-host opencode
 ```
 
-That links the 33 OpenCode-compatible skills into `~/.config/opencode/skills`. Pass `--dest <path>`
+That links the 35 OpenCode-compatible skills into `~/.config/opencode/skills`. Pass `--dest <path>`
 to install elsewhere. Re-run after `git pull`; it prunes only links pointing into this repo, so
 unrelated skills in the destination are left alone.
 
@@ -146,7 +146,7 @@ Opening this repository in OpenCode surfaces its generated repo-local set automa
 ### npx skills
 
 The [skills CLI](https://github.com/vercel-labs/skills) installs into any agent it supports and sees
-all 40 skills with no extra flags:
+all 43 skills with no extra flags:
 
 ```bash
 npx skills add edloidas/skills --list                                  # list
@@ -242,8 +242,14 @@ Git worktree management, conflict resolution, commit summaries, quick commits, a
 
 Code review, cleanup, critical review board, and quality improvement skills.
 
+`adversarial-review` and `changes-review` both take a diff and are deliberate opposites.
+`adversarial-review` attacks it — parallel reviewers, context withheld, nothing mutated.
+`changes-review` assesses it — full issue and PR context, tooling that may autofix, and an
+interactive fix menu at the end.
+
 | Skill | Description | Agent |
 | ----- | ----------- | ----- |
+| [adversarial-review](./review/skills/adversarial-review/) | Parallel cold reviewers that hunt bugs and requirement gaps — finds, never fixes | Claude |
 | [changes-review](./review/skills/changes-review/) | Deep logic analysis of code changes | All |
 | [code-cleanup](./review/skills/code-cleanup/) | Trim AI comment noise — restated/rationale comments — keep real gotchas | All |
 | [consilium](./review/skills/consilium/) | Critical review board — up to 6 reviewers (2 core + 4 on-demand) | Claude |
@@ -298,13 +304,14 @@ External opinion and assistance tools.
 | Skill | Description | Agent |
 | ----- | ----------- | ----- |
 | [ask](./assist/skills/ask/) | Explain concepts, verify claims, or challenge decisions | All |
+| [claude](./assist/skills/claude/) | Quick external opinion from Claude Code CLI | Codex, OpenCode, pi |
 | [codex](./assist/skills/codex/) | Quick external opinion from Codex CLI | Claude, OpenCode, pi |
 | [discuss](./assist/skills/discuss/) | Iterative discussion mode — analyze, push back, and polish, no code edits | All |
 | [handoff](./assist/skills/handoff/) | Compact the session into a handoff — inline text or per-project doc file | All |
 | [polish-prompt](./assist/skills/polish-prompt/) | Iteratively polish a prompt via blind-judged tournament rounds | Claude |
 
-`codex` shells out to the Codex CLI, so it ships everywhere except Codex, where it would be
-recursive.
+`codex` and `claude` are mirrors of each other: each shells out to the other model family's CLI,
+so each ships everywhere except its own host, where it would be recursive.
 
 ### Obsidian
 

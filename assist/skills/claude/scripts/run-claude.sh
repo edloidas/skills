@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# Run Codex CLI for quick external opinions.
+# Run Claude Code CLI for quick external opinions.
 # Usage:
-#   bash assist/skills/codex/scripts/run-codex.sh ask [timeout]        # reads question from stdin
-#   bash assist/skills/codex/scripts/run-codex.sh review [flags] [timeout]
+#   bash assist/skills/claude/scripts/run-claude.sh ask [file] [timeout]   # stdin if no file
+#   bash assist/skills/claude/scripts/run-claude.sh review [flags] [timeout]
 #     flags: --uncommitted | --base BRANCH | --commit SHA
 # Always exits 0. Errors reported to stdout.
 set -euo pipefail
@@ -10,21 +10,25 @@ set -euo pipefail
 MODE="${1:-ask}"
 shift || true
 
-if ! command -v codex &>/dev/null; then
-  echo "Codex CLI not installed — skipping."
+if ! command -v claude &>/dev/null; then
+  echo "Claude Code CLI not installed — skipping."
   exit 0
 fi
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-COMMON_FLAGS=(-m gpt-5.4 --enable fast_mode --ephemeral -c model_reasoning_effort=xhigh -c web_search=live)
+COMMON_FLAGS=(
+  -p --model fable --effort high --permission-mode auto
+  --allowed-tools "Read,Grep,Glob,Bash(git:*)"
+  --disallowed-tools "Edit,Write,NotebookEdit"
+)
 
-run_codex() {
+run_claude() {
   local exit_code=0
   "$@" || exit_code=$?
   if [[ $exit_code -eq 124 ]]; then
-    echo "Codex timed out."
+    echo "Claude timed out."
   elif [[ $exit_code -ne 0 ]]; then
-    echo "Codex failed (exit code $exit_code)."
+    echo "Claude failed (exit code $exit_code)."
   fi
   return 0
 }
@@ -42,7 +46,6 @@ collect_uncommitted() {
 
 case "$MODE" in
   ask)
-    # Accept: ask [file] [timeout] OR ask [timeout] (stdin fallback)
     INPUT_FILE=""
     TIMEOUT=300
     while [[ $# -gt 0 ]]; do
@@ -69,7 +72,7 @@ case "$MODE" in
     else
       PROMPT+="$(cat -)"
     fi
-    echo "$PROMPT" | run_codex timeout "${TIMEOUT}s" codex exec "${COMMON_FLAGS[@]}" -s read-only - 2>/dev/null
+    echo "$PROMPT" | run_claude timeout "${TIMEOUT}s" claude "${COMMON_FLAGS[@]}" 2>/dev/null
     ;;
   review)
     TIMEOUT=600
@@ -84,7 +87,6 @@ case "$MODE" in
       esac
     done
     if [[ -z "$DIFF" ]]; then
-      # Default: uncommitted changes
       DIFF="$(collect_uncommitted)"
     fi
     if [[ -z "$DIFF" ]]; then
@@ -97,7 +99,7 @@ case "$MODE" in
       PROMPT="$(cat "$REVIEW_PROMPT_FILE")"$'\n'
     fi
     PROMPT+="$DIFF"
-    echo "$PROMPT" | run_codex timeout "${TIMEOUT}s" codex exec "${COMMON_FLAGS[@]}" -s read-only - 2>/dev/null
+    echo "$PROMPT" | run_claude timeout "${TIMEOUT}s" claude "${COMMON_FLAGS[@]}" 2>/dev/null
     ;;
   *)
     echo "Unknown mode: $MODE. Use 'ask' or 'review'." >&2

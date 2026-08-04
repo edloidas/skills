@@ -3,14 +3,16 @@ name: solve-issue
 description: >
   End-to-end GitHub issue workflow: analyze the issue, branch, plan and
   implement, verify with available tests/build/lint (and optionally Playwright
-  + Storybook), clean up artifacts, squash to one commit, and choose a push /
-  PR / merge endgame via AskUserQuestion. Use when the user wants a single
+  + Storybook), simplify, attack the change with parallel adversarial reviewers
+  and fix what they find, trim comments and artifacts, squash to one commit,
+  and choose a push / PR /
+  merge endgame via AskUserQuestion. Use when the user wants a single
   autonomous command for an issue they already consider simple enough to
   delegate end-to-end, e.g. `/solve-issue 69` or `/solve-issue` (asks which
   issue first).
 license: MIT
 compatibility: Claude Code
-allowed-tools: Bash(gh:*) Bash(git:*) Bash(bash:*) Bash(jq:*) Bash(rm:*) Bash(ls:*) Read Edit Write Glob Grep AskUserQuestion
+allowed-tools: Bash(gh:*) Bash(git:*) Bash(bash:*) Bash(jq:*) Bash(rm:*) Bash(ls:*) Read Edit Write Glob Grep Task AskUserQuestion
 argument-hint: "[issue-number]"
 metadata:
   author: edloidas
@@ -19,9 +21,9 @@ metadata:
 # Solve Issue
 
 Runs the full issue workflow in one command: analyze → branch → plan →
-implement → verify → cleanup → squash commit → push/PR/merge. Designed for
-issues the user already judged simple. When uncertainty appears, pause and ask
-rather than guess.
+implement → verify → advisors → cleanup → squash commit → push/PR/merge.
+Designed for issues the user already judged simple. When uncertainty appears,
+pause and ask rather than guess.
 
 ## Flow Overview
 
@@ -32,7 +34,9 @@ rather than guess.
 | 2     | Plan + create branch              | Only if plan is genuinely uncertain     |
 | 3     | Implement                         | Only on hard blockers                   |
 | 4     | Verify (tests, build, lint, PW)   | Only to opt into Playwright             |
-| 5     | Cleanup + squash to one commit    | No                                      |
+| 4.4   | Subtle simplification pass        | No                                      |
+| 4.5   | Advisor round(s) + apply fixes    | No                                      |
+| 5     | Comment cleanup + squash commit   | No                                      |
 | 6     | Summary + choose endgame          | Always — 4 options via AskUserQuestion  |
 
 ## Phase 0: Resolve Issue
@@ -208,10 +212,139 @@ If any verification step fails:
 
 1. Go back to Phase 3, fix the cause, and re-run **only** the failing check.
 2. If the same check fails twice after two fix attempts, stop and hand back
-   to the user with the failure output. Do not proceed to Phase 5 with
+   to the user with the failure output. Do not proceed to Phase 4.5 with
    failing verification. Do not rationalize skipping it.
 
+## Phase 4.4: Simplify
+
+Run this **before** the advisor round, so the reviewers attack the code that
+will actually ship. A simplification applied after review ships unreviewed.
+
+Dispatch one subagent (Task tool, `subagent_type: "general-purpose"`) over the
+changed files with a single instruction: apply subtle, behavior-preserving
+simplifications, and nothing else.
+
+### The simplification bar
+
+Apply only when **all** hold:
+
+- Behavior is provably unchanged
+- The change is contained to a single function or a local symbol
+- No public export, API shape, or file layout is touched
+- It makes the code shorter *and* clearer, not merely shorter
+
+Anything heavier — splitting functions, reshaping control flow, extracting
+utilities, renaming exported symbols — is **not applied**. Record it for the
+Phase 6 summary and move on. A refactor that is merely nice is out of scope
+for an issue the user called simple.
+
+Re-run the Phase 4 checks the simplifications could plausibly break. If
+anything fails, revert the simplification rather than fixing around it — it
+was supposed to be behavior-preserving, and a failing check is proof it was
+not.
+
+## Phase 4.5: Advisor Round
+
+Independent reviewers attack the change in parallel, then their findings are
+triaged and fixed. This always runs once verification is green — it is the
+polish pass, not an optional extra.
+
+The review itself belongs to `/adversarial-review`. This phase owns only what
+is workflow policy: freezing the diff, triaging findings, and deciding whether
+to run a second round. Do not duplicate the reviewer prompts here, and do not
+invoke `/consilium` — this is deliberately lighter.
+
+### Freeze the diff first
+
+Every reviewer must see the same change set. Before dispatching, delete the
+cruft listed under Phase 5 → Remove cruft — `git add -A` would otherwise bake
+scratch files and screenshots into the snapshot, where Phase 5's untracked-file
+check can no longer see them. Then snapshot, if the tree is dirty:
+
+```bash
+git status --short          # confirm nothing scratch is about to be staged
+git add -A && git commit -m "wip: pre-advisor snapshot"
+```
+
+Keep that subject content-free. A snapshot message describing the work is the
+implementer's reasoning leaking into a place reviewers can read.
+
+Phase 5 squashes the snapshot away. Each round freezes again — round 2 must
+snapshot the round-1 fixes before dispatching, or the reviewers re-review the
+diff they already saw.
+
+### Run the review
+
+Invoke `/adversarial-review` via the Skill tool with `--base <base>` and
+`--issue <N>`, using the base branch detected in Phase 5. It dispatches the
+reviewers, dedupes, and returns structured findings. It changes nothing.
+
+Pass **no other context**. Not the Phase 2 plan, not the Risks/decisions
+section, not a summary of what you were trying to do, not the previous round's
+findings or how you triaged them. The skill's entire value is that its
+reviewers are blind to your reasoning; handing it a summary destroys that.
+
+### Triage and fix
+
+Classify every returned finding:
+
+| Class      | Meaning                                                          | Action                    |
+| ---------- | ---------------------------------------------------------------- | ------------------------- |
+| **Fix**    | Real defect or a genuine requirement gap                          | Apply now                 |
+| **Note**   | Valid but out of scope for this issue                             | Report in Phase 6         |
+| **Reject** | Wrong, or the reviewer lacked context that makes the code correct | Report in Phase 6         |
+
+Rules that keep triage honest — you are judging reviews of your own work, and
+the pull toward dismissal is real:
+
+- **Uncertainty defaults to Fix.** If you cannot show a finding is wrong, it
+  is not rejected.
+- **A Reject must name the specific context the reviewer lacked** — the file
+  it could not see, the invariant it did not know. "I don't think that's
+  right" is not a rejection.
+- **Rejects survive verbatim.** Phase 6 carries the reviewer's own wording,
+  not your paraphrase of it. The user grades the rejection, not your summary.
+
+Apply the Fix items, then re-run the Phase 4 checks the fixes could plausibly
+break. Verification must be green again before continuing.
+
+### Round 2
+
+Run a second round if **any** of these hold:
+
+- The fixes touched a file that was not in the round-1 diff
+- The fixes changed more than ~30% of the round-1 changed-line count
+- You rejected any intent-reviewer finding
+- You rejected more than half of all findings
+
+The last two matter because rejects do not change the diff, so a wrongly
+rejected bug is invisible to a size-based trigger. A high reject rate is the
+signal that the implementer is grading itself generously.
+
+Otherwise stop at one round. **Hard cap: two rounds.** If round 2 surfaces
+another large batch, do not run a third — apply the clear fixes, list the rest
+as Notes, and let the PR review catch them.
+
 ## Phase 5: Cleanup + Squash
+
+### Trim comments
+
+Invoke `/code-cleanup --comments-only` via the Skill tool, scoped to the
+change. This is the step that stops verbose AI commentary from reaching the
+commit: it removes comments that restate the code, compacts genuine gotchas
+to a line or two, and surfaces design rationale for the commit body.
+
+`--comments-only` is deliberate — **no code changes at commit time.** Any
+simplification opportunity belongs to Phase 4.5, where it was reviewed. If
+`/code-cleanup` reports suggested refactors, carry them into the Phase 6
+summary as Notes; do not apply them here.
+
+Feed its **Suggested for commit message** section into the commit body below.
+
+If `/code-cleanup` is unavailable, do the comment pass inline: delete comments
+that narrate what the code already says, keep non-obvious gotchas at one to
+two lines, and leave documentation comments and `HACK`/`FIXME`/`TODO` markers
+alone.
 
 ### Remove cruft
 
@@ -224,7 +357,9 @@ Delete anything that should not ship with the commit:
 - Screenshot artifacts under `.playwright-mcp/` if they were throwaway
 
 Use `git status --short` to sanity-check that no untracked scratch files are
-about to be staged.
+about to be staged. If Phase 4.5 snapshotted a file that is now deleted, stage
+the deletion too (`git add -A`) — a `git reset --soft` leaves it in the index
+otherwise, and it ships.
 
 ### Squash to one commit
 
@@ -241,15 +376,25 @@ Then:
 
 - **0 commits**: stage only the files changed by the implementation and
   create one fresh commit.
-- **1 commit**: leave as-is.
-- **2+ commits**: `git reset --soft "origin/$base"` (or `"$base"` if no
-  upstream ref) then create one commit with the combined changes.
+- **1 commit** with a final subject: leave the commit as-is, but the comment
+  trim above almost certainly dirtied the tree — `git add -A` and
+  `git commit --amend --no-edit` so those edits land. Never leave Phase 5 with
+  a dirty tree; the endgame pushes the commit, not the working copy.
+- **1 commit** that is the Phase 4.5 `wip:` snapshot, or **2+ commits**:
+  `git reset --soft "origin/$base"` (or `"$base"` if no upstream ref) then
+  create one commit with the combined changes.
+
+Whichever branch runs, finish with `git status --short` empty.
+
+No `wip:` subject may survive into the final history.
 
 Commit subject: `<Issue Title> #<N>` (issue title already in conventional
 format from `/issue-analyze`).
 
 Commit body: invoke `/commit-summary` via the Skill tool. If unavailable,
 fall back inline: past-tense summary, one line per logical change, 2–6 lines.
+Append the design rationale `/code-cleanup` pulled out of the source, if it
+produced any — that text is why the comment pass could delete it.
 
 ## Phase 6: Summary + Endgame
 
@@ -267,8 +412,22 @@ Print a compact summary in this exact shape (omit rows that don't apply):
 - build: ok
 - Playwright: skipped (not UI) | passed (N stories) | not configured
 
+**Advisors** (N round(s))
+- cold (<model>) · intent (<model>) · external (<cli>|skipped)
+- N findings — N fixed, N noted, N rejected
+- <one line per fixed finding>
+
+**Not applied**
+- <finding, in the reviewer's own wording> — <Note: out of scope | Reject: the
+  context the reviewer lacked>
+
 **Commit** `<short-sha>` <subject>
 ```
+
+Omit the **Advisors** detail lines when the reviewers came back clean — a
+single `no findings` line is enough. Omit **Not applied** entirely when there
+is nothing in it. Never omit a Reject: a rejected finding the user never sees
+is the one failure mode this whole phase is built to prevent.
 
 Then ask via `AskUserQuestion`:
 
@@ -317,6 +476,9 @@ force-push, re-check, and report the resolved state.
 | Open blocker                             | Stop after Phase 1 unless user explicitly says to proceed       |
 | Working tree dirty before Phase 2        | Stop: `Uncommitted changes on base branch — resolve first.`     |
 | Verification keeps failing               | Stop after 2 fix attempts in Phase 3/4, hand back to user       |
+| `/adversarial-review` unavailable        | Note it in the summary, skip Phase 4.5, continue to Phase 5     |
+| Advisor fixes break verification twice   | Revert those fixes, list them as Notes, continue to Phase 5     |
+| Simplification breaks a check            | Revert it — behavior-preserving means the check should not move |
 | User picks `Stop` on any AskUserQuestion | Exit cleanly, leave local state as-is                           |
 | `AskUserQuestion` tool unavailable       | Use 2–4 item numbered list in chat, wait for user's number      |
 

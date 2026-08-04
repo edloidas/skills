@@ -193,6 +193,7 @@
       ],
       "skills": [
         "assist/skills/ask",
+        "assist/skills/claude",
         "assist/skills/discuss",
         "assist/skills/handoff"
       ]
