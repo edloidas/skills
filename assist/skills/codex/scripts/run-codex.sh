@@ -16,7 +16,7 @@ if ! command -v codex &>/dev/null; then
 fi
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-COMMON_FLAGS=(-m gpt-5.4 --enable fast_mode --ephemeral -c model_reasoning_effort=xhigh -c web_search=live)
+COMMON_FLAGS=(-m gpt-5.6-sol --enable fast_mode --ephemeral -c model_reasoning_effort=high -c web_search=live)
 
 run_codex() {
   local exit_code=0
