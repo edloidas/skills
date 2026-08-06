@@ -10,14 +10,14 @@
 
 <p align="center">
   <img src="https://img.shields.io/github/v/tag/edloidas/skills?style=flat-square&color=FD3DB5&label=release" alt="Release">
-  <img src="https://img.shields.io/badge/skills-43-FD3DB5?style=flat-square" alt="43 skills">
+  <img src="https://img.shields.io/badge/skills-44-FD3DB5?style=flat-square" alt="44 skills">
   <img src="https://img.shields.io/badge/agents-4-FD3DB5?style=flat-square" alt="4 agents">
   <img src="https://img.shields.io/badge/license-MIT-FD3DB5?style=flat-square" alt="MIT license">
 </p>
 
 ---
 
-43 skills for planning, building, reviewing, auditing, maintaining, and shipping software —
+44 skills for planning, building, reviewing, auditing, maintaining, and shipping software —
 written once and distributed to [Claude Code](https://docs.anthropic.com/en/docs/claude-code),
 [Codex](https://developers.openai.com/codex), [OpenCode](https://opencode.ai), and
 [pi](https://pi.dev), following the [Agent Skills specification](https://agentskills.io/specification).
@@ -34,6 +34,7 @@ it. Nothing runs in the background, nothing is injected into every prompt.
 | [maintain](#maintain) | Label/rule/config sync, lint migration, repo hardening, comment audits, retros | 10 |
 | [ship](#ship) | npm releases, Railway deployments | 2 |
 | [assist](#assist) | Explanations, external opinions, discussion, handoffs | 6 |
+| [write](#write) | Markdown, READMEs, and repository documentation | 1 |
 | [obsidian](#obsidian) | Working documents in an Obsidian vault | 1 |
 | [workflow](#workflow) | End-to-end issue workflow | 1 |
 
@@ -41,11 +42,11 @@ it. Nothing runs in the background, nothing is injected into every prompt.
 
 | Agent | Install | What you get |
 | ----- | ------- | ------------ |
-| Claude Code | `/plugin marketplace add edloidas/skills` | 9 plugin groups, all 43 skills |
-| Codex | `codex plugin marketplace add edloidas/skills` | 8 wrapper plugins, 34 skills |
-| pi | `pi install git:github.com/edloidas/skills` | 35 skills |
-| OpenCode | `./scripts/skills-packaging.sh install-host opencode` | 35 skills |
-| Other | `npx skills add edloidas/skills --all` | All 43 skills |
+| Claude Code | `/plugin marketplace add edloidas/skills` | 10 plugin groups, all 44 skills |
+| Codex | `codex plugin marketplace add edloidas/skills` | 9 wrapper plugins, 35 skills |
+| pi | `pi install git:github.com/edloidas/skills` | 36 skills |
+| OpenCode | `./scripts/skills-packaging.sh install-host opencode` | 36 skills |
+| Other | `npx skills add edloidas/skills --all` | All 44 skills |
 
 Counts differ because each skill declares which hosts it supports. Eight skills depend on
 Claude-only features — subagent fleets, the Skill tool, Claude's own config files — and ship only
@@ -64,6 +65,7 @@ Add the marketplace and install the plugin groups you need:
 /plugin install edloidas@maintain
 /plugin install edloidas@ship
 /plugin install edloidas@assist
+/plugin install edloidas@write
 /plugin install edloidas@obsidian
 /plugin install edloidas@workflow
 ```
@@ -91,8 +93,8 @@ Add the marketplace from GitHub — no `--ref` flag needed:
 codex plugin marketplace add edloidas/skills
 ```
 
-This installs and enables all eight wrapper plugins: `Edloidas Plan`, `Build`, `Review`, `Audit`,
-`Maintain`, `Ship`, `Assist`, and `Obsidian`. Codex clones the whole repository, so `git pull`
+This installs and enables all nine wrapper plugins: `Edloidas Plan`, `Build`, `Review`, `Audit`,
+`Maintain`, `Ship`, `Assist`, `Write`, and `Obsidian`. Codex clones the whole repository, so `git pull`
 updates flow through. Restart Codex if new skills do not appear.
 
 Opening this repository in Codex additionally exposes `.agents/skills/` and the repo marketplace at
@@ -112,7 +114,7 @@ Install the whole collection as a pi package:
 pi install git:github.com/edloidas/skills
 ```
 
-This resolves the 35 pi-compatible skills through the `pi.skills` manifest in `package.json`.
+This resolves the 36 pi-compatible skills through the `pi.skills` manifest in `package.json`.
 
 Add `-l` to install project-locally into `.pi/settings.json` instead of globally. Note that
 `pi list` only reports global packages, so a `-l` install shows up in `.pi/settings.json` rather
@@ -137,7 +139,7 @@ cd skills
 ./scripts/skills-packaging.sh install-host opencode
 ```
 
-That links the 35 OpenCode-compatible skills into `~/.config/opencode/skills`. Pass `--dest <path>`
+That links the 36 OpenCode-compatible skills into `~/.config/opencode/skills`. Pass `--dest <path>`
 to install elsewhere. Re-run after `git pull`; it prunes only links pointing into this repo, so
 unrelated skills in the destination are left alone.
 
@@ -146,7 +148,7 @@ Opening this repository in OpenCode surfaces its generated repo-local set automa
 ### npx skills
 
 The [skills CLI](https://github.com/vercel-labs/skills) installs into any agent it supports and sees
-all 43 skills with no extra flags:
+all 44 skills with no extra flags:
 
 ```bash
 npx skills add edloidas/skills --list                                  # list
@@ -162,7 +164,7 @@ repo's internal release tool is deliberately excluded from the listing.
 | Agent | Command | Expect |
 | ----- | ------- | ------ |
 | Claude Code | `/plugin` | The `edloidas` marketplace and its installed groups |
-| Codex | `codex plugin list` | 8 `@edloidas-skills` plugins, `installed, enabled` |
+| Codex | `codex plugin list` | 9 `@edloidas-skills` plugins, `installed, enabled` |
 | pi | `pi list` | The `edloidas/skills` package |
 | OpenCode | `opencode debug skill` | Your skills in the JSON listing |
 | Any | `npx skills ls` | Installed skills per agent |
@@ -312,6 +314,14 @@ External opinion and assistance tools.
 
 `codex` and `claude` are mirrors of each other: each shells out to the other model family's CLI,
 so each ships everywhere except its own host, where it would be recursive.
+
+### Write
+
+Markdown, README, and repository documentation writing.
+
+| Skill | Description | Agent |
+| ----- | ----------- | ----- |
+| [markdown-writing](./write/skills/markdown-writing/) | Write READMEs, docs, PRs, and issues that lead with the point — GitHub alerts, structure, README skeleton | All |
 
 ### Obsidian
 

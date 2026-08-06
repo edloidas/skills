@@ -2,7 +2,7 @@
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "edloidas",
   "metadata": {
-    "description": "Skills for planning, building, code review, auditing, maintenance, shipping, assistance, and Obsidian"
+    "description": "Skills for planning, building, code review, auditing, maintenance, shipping, assistance, writing, and Obsidian"
   },
   "owner": {
     "name": "Mikita Taukachou",
@@ -85,6 +85,17 @@
         "url": "https://edloidas.io"
       },
       "category": "assist"
+    },
+    {
+      "name": "write",
+      "source": "./write",
+      "description": "Markdown, README, and repository documentation writing skills",
+      "version": "4.3.0",
+      "author": {
+        "name": "Mikita Taukachou",
+        "url": "https://edloidas.io"
+      },
+      "category": "write"
     },
     {
       "name": "obsidian",

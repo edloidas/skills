@@ -1,0 +1,6 @@
+interface:
+  display_name: "Markdown Writing"
+  short_description: "Write READMEs, docs, PRs, and issues that people finish reading"
+  default_prompt: "Use $markdown-writing to draft or rewrite this Markdown so it leads with the point, stays skimmable, and uses GitHub alerts only where they earn their place."
+policy:
+  allow_implicit_invocation: true

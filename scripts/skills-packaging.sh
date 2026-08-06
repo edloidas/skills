@@ -274,7 +274,7 @@ skill_supports_host() {
 # Every canonical skill directory, as repo-relative paths.
 all_skill_dirs() {
   local group
-  for group in plan build review audit maintain ship assist obsidian workflow; do
+  for group in plan build review audit maintain ship assist write obsidian workflow; do
     find "$REPO_ROOT/$group/skills" -mindepth 2 -maxdepth 2 -name SKILL.md -print 2>/dev/null |
       sed -e "s#^$REPO_ROOT/##" -e 's#/SKILL\.md$##'
   done | sort

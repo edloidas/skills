@@ -1,0 +1,32 @@
+{
+  "name": "edloidas-write",
+  "version": "4.3.0",
+  "description": "A Codex-safe writing bundle for Markdown, READMEs, PR bodies, and issue comments.",
+  "author": {
+    "name": "Mikita Taukachou",
+    "url": "https://edloidas.io"
+  },
+  "homepage": "https://github.com/edloidas/skills",
+  "repository": "https://github.com/edloidas/skills",
+  "license": "MIT",
+  "keywords": [
+    "skills",
+    "codex",
+    "write",
+    "markdown",
+    "readme",
+    "documentation"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Edloidas Write",
+    "shortDescription": "Markdown, README, and documentation writing.",
+    "longDescription": "Install the writing bundle from edloidas/skills to draft READMEs, docs, PR bodies, and issue comments that lead with the point and use GitHub-flavored Markdown correctly.",
+    "developerName": "Mikita Taukachou",
+    "category": "Coding",
+    "websiteURL": "https://github.com/edloidas/skills",
+    "brandColor": "#FD3DB5",
+    "composerIcon": "./assets/logo.png",
+    "logo": "./assets/logo.png"
+  }
+}

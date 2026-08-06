@@ -14,7 +14,9 @@ SOURCE_GROUPS=(
   maintain
   ship
   assist
+  write
   obsidian
+  workflow
 )
 
 errors=0

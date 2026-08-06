@@ -199,6 +199,27 @@
       ]
     },
     {
+      "group": "write",
+      "name": "edloidas-write",
+      "displayName": "Edloidas Write",
+      "description": "A Codex-safe writing bundle for Markdown, READMEs, PR bodies, and issue comments.",
+      "shortDescription": "Markdown, README, and documentation writing.",
+      "longDescription": "Install the writing bundle from edloidas/skills to draft READMEs, docs, PR bodies, and issue comments that lead with the point and use GitHub-flavored Markdown correctly.",
+      "category": "Coding",
+      "websiteURL": "https://github.com/edloidas/skills",
+      "keywords": [
+        "skills",
+        "codex",
+        "write",
+        "markdown",
+        "readme",
+        "documentation"
+      ],
+      "skills": [
+        "write/skills/markdown-writing"
+      ]
+    },
+    {
       "group": "obsidian",
       "name": "edloidas-obsidian",
       "displayName": "Edloidas Obsidian",

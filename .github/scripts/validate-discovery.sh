@@ -40,7 +40,7 @@ pass() {
 
 count_all_skills() {
   local group total=0
-  for group in plan build review audit maintain ship assist obsidian workflow; do
+  for group in plan build review audit maintain ship assist write obsidian workflow; do
     total=$((total + $(find "$group/skills" -mindepth 2 -maxdepth 2 -name SKILL.md | wc -l)))
   done
   printf '%s' "$total"
@@ -50,7 +50,7 @@ count_all_skills() {
 # match "OpenCode" by substring.
 count_host_skills() {
   local label="$1" group count=0 skill_md
-  for group in plan build review audit maintain ship assist obsidian workflow; do
+  for group in plan build review audit maintain ship assist write obsidian workflow; do
     while IFS= read -r skill_md; do
       [ -n "$skill_md" ] || continue
       if awk -v label="$label" '
@@ -86,7 +86,7 @@ echo "Source tree: $TOTAL skills (Codex $CODEX_EXPECTED, OpenCode $OPENCODE_EXPE
 
 echo
 echo "Canonical layout"
-symlinked=$(find plan build review audit maintain ship assist obsidian workflow \
+symlinked=$(find plan build review audit maintain ship assist write obsidian workflow \
   -mindepth 2 -maxdepth 2 -path '*/skills/*' -type l | wc -l | tr -d ' ')
 if [ "$symlinked" -ne 0 ]; then
   error "$symlinked skill directories are symlinks; agent skill CLIs cannot discover them"
@@ -147,7 +147,7 @@ EOF
     *"./.pi/skills"*) ;;
     *) error "pi.skills must list ./.pi/skills so pi receives exactly the declared Pi set" ;;
   esac
-  for group in plan build review audit maintain ship assist obsidian workflow; do
+  for group in plan build review audit maintain ship assist write obsidian workflow; do
     case "$manifest_dirs" in
       *"./$group/skills"*) error "pi.skills lists ./$group/skills; that ships Claude-only skills to pi. Use ./.pi/skills instead." ;;
     esac
@@ -189,7 +189,7 @@ else
     printf '%s\n' "$cli_raw" | tail -40 >&2
   else
     cli_missing=""
-    for group in plan build review audit maintain ship assist obsidian workflow; do
+    for group in plan build review audit maintain ship assist write obsidian workflow; do
       while IFS= read -r skill_md; do
         [ -n "$skill_md" ] || continue
         skill_name=$(basename "$(dirname "$skill_md")")

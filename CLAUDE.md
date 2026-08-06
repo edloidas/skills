@@ -75,6 +75,7 @@ skips it. `tools/skills-release` is the one current example.
 - `maintain/` — Label sync, instruction file sync, permissions cleanup, lint migration, comment auditing, agent rule sync, editor config sync, repo security hardening, stale process cleanup, and session retros (10 skills)
 - `ship/` — Release workflows and deployment tools (2 skills)
 - `assist/` — External opinion and assistance tools (6 skills)
+- `write/` — Markdown, README, and repository documentation writing (1 skill)
 - `obsidian/` — Obsidian vault organization and working document management (1 skill)
 - `workflow/` — End-to-end workflows that orchestrate multiple skills (1 skill)
 
@@ -86,6 +87,7 @@ Wrapper plugin names and display names for Codex:
 - `plugins/edloidas-maintain/` → `edloidas-maintain` / `Edloidas Maintain`
 - `plugins/edloidas-ship/` → `edloidas-ship` / `Edloidas Ship`
 - `plugins/edloidas-assist/` → `edloidas-assist` / `Edloidas Assist`
+- `plugins/edloidas-write/` → `edloidas-write` / `Edloidas Write`
 - `plugins/edloidas-obsidian/` → `edloidas-obsidian` / `Edloidas Obsidian`
 
 The Codex wrapper layer is driven from `scripts/codex/catalog.json`. After changing the Codex-exposed
@@ -308,7 +310,7 @@ The `description` determines when an agent activates the skill. Be specific and 
 
 ## Creating a New Skill
 
-1. Choose the appropriate group directory (`plan/`, `build/`, `review/`, `audit/`, `maintain/`, `ship/`, `assist/`, `obsidian/`, or `workflow/`)
+1. Choose the appropriate group directory (`plan/`, `build/`, `review/`, `audit/`, `maintain/`, `ship/`, `assist/`, `write/`, `obsidian/`, or `workflow/`)
 2. Create a real directory: `mkdir -p <group>/skills/<skill-name>` (never a symlink)
 3. Create `<group>/skills/<skill-name>/SKILL.md` with required frontmatter and instructions
 4. Add `scripts/`, `references/`, or `assets/` directories as needed
@@ -328,7 +330,7 @@ Skills are discovered automatically from the plugin root directory. No per-skill
 ## Codex Wrapper Plugins
 
 Do not add `.codex-plugin/plugin.json` directly to the source group directories (`plan/`,
-`build/`, `review/`, `audit/`, `maintain/`, `ship/`, `assist/`, `obsidian/`, `workflow/`).
+`build/`, `review/`, `audit/`, `maintain/`, `ship/`, `assist/`, `write/`, `obsidian/`, `workflow/`).
 
 Use wrapper plugins under `plugins/<plugin-name>/` instead:
 
@@ -473,8 +475,8 @@ they can all go stale together.
 
 ### `package.json`
 
-It exists only as the **pi package manifest** (`pi.skills` points at the nine `<group>/skills`
-directories) and as a version anchor. It is `"private": true` and is **never published to npm** —
+It exists only as the **pi package manifest** (`pi.skills` points at the generated `.pi/skills`
+tree) and as a version anchor. It is `"private": true` and is **never published to npm** —
 pi installs straight from git. Do not run `npm publish`, `npm version`, or add dependencies.
 
 ## Git & GitHub
