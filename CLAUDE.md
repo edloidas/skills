@@ -75,7 +75,7 @@ skips it. `tools/skills-release` is the one current example.
 - `maintain/` — Label sync, instruction file sync, permissions cleanup, lint migration, comment auditing, agent rule sync, editor config sync, repo security hardening, stale process cleanup, and session retros (10 skills)
 - `ship/` — Release workflows and deployment tools (2 skills)
 - `assist/` — External opinion and assistance tools (6 skills)
-- `write/` — Markdown, README, and repository documentation writing (1 skill)
+- `write/` — Markdown, README, and repository documentation writing (2 skills)
 - `obsidian/` — Obsidian vault organization and working document management (1 skill)
 - `workflow/` — End-to-end workflows that orchestrate multiple skills (1 skill)
 
