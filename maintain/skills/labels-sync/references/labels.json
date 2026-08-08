@@ -7,6 +7,7 @@
   {"name": "refactoring", "description": "Code style changes", "color": "D4C5F9"},
   {"name": "critical", "description": "High priority issues or requests", "color": "FBCA04"},
   {"name": "testing", "description": "Build, tests and CI related features and issues", "color": "C2E0C6"},
+  {"name": "documentation", "description": "Documentation, examples, and API reference", "color": "006B75"},
   {"name": "R&D", "description": "Research and test new things", "color": "D7EF12"},
   {"name": "external", "description": "Something that will be done outside of the code", "color": "4C686E"},
   {"name": "epic", "description": "Issue that combines multiple related tasks", "color": "5319E7"},
