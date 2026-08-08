@@ -13,5 +13,6 @@
   {"name": "UI/UX", "description": "User interface and experience changes", "color": "C5DEF5"},
   {"name": "performance", "description": "Performance improvements or optimizations", "color": "D93F0B"},
   {"name": "AI", "description": "Something related to code assistant or AI editor", "color": "F9D0C4"},
-  {"name": "DX", "description": "Changes that improve developer experience", "color": "DA7756"}
+  {"name": "DX", "description": "Changes that improve developer experience", "color": "DA7756"},
+  {"name": "documentation", "description": "Documentation, examples, and API reference", "color": "006B75"}
 ]
