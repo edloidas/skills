@@ -300,7 +300,7 @@ External opinion, assistance, and plain restatement tools.
 
 | Skill | Description | Agent |
 | ----- | ----------- | ----- |
-| [ask](./assist/skills/ask/) | Explain concepts, verify claims, or challenge decisions | All |
+| [ask](./assist/skills/ask/) | Answer at maximum reasoning effort — explain, challenge, or verify | All |
 | [claude](./assist/skills/claude/) | Quick external opinion from Claude Code CLI | Codex, OpenCode, pi |
 | [codex](./assist/skills/codex/) | Quick external opinion from Codex CLI | Claude, OpenCode, pi |
 | [discuss](./assist/skills/discuss/) | Iterative discussion mode — analyze, push back, and polish, no code edits | All |
