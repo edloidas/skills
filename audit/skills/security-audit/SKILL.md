@@ -42,7 +42,7 @@ Use when the user asks to:
 Trigger phrases: `security audit`, `supply chain`, `ci hardening`, `harden actions`, `audit release`, `harden settings`, `audit rulesets`, `audit install scripts`, `audit package manager`, `minimum release age`, `allowBuilds`, `trustedDependencies`, `pwn request`, `sha pinning`.
 
 **Not for:**
-- Generic code review → `review:changes-review`
+- Bug hunting on a diff → `review:changes-review`; style and comment noise → `review:code-cleanup`
 - CI speed/parallelization → `audit:ci-audit`
 - Dependency CVE scanning → run `gh dependabot alerts` / `pnpm audit` directly
 

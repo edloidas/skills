@@ -249,7 +249,7 @@ Independent reviewers attack the change in parallel, then their findings are
 triaged and fixed. This always runs once verification is green — it is the
 polish pass, not an optional extra.
 
-The review itself belongs to `/adversarial-review`. This phase owns only what
+The review itself belongs to `/changes-review`. This phase owns only what
 is workflow policy: freezing the diff, triaging findings, and deciding whether
 to run a second round. Do not duplicate the reviewer prompts here, and do not
 invoke `/consilium` — this is deliberately lighter.
@@ -275,7 +275,7 @@ diff they already saw.
 
 ### Run the review
 
-Invoke `/adversarial-review` via the Skill tool with `--base <base>` and
+Invoke `/changes-review` via the Skill tool with `--base <base>` and
 `--issue <N>`, using the base branch detected in Phase 5. It dispatches the
 reviewers, dedupes, and returns structured findings. It changes nothing.
 
@@ -476,7 +476,7 @@ force-push, re-check, and report the resolved state.
 | Open blocker                             | Stop after Phase 1 unless user explicitly says to proceed       |
 | Working tree dirty before Phase 2        | Stop: `Uncommitted changes on base branch — resolve first.`     |
 | Verification keeps failing               | Stop after 2 fix attempts in Phase 3/4, hand back to user       |
-| `/adversarial-review` unavailable        | Note it in the summary, skip Phase 4.5, continue to Phase 5     |
+| `/changes-review` unavailable            | Note it in the summary, skip Phase 4.5, continue to Phase 5     |
 | Advisor fixes break verification twice   | Revert those fixes, list them as Notes, continue to Phase 5     |
 | Simplification breaks a check            | Revert it — behavior-preserving means the check should not move |
 | User picks `Stop` on any AskUserQuestion | Exit cleanly, leave local state as-is                           |

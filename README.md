@@ -10,14 +10,14 @@
 
 <p align="center">
   <img src="https://img.shields.io/github/v/tag/edloidas/skills?style=flat-square&color=FD3DB5&label=release" alt="Release">
-  <img src="https://img.shields.io/badge/skills-45-FD3DB5?style=flat-square" alt="45 skills">
+  <img src="https://img.shields.io/badge/skills-38-FD3DB5?style=flat-square" alt="38 skills">
   <img src="https://img.shields.io/badge/agents-4-FD3DB5?style=flat-square" alt="4 agents">
   <img src="https://img.shields.io/badge/license-MIT-FD3DB5?style=flat-square" alt="MIT license">
 </p>
 
 ---
 
-45 skills for planning, building, reviewing, auditing, maintaining, and shipping software —
+38 skills for planning, building, reviewing, auditing, maintaining, and shipping software —
 written once and distributed to [Claude Code](https://docs.anthropic.com/en/docs/claude-code),
 [Codex](https://developers.openai.com/codex), [OpenCode](https://opencode.ai), and
 [pi](https://pi.dev), following the [Agent Skills specification](https://agentskills.io/specification).
@@ -29,7 +29,7 @@ it. Nothing runs in the background, nothing is injected into every prompt.
 | ----- | -------------- | -----: |
 | [plan](#plan) | Issue drafting, scope analysis, backlog triage, full issue lifecycle | 4 |
 | [build](#build) | Conflict resolution, commits, findings fixes | 4 |
-| [review](#review) | Adversarial + contextual review, cleanup, review board, PR feedback, spec extraction | 6 |
+| [review](#review) | Adversarial change review, cleanup, review board, PR feedback, spec extraction | 5 |
 | [audit](#audit) | CI, scripts, security, skills, workspace, Three.js, React, tests | 8 |
 | [maintain](#maintain) | Label/rule/config sync, lint migration, repo hardening, process cleanup | 7 |
 | [ship](#ship) | npm releases | 1 |
@@ -42,15 +42,16 @@ it. Nothing runs in the background, nothing is injected into every prompt.
 
 | Agent | Install | What you get |
 | ----- | ------- | ------------ |
-| Claude Code | `/plugin marketplace add edloidas/skills` | 10 plugin groups, all 45 skills |
-| Codex | `codex plugin marketplace add edloidas/skills` | 9 wrapper plugins, 36 skills |
-| pi | `pi install git:github.com/edloidas/skills` | 37 skills |
-| OpenCode | `./scripts/skills-packaging.sh install-host opencode` | 37 skills |
-| Other | `npx skills add edloidas/skills --all` | All 45 skills |
+| Claude Code | `/plugin marketplace add edloidas/skills` | 10 plugin groups, all 38 skills |
+| Codex | `codex plugin marketplace add edloidas/skills` | 9 wrapper plugins, 32 skills |
+| pi | `pi install git:github.com/edloidas/skills` | 33 skills |
+| OpenCode | `./scripts/skills-packaging.sh install-host opencode` | 33 skills |
+| Other | `npx skills add edloidas/skills --all` | All 38 skills |
 
-Counts differ because each skill declares which hosts it supports. Eight skills depend on
-Claude-only features — subagent fleets, the Skill tool, Claude's own config files — and ship only
-there. See [How skills reach each agent](#how-skills-reach-each-agent).
+Counts differ because each skill declares which hosts it supports. Five skills depend on
+Claude-only features — subagent fleets with per-agent model overrides, the Skill tool, Claude's
+own config files — and ship only there. One more, `assist/codex`, is portable but deliberately
+kept out of the Codex set, since running it inside Codex would be recursive. See [How skills reach each agent](#how-skills-reach-each-agent).
 
 ### Claude Code
 
@@ -114,7 +115,7 @@ Install the whole collection as a pi package:
 pi install git:github.com/edloidas/skills
 ```
 
-This resolves the 37 pi-compatible skills through the `pi.skills` manifest in `package.json`.
+This resolves the 33 pi-compatible skills through the `pi.skills` manifest in `package.json`.
 
 Add `-l` to install project-locally into `.pi/settings.json` instead of globally. Note that
 `pi list` only reports global packages, so a `-l` install shows up in `.pi/settings.json` rather
@@ -139,7 +140,7 @@ cd skills
 ./scripts/skills-packaging.sh install-host opencode
 ```
 
-That links the 37 OpenCode-compatible skills into `~/.config/opencode/skills`. Pass `--dest <path>`
+That links the 33 OpenCode-compatible skills into `~/.config/opencode/skills`. Pass `--dest <path>`
 to install elsewhere. Re-run after `git pull`; it prunes only links pointing into this repo, so
 unrelated skills in the destination are left alone.
 
@@ -148,7 +149,7 @@ Opening this repository in OpenCode surfaces its generated repo-local set automa
 ### npx skills
 
 The [skills CLI](https://github.com/vercel-labs/skills) installs into any agent it supports and sees
-all 45 skills with no extra flags:
+all 38 skills with no extra flags:
 
 ```bash
 npx skills add edloidas/skills --list                                  # list
@@ -243,15 +244,13 @@ Conflict resolution, commit summaries, quick commits, and findings fixes.
 
 Code review, cleanup, critical review board, and quality improvement skills.
 
-`adversarial-review` and `changes-review` both take a diff and are deliberate opposites.
-`adversarial-review` attacks it — parallel reviewers, context withheld, nothing mutated.
-`changes-review` assesses it — full issue and PR context, tooling that may autofix, and an
-interactive fix menu at the end.
+`changes-review` attacks a diff — parallel reviewers on different models, each blind to the
+implementer's reasoning, nothing mutated. It finds; it never fixes. Conventions and comment
+noise are `code-cleanup`'s job, not its.
 
 | Skill | Description | Agent |
 | ----- | ----------- | ----- |
-| [adversarial-review](./review/skills/adversarial-review/) | Parallel cold reviewers that hunt bugs and requirement gaps — finds, never fixes | Claude |
-| [changes-review](./review/skills/changes-review/) | Deep logic analysis of code changes | All |
+| [changes-review](./review/skills/changes-review/) | Parallel cold reviewers that hunt bugs and requirement gaps — finds, never fixes | Claude |
 | [code-cleanup](./review/skills/code-cleanup/) | Trim AI comment noise — restated/rationale comments — keep real gotchas | All |
 | [consilium](./review/skills/consilium/) | Critical review board — up to 6 reviewers (2 core + 4 on-demand) | Claude |
 | [pr-feedback](./review/skills/pr-feedback/) | Analyze PR review comments — triage into fix/skip with reasoning | All |

@@ -1,7 +1,7 @@
 {
   "name": "edloidas-review",
   "version": "4.5.2",
-  "description": "A curated Codex-safe review bundle for changeset analysis, PR feedback triage, and post-change cleanup.",
+  "description": "A curated Codex-safe review bundle for PR feedback triage and post-change cleanup.",
   "author": {
     "name": "Mikita Taukachou",
     "url": "https://edloidas.io"
@@ -21,8 +21,8 @@
   "skills": "./skills/",
   "interface": {
     "displayName": "Edloidas Review",
-    "shortDescription": "Changes review, PR feedback triage, and cleanup.",
-    "longDescription": "Install the Codex-ready review bundle from edloidas/skills for changeset review, PR feedback triage, and post-implementation cleanup.",
+    "shortDescription": "PR feedback triage and post-change cleanup.",
+    "longDescription": "Install the Codex-ready review bundle from edloidas/skills for PR feedback triage and post-implementation cleanup.",
     "developerName": "Mikita Taukachou",
     "category": "Coding",
     "websiteURL": "https://github.com/edloidas/skills",
