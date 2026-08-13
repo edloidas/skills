@@ -251,7 +251,7 @@ noise are `code-cleanup`'s job, not its.
 | Skill | Description | Agent |
 | ----- | ----------- | ----- |
 | [changes-review](./review/skills/changes-review/) | Parallel cold reviewers that hunt bugs and requirement gaps — finds, never fixes | Claude |
-| [code-cleanup](./review/skills/code-cleanup/) | Trim AI comment noise — restated/rationale comments — keep real gotchas | All |
+| [code-cleanup](./review/skills/code-cleanup/) | Trim AI comment noise, apply project conventions, simplify correct code | All |
 | [consilium](./review/skills/consilium/) | Critical review board — up to 6 reviewers (2 core + 4 on-demand) | Claude |
 | [pr-feedback](./review/skills/pr-feedback/) | Analyze PR review comments — triage into fix/skip with reasoning | All |
 | [code-to-spec](./review/skills/code-to-spec/) | Extract a behavioral spec from a codebase (1 file up to 500+ files) | Claude |
