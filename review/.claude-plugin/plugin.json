@@ -1,7 +1,7 @@
 {
   "name": "review",
   "version": "4.5.2",
-  "description": "Code review, cleanup, critical review board, and quality improvement skills",
+  "description": "Adversarial review, cleanup, critical review board, PR feedback triage, and spec extraction",
   "author": {
     "name": "Mikita Taukachou",
     "url": "https://edloidas.io"
@@ -13,6 +13,7 @@
     "code-review",
     "review",
     "cleanup",
-    "react"
+    "feedback",
+    "spec"
   ]
 }

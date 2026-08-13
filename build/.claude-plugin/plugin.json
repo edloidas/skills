@@ -1,7 +1,7 @@
 {
   "name": "build",
   "version": "4.5.2",
-  "description": "Git worktree management, conflict resolution, commit summaries, quick commits, and findings fixes",
+  "description": "Conflict resolution, commit summaries, quick commits, and findings fixes",
   "author": {
     "name": "Mikita Taukachou",
     "url": "https://edloidas.io"
@@ -12,8 +12,8 @@
     "skills",
     "build",
     "git",
-    "worktree",
     "conflicts",
-    "commits"
+    "commits",
+    "findings"
   ]
 }

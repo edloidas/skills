@@ -1,6 +1,6 @@
 ---
 name: spec-scout
-description: Surveys a source-code bundle (one directory up to an entire repo) and produces an architecture overview, module inventory, and a shortlist of critical modules for deep-dive analysis. Use this agent as the first pass of the spec-extractor pipeline on Medium or Large bundles.
+description: Surveys a source-code bundle (one directory up to an entire repo) and produces an architecture overview, module inventory, and a shortlist of critical modules for deep-dive analysis. Use this agent as the first pass of the code-to-spec pipeline on Medium or Large bundles.
 model: opus
 color: cyan
 tools: Read, Glob, Grep

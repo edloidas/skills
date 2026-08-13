@@ -1,6 +1,6 @@
 ---
 name: spec-synthesizer
-description: Merges scout, per-module, contract-resolver, and deep-analyzer outputs into the final spec directory. Writes README.md, architecture.md, modules.md, contracts.md, and modules/<name>.md files. No source analysis — aggregation only. Use this agent at the end of the spec-extractor pipeline for Medium and Large tier bundles.
+description: Merges scout, per-module, contract-resolver, and deep-analyzer outputs into the final spec directory. Writes README.md, architecture.md, modules.md, contracts.md, and modules/<name>.md files. No source analysis — aggregation only. Use this agent at the end of the code-to-spec pipeline for Medium and Large tier bundles.
 model: sonnet
 color: yellow
 tools: Read, Write

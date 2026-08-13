@@ -17,3 +17,6 @@ node_modules/
 .claude/plans/
 # Specs & plans — delete after feature is completed
 docs/
+
+# External skill collections cloned for reference — keep them outside this repo
+/mp-skills/

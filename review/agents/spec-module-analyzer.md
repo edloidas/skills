@@ -1,6 +1,6 @@
 ---
 name: spec-module-analyzer
-description: Produces a medium-depth behavioral summary of a single module — purpose, public surface, state bindings, events, lifecycle, and key decisions. Use this agent once per module in the spec-extractor pipeline for Medium and Large tier bundles.
+description: Produces a medium-depth behavioral summary of a single module — purpose, public surface, state bindings, events, lifecycle, and key decisions. Use this agent once per module in the code-to-spec pipeline for Medium and Large tier bundles.
 model: opus
 color: green
 tools: Read, Grep, Glob

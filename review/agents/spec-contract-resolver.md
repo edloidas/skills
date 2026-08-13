@@ -1,6 +1,6 @@
 ---
 name: spec-contract-resolver
-description: Maps cross-module contracts — events, public exports, imports, integration points — across all modules in a bundle. Reconciles fire/listen sites, flags asymmetries, and produces the contract document used by the synthesizer. Use this agent after module analyzers complete, once per spec-extractor run.
+description: Maps cross-module contracts — events, public exports, imports, integration points — across all modules in a bundle. Reconciles fire/listen sites, flags asymmetries, and produces the contract document used by the synthesizer. Use this agent after module analyzers complete, once per code-to-spec run.
 model: opus
 color: orange
 tools: Read, Grep, Glob
