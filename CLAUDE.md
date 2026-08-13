@@ -4,7 +4,7 @@ A collection of Claude Code and other agents skills following the [Agent Skills 
 
 **Never commit or push changes unless explicitly asked.** Never commit directly to the main branch unless explicitly asked.
 
-**No AI footers:** Do not add "Drafted with AI assistance" or similar lines to issue or PR bodies.
+**No AI footers:** Do not add "Drafted with AI assistance", Claude Code session links, `<sub>` attribution lines, or anything similar to issue or PR bodies.
 
 ## Canonical Repo Instructions
 
@@ -489,7 +489,7 @@ When working on an issue, create a new branch named `issue-<number>`.
 - **Title:** `<type>: <description> #<number>`
 - **Body:** concise what/why, no emojis, one blank line between sections.
 - Multiple issues go on one `Closes` line: `Closes #1 #23 #456`.
-- End with the session link as the last line, wrapped small: `<sub>[Claude Code session](<link>)</sub>`. It is the only attribution — never append a second generated footer, `---` rule, or promotional line, including on PRs created from the web.
+- Never append a generated footer, `---` rule, session link, `<sub>` attribution, or promotional line, including on PRs created from the web.
 
 ## License
 

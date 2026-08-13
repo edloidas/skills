@@ -335,10 +335,6 @@ Use this comprehensive template for Full format issues (includes all sections as
 {{Include only if there are specific technical requirements}}
 
 - {{CONSTRAINT}}
-
----
-
-<sub>*Drafted with AI assistance*</sub>
 ```
 
 #### Short Issue Template
@@ -349,8 +345,6 @@ Use this minimal template for Short format issues. No section headers, no horizo
 {{DESCRIPTION — 4-6 sentences. Explain the issue naturally: what happens, what's affected, why it matters. Keep the user's original phrasing.}}
 
 **Rationale:** {{WHY_NEEDED — 1-2 sentences}}
-
-<sub>*Drafted with AI assistance*</sub>
 ```
 
 #### Default Issue Template
@@ -371,8 +365,6 @@ Use this template for Default format issues. Use h4 headers, no horizontal rules
 #### Implementation Notes
 
 {{Include only if the approach is already known — brief notes on what needs to be done}}
-
-<sub>*Drafted with AI assistance*</sub>
 ```
 
 ### Step 6: Present to User
