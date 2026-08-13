@@ -97,7 +97,7 @@ Read the target repo's CLAUDE.md for project-specific formatting. Use these defa
 - **Issue titles**: `<type>: <description>` (conventional commit format)
 - **Commit subjects**: `<Issue Title> #<number>`
 - **PR titles**: `<Issue Title> #<number>`
-- **PR body**: concise change list + `Closes #<number>` + `<sub>*Drafted with AI assistance*</sub>`
+- **PR body**: concise change list + `Closes #<number>`. Multiple issues go on one `Closes` line: `Closes #1 #2 #3`
 
 Common types: `feat`, `fix`, `docs`, `chore`, `refactor`, `test`, `style`, `ci`
 
@@ -165,11 +165,7 @@ If it is an epic, and the repo has an `epic` label (check `repo-context.sh` outp
 
 ### Body
 
-Write a brief 2-4 sentence description. No markdown headers. Add the AI footer at the very bottom:
-
-```
-<sub>*Drafted with AI assistance*</sub>
-```
+Write a brief 2-4 sentence description. No markdown headers.
 
 For epic issues: **do NOT list child issue numbers in the body.** Sub-issue relationships are managed via the GitHub sub-issues API (see **## Sub-Issues**), not via body text.
 
@@ -473,7 +469,7 @@ This must happen before PR body generation since squashing changes the commit lo
 ### Title and Body
 
 - **Title**: `<Issue Title> #<number>`
-- **Body**: Generate from `git log <base>..HEAD --oneline`, add `Closes #<number>`, add AI footer
+- **Body**: Generate from `git log <base>..HEAD --oneline`, add `Closes #<number>`
 
 ```markdown
 ## Changes
@@ -482,8 +478,6 @@ This must happen before PR body generation since squashing changes the commit lo
 - <change 2>
 
 Closes #<number>
-
-<sub>*Drafted with AI assistance*</sub>
 ```
 
 ### Assignee and Reviewer
