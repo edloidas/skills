@@ -1,6 +1,8 @@
 # Writing Tests
 
-How to write tests that pass the Five-Question Gate by construction.
+How to write a test that passes the Five-Question Gate by construction. Reached from a
+Tighten or Rewrite verdict: the audit says the existing test doesn't pin a contract, this is
+the procedure for writing the one that does.
 
 ## 1. List the contract first
 
@@ -24,7 +26,7 @@ processCheckout:
 Each sentence becomes a test name, verbatim. Two payoffs: the suite reads as documentation
 (a new dev learns the domain by reading names top to bottom), and a failure names the broken
 rule. If you can't write the sentences, you don't understand the module yet — read more code
-before writing tests.
+before touching the test.
 
 A test name is a business rule, never a method name (`testHandleApi`), a ticket
 (`fixes JIRA-4521`), or a counter (`test applyCoupon #2`).
@@ -120,16 +122,16 @@ When a test wants three mocks and a global, the code is telling you something:
 
 Superb tests come from yielding to this pressure, not from mocking framework gymnastics.
 
-## 7. Test-after, regression tests, characterization
+## 7. Two cases the audit sends here often
 
-- **Regression test for a bug**: legitimate and valuable — after rewriting it as the *rule*
-  the bug violated. `it('rounds a fractional discount to the nearest cent')`, not
-  `it('fixes JIRA-4521')`.
-- **Characterization tests** (pin current behavior of legacy code, bugs included): a rescue
-  scaffold — pin, refactor safely, then replace with intent-revealing tests. Kept permanently
-  they ossify accidents into contracts.
-- **Exploration** (UI feel, shaders, unknown contracts): spike freely, stabilize the
-  contract, *then* test it. Test-first is for crisp specs; the dogma is the bug, not the order.
+- **A test named after a bug or a ticket** (3.1). The rule is legitimate and worth pinning —
+  rename it to the rule the bug violated. `it('rounds a fractional discount to the nearest
+  cent')`, not `it('fixes JIRA-4521')`. Then re-check gate question 1: if no rule-sentence
+  exists, the verdict was Delete, not Tighten.
+- **A characterization test** that pins current legacy behavior, bugs included. It is a rescue
+  scaffold, valid only while a refactor is in flight — kept permanently it ossifies accidents
+  into contracts, and if it pins a known-wrong value that is 1.7, a bug report rather than a
+  test. Never write a new one to satisfy a Rewrite verdict.
 
 ## 8. Worked example (Vitest/TS)
 
@@ -205,8 +207,8 @@ block — builders carry the defaults.
 - Errors: `expect(...).toThrow(Type)` / `await expect(p).rejects.toThrow(Type)`. For payload
   assertions write a typed helper (`expectAppError(fn)`) that throws when nothing threw; if a
   raw `try` is unavoidable, put `expect.unreachable()` immediately after the call.
-- Run `--shuffle --repeat=5` before merging any suite-level change — order dependence is
-  cheap to find now and expensive to inherit.
+- Run `--shuffle --repeat=5` after any rewrite — order dependence is cheap to find now and
+  expensive to inherit.
 
 ### JUnit 5 / Mockito / AssertJ (Java)
 
