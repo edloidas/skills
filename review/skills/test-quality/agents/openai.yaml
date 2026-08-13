@@ -1,5 +1,0 @@
-interface:
-  display_name: "Test Quality"
-  short_description: "Write behavior-pinning tests; audit, fix, or delete bad ones"
-policy:
-  allow_implicit_invocation: true

@@ -23,7 +23,7 @@
     {
       "name": "build",
       "source": "./build",
-      "description": "Git worktree management, conflict resolution, commit summaries, and findings fixes",
+      "description": "Conflict resolution, commit summaries, quick commits, and findings fixes",
       "version": "4.5.2",
       "author": {
         "name": "Mikita Taukachou",
@@ -34,7 +34,7 @@
     {
       "name": "review",
       "source": "./review",
-      "description": "Code review, cleanup, critical review board, and quality improvement skills",
+      "description": "Adversarial review, cleanup, critical review board, PR feedback triage, and spec extraction",
       "version": "4.5.2",
       "author": {
         "name": "Mikita Taukachou",
@@ -45,7 +45,7 @@
     {
       "name": "audit",
       "source": "./audit",
-      "description": "CI, script, skill, and workspace auditing skills",
+      "description": "CI, script, security, skill, workspace, Three.js, React, and test-suite auditing skills",
       "version": "4.5.2",
       "author": {
         "name": "Mikita Taukachou",
@@ -56,7 +56,7 @@
     {
       "name": "maintain",
       "source": "./maintain",
-      "description": "Label sync, instruction file sync, permissions cleanup, lint migration, and comment auditing",
+      "description": "Label sync, instruction file sync, rule sync, lint migration, and repo hardening",
       "version": "4.5.2",
       "author": {
         "name": "Mikita Taukachou",
@@ -67,7 +67,7 @@
     {
       "name": "ship",
       "source": "./ship",
-      "description": "Release workflows and deployment tools for npm packages and Railway services",
+      "description": "Release workflows for npm packages",
       "version": "4.5.2",
       "author": {
         "name": "Mikita Taukachou",
@@ -78,7 +78,7 @@
     {
       "name": "assist",
       "source": "./assist",
-      "description": "External opinion and assistance tools including Codex CLI integration",
+      "description": "External opinion, assistance, Q&A, and plain restatement tools including Codex CLI integration",
       "version": "4.5.2",
       "author": {
         "name": "Mikita Taukachou",

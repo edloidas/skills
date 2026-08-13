@@ -28,13 +28,13 @@ it. Nothing runs in the background, nothing is injected into every prompt.
 | Group | What it covers | Skills |
 | ----- | -------------- | -----: |
 | [plan](#plan) | Issue drafting, scope analysis, backlog triage, full issue lifecycle | 4 |
-| [build](#build) | Worktrees, conflict resolution, commits, findings fixes | 5 |
-| [review](#review) | Adversarial + contextual review, cleanup, review board, spec extraction | 8 |
-| [audit](#audit) | CI, scripts, security, skills, workspace, Three.js | 6 |
-| [maintain](#maintain) | Label/rule/config sync, lint migration, repo hardening, comment audits, retros | 10 |
-| [ship](#ship) | npm releases, Railway deployments | 2 |
-| [assist](#assist) | Explanations, external opinions, discussion, handoffs | 6 |
-| [write](#write) | Markdown, READMEs, repository documentation, message rewrites | 2 |
+| [build](#build) | Conflict resolution, commits, findings fixes | 4 |
+| [review](#review) | Adversarial + contextual review, cleanup, review board, PR feedback, spec extraction | 6 |
+| [audit](#audit) | CI, scripts, security, skills, workspace, Three.js, React, tests | 8 |
+| [maintain](#maintain) | Label/rule/config sync, lint migration, repo hardening, process cleanup | 7 |
+| [ship](#ship) | npm releases | 1 |
+| [assist](#assist) | Explanations, external opinions, discussion, handoffs, restatement | 6 |
+| [write](#write) | Markdown, READMEs, repository documentation | 1 |
 | [obsidian](#obsidian) | Working documents in an Obsidian vault | 1 |
 | [workflow](#workflow) | End-to-end issue workflow | 1 |
 
@@ -230,11 +230,10 @@ Issue drafting, analysis, triage, and full issue lifecycle skills.
 
 ### Build
 
-Git worktree management, conflict resolution, commit summaries, quick commits, and findings fixes.
+Conflict resolution, commit summaries, quick commits, and findings fixes.
 
 | Skill | Description | Agent |
 | ----- | ----------- | ----- |
-| [git-worktree](./build/skills/git-worktree/) | Manage Git worktrees with configurable storage and agent settings copying | All |
 | [resolve-conflicts](./build/skills/resolve-conflicts/) | Semi-automatic merge and rebase conflict resolution | All |
 | [commit](./build/skills/commit/) | Fast staged-or-scoped commit with conventional message | All |
 | [commit-summary](./build/skills/commit-summary/) | Generate formatted Git commit message summaries | All |
@@ -255,14 +254,12 @@ interactive fix menu at the end.
 | [changes-review](./review/skills/changes-review/) | Deep logic analysis of code changes | All |
 | [code-cleanup](./review/skills/code-cleanup/) | Trim AI comment noise — restated/rationale comments — keep real gotchas | All |
 | [consilium](./review/skills/consilium/) | Critical review board — up to 6 reviewers (2 core + 4 on-demand) | Claude |
-| [react-review](./review/skills/react-review/) | Review React code for effects, conventions, and patterns | All |
-| [review-comments](./review/skills/review-comments/) | Analyze PR review comments — triage into fix/skip with reasoning | All |
-| [spec-extractor](./review/skills/spec-extractor/) | Extract a behavioral spec from a codebase (1 file up to 500+ files) | Claude |
-| [test-quality](./review/skills/test-quality/) | Write behavior-pinning tests; audit, fix, or delete bad ones | All |
+| [pr-feedback](./review/skills/pr-feedback/) | Analyze PR review comments — triage into fix/skip with reasoning | All |
+| [code-to-spec](./review/skills/code-to-spec/) | Extract a behavioral spec from a codebase (1 file up to 500+ files) | Claude |
 
 ### Audit
 
-CI, script, security, skill, workspace, and Three.js auditing skills.
+CI, script, security, skill, workspace, Three.js, React, and test-suite auditing skills.
 
 | Skill | Description | Agent |
 | ----- | ----------- | ----- |
@@ -271,37 +268,35 @@ CI, script, security, skill, workspace, and Three.js auditing skills.
 | [security-audit](./audit/skills/security-audit/) | Audit GitHub Actions, release config, and repo settings for supply chain | All |
 | [skill-audit](./audit/skills/skill-audit/) | Audit skills for quality, specification compliance, and Codex readiness | All |
 | [three-audit](./audit/skills/three-audit/) | Audit Three.js / React Three Fiber code for perf and best-practice issues | All |
+| [react-audit](./audit/skills/react-audit/) | Audit React code for effects misuse, conventions, and patterns | All |
+| [tests-audit](./audit/skills/tests-audit/) | Write behavior-pinning tests; audit, fix, or delete bad ones | All |
 | [workspace-audit](./audit/skills/workspace-audit/) | Analyze pnpm workspace and monorepo setup | All |
 
 ### Maintain
 
-Label sync, instruction file sync, permissions cleanup, lint migration, comment auditing, agent rule sync, editor config sync, repo security hardening, stale process cleanup, and session retros.
+Label sync, instruction file sync, lint migration, agent rule sync, editor config sync, repo security hardening, and stale process cleanup.
 
 | Skill | Description | Agent |
 | ----- | ----------- | ----- |
 | [labels-sync](./maintain/skills/labels-sync/) | Check, apply, or export GitHub repository labels as reusable JSON | All |
 | [claude-md-sync](./maintain/skills/claude-md-sync/) | Detect and fix stale references in project CLAUDE.md or AGENTS.md | All |
 | [editor-config](./maintain/skills/editor-config/) | Init or merge `.zed` / `.vscode` editor configs from a canonical set | All |
-| [permissions-cleanup](./maintain/skills/permissions-cleanup/) | Clean up stale permission entries from settings files | Claude |
 | [lint-sync](./maintain/skills/lint-sync/) | Compare ESLint rules against Biome for overlap | All |
-| [comment-audit](./maintain/skills/comment-audit/) | Analyze code comments for quality and relevance | All |
 | [rules-sync](./maintain/skills/rules-sync/) | Init or update `.claude/rules` / `.agents/rules` from a canonical set | All |
 | [repo-hardening](./maintain/skills/repo-hardening/) | Apply a GitHub security baseline: rulesets, Actions defaults, environments | All |
 | [stale-process-cleanup](./maintain/skills/stale-process-cleanup/) | Find and reap orphaned dev servers, LSP, and MCP processes | All |
-| [retro](./maintain/skills/retro/) | Reflect on the current session and produce a structured retro report | Claude |
 
 ### Ship
 
-Release workflows and deployment tools.
+Release workflows for npm packages.
 
 | Skill | Description | Agent |
 | ----- | ----------- | ----- |
 | [npm-release](./ship/skills/npm-release/) | Guide npm/pnpm package release workflow | All |
-| [railway](./ship/skills/railway/) | Interact with Railway deployments — status, logs, variables, deploy | All |
 
 ### Assist
 
-External opinion and assistance tools.
+External opinion, assistance, and plain restatement tools.
 
 | Skill | Description | Agent |
 | ----- | ----------- | ----- |
@@ -310,7 +305,7 @@ External opinion and assistance tools.
 | [codex](./assist/skills/codex/) | Quick external opinion from Codex CLI | Claude, OpenCode, pi |
 | [discuss](./assist/skills/discuss/) | Iterative discussion mode — analyze, push back, and polish, no code edits | All |
 | [handoff](./assist/skills/handoff/) | Compact the session into a handoff — inline text or per-project doc file | All |
-| [polish-prompt](./assist/skills/polish-prompt/) | Iteratively polish a prompt via blind-judged tournament rounds | Claude |
+| [bro](./assist/skills/bro/) | Say the last message again, straight — bottom line, what matters, next steps | All |
 
 `codex` and `claude` are mirrors of each other: each shells out to the other model family's CLI,
 so each ships everywhere except its own host, where it would be recursive.
@@ -322,7 +317,6 @@ Markdown, README, and repository documentation writing.
 | Skill | Description | Agent |
 | ----- | ----------- | ----- |
 | [markdown-writing](./write/skills/markdown-writing/) | Write READMEs, docs, PRs, and issues that lead with the point — GitHub alerts, structure, README skeleton | All |
-| [bro](./write/skills/bro/) | Say the last message again, straight — bottom line, what matters, next steps | All |
 
 ### Obsidian
 

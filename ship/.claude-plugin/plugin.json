@@ -1,7 +1,7 @@
 {
   "name": "ship",
   "version": "4.5.2",
-  "description": "Release workflows and deployment tools for npm packages and Railway services",
+  "description": "Release workflows for npm packages",
   "author": {
     "name": "Mikita Taukachou",
     "url": "https://edloidas.io"
@@ -13,7 +13,6 @@
     "ship",
     "release",
     "npm",
-    "railway",
-    "deploy"
+    "publish"
   ]
 }

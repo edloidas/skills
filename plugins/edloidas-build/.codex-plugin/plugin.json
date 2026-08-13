@@ -1,7 +1,7 @@
 {
   "name": "edloidas-build",
   "version": "4.5.2",
-  "description": "A Codex-safe build bundle for Git worktree management, merge-conflict resolution, and commit summaries.",
+  "description": "A Codex-safe build bundle for merge-conflict resolution, commit creation, and findings triage.",
   "author": {
     "name": "Mikita Taukachou",
     "url": "https://edloidas.io"
@@ -14,15 +14,15 @@
     "codex",
     "build",
     "git",
-    "worktree",
     "conflicts",
-    "commits"
+    "commits",
+    "findings"
   ],
   "skills": "./skills/",
   "interface": {
     "displayName": "Edloidas Build",
-    "shortDescription": "Git worktrees, conflict resolution, and commit summaries.",
-    "longDescription": "Install the build bundle from edloidas/skills for Git worktree management, semi-automatic merge-conflict resolution, and commit message summaries from Codex.",
+    "shortDescription": "Conflict resolution, commits, and findings triage.",
+    "longDescription": "Install the build bundle from edloidas/skills for semi-automatic merge-conflict resolution, conventional commits, commit message summaries, and working through review findings from Codex.",
     "developerName": "Mikita Taukachou",
     "category": "Coding",
     "websiteURL": "https://github.com/edloidas/skills",

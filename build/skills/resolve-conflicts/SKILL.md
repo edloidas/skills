@@ -65,10 +65,11 @@ Link: <url>
 ### Step 2: Prepare Working Directory
 
 1. Check if working tree is dirty (`git status --porcelain`)
-2. If dirty OR user included "worktree" in the invocation → prefer the
-   `git-worktree` skill to create an isolated worktree for `<head-branch>`. If
-   the host cannot continue in the new worktree automatically, show the
-   resulting `cd <path>` command and stop so the user can resume there.
+2. If dirty OR user included "worktree" in the invocation → create an isolated
+   worktree for `<head-branch>` using whatever mechanism the host provides
+   (a built-in worktree tool, or `git worktree add`). If the host cannot
+   continue in the new worktree automatically, show the resulting
+   `cd <path>` command and stop so the user can resume there.
 3. If clean → work in current repo
 
 ### Step 3: Fetch and Rebase

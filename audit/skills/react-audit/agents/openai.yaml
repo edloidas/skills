@@ -1,0 +1,5 @@
+interface:
+  display_name: "React Audit"
+  short_description: "Review React code for effects misuse, conventions, and patterns"
+policy:
+  allow_implicit_invocation: true

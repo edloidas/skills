@@ -44,9 +44,9 @@
       "group": "build",
       "name": "edloidas-build",
       "displayName": "Edloidas Build",
-      "description": "A Codex-safe build bundle for Git worktree management, merge-conflict resolution, and commit summaries.",
-      "shortDescription": "Git worktrees, conflict resolution, and commit summaries.",
-      "longDescription": "Install the build bundle from edloidas/skills for Git worktree management, semi-automatic merge-conflict resolution, and commit message summaries from Codex.",
+      "description": "A Codex-safe build bundle for merge-conflict resolution, commit creation, and findings triage.",
+      "shortDescription": "Conflict resolution, commits, and findings triage.",
+      "longDescription": "Install the build bundle from edloidas/skills for semi-automatic merge-conflict resolution, conventional commits, commit message summaries, and working through review findings from Codex.",
       "category": "Coding",
       "websiteURL": "https://github.com/edloidas/skills",
       "keywords": [
@@ -54,13 +54,12 @@
         "codex",
         "build",
         "git",
-        "worktree",
         "conflicts",
-        "commits"
+        "commits",
+        "findings"
       ],
       "skills": [
         "build/skills/commit-summary",
-        "build/skills/git-worktree",
         "build/skills/resolve-conflicts",
         "build/skills/commit",
         "build/skills/fix-findings"
@@ -70,9 +69,9 @@
       "group": "review",
       "name": "edloidas-review",
       "displayName": "Edloidas Review",
-      "description": "A curated Codex-safe review bundle for changeset analysis, React analysis, PR feedback triage, test quality, and post-change cleanup.",
-      "shortDescription": "Changes review, React review, triage, test quality, and cleanup.",
-      "longDescription": "Install the Codex-ready review bundle from edloidas/skills for changeset review, React code review, review-comment triage, test-suite quality work, and post-implementation cleanup.",
+      "description": "A curated Codex-safe review bundle for changeset analysis, PR feedback triage, and post-change cleanup.",
+      "shortDescription": "Changes review, PR feedback triage, and cleanup.",
+      "longDescription": "Install the Codex-ready review bundle from edloidas/skills for changeset review, PR feedback triage, and post-implementation cleanup.",
       "category": "Coding",
       "websiteURL": "https://github.com/edloidas/skills",
       "keywords": [
@@ -81,26 +80,22 @@
         "review",
         "cleanup",
         "diff",
-        "react",
         "pull-request",
-        "tests",
-        "test-quality"
+        "feedback"
       ],
       "skills": [
         "review/skills/changes-review",
         "review/skills/code-cleanup",
-        "review/skills/react-review",
-        "review/skills/review-comments",
-        "review/skills/test-quality"
+        "review/skills/pr-feedback"
       ]
     },
     {
       "group": "audit",
       "name": "edloidas-audit",
       "displayName": "Edloidas Audit",
-      "description": "A Codex-safe audit bundle for skill quality, GitHub Actions, package scripts, and monorepo workspace configuration.",
-      "shortDescription": "Audit skills, CI, scripts, and workspace setup.",
-      "longDescription": "Install the audit bundle from edloidas/skills to inspect skill quality, CI workflows, package scripts, and pnpm workspace configuration from Codex.",
+      "description": "A Codex-safe audit bundle for skill quality, GitHub Actions, package scripts, workspace configuration, React, and test suites.",
+      "shortDescription": "Audit skills, CI, scripts, workspace, React, and tests.",
+      "longDescription": "Install the audit bundle from edloidas/skills to inspect skill quality, CI workflows, package scripts, pnpm workspace configuration, React code, and test-suite quality from Codex.",
       "category": "Coding",
       "websiteURL": "https://github.com/edloidas/skills",
       "keywords": [
@@ -110,7 +105,9 @@
         "quality",
         "ci",
         "scripts",
-        "workspace"
+        "workspace",
+        "react",
+        "tests"
       ],
       "skills": [
         "audit/skills/ci-audit",
@@ -118,16 +115,18 @@
         "audit/skills/scripts-audit",
         "audit/skills/security-audit",
         "audit/skills/three-audit",
-        "audit/skills/workspace-audit"
+        "audit/skills/workspace-audit",
+        "audit/skills/react-audit",
+        "audit/skills/tests-audit"
       ]
     },
     {
       "group": "maintain",
       "name": "edloidas-maintain",
       "displayName": "Edloidas Maintain",
-      "description": "A Codex-safe maintenance bundle for label sync, instruction-file sync, lint migration, and comment quality audits.",
-      "shortDescription": "Label sync, instruction sync, lint migration, and comment audits.",
-      "longDescription": "Install the maintenance bundle from edloidas/skills for syncing GitHub labels, validating repo instruction files, migrating lint configs, and auditing code comments from Codex.",
+      "description": "A Codex-safe maintenance bundle for label sync, instruction-file sync, rule sync, and lint migration.",
+      "shortDescription": "Label sync, instruction sync, rules, and lint migration.",
+      "longDescription": "Install the maintenance bundle from edloidas/skills for syncing GitHub labels, validating repo instruction files, syncing agent rules, and migrating lint configs from Codex.",
       "category": "Coding",
       "websiteURL": "https://github.com/edloidas/skills",
       "keywords": [
@@ -137,12 +136,11 @@
         "labels",
         "sync",
         "lint",
-        "comments",
+        "rules",
         "processes"
       ],
       "skills": [
         "maintain/skills/claude-md-sync",
-        "maintain/skills/comment-audit",
         "maintain/skills/editor-config",
         "maintain/skills/labels-sync",
         "maintain/skills/lint-sync",
@@ -155,9 +153,9 @@
       "group": "ship",
       "name": "edloidas-ship",
       "displayName": "Edloidas Ship",
-      "description": "A Codex-safe shipping bundle for npm package releases and Railway deployment inspection.",
-      "shortDescription": "npm releases and Railway deployment inspection.",
-      "longDescription": "Install the shipping bundle from edloidas/skills for validating npm releases and inspecting Railway services, logs, and deployment status from Codex.",
+      "description": "A Codex-safe shipping bundle for npm package releases.",
+      "shortDescription": "npm package releases.",
+      "longDescription": "Install the shipping bundle from edloidas/skills for validating and publishing npm releases from Codex.",
       "category": "Coding",
       "websiteURL": "https://github.com/edloidas/skills",
       "keywords": [
@@ -166,21 +164,19 @@
         "ship",
         "release",
         "npm",
-        "railway",
-        "deploy"
+        "publish"
       ],
       "skills": [
-        "ship/skills/npm-release",
-        "ship/skills/railway"
+        "ship/skills/npm-release"
       ]
     },
     {
       "group": "assist",
       "name": "edloidas-assist",
       "displayName": "Edloidas Assist",
-      "description": "A Codex-ready assistance bundle for explanations, independent verification, and decision pressure-testing.",
-      "shortDescription": "Explain concepts, verify claims, and challenge decisions.",
-      "longDescription": "Install the assistance bundle from edloidas/skills for clear explanations, independent verification, and decision pressure-testing from Codex.",
+      "description": "A Codex-ready assistance bundle for explanations, independent verification, decision pressure-testing, and plain restatement.",
+      "shortDescription": "Explain, verify, challenge, and restate plainly.",
+      "longDescription": "Install the assistance bundle from edloidas/skills for clear explanations, independent verification, decision pressure-testing, and reworking an answer into something short and skimmable from Codex.",
       "category": "Coding",
       "websiteURL": "https://github.com/edloidas/skills",
       "keywords": [
@@ -189,13 +185,15 @@
         "assist",
         "ask",
         "explain",
-        "verify"
+        "verify",
+        "summarize"
       ],
       "skills": [
         "assist/skills/ask",
         "assist/skills/claude",
         "assist/skills/discuss",
-        "assist/skills/handoff"
+        "assist/skills/handoff",
+        "assist/skills/bro"
       ]
     },
     {
@@ -216,8 +214,7 @@
         "documentation"
       ],
       "skills": [
-        "write/skills/markdown-writing",
-        "write/skills/bro"
+        "write/skills/markdown-writing"
       ]
     },
     {
