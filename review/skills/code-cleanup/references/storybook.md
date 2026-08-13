@@ -1,0 +1,42 @@
+---
+paths:
+  - '**/*.stories.tsx'
+  - '.storybook/**/*.{ts,tsx}'
+---
+
+# Storybook Rules
+
+## Hierarchical story names
+
+Use `/` to group stories under a standard taxonomy. The `name` field on each story controls grouping in the sidebar:
+
+```tsx
+export const Basic: Story = {name: 'Examples / Basic', render: () => <Component />};
+export const Disabled: Story = {name: 'States / Disabled', render: () => <Component disabled />};
+export const AlignEnd: Story = {name: 'Features / Align End', render: () => <Component align='end' />};
+export const FocusNav: Story = {name: 'Behavior / Focus Nav', render: () => <Component />};
+```
+
+Flat names (`Default`, `Disabled`, `Variants`) without a group prefix are not allowed.
+
+## Standard groups, in this order
+
+1. **Examples** — basic usage patterns
+2. **States** — visual states (disabled, read-only, loading)
+3. **Features** — specific capabilities and configurations
+4. **Behavior** — interaction patterns and accessibility
+5. **Specialized** — component-specific variants
+
+## Interactive playground
+
+For components with 2+ variant props with multiple options, add an `Interactive` story under `Features`. Skip for components with only a single boolean prop.
+
+## State
+
+Use local `useState` for interactive stories. Never subscribe stories to nanostores — stories must be hermetic.
+
+## Styling
+
+When the project uses Tailwind, style stories with utility classes, not inline `style` objects, and prefer the default scale over arbitrary values (`w-2xl`, not `w-[700px]`). Otherwise follow the project's existing styling approach.
+
+Exception: fixture CSS simulating the embedding page's stylesheet — keep as a raw `<style>` block with a comment.

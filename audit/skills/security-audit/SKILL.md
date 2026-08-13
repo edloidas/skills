@@ -19,6 +19,7 @@ The architecture is designed to grow. Adding a new audit area means writing a ne
 - Release configuration (`release.yml`, `package.json`, `dependabot.yml`, npm publishing) — see `references/release-checklist.md`
 - Repository settings exposed via the GitHub REST API (Actions defaults, branch and tag rulesets, secret scanning and other security features, deploy environments and secrets) — see `references/repo-settings-checklist.md`
 - Package manager and install-time supply-chain controls (pnpm/bun lifecycle scripts, `minimumReleaseAge`, scope→registry mapping) — see `references/package-manager-checklist.md`
+- Application source code — injection and unsafe-execution vectors in the code itself (XSS sinks, `eval`, `javascript:` URLs, `postMessage` origins, command injection, path traversal, raw SQL construction) — see `references/code-security-checklist.md`
 
 **Planned (not yet implemented):**
 - Non-GitHub CI providers (CircleCI, GitLab CI)
@@ -233,6 +234,27 @@ Read the full checklist at `{{SKILL_DIR}}/references/package-manager-checklist.m
 
 Report findings grouped by severity, same format as the Actions audit. For each finding, include the exact YAML/TOML snippet needed to remediate. Mark policy findings explicitly. Do not edit files.
 ```
+
+#### Subagent E — application code auditor
+
+Runs only when the repo has application source to audit. Read
+`references/code-security-checklist.md` for the full criteria. Prompt template:
+
+```
+You are auditing application source code for injection and unsafe-execution vectors.
+
+Detect the stack from the files present, then apply only the checks that stack activates.
+Read every file you flag before reporting it.
+
+{{CODE_SECURITY_CHECKLIST}}
+
+For each finding report: file:line, the vector, the source expression that reaches it, and
+whether a guard is present, absent, or unclear. A sink reached only by a literal is not a
+finding. Return findings severity-ordered. Return "No findings." if the code is clean.
+```
+
+Skip this subagent when the repo has no application source in scope — a
+configuration-only or docs-only repository.
 
 ### Step 3: Aggregate Findings
 
