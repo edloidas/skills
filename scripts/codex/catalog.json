@@ -69,9 +69,9 @@
       "group": "review",
       "name": "edloidas-review",
       "displayName": "Edloidas Review",
-      "description": "A curated Codex-safe review bundle for changeset analysis, PR feedback triage, and post-change cleanup.",
-      "shortDescription": "Changes review, PR feedback triage, and cleanup.",
-      "longDescription": "Install the Codex-ready review bundle from edloidas/skills for changeset review, PR feedback triage, and post-implementation cleanup.",
+      "description": "A curated Codex-safe review bundle for PR feedback triage and post-change cleanup.",
+      "shortDescription": "PR feedback triage and post-change cleanup.",
+      "longDescription": "Install the Codex-ready review bundle from edloidas/skills for PR feedback triage and post-implementation cleanup.",
       "category": "Coding",
       "websiteURL": "https://github.com/edloidas/skills",
       "keywords": [
@@ -84,7 +84,6 @@
         "feedback"
       ],
       "skills": [
-        "review/skills/changes-review",
         "review/skills/code-cleanup",
         "review/skills/pr-feedback"
       ]

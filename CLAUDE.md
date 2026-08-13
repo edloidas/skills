@@ -70,7 +70,7 @@ skips it. `tools/skills-release` is the one current example.
 **Plugin groups:**
 - `plan/` — Issue drafting, analysis, triage, and full issue lifecycle (4 skills)
 - `build/` — Conflict resolution, commit summaries, quick commits, and findings fixes (4 skills)
-- `review/` — Adversarial review, code review, cleanup, critical review board, PR feedback triage, and spec extraction (6 skills)
+- `review/` — Adversarial change review, cleanup, critical review board, PR feedback triage, and spec extraction (5 skills)
 - `audit/` — CI, script, security, skill, workspace, Three.js, React, and test-suite auditing (8 skills)
 - `maintain/` — Label sync, instruction file sync, lint migration, agent rule sync, editor config sync, repo security hardening, and stale process cleanup (7 skills)
 - `ship/` — Release workflows for npm packages (1 skill)
@@ -378,7 +378,7 @@ should stay Claude-only unless their workflow changes:
 - `review/skills/consilium` and `review/skills/code-to-spec` — dispatch fleets of
   plugin-namespaced subagents via `subagent_type` and key temp files on
   `${CLAUDE_SESSION_ID}`.
-- `review/skills/adversarial-review` — dispatches parallel reviewers through the Task tool
+- `review/skills/changes-review` — dispatches parallel reviewers through the Task tool
   with per-agent `model` overrides. Role diversity survives a port; model diversity does not,
   and the model split is half of why the reviewers disagree usefully. Widen only after
   verifying a host can actually vary the model per subagent.

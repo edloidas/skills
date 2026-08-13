@@ -1,341 +1,254 @@
 ---
 name: changes-review
 description: >
-  Deep logic analysis of code changes. Runs repo-native tooling and convention
-  checks first, then reviews logic errors, behavior gaps, and missing
-  requirements that automated checks miss.
+  Attack a code change and report what survives. Spawns up to three independent reviewers in
+  parallel, on different models where more than one runs, each with a single job and no access
+  to the implementer's reasoning: one hunts correctness bugs blind to the issue, one hunts
+  requirement gaps against the issue text. Returns structured findings and changes nothing — no
+  tooling, no autofix, no edits. Use before committing, when you want a change attacked rather
+  than assessed, or as the find step ahead of a fix pass.
 license: MIT
-compatibility: Claude Code, Codex, OpenCode, Pi
-allowed-tools: Bash Read Glob Grep Edit Write Task AskUserQuestion
-argument-hint: "[commits, path, range, or empty] [--no-build] [--no-issue]"
+compatibility: Claude Code
+allowed-tools: Bash(git:*) Bash(gh:*) Bash(bash:*) Read Glob Grep Task Skill
+argument-hint: "[--base <branch> | --uncommitted | --commit <sha>] [--issue <N>] [--no-external]"
 metadata:
   author: edloidas
 ---
 
-# Review Code Changes
+# Changes Review
 
-## Purpose
+Attack a change from two directions at once and report what survives. This skill **finds**;
+it never fixes, never runs tooling, and never touches the working tree.
 
-Perform deep logic analysis of changed files. Delegates the tooling and convention checks to parallel subagents, then focuses on finding logic errors, behavior gaps, and missing business requirements that automated tools cannot detect.
+## The premise
 
-## Compatibility
+The agent that wrote the code wants it accepted. A reviewer that shares its context inherits
+its blind spots — it reads the implementer's reasoning, finds it persuasive, and confirms the
+work. So every reviewer here is dispatched **cold to the implementer's reasoning**: no plan,
+no rationale, no commit message body, no prior-round findings, no account of why the change
+looks the way it does. Each gets one job and is told to find the way the change is wrong.
 
-This skill may mutate the working tree when the project exposes a repo-native
-autofix-capable lint or check command. That is why `agents/openai.yaml` sets
-`allow_implicit_invocation: false` — Codex must only reach it when explicitly invoked.
+The bugs this catches are the ones that compile and pass lint — premature drops, floor-vs-truncate
+on negative numbers, eager evaluation where laziness was meant. Tooling cannot see them and a
+context-rich reviewer rationalizes them away.
 
-The tooling and convention passes run as subagents whose prompt bodies live in
-`references/review-build-prompt.md` and `references/review-rules-prompt.md`. If the host
-cannot spawn subagents, run both passes inline before the logic review.
+Conventions and cleanup are **not** this skill's job. A reviewer told to find bugs *and* tidy
+the code softens into a quality reviewer and stops finding bugs. Style, naming, comment noise,
+and convention drift belong to `/code-cleanup`.
 
-## When to Use This Skill
+## Arguments
 
-Use when the user asks to:
-- Review code changes before commit
-- Analyze recent commits for issues
-- Check changes in specific files or directories
-- Review a commit range
+| Argument | Meaning |
+| -------- | ------- |
+| (none) | Uncommitted changes; falls back to the last commit when the tree is clean |
+| `--base <branch>` | Review `git diff <branch>...HEAD` — the whole branch |
+| `--uncommitted` | Staged + unstaged changes only |
+| `--commit <sha>` | The change introduced by one commit |
+| `--issue <N>` | Use issue `<N>` as the requirement. Skips auto-detection |
+| `--no-external` | Skip the third-party CLI reviewer even when one is installed |
 
-Trigger phrases: "review changes", "review my code", "check changes", "analyze commits", "code review"
+## Phase 1: Resolve scope
 
-## Dependencies
-
-This skill runs two supporting passes before the logic review:
-
-| Subagent | Type | Purpose |
-|----------|------|---------|
-| Tooling pass | Mutating when autofix exists | Runs project checks and the best repo-native fix-capable lint/check command if one exists, returns TOOLING_REPORT |
-| Convention pass | Read-only | Checks files against project conventions, returns CONVENTION_REPORT |
-
-**Fallback:** If either pass fails, proceed with the other's report and note the gap in output. If both fail, perform logic analysis standalone and note that tooling/convention checks were skipped.
-
-## Commands
-
-| Command | Description |
-|---------|-------------|
-| `/changes-review` | All changes (staged + unstaged), or last commit if clean |
-| `/code:review-changes last N commits` | Changes in last N commits |
-| `/code:review-changes path/` | Changes in directory |
-| `/code:review-changes file.ext` | Specific file |
-| `/code:review-changes HEAD~N..HEAD` | Commit range |
-| `/code:review-changes --no-build` | Skip the tooling/build pass (combinable with any scope above) |
-| `/code:review-changes --no-issue` | Skip the issue/PR context pass (combinable with any scope above) |
-
-**Skip-build flag:** Pass `--no-build` (or `--skip-build`) anywhere in the arguments to bypass
-the tooling pass. Natural-language equivalents are also accepted when the user phrases the
-request directly: "no build", "skip build", "without build", "don't run build", "skip tooling".
-When matched, omit the flag/phrase from the scope before resolving paths or commit ranges.
-
-**Skip-issue flag:** Pass `--no-issue` (or `--skip-issue`) anywhere in the arguments to bypass
-issue/PR context fetching. Natural-language equivalents: "no issue", "skip issue",
-"without issue", "no PR", "skip PR", "no context", "don't fetch issue". When matched, omit
-the flag/phrase from the scope before resolving paths or commit ranges.
-
-**Issue context is auto-detected.** Unless `--no-issue` is set, the skill always tries to
-resolve an issue/PR for the current branch — no user input required. See "Issue context
-pass" in Step 2 for the detection chain. If nothing resolves, the pass produces no output
-and the audit step is skipped.
-
-## Workflow
-
-### Phase 1: Gather Context
-
-**Step 1: Determine Scope**
+Resolve the diff and the file list once, up front. Every reviewer sees the identical change set.
 
 ```bash
-git diff --name-status
-git diff --cached --name-status
-# If clean, use last commit:
-git diff --name-status HEAD~1..HEAD
+git diff --name-only HEAD                    # tracked modifications
+git ls-files --others --exclude-standard     # new untracked files
 ```
 
-Filter out: `*-lock.*`, `dist/`, `build/`, `.next/`, `*.d.ts`, `*.min.js`, `*.map`
+Filter out `*-lock.*`, `dist/`, `build/`, `.next/`, `*.min.js`, `*.map`, `*.d.ts`.
 
-**Trivial diffs:** If ONLY version bumps, formatting, lock files → "Trivial changes only. No review needed." and stop.
+**Trivial diffs** — only version bumps, formatting, or lock files → print
+`Trivial changes only. Nothing to attack.` and stop. Do not spend reviewers on them.
 
-**Step 2: Run Tooling + Convention + Issue Context Passes (parallel)**
+**Dirty tree under `--base`.** `git diff <base>...HEAD` excludes uncommitted work, so a dirty
+tree means the reviewers judge a change set that is not what exists on disk. Say so and review
+`<base>...HEAD` plus the uncommitted diff together, or ask the caller to commit first.
 
-Use the same target file list for the tooling and convention passes.
+Announce the resolved scope in one line: `Attacking 6 files, 240 lines (base: master).`
 
-If the user passed `--no-build` (or any natural-language skip-build phrase from the
-"Skip-build flag" note above), skip the tooling pass entirely. Run only the convention
-pass, set `TOOLING_REPORT = SKIPPED (user requested --no-build)`, and continue.
+## Phase 2: Resolve the requirement
 
-Always dispatch the issue context pass (see below) unless the user passed `--no-issue` (or
-any natural-language skip-issue phrase from the "Skip-issue flag" note above). When skipped,
-set `ISSUE_CONTEXT = SKIPPED (user requested --no-issue)` and continue. Otherwise the pass
-auto-detects an issue/PR from the current branch and exits silently when nothing resolves.
+Only the intent reviewer uses this. Resolve it before dispatch:
 
-Dispatch these passes in parallel, skipping any the flags above turned off:
+1. `--issue <N>` was passed → `gh issue view <N> --json title,body`
+2. Current branch matches `issue-<N>` → same, with that number
+3. An open PR exists for the branch → `gh pr view --json title,body,closingIssuesReferences`
+   and prefer the linked issue's body over the PR description
+4. Last commit message contains `#<N>` → same, with that number
 
-- **Tooling pass** (skipped by `--no-build`) — prompt body from
-  `references/review-build-prompt.md`, plus the resolved scope and the target file list. It
-  runs the repo's preferred quick checks and the best fix-capable lint or check command if one
-  exists, and returns `TOOLING_REPORT`.
-- **Convention pass** — prompt body from `references/review-rules-prompt.md`, plus the target
-  file list. It checks those files against the project's conventions and returns
-  `CONVENTION_REPORT`.
-- **Issue context pass** (skipped by `--no-issue`) — runs `scripts/fetch-issue-context.sh`
-  from this skill directory with no arguments.
+Take the issue **description** only. Exclude comments the agent itself posted during this run —
+they are the implementer's reasoning wearing a different hat.
 
-Wait for every pass you dispatched before proceeding. If the host has no subagent facility,
-run them inline instead.
+If nothing resolves, print `No requirement found — running the cold reviewer only.` and skip
+the intent reviewer. Do not invent a requirement from the diff; a reviewer checking a change
+against a requirement inferred from that same change finds nothing.
 
-**Issue context detection**
+## Phase 3: Dispatch reviewers
 
-The script auto-detects an issue/PR for the current branch in this order:
-1. Open PR for the current branch (and its linked closing issue, if any)
-2. Branch name matching `issue-<N>`
-3. `#<N>` in the last commit message
+**Launch every reviewer in a single message so they run concurrently.** They must not see each
+other's output. Do not summarize the change for them, do not explain what it is trying to do,
+and do not pass along anything from a previous round.
 
-Capture stdout as `ISSUE_CONTEXT`. Empty stdout means nothing resolved — treat as no
-context, skip the requirements audit, and do not surface this in the final review.
+### Reviewer 1 — cold (always)
 
-**Step 2.5: Refresh Diff After Autofix**
+- Task tool, `subagent_type: "general-purpose"`
+- `model`: the first of `fable → opus → sonnet` that is **not** the model running this skill
+- Prompt: the contents of `references/cold-reviewer-prompt.md`, then the diff
 
-Skip this step entirely when the tooling pass was skipped via `--no-build`.
+Repo-aware and issue-blind: it may read callers, types, and tests, but the prompt forbids
+fetching the issue or PR. That prohibition is a soft guard, not a sandbox — a determined
+subagent could still run `gh`. It holds in practice because the reviewer is never handed an
+issue number and has no reason to hunt for one. Do not put the issue number in its prompt,
+not even in passing.
 
-If the tooling pass reports autofixes or otherwise changed files:
-- rerun the scope detection commands
-- rebuild the target file list from the post-fix diff
-- use the refreshed diff for all remaining analysis
-- mention in the final review that findings were produced after repo-native
-  autofixes were applied
+### Reviewer 2 — intent (whenever a requirement resolved)
 
-**Step 3: Identify Reference**
+- Task tool, `subagent_type: "general-purpose"`
+- `model`: the next entry in `fable → opus → sonnet` after Reviewer 1's, wrapping to the start,
+  skipping the model running this skill. It must differ from Reviewer 1's.
+- Prompt: `references/intent-reviewer-prompt.md` with `{{REQUIREMENT}}` replaced by the
+  resolved issue title and body, then the diff
 
-If replacing existing functionality:
-- Search for similar class/component names
-- Note pattern reference (modern example) and business logic reference (legacy being replaced)
+Role diversity and model diversity are both free here, so take both. They cover different
+failure modes: same-model reviewers differ only by sampling, same-role reviewers only by
+phrasing.
 
-### Phase 2: Logic Analysis
+### Reviewer 3 — external model (when available, unless `--no-external`)
 
-**Focus on what tooling CANNOT find:**
-- Logic errors and incorrect behavior
-- Missing business requirements
-- Behavior gaps vs reference
-- Error recovery failures
-- Edge cases
+A third model family, via a CLI that is genuinely outside this process.
 
-**Requirements audit (when `ISSUE_CONTEXT` is non-empty):**
+**Invoke the `/codex` skill through the Skill tool** — do not call its script by path. The
+script lives in a different plugin (`assist`), so a repo-relative `bash assist/...` command
+resolves only inside this repository's own checkout and fails with exit 127 everywhere else.
+The Skill tool resolves the plugin wherever it is installed.
 
-Read `ISSUE_CONTEXT` and cross-check it against the diff:
-- Issue description → does the diff implement what's asked? Missing behavior → flag.
-- Out-of-scope items mentioned in description or comments → respected? Violation → flag.
-- Unresolved review threads → addressed in the current diff? If not, surface as a finding
-  referencing the file:line and reviewer.
-- PR conversation comments → any pending decisions or scope changes the diff ignores?
+Tell it to run review mode with **the scope this run resolved in Phase 1** — `--base <branch>`,
+`--uncommitted`, or `--commit <sha>`. Passing a different scope than the native reviewers got
+means Phase 4 dedupes findings from two different change sets, which is worse than skipping
+this reviewer.
 
-When `ISSUE_CONTEXT` is empty or `SKIPPED`, skip this audit silently.
+Pass `540` as the timeout so the script's own timer fires before the tool's, and set the Bash
+timeout to its 600000ms maximum. If the `/codex` skill or the CLI is unavailable, note it and
+continue with the native reviewers. Do not retry, and never block the run on it.
 
-**Reference Reading (if applicable):**
+This leg only ever gets a piped diff, so it is structurally cold — it cannot read the repo. That
+makes it good at spotting internal contradictions in the diff and prone to asking for context
+it cannot see. Weight it accordingly during dedup.
 
-1. Read legacy implementation COMPLETELY
-2. Create behavior checklist:
-```
-REFERENCE CHECKLIST: [FileName.ts]
-- User actions: What can user DO?
-- Validations: What checks happen?
-- Functions: open(), close(), execute(), cancel()
-- Error recovery: What happens on failure?
-```
+It is the one reviewer with no output contract you control — it returns whatever its CLI emits.
+Map each of its findings onto the same fields the native reviewers return: claim, location,
+severity, confidence, defect, cases. Where it gives you a claim and a location but no severity
+or confidence, assign `moderate` / `low` and say in the signal line that it came from one
+reviewer. Where a finding has no concrete case you can name from the diff, drop it under Phase 4
+step 1 like any other. Never upgrade its confidence to match a native reviewer's.
 
-**Logic Audits:**
+## Phase 4: Merge and report
 
-**Function Parity:**
-```
-FUNC [name]:
-- ref_guards: [condition1, condition2, ...]
-- new_guards: [condition1, ...]
-- MISSING: [condition2] ← flag if absent
-```
+Reviewers return findings in the labelled shape their prompts specify. That is an internal
+contract for merging, not the report — render the report in the format below.
 
-**Dead Code Check:**
-```
-VAR [name]: declared at :line, used in logic: [Y/N]
-```
+1. **Drop non-findings.** Any finding without a concrete failure — inputs or state leading to a
+   named wrong result — is a worry, not a finding. Cut it. Same for intent findings with no
+   quotable requirement clause.
+2. **Dedupe.** Two reviewers hitting the same `file:line` with the same claim is **one** finding
+   reported at the higher severity and higher confidence. Independent corroboration is a strong
+   signal — say so in the signal line, and never let it look like two problems.
+3. **Order.** Severity first, then confidence.
+4. **Never soften.** Report each finding in the reviewer's own framing. You are the messenger
+   here, not the judge — triage belongs to whoever called this skill.
 
-**Error Recovery:**
-```
-ERROR_FLOW [action]:
-- Dialog closes: [before/after try-catch]
-- On error: [stays open / already closed]
-- Can retry: [Y/N]
-```
+### Finding format
 
-### Phase 3: Aggregate & Output
-
-Combine from:
-1. **TOOLING_REPORT** (tooling pass) → Type errors, lint, build/test failures. When skipped via `--no-build`, note "Tooling pass skipped per user request" in the summary instead.
-2. **CONVENTION_REPORT** (convention pass) → Pattern violations
-3. **ISSUE_CONTEXT** (issue-context pass, when non-empty) → Requirements coverage, unresolved PR feedback, open questions. Omit silently when empty.
-4. **Logic Analysis** (this review) → Behavior gaps, missing features
-
-## Output Format
-
-**Summary Line:**
-`**Review: X critical, Y moderate, Z suggestions in N files**`
-
-**Sections (only include if findings exist):**
-
-### Critical Issues
-Use when: Build fails, user workflow blocked, data loss risk, can't retry after error, security hole
+A title, a signal line, a paragraph stating the defect, and a `Concretely:` list of what
+happens versus what should happen. No field labels — a reader should be able to understand
+*and* fix the issue from the prose alone.
 
 ```
-**N. Title** (`file.ext:line`)
-**Problem**: What's wrong
-**Impact**: What breaks
-**Fix**: Specific solution
+### <one-line claim, stated as the defect>
+
+<Severity> severity. <Confidence> confidence — <corroboration>.
+
+<A paragraph naming the defect: what the code does, why that is wrong, and what the correct
+behavior is. This is the part someone fixes from. For an intent finding, quote the clause of
+the request it violates here, inline — the caller needs to see what was actually asked before
+deciding whether to fix the code or push back on the issue.>
+
+Concretely:
+
+- `<input or case>` currently <what happens>. It should <what should happen>.
+- `<input or case>` currently <what happens>. It should <what should happen>.
+
+<Any caveat that narrows the fix — what must keep working, what is out of scope.>
+
+Look at `path/to/file.ext:120`, `path/to/other.ext:44`.
 ```
 
-### Moderate Issues
-Use when: Edge case fails, missing feature vs reference, behavior differs
+Rules for the shape:
 
-### Suggestions
-Use when: Style inconsistency, convention violation, missing helper
+- Severity is `critical` / `moderate` / `minor`; confidence is `high` / `medium` / `low`. Both
+  sit in the signal line directly under the title, never in a field list.
+- The corroboration clause counts reviewers, never names them: `one reviewer`, `corroborated
+  by 2 reviewers`, `corroborated by all 3 reviewers`. Which reviewer found it is a debugging
+  detail; how many found it independently is the signal. Count only reviewers that actually
+  ran — a skipped intent or external leg is not a reviewer that failed to corroborate.
+- Each `Concretely:` bullet is a self-contained sentence pair, one case per bullet however many
+  there are. Bullets rather than prose because a finding with ten cases has to stay as readable
+  as one with two.
+- Write the actual-state clause as a verb phrase so it reads after "currently" — `currently
+  parses without error`, not `currently accepted`.
+- Locations go last. A reader triages on the claim and the severity, not on the path.
+- When a reviewer reports `absent` for location — the finding is that something is missing —
+  omit the `Look at` line entirely. Do not name a plausible file: the case list already says
+  what is missing, and a guessed path sends the fixer to the wrong place.
 
-**Priority Table:**
+### Output
 
-| # | Task | Severity | Complexity | Location |
-|---|------|----------|------------|----------|
-| 1 | ... | Critical | Low | `file:line` |
+```
+## Changes review: N findings (C critical, M moderate, m minor)
 
-Complexity: Low · Medium · High
+Scope: <files, lines, base>
+Reviewers: cold (<model>) · intent (<model>|skipped) · external (<cli>|skipped)
 
-## Phase 4: Post-Review Actions
+<findings, most severe first>
+```
 
-After presenting the review, offer next actions. **Skip this phase entirely when there are no findings** — trivial or clean reviews just end.
+When every reviewer returns nothing:
 
-Prompt interactively if the host can. Otherwise list the same options as plain text and act on the user's reply.
+```
+## Changes review: no findings
 
-**Top-level prompt (single choice):**
+Scope: <files, lines, base>
+Reviewers: cold (<model>) · intent (<model>|skipped) · external (<cli>|skipped)
+```
 
-- **Fix findings** — apply fixes to the working tree
-- **Comment in PR** — draft inline review comments on the branch's PR. Offer this option only when the issue-context pass resolved a PR; otherwise omit it.
-- **Skip** — stop; the user takes it from here
+A clean result is a real result. Do not pad it with observations.
 
-Keep it single-choice. The user can re-run the skill to take another action.
+### After reporting
 
-### Fix findings
-
-Build the severity options **adaptively from the tiers present this run** — never offer an empty bucket:
-
-- `Critical only` — when any critical exists
-- `Critical + Moderate` — when both exist
-- `Everything` — all present tiers
-- `Pick numbers…` — the user names finding numbers from the priority table
-
-Apply the selected fixes, then:
-- run the repo-native verify command (skip under `--no-build`)
-- report what changed and the check result
-
-### Comment in PR
-
-Resolve the PR from the issue-context pass (Phase 1), then:
-
-1. **Target a pending review.** If a pending review by the current user already exists on the PR, append to it; otherwise create a new pending review. **Leave it UNSUBMITTED** — the user reviews and submits.
-2. **Choose which findings to comment.** If the user already named findings or severities in their request to this skill, honor that without asking. Otherwise prompt, defaulting to: **Critical preselected (always include), Moderate optional, Suggestions off by default**, plus an option to specify finding numbers.
-3. **Write each comment** anchored to its `file:line`, following `## PR Comment Style`. Every comment body **starts with `✴️ `**.
-4. Report the pending review link and that it is left unsubmitted.
-
-Post with the host's PR tooling — e.g. `gh api .../pulls/{n}/reviews` to create a pending review, or GraphQL `addPullRequestReviewThread` against an existing pending review's node id to append to it.
-
-## PR Comment Style
-
-Applies to every PR comment the skill drafts. Each body starts with `✴️ ` — the only emoji allowed — so generated comments are easy to spot.
-
-**Order — what, then why, then fix:**
-
-1. **What** — the problem, in plain language: what happens.
-2. **Why** — the impact: why it matters (e.g. "makes the UX worse", "nothing gets seeded").
-3. **Fix** — a suggestion at the end, pointing to the specific symbol, line, or file.
-
-Write it as flowing prose, not labeled "Problem / Impact / Fix" scaffolding.
-
-**Rules:**
-
-- Be concise; don't inflate. Calibrate severity honestly ("not a hard error, but worse UX"). Length follows the finding — short by default, longer only when it needs it.
-- Direct, but never blame the developer. Assuming an oversight is fine; no fixed phrase is required.
-- Phrase asks neutrally: "Please implement…", "we need to…", or "`X` should…". Use "we / our" for shared conventions where it fits, but don't force it.
-- Backtick all code, symbols, and file names. You may link files and issues as markdown: `[text](url)`.
-- No emojis in the body beyond the leading `✴️`. Tone: collaborative, direct, no fluff.
-
-**Examples:**
-
-Critical — a bug that blocks the user:
-
-> ✴️ The dialog closes before `send()` resolves. If the request throws, the user can't resubmit and the error is lost — not a hard error, but worse UX. Move `dialog.close()` after the request succeeds.
-
-Moderate — fragile behavior:
-
-> ✴️ `Promise.all` rejects on the first failed request, so every successfully-fetched result is thrown away too and nothing gets seeded. This looks like an oversight — please collect the rest (`Promise.allSettled`) and handle the failures.
-
-Suggestion — convention:
-
-> ✴️ Async `sendAndParse` sits in a store file, which goes against `stores.md`. Async work should move to a service that subscribes and populates the fact store, like the other services do.
+Stop. Do not fix anything, do not offer to fix anything, do not run a second round on your own
+initiative. Hand the findings to whichever skill or caller asked for them — round policy belongs
+to the caller.
 
 ## Rules
 
-- **Run tooling and conventions first** - Get both reports before logic analysis
-- **Use repo-native commands** - Prefer documented project scripts and checks over hardcoded tool commands
-- **Autofix when available** - Run the best fix-capable lint/check command once if the repo exposes one
-- **Re-diff after mutation** - Review the post-fix state, not the stale pre-fix diff
-- **Focus on logic** - Supporting passes handle type, lint, and convention checks
-- **Read reference completely** - Don't stop when patterns look familiar
-- **Diff line-by-line** - "Similar" is not "same"
-- **Verify usage** - Variables must be used in logic
-- **Flag differences** - Don't rationalize them
-- **Present findings first** - Output the review, then run Phase 4 to offer actions (fix or PR comments). Never fix or comment before the user chooses.
-- **Mark drafted PR comments** - Every comment the skill writes starts with `✴️ ` and follows PR Comment Style
+- **One job per reviewer.** A reviewer told to find bugs *and* suggest improvements softens into
+  a quality reviewer and stops finding bugs. Never merge the prompts.
+- **No reasoning reaches a reviewer.** Not the plan, not the rationale, not a summary of intent,
+  not a previous round's findings or verdicts.
+- **Never mutate.** No edits, no autofix, no commits, no stashes. Callers rely on this.
+- **Concrete failure or it does not exist.** This is the difference between a review and a list
+  of anxieties.
+- **No manufactured findings.** A reviewer returning "No findings" on sound code is correct
+  behavior, not a failed run.
 
-**Anti-pattern:** Rationalization
+## Error handling
 
-WRONG: "Simpler is OK"
-RIGHT: "Missing feature: [what] - reference has this"
-
-WRONG: "Both patterns are valid"
-RIGHT: "Pattern differs: reference uses X, new uses Y"
-
-## Keywords
-
-review, code review, changes, commits, logic analysis, diff, git diff
+| Situation | Action |
+| --------- | ------ |
+| No changes in scope | Print `Nothing to review.` and stop |
+| Trivial diff only | Print `Trivial changes only. Nothing to attack.` and stop |
+| No requirement resolves | Run the cold reviewer only, say so in the report |
+| External CLI missing or times out | Note it in the Reviewers line, continue |
+| A native reviewer returns nothing usable | Report the remaining reviewers, name the gap |
+| Every reviewer fails | Say so plainly. Do not substitute your own review — that is the one thing this skill exists to avoid |
