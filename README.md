@@ -269,7 +269,7 @@ CI, script, security, skill, workspace, Three.js, React, and test-suite auditing
 | [skill-audit](./audit/skills/skill-audit/) | Audit skills for quality, specification compliance, and Codex readiness | All |
 | [three-audit](./audit/skills/three-audit/) | Audit Three.js / React Three Fiber code for perf and best-practice issues | All |
 | [react-audit](./audit/skills/react-audit/) | Audit React code for effects misuse, conventions, and patterns | All |
-| [tests-audit](./audit/skills/tests-audit/) | Write behavior-pinning tests; audit, fix, or delete bad ones | All |
+| [tests-audit](./audit/skills/tests-audit/) | Audit a test suite and report keep/tighten/rewrite/delete per test | All |
 | [workspace-audit](./audit/skills/workspace-audit/) | Analyze pnpm workspace and monorepo setup | All |
 
 ### Maintain

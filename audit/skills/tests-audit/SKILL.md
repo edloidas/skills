@@ -1,21 +1,24 @@
 ---
 name: tests-audit
 description: >
-  Write behavior-pinning tests and audit existing test suites for anti-patterns — tautological
-  mock round-trips, weak assertions (toBeDefined / assertNotNull), implementation coupling,
-  flaky timing, snapshot rubber-stamping, and tests claiming guarantees they cannot provide —
-  then tighten, rewrite, or delete the offenders.
-  Use when asked to write tests for new or existing code, review or audit test quality,
-  improve a test suite, fix flaky or brittle tests, or decide whether tests should be kept,
-  fixed, or removed.
+  Audit an existing test suite for anti-patterns — tautological mock round-trips, weak
+  assertions (toBeDefined / assertNotNull), implementation coupling, flaky timing, snapshot
+  rubber-stamping, and tests claiming guarantees they cannot provide — and report a
+  keep / tighten / rewrite / delete verdict per test.
+  Use when asked to audit or review the quality of a test suite, judge whether existing tests
+  are worth keeping, diagnose flaky or brittle tests, or find out why a green suite isn't
+  catching bugs.
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
-argument-hint: "[files | dir] [write | audit | improve]"
+argument-hint: "[files | dir]"
 ---
 
-# Test Quality
+# Tests Audit
 
-Write tests that pin behavior, find tests that don't, and fix or delete them.
+Find the tests that don't pin behavior and report what to do with each. **This skill reports;
+it never edits the suite or the code under test.** It does run the suite — order dependence and
+flakiness cannot be found any other way — so route any coverage output to a temp path rather
+than the repo.
 
 ## Core Principle
 
@@ -33,13 +36,14 @@ maintenance and return nothing — fewer, sharper tests beat either. **Deleting 
 quality improvement**, not a coverage regression.
 
 Corollary: coverage percentage measures neither direction. 0% on a module is real information
-(a gap); high coverage proves nothing. Never write a test whose only justification is a
-coverage number — read *which* lines are uncovered instead. Uncovered defensive branches and
-exhaustiveness guards are correct; raise a threshold only for a gap in real behavior.
+(a gap); high coverage proves nothing. A test whose only justification is a coverage number is
+a finding, not a defense — read *which* lines are uncovered instead. Uncovered defensive
+branches and exhaustiveness guards are correct; a coverage threshold is only worth raising for
+a gap in real behavior.
 
 ## The Five-Question Gate
 
-Every test — new or existing — must pass all five. Any "no" → fix or delete.
+Every test must pass all five. Any "no" is a Tighten, Rewrite, or Delete verdict.
 
 1. **Contract** — which one-sentence promise of the public API does it pin, and does the name
    claim no *more* than the assert delivers? No sentence → it tests implementation detail, a
@@ -73,39 +77,17 @@ The most-violated rule in real suites, so it gets its own section:
   the *translation*: parameter mapping (an outgoing-call assert), response shaping, error
   mapping, authorization gating. Test those; if there's no translation, there's nothing to
   unit-test — cover it in an integration test or not at all.
-- **Hard to test without heavy mocking?** That's design feedback, not a mocking problem:
-  a hidden `new Date()` wants to be a parameter, buried IO wants to be injected, a god object
-  wants splitting. Extract the pure logic and test it with zero mocks; leave a thin shell.
+- **Hard to test without heavy mocking?** That's design feedback about the code under test,
+  not a mocking problem — a hidden `new Date()` wants to be a parameter, buried IO wants to be
+  injected, a god object wants splitting. Report it as a design finding on the module. Do not
+  refactor production code to make a test cleaner; that is outside this skill.
 
-## Modes
+## Workflow
 
-Infer the mode from the request; explicit arguments override. "Write tests for X" → Write.
-"Are these tests any good?" / "review the tests" → Audit (report only — don't edit).
-"Fix / clean up the tests" or an approved audit → Improve.
-
-### Write
-
-1. **List the contract first.** Enumerate the module's promises as one-sentence rules, from its
-   public surface, types, docs, and callers. Each sentence becomes a test name. Can't write the
-   sentences → you don't understand the module yet; read more code, don't write tests.
-2. **Pick cases by equivalence class, not by code path.** One test per behavior class, plus the
-   boundaries between classes (`<` vs `<=`, empty input, rounding edge, error path). Same rule
-   with several data points → one table test (`it.each` / `@ParameterizedTest`), never a loop.
-3. **Shape**: Arrange–Act–Assert, exactly one Act. Builders with valid defaults keep Arrange to
-   a line. Expected values are hand-computed constants — never re-derived with the SUT's own
-   formula. No ifs, loops, or try/catch in test bodies.
-4. **Doubles** per the policy above. Fake timers instead of sleeps; clock as an argument where
-   the design allows.
-5. **Verify**: run the suite, then re-run it shuffled. Then mutation spot-check the riskiest
-   rule — break the SUT on purpose (flip a boundary, change a constant), confirm the test goes
-   red, revert. A new test that can't go red is theater regardless of how it reads.
-
-Details, naming rules, and a worked example: `references/writing-tests.md`.
-
-### Audit
-
-1. **Scope**: explicit argument → that. Otherwise test files touched by uncommitted changes;
-   otherwise ask, or sample the suite (mix of small/large, logic/mock-heavy files).
+1. **Scope**: explicit argument → exactly that. Otherwise the project's test suite, sampled
+   when it is too large to read whole — a mix of small and large files, pure-logic and
+   mock-heavy, plus any e2e specs. Reviewing only the tests added in a diff is
+   `review:changes-review`'s job, not this skill's.
 2. **Mechanical scan** for grep-able smells (weak asserts, sleeps, `.skip`/`@Disabled`,
    `.only`, loops in test bodies, mock round-trips, catch-only error tests) — commands in
    `references/audit-procedure.md`.
@@ -124,21 +106,13 @@ Details, naming rules, and a worked example: `references/writing-tests.md`.
 
 5. **Report** using the template in `references/audit-procedure.md`. Name what the suite does
    *well* alongside the defects — an unnamed good pattern is one refactor from deletion. Close
-   with an overall verdict and an ordered fix path. Audit runs the suite but never edits it.
+   with an overall verdict and an ordered fix path.
 
-### Improve
-
-1. Start from audit verdicts (run an audit first if there isn't one).
-2. Apply the **smallest transformation** per smell — the catalog maps each anti-pattern to its
-   fix. Tighten before rewriting; rewrite before deleting.
-3. **Never weaken an assertion to make a test pass.** A red test is a claim about behavior —
-   resolve the claim (fix code, or consciously change the contract), don't blur it.
-4. **Before deleting**, extract the test's intent: if it names a real, otherwise-untested
-   promise, rewrite it against the contract instead. Delete only when the intent is empty
-   (tautology, trivia, duplicate) or dead (disabled with no plan).
-5. **Verify**: full suite green, then mutation spot-check every rewritten test — a rewrite that
-   never goes red on a broken SUT just moved the theater around.
-6. Report what changed, grouped by verdict, with before/after counts.
+Do not edit the suite, even when a fix is obvious — the report is the deliverable. For
+whoever applies it, `references/audit-procedure.md` §6 gives the fix-pass order and
+verification steps, and `references/writing-tests.md` gives the contract-first procedure for
+rewriting a flagged test. Reference both in the fix path so the report is actionable without
+this skill.
 
 ## Quick Reference
 
@@ -149,7 +123,7 @@ Details, naming rules, and a worked example: `references/writing-tests.md`.
 | Arrange — or a grep of the SUT's own source — establishes what the Assert checks | Rewrite around the real producer: run it, inspect the artifact |
 | All assertions live inside `catch` | Tighten: `toThrow` / a helper that fails when nothing throws |
 | Property a constant or identity function would satisfy | Tighten to two-sided/metamorphic, or Delete |
-| N feature tests all re-proving one mechanism | Consolidate opportunistically — never a headline finding |
+| N feature tests all re-proving one mechanism | Not a finding — suite-level observation only |
 | Expected value computed with SUT's formula | Tighten: replace with hand-computed constant |
 | `toBeDefined` / `assertNotNull` / `not.toThrow` as the only assert | Tighten: assert the precise value or shape |
 | Asserting internal call order/counts (undocumented) | Rewrite against observable output, or Delete |
@@ -162,30 +136,21 @@ Details, naming rules, and a worked example: `references/writing-tests.md`.
 | `it('fixes JIRA-4521')` | Tighten: rename to the rule the bug violated |
 | Test depends on a previous test's state | Rewrite: each test arranges its own world |
 | e2e: `waitFor...` with no assertion after it | Tighten: assert the outcome explicitly |
-| Test asserts an acknowledged-wrong value ("should be 4, left as is") | Surface it: that's a bug tracker entry wearing a test costume |
-| `.skip` / `@Disabled` / commented-out for months | Delete (git remembers), or fix now |
-| Getters, framework wiring, generated code under test | Delete: cost > 0, information = 0 |
+| Test asserts an acknowledged-wrong value ("should be 4, left as is") | Report separately: that's a bug, not a test defect |
+| `.skip` / `@Disabled` / commented-out for months | Delete (git remembers) — Rewrite if its intent names an uncovered promise |
+| Getters, framework wiring, generated code under test | Delete — cost > 0, information = 0 |
 
 Full catalog with mechanisms, detection, and worked fixes: `references/anti-patterns.md`.
 
 ## Common Mistakes
 
-- **Weakening an assert to stop a flake.** The flake is the bug — fix the determinism, keep the
-  precision.
-- **"Fixing" a tautology by asserting more of the mock.** More tautology is still tautology;
-  re-anchor to what the module *does* to the data, or delete.
-- **Deleting a bad test whose intent was real.** Check question 1 of the gate before deleting —
-  a badly-written test for a real rule gets rewritten, not removed.
-- **Mock-padding a slow test instead of extracting logic.** Slowness is design feedback; pull
-  the pure part out and test it mock-free.
-- **DRYing tests into a helper labyrinth.** Test code optimizes for the reader of a failure,
-  not for zero duplication — a little repetition that keeps each test self-explanatory wins.
-- **Renaming tests without re-anchoring them.** A behavior-sentence name on an
-  implementation-coupled body is worse than before — the label lies.
+- **Verdicting Delete on a test whose intent was real.** Check question 1 of the gate first —
+  a badly-written test for a real rule earns Rewrite, not Delete.
+- **Reading repetition as duplication.** Copy-pasted arrange blocks are a real Low finding
+  (3.4), but test code optimizes for the reader of a failure, not for zero duplication. Never
+  recommend DRY-ing tests into a shared-helper labyrinth as the fix.
 - **Auditing e2e suites with unit-test rules.** e2e tests legitimately chain steps and share a
   browser; hold them to determinism, explicit asserts, and independence — not to one-Act purity.
-- **Auditing statically only.** Order dependence, flakiness, and real-IO slowness are invisible
-  to grep. Run the suite; run it shuffled. One minute buys a claim you can defend.
 - **Reporting defects without calibration.** "12 findings" reads the same for an excellent
   suite as for a rotten one. Name the strengths, rank the findings, and don't lead with
   redundant deterministic tests — they cost little, and a pass to lower a test count costs
@@ -194,7 +159,8 @@ Full catalog with mechanisms, detection, and worked fixes: `references/anti-patt
 
 ## References
 
-- `references/writing-tests.md` — contract listing, naming, case selection, doubles, worked
-  example, per-stack idioms (Vitest/TS, JUnit/Mockito, WebdriverIO e2e)
+- `references/audit-procedure.md` — scan commands, dynamic checks, verdict rubric, report
+  template, and the fix-pass order for whoever applies the report
 - `references/anti-patterns.md` — full catalog: symptom, mechanism, detection, fix
-- `references/audit-procedure.md` — scan commands, verdict rubric, report templates
+- `references/writing-tests.md` — how to rewrite a flagged test: contract listing, naming, case
+  selection, doubles, worked example, per-stack idioms (Vitest/TS, JUnit/Mockito, WebdriverIO)

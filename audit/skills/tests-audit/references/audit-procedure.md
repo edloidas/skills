@@ -1,7 +1,7 @@
 # Audit Procedure
 
-Mechanical scan → dynamic checks → per-test gate pass → verdicts → report. Audit mode never
-edits files.
+Mechanical scan → dynamic checks → per-test gate pass → verdicts → report. The audit itself
+never edits files; §6 is for whoever applies the report afterwards.
 
 ## 1. Scope and inventory
 
@@ -218,15 +218,18 @@ duplicated under severity headings.
 suite ≠ twelve on a rotten one), and an unnamed good pattern is one refactor from deletion.
 Name the mechanism, not the vibe — "randomness injected at the boundary", not "good tests".
 
-## 6. Improve pass (after an approved audit)
+## 6. Fix pass (after an approved audit)
+
+The audit never edits the suite. This section is for whoever applies the report afterwards.
 
 Work the report top-down by severity:
 
 1. **Tighten** first — small, safe, mechanical (precise asserts, renames, `it.each`
    conversion, fake timers, builder extraction).
 2. **Rewrite** next — re-anchor to the contract; this requires reading the SUT, not just the
-   test. Keep the old test's *intent list* and check every intent is re-covered or
-   consciously dropped.
+   test. `writing-tests.md` is the procedure: list the contract sentences first, then write the
+   test that pins one. Keep the old test's *intent list* and check every intent is re-covered
+   or consciously dropped.
 3. **Delete** last, in one reviewable group, each with its one-line justification.
 4. **Never weaken an assertion to get to green.** If a tightened assert exposes a real
    failure, that's a found bug — report it, don't blur the test back.
@@ -246,3 +249,14 @@ mandatory either way.
 
 Report what changed grouped by verdict, with before/after test counts and any bugs the
 tightened asserts exposed.
+
+Traps specific to the fix pass:
+
+- **Weakening an assert to stop a flake.** The flake is the bug — fix the determinism, keep the
+  precision.
+- **"Fixing" a tautology by asserting more of the mock.** More tautology is still tautology;
+  re-anchor to what the module *does* to the data, or delete.
+- **Renaming without re-anchoring.** A behavior-sentence name on an implementation-coupled body
+  is worse than before — the label lies.
+- **Mock-padding a slow test instead of extracting logic.** Slowness is design feedback; pull
+  the pure part out and test it mock-free.
