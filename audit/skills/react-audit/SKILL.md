@@ -2,7 +2,8 @@
 name: react-audit
 description: >
   Review React code for useEffect misuse, convention violations, memoization issues, and architectural problems.
-  Runs react-doctor, Haiku subagents for mechanical checks, and deep Sonnet analysis in parallel.
+  Catches what linters cannot: effects that block re-execution, hooks in invalid positions,
+  over- and under-memoization, and state that should be a reducer.
   Use when reviewing React components, finishing a feature, or refactoring.
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
@@ -14,7 +15,7 @@ argument-hint: "[file, directory, or empty]"
 
 ## Purpose
 
-Deep review of React code combining automated tooling (react-doctor), mechanical pattern checks (Haiku subagents), and architectural analysis (main Sonnet agent). Focuses on what linters and type-checkers can't catch: effects misuse, convention violations, memoization strategy, state architecture, and component organization.
+Deep review of React code combining automated tooling (react-doctor), mechanical pattern checks (subagent), and architectural analysis (inline). Focuses on what linters and type-checkers can't catch: effects misuse, convention violations, memoization strategy, state architecture, and component organization.
 
 **Linter-aware:** Biome / ESLint already handle hook rules, dependency arrays, self-closing elements, fragments, type imports, and unused variables. This skill explicitly skips those areas.
 
@@ -93,22 +94,23 @@ bash <skill-dir>/scripts/run-react-doctor.sh . /tmp/react-doctor-output.txt
 
 This runs react-doctor with `--no-dead-code --verbose --no-ami -y` flags. It creates a temp config if the project lacks one, excludes stories and test files, and cleans up on exit.
 
-Run this in the background (`run_in_background: true`) — results are collected in Phase 3.
+Run this in the background if the host supports it — results are collected in Phase 3.
 
-### Track B: Mechanical Checks (Haiku Subagent)
-
-Use the Task tool to launch a Haiku subagent (`model: haiku`):
+### Track B: Mechanical Checks (subagent)
 
 1. Read `references/mechanical-checks-prompt.md` for the prompt template
 2. Read `references/rules-conventions.md` for convention rules
 3. Build the prompt:
    - Replace `{{CONVENTIONS}}` with only the **active** convention rules from Phase 1.2
    - Replace `{{FILE_LIST}}` with the target file paths
-4. Dispatch with `subagent_type: "general-purpose"`, `model: "haiku"`
+4. Dispatch a subagent with that prompt to scan the target files against the active
+   convention rules and return structured violations, each with a file, a line, and the
+   rule it breaks
 
-The subagent uses Read/Glob/Grep to scan files and returns structured violations.
+These are read-only pattern matches, so a cheap subagent is enough. If the host has no
+subagent facility, run the same prompt inline.
 
-### Track C: Deep Analysis (Main Sonnet, inline)
+### Track C: Deep Analysis (inline)
 
 Perform deep analysis on each target file using the rules from `references/rules-effects.md` and `references/rules-patterns.md`. Load these reference files, then analyze:
 
@@ -129,8 +131,8 @@ Perform deep analysis on each target file using the rules from `references/rules
 
 ## Phase 3: Collect & Merge
 
-1. **Read Track A output** from the background task output
-2. **Collect Track B results** from the Haiku subagent response
+1. **Read Track A output** from `/tmp/react-doctor-output.txt` (the path passed to the script), whether it ran in the background or inline
+2. **Collect Track B results** from the subagent response
 3. **Combine with Track C** deep analysis findings
 
 **Deduplication:** If multiple tracks flag the same issue (same file + same line range + same category), keep the most detailed version and note the source.
@@ -187,11 +189,11 @@ After all file sections, include a summary table:
 |---|---------|----------|----------|--------|
 | 1 | Race condition in fetch effect | Critical | `Component.tsx:45-58` | Deep |
 | 2 | Extract data fetching to hook | Improvement | `Component.tsx:30-72` | Deep |
-| 3 | Missing displayName | Convention | `Component.tsx` | Haiku |
+| 3 | Missing displayName | Convention | `Component.tsx` | Mech |
 | 4 | react-doctor finding | react-doctor | `Component.tsx:15` | RD |
 ```
 
-**Source column:** `Deep` = Track C, `Haiku` = Track B, `RD` = Track A (react-doctor)
+**Source column:** `Deep` = Track C, `Mech` = Track B, `RD` = Track A (react-doctor)
 
 ### When No Findings
 

@@ -4,9 +4,8 @@ Self-contained prompt for per-skill audit subagents. Replace `{{SKILL_NAME}}` an
 
 ## Subagent Configuration
 
-- `subagent_type`: `general-purpose`
-- `model`: `haiku`
-- `max_turns`: 10
+Read-only work — file reads, globs, and greps only. A cheap subagent with a short turn budget
+(around 10 turns) is enough.
 
 ## Prompt
 
@@ -15,11 +14,11 @@ You are a skill auditor. Evaluate the skill "{{SKILL_NAME}}" located at {{REPO_R
 
 INSTRUCTIONS:
 1. Read ALL files in the skill directory: SKILL.md plus any files in agents/, scripts/, references/, assets/
-2. Use ONLY these tools: Read (for file content), Glob (for file discovery), Grep (for searching). Do NOT use Bash commands — no wc, sed, cat, head, tail, or any shell utilities.
+2. Use read-only file access only — file reads, globs, and content search. Do NOT run shell commands: no wc, sed, cat, head, tail, or any shell utilities.
 3. If the skill declares Codex compatibility, ships agents/openai.yaml, or appears in {{REPO_ROOT}}/scripts/codex/catalog.json, also inspect the repo-level Codex contract files described in references/codex-contracts.md
 4. Evaluate the skill against each rubric category. Score Codex Integration as N/A only when the skill has no Codex contract surface at all
 5. For each category, assign a score (1-5, or N/A for Codex Integration only) and provide specific evidence (line numbers, quotes, file paths)
-6. For multi-agent skills, treat agent-specific tool instructions without a fallback as an integration flaw
+6. For any skill whose `compatibility` declares a non-Claude host (Codex, OpenCode, Pi), dispatch instructions that name a tool, an agent type, or a model are an integration flaw — including per-host "Claude Code path / Codex path" splits and host-hint parentheticals, which are violations rather than fallbacks. `allowed-tools` is exempt: it is a declaration, not an instruction. `AskUserQuestion` is exempt when a plain-chat fallback is stated, and a flaw when it is not.
 7. A score without evidence is INVALID — you must cite what you observed
 8. List up to 5 top issues, up to 3 strengths, and up to 3 recommendations
 9. Use EXACTLY the output format specified below
@@ -49,7 +48,7 @@ EVALUATION RUBRIC:
    | 3 | Some tool mismatch (declared but unused, or used but undeclared). Or overly permissive Bash. |
    | 2 | Significant tool mismatches. Scripts exist but aren't referenced in workflow. |
    | 1 | No allowed-tools despite using tools, or tools dangerously over-permissive. |
-   Checks: allowed-tools match actual usage, not overly permissive, model override justified, subagents used appropriately, scripts integrated, arguments field present when accepting input, multi-agent skills provide fallbacks for agent-specific tools.
+   Checks: allowed-tools not overly permissive, model override justified, subagents used appropriately, scripts integrated, arguments field present when accepting input, portable skills describe dispatch as intent rather than mechanism (see instruction 6). Do not flag a declared tool as unused merely because the instructions are forbidden from naming it.
 
 4. Context Efficiency — progressive disclosure, token budget, reference usage
    | 5 | Lean body, heavy content in references, description under ~100 tokens. |
@@ -90,7 +89,7 @@ GENERAL GUIDELINES:
 - Read-only skills without scripts have less to evaluate in Safety — don't penalize for absence of risk surface.
 - Apply the same standards across all skills consistently.
 - Prioritize impact over cosmetics.
-- Do not penalize Claude-specific frontmatter extensions themselves. Penalize only missing fallback guidance in multi-agent skills.
+- Do not penalize Claude-specific frontmatter extensions themselves. Penalize dispatch instructions that name a tool, agent type, or model in a skill declaring a non-Claude host, and `AskUserQuestion` with no plain-chat fallback.
 
 OUTPUT FORMAT (follow exactly):
 

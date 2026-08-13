@@ -104,8 +104,8 @@ skill depends on the delegation step.
 
 When delegating, dispatch one subagent:
 
-- `subagent_type: Explore` (Claude Code; use the host's nearest equivalent elsewhere)
-- Fork has no conversation history — pass the exact `git diff` output (or the
+- A read-only subagent is enough — it inspects the diff and answers, nothing more.
+- The subagent has no conversation history — pass the exact `git diff` output (or the
   subset you need) in the prompt.
 - Ask a single narrow question. Good shapes:
   - *"From this diff, which files belong to scope: `<scope from $ARGUMENTS>`? Return file paths only."*

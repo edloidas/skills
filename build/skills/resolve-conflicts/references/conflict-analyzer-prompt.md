@@ -55,7 +55,7 @@ Indicators:
 
 ## Process
 
-1. Read each UU file using the Read tool
+1. Read each UU file
 2. Find all conflict marker blocks (`<<<<<<<` to `>>>>>>>`)
 3. Analyze what each side changed
 4. Classify the file based on the most complex conflict block in it (if a file

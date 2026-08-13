@@ -32,12 +32,28 @@ Then inspect config files only as needed:
 
 Prefer repo-documented scripts exactly as written.
 
+If neither instruction file exists, or neither defines usable validation commands, infer the
+standard quick checks for the ecosystem from its config files:
+
+- **TypeScript/JavaScript** — `package.json` `scripts`; `tsconfig.json`, `biome.json`,
+  `oxlint.json`, `.oxlintrc`. When several lock files exist, the package manager is the first
+  match of `bun.lockb` → `pnpm-lock.yaml` → `yarn.lock` → `package-lock.json`.
+- **Go** — `go.mod` · **Rust** — `Cargo.toml` · **Java/Kotlin** — `build.gradle*` ·
+  **Zig** — `build.zig` · **Python** — `pyproject.toml`
+
 ### 2. Choose the package or project root
 
 If the repo is a monorepo:
 - locate the nearest package or project for the changed files
 - run checks from that package root when the repo conventions support that
 - avoid workspace-wide checks unless the repo instructions require them
+
+Monorepo signals and the scoping they imply:
+- `pnpm-workspace.yaml`, `turbo.json`, `nx.json`, or `lerna.json` → run the package's own
+  script from the package root, or the workspace runner scoped to that package
+  (`pnpm --filter <pkg>`, `turbo run <task> --filter=<pkg>`, `nx run <pkg>:<task>`)
+- `settings.gradle*` listing subprojects → run the subproject task (`./gradlew :<module>:check`),
+  not the root aggregate
 
 ### 3. Determine commands
 
