@@ -134,10 +134,10 @@ Same as Local Mode but:
 1. Run `scripts/classify-conflicts.sh` from the skill directory
 2. Parse the output — extract counts and file lists per status code
 3. If there are UU files, classify them by difficulty:
-   - In Claude Code, dispatch the `build:conflict-analyzer` agent with the
-     UU file list
-   - In Codex, read `references/conflict-analyzer-prompt.md` and use it as the
-     prompt body for a read-only `explorer` subagent with the same UU file list
+   - Read `references/conflict-analyzer-prompt.md` and dispatch a read-only
+     subagent with it as the prompt body plus the UU file list. It classifies
+     each file trivial / simple / complex and resolves nothing.
+   - If the host has no subagent facility, classify inline using the same prompt.
    - Parse the classifier output to get the UU trivial/simple/complex subgroups
 4. Combine bash output (DU/UD/DD/AA/AU/UA) with classifier output
 5. Print the initial report (see `references/report-format.md`)

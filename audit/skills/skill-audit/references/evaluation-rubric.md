@@ -58,11 +58,12 @@ How clear, structured, and actionable the instructions are.
 How well the skill declares and uses tools, models, and integrations.
 
 **Checks:**
-- [ ] `allowed-tools` declarations match actual tool usage in instructions
+- [ ] `allowed-tools` declarations match actual tool usage. A portable skill's instructions are forbidden from naming its dispatch tool, so a declared `Task` / `Agent` with intent-only prose in the body is correct, not a mismatch
 - [ ] `allowed-tools` aren't overly permissive (e.g., bare `Bash` when `Bash(git:*)` would suffice)
 - [ ] `model` override (if present) is justified — not using expensive model for simple tasks
-- [ ] Task tool (subagents) used where parallel independent work would genuinely benefit
-- [ ] Multi-agent skills give a fallback for agent-specific tools (for example, `AskUserQuestion` fallback to direct chat, or Claude `Task` fallback to Codex `spawn_agent` / sequential audit)
+- [ ] Subagents used where parallel independent work would genuinely benefit
+- [ ] Skills declaring a non-Claude host describe dispatch as intent — what to spawn and what it must return — and never name a tool, an agent type, or a model. Per-host "Claude Code path / Codex path" splits count as a violation, not a fallback
+- [ ] `AskUserQuestion` in a portable skill has a plain-chat fallback
 - [ ] Scripts (if any) are well-integrated into the workflow, not orphaned
 - [ ] `user-invocable` field present when skill is meant to be invoked by user
 - [ ] `arguments` field present when skill accepts user input

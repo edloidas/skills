@@ -1,6 +1,6 @@
 # Deep Analysis Patterns
 
-Rules for the main Sonnet agent's deep analysis track. These require judgment and context awareness — not suitable for mechanical checking.
+Rules for the inline deep analysis track. These require judgment and context awareness — not suitable for mechanical checking.
 
 ## Memoization Strategy
 

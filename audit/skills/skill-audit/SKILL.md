@@ -130,26 +130,16 @@ The full rubric (`references/evaluation-rubric.md`) and Codex contract reference
 
 ### Step 6: Spawn Subagents
 
-Spawn **all** subagents in parallel when the host agent supports it. Use one lightweight read-only subagent per skill.
+Use one cheap, read-only subagent per skill, and launch every skill audit before waiting on
+any result.
 
-For each skill, take the prompt template from `references/subagent-prompt.md`, replace `{{SKILL_NAME}}` and `{{REPO_ROOT}}` with actual values, and pass the result as the subagent prompt.
+For each skill, take the prompt template from `references/subagent-prompt.md`, replace
+`{{SKILL_NAME}}` and `{{REPO_ROOT}}` with actual values, and pass the result as the subagent
+prompt. The subagent reads the skill's files and returns the structured audit block that
+template specifies.
 
-**Claude Code path**:
-- Use the `Task` tool
-- Spawn all subagents in a single message
-- `subagent_type`: `general-purpose`
-- `model`: `haiku`
-- `max_turns`: 10
-
-**Codex path**:
-- Use `spawn_agent`
-- Prefer `agent_type: explorer` for read-only repository inspection
-- Prefer a lightweight model such as `gpt-5.4-mini`
-- Use `reasoning_effort: medium`
-- Launch all skill audits first, then wait for results
-
-**Fallback path**:
-- If subagents are unavailable, audit sequentially in the main agent using the same rubric and output format
+If the host has no subagent facility, audit sequentially inline using the same rubric and
+output format.
 
 If a subagent fails or returns unparseable output, mark that skill as **"Audit Incomplete"** with the reason.
 
@@ -244,7 +234,7 @@ Use this section for repo-level Codex validation failures that affect multiple s
 - **Self-exclusion**: Exclude `skill-audit` in all-skills mode; allow explicit audit via name
 - **No fixes**: Report only — do not modify any skill files
 - **No generated-file edits**: Audit generated Codex wrapper outputs, but treat `scripts/codex/catalog.json` and source skills as the editable contract
-- **Agent-specific fallbacks**: Do not penalize Claude-only frontmatter extensions, but do flag multi-agent skills that require agent-specific tools without a fallback
+- **Portability**: Do not penalize Claude-only frontmatter extensions. Do flag a skill declaring a non-Claude host whose dispatch instructions name a tool, an agent type, or a model, and `AskUserQuestion` with no plain-chat fallback
 - **Worst-first**: Sort and prioritize by lowest scores
 
 ## Keywords

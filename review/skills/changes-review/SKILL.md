@@ -3,8 +3,7 @@ name: changes-review
 description: >
   Deep logic analysis of code changes. Runs repo-native tooling and convention
   checks first, then reviews logic errors, behavior gaps, and missing
-  requirements that automated checks miss. Uses Claude plugin subagents in
-  Claude Code and built-in subagents in Codex.
+  requirements that automated checks miss.
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
 allowed-tools: Bash Read Glob Grep Edit Write Task AskUserQuestion
@@ -17,22 +16,17 @@ metadata:
 
 ## Purpose
 
-Perform deep logic analysis of changed files. Delegates tooling checks and convention validation to specialized agents, then focuses on finding logic errors, behavior gaps, and missing business requirements that automated tools cannot detect.
+Perform deep logic analysis of changed files. Delegates the tooling and convention checks to parallel subagents, then focuses on finding logic errors, behavior gaps, and missing business requirements that automated tools cannot detect.
 
 ## Compatibility
 
 This skill may mutate the working tree when the project exposes a repo-native
-autofix-capable lint or check command. Expose it to Codex only as an explicitly
-invoked skill.
+autofix-capable lint or check command. That is why `agents/openai.yaml` sets
+`allow_implicit_invocation: false` — Codex must only reach it when explicitly invoked.
 
-Host-specific dispatch:
-- **Claude Code**: use the bundled `review:review-build` and
-  `review:review-rules` plugin agents
-- **Codex**: read `references/review-build-prompt.md` and
-  `references/review-rules-prompt.md`, then dispatch built-in subagents with the
-  same target file list
-- **Fallback**: if the host cannot spawn subagents, run the tooling and
-  convention passes inline before the logic review
+The tooling and convention passes run as subagents whose prompt bodies live in
+`references/review-build-prompt.md` and `references/review-rules-prompt.md`. If the host
+cannot spawn subagents, run both passes inline before the logic review.
 
 ## When to Use This Skill
 
@@ -53,7 +47,7 @@ This skill runs two supporting passes before the logic review:
 | Tooling pass | Mutating when autofix exists | Runs project checks and the best repo-native fix-capable lint/check command if one exists, returns TOOLING_REPORT |
 | Convention pass | Read-only | Checks files against project conventions, returns CONVENTION_REPORT |
 
-**Fallback:** If either agent fails, proceed with the other's report and note the gap in output. If both fail, perform logic analysis standalone and note that tooling/convention checks were skipped.
+**Fallback:** If either pass fails, proceed with the other's report and note the gap in output. If both fail, perform logic analysis standalone and note that tooling/convention checks were skipped.
 
 ## Commands
 
@@ -112,34 +106,22 @@ any natural-language skip-issue phrase from the "Skip-issue flag" note above). W
 set `ISSUE_CONTEXT = SKIPPED (user requested --no-issue)` and continue. Otherwise the pass
 auto-detects an issue/PR from the current branch and exits silently when nothing resolves.
 
-**Claude Code path**
+Dispatch these passes in parallel, skipping any the flags above turned off:
 
-- Dispatch `review:review-build` with a prompt that includes:
-  - the resolved scope
-  - the target file list
-  - "Use the repo's preferred quick checks and run the best fix-capable lint or
-    check command if one exists. Return TOOLING_REPORT."
-- Dispatch `review:review-rules` with a prompt that includes:
-  - the same target file list
-  - "Check these files against project conventions and return
-    CONVENTION_REPORT."
+- **Tooling pass** (skipped by `--no-build`) — prompt body from
+  `references/review-build-prompt.md`, plus the resolved scope and the target file list. It
+  runs the repo's preferred quick checks and the best fix-capable lint or check command if one
+  exists, and returns `TOOLING_REPORT`.
+- **Convention pass** — prompt body from `references/review-rules-prompt.md`, plus the target
+  file list. It checks those files against the project's conventions and returns
+  `CONVENTION_REPORT`.
+- **Issue context pass** (skipped by `--no-issue`) — runs `scripts/fetch-issue-context.sh`
+  from this skill directory with no arguments.
 
-**Codex path**
+Wait for every pass you dispatched before proceeding. If the host has no subagent facility,
+run them inline instead.
 
-- Read `references/review-build-prompt.md`
-- Use it as the prompt body for a built-in `worker` subagent and append:
-  - the resolved scope
-  - the target file list
-- Read `references/review-rules-prompt.md`
-- Use it as the prompt body for a built-in `explorer` subagent and append:
-  - the same target file list
-
-Wait for all dispatched reports before proceeding.
-
-**Issue context pass**
-
-Dispatch a parallel subagent (Claude Code: `general-purpose`; Codex: `explorer`) that
-runs `scripts/fetch-issue-context.sh` from this skill directory with no arguments.
+**Issue context detection**
 
 The script auto-detects an issue/PR for the current branch in this order:
 1. Open PR for the current branch (and its linked closing issue, if any)
@@ -224,8 +206,8 @@ ERROR_FLOW [action]:
 ### Phase 3: Aggregate & Output
 
 Combine from:
-1. **TOOLING_REPORT** (review-build) → Type errors, lint, build/test failures. When skipped via `--no-build`, note "Tooling pass skipped per user request" in the summary instead.
-2. **CONVENTION_REPORT** (review-rules) → Pattern violations
+1. **TOOLING_REPORT** (tooling pass) → Type errors, lint, build/test failures. When skipped via `--no-build`, note "Tooling pass skipped per user request" in the summary instead.
+2. **CONVENTION_REPORT** (convention pass) → Pattern violations
 3. **ISSUE_CONTEXT** (issue-context pass, when non-empty) → Requirements coverage, unresolved PR feedback, open questions. Omit silently when empty.
 4. **Logic Analysis** (this review) → Behavior gaps, missing features
 
@@ -264,7 +246,7 @@ Complexity: Low · Medium · High
 
 After presenting the review, offer next actions. **Skip this phase entirely when there are no findings** — trivial or clean reviews just end.
 
-In Claude Code, prompt with `AskUserQuestion`. Where the host cannot prompt interactively (e.g. Codex), list the same options as plain text and act on the user's reply.
+Prompt interactively if the host can. Otherwise list the same options as plain text and act on the user's reply.
 
 **Top-level prompt (single choice):**
 

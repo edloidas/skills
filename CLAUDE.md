@@ -249,6 +249,34 @@ Adding a host to a skill is not free. Check that the body has no Claude-only dep
 `AskUserQuestion` without a chat fallback, `subagent_type`, Skill-tool orchestration,
 `${CLAUDE_SESSION_ID}`, or `~/.claude/...` paths.
 
+**Subagent dispatch is written as intent, never as mechanism.** A skill declaring any
+non-Claude host must not name a tool, an agent type, or a model when it dispatches work. Say
+what to spawn and what it must return, and note the inline fallback for hosts without
+subagents:
+
+```
+Dispatch a subagent to scan the target files against the active convention
+rules and return structured violations. If the host has no subagent facility,
+run the same prompt inline.
+```
+
+For dispatch specifically, per-host "Claude Code path / Codex path" splits and host-hint
+parentheticals (`` `subagent_type: Explore` (Claude Code; use the host's nearest equivalent
+elsewhere)``) are violations, not fallbacks — the aim is one set of instructions every agent
+can follow. When the dispatched prompt is long enough to matter, put it in `references/` and
+point every host at the same file; never keep a second copy in a plugin `agents/` file, which
+only one host can read and which will drift.
+
+Three things this rule does **not** cover:
+
+- `allowed-tools` — a declaration, not an instruction. A portable skill that dispatches
+  subagents should still declare `Task` / `Agent` for Claude Code's pre-approval, and that is
+  not a mismatch with intent-only prose in the body.
+- `AskUserQuestion` — the per-host fallback above is *required*, not forbidden.
+- Per-host **data**, such as `assist/skills/handoff`'s table of where each host stores its
+  transcripts. Facts that genuinely differ per host belong in a table with a documented
+  default; only the dispatch procedure has to be uniform.
+
 The README "Available Skills" tables include an **Agent** column for quick scanning.
 
 ### Per-Host Skill Trees
@@ -371,9 +399,9 @@ Codex packaging layer is updated in the same change:
 - Add the skill symlink in `.agents/skills/` if it is part of the repo-local Codex skill set.
 - Add the skill symlink in the appropriate `plugins/<plugin-name>/skills/` wrapper plugin if it should
   be installable through the repo marketplace.
-- If a Codex-exposed skill mirrors a Claude plugin agent via a prompt reference
-  (for example `references/*-prompt.md`), update the Claude agent file and the
-  Codex prompt reference together so the two hosts do not drift out of sync.
+- A dispatched prompt lives in exactly one place — the skill's `references/*-prompt.md`, read
+  by every host. Do not mirror it into a plugin `agents/` file: only Claude Code can read that
+  copy, and the two drift the moment one is edited.
 - Ensure the wrapper plugin manifest and `.agents/plugins/marketplace.json` still reflect the
   intended Codex plugin set.
 - Update `scripts/codex/catalog.json`, run `./scripts/validate-codex.sh`, and run `./scripts/skills-packaging.sh sync-repo` so the
@@ -429,8 +457,8 @@ When multiple locations define an agent with the same `name`, higher-priority lo
 
 ### Naming and invocation
 
-- Agents appear in the UI as `<plugin-name>:<agent-name>` (e.g. `review:review-build`)
-- `subagent_type` for plugin-distributed agents requires the namespaced form (e.g. `subagent_type: "review:review-build"`)
+- Agents appear in the UI as `<plugin-name>:<agent-name>` (e.g. `review:spec-analyzer`)
+- `subagent_type` for plugin-distributed agents requires the namespaced form (e.g. `subagent_type: "review:spec-analyzer"`)
 - `subagent_type` for built-in agents uses the plain name (e.g. `subagent_type: "general-purpose"`)
 - Agent `name` in frontmatter must match the filename (without `.md`)
 

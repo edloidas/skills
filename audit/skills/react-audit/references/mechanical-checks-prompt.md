@@ -1,6 +1,6 @@
 # Mechanical Checks Prompt
 
-Template for the Haiku subagent that performs mechanical pattern checks.
+Template for the subagent that performs mechanical pattern checks.
 
 ---
 

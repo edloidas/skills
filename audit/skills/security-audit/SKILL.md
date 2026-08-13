@@ -97,13 +97,9 @@ If `.github/workflows/` is absent, skip the Actions subagent. Skip the Release s
 
 ### Step 2: Dispatch Audit Subagents in Parallel
 
-Spawn **one subagent per applicable audit area, in a single message** so they run concurrently.
-
-**Claude Code path:** use the `Agent` tool with `subagent_type: general-purpose`.
-
-**Codex path:** use `spawn_agent` with `agent_type: explorer` (read-only repository inspection).
-
-**Fallback:** if subagents are unavailable, run each audit area sequentially in the main agent using the same prompts.
+Dispatch **one subagent per applicable audit area, concurrently** if the host allows it. Each
+one only reads the repository and returns findings — nothing writes. If the host has no
+subagent facility, run each audit area sequentially inline using the same prompts.
 
 Skip an area if the repo does not expose it (no `.github/workflows/` → skip Actions subagent; no publish config → skip Release subagent). As new audit areas are added under `references/`, add the corresponding subagent dispatch here.
 
@@ -291,24 +287,27 @@ Sort findings within each severity bin worst-first (most exploitable first; poli
 
 ### Step 4: Hand Off Findings (Tasks + Planned Changes Report)
 
-This skill audits and reports; it does not mutate. Do not edit files, do not run `gh api` writes, do not create GitHub issues, do not invoke `/build:fix-findings` / `/plan:issue-flow` / any other skill on the user's behalf. Step 4 produces two artifacts side by side — a TaskList for downstream skills to consume, and a Planned Changes report for the user to read — and stops.
+This skill audits and reports; it does not mutate. Do not edit files, do not run `gh api` writes, do not create GitHub issues, do not invoke `/build:fix-findings` / `/plan:issue-flow` / any other skill on the user's behalf. Step 4 produces two artifacts side by side — a task queue for downstream work to consume, and a Planned Changes report for the user to read — and stops. Hosts differ in whether they have a task tracker; where none exists, the Planned Changes report *is* the handoff and the task options below collapse to option 4.
 
 When `AskUserQuestion` is available, use it. Otherwise present the same options in normal chat as a numbered list and wait for the user's reply:
 
-1. `Emit tasks + planned-changes report` (Recommended) — one TaskCreate per finding, plus the report below
+1. `Emit tasks + planned-changes report` (Recommended) — one task per finding, plus the report below
 2. `Emit tasks flagged for issue filing` — same as 1, with `intended_action: file_issue` metadata
-3. `Emit a single summary task` — one TaskCreate summarising all findings, suitable for a single tracking issue
+3. `Emit a single summary task` — one task summarising all findings, suitable for a single tracking issue
 4. `Skip — just the report`
 
 **All four options render the Planned Changes report** (so the user always sees the change plan and revert commands). Options 1–3 additionally emit tasks.
 
 #### Task emission rules (options 1, 2, 3)
 
-- One `TaskCreate` per finding from the Step 3 report (options 1, 2). For option 3, emit a single task whose description is a numbered list of all findings.
+Skip this subsection entirely when the host has no task tracker — go straight to the Planned
+Changes report.
+
+- One task per finding from the Step 3 report (options 1, 2). For option 3, emit a single task whose description is a numbered list of all findings.
 - `subject`: short finding title (e.g., "Pin `actions/checkout@v6` to SHA").
 - `description`: severity (including any `(policy)` qualifier), source subagent (`[Actions]`, `[Release]`, `[Repo Settings]`, `[Package Manager]`), file:line or API path, the exact remediation snippet from the report.
-- `metadata`: minimum set — `severity`, `source_area` (`actions` / `release` / `repo_settings` / `package_manager`), `change_kind` (`code` for file edits / `server_state` for `gh api` writes), `intended_action` (`fix` for option 1, `file_issue` for option 2, `summary` for option 3). Keep metadata light — TaskList is a handoff queue, not the audit's persistence layer.
-- **Sequencing**: for any pair from Step 3's `### Sequencing` section, set the downstream task's `addBlockedBy` to the upstream task's ID. The fix-findings flow respects these dependencies natively.
+- `metadata`: minimum set — `severity`, `source_area` (`actions` / `release` / `repo_settings` / `package_manager`), `change_kind` (`code` for file edits / `server_state` for `gh api` writes), `intended_action` (`fix` for option 1, `file_issue` for option 2, `summary` for option 3). Keep metadata light — the task queue is a handoff, not the audit's persistence layer.
+- **Sequencing**: for any pair from Step 3's `### Sequencing` section, record the downstream task as blocked by the upstream one, using whatever dependency field the host's tracker exposes. If it has none, state the ordering in the task description instead.
 - Emit tasks worst-first within each severity, matching the report's order.
 
 #### Planned Changes report

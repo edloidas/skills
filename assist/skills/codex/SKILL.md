@@ -48,11 +48,11 @@ Use when you have a specific question and want Codex's take.
    Use the output as `<TMP>` in subsequent file paths.
 
    Also pick a run id `<ID>` once and reuse the same literal string for every file in this
-   run. Use `$CLAUDE_SESSION_ID` when it is set (Claude Code); on any other host use a short
-   token of your own, such as the current `YYYYMMDD-HHMMSS`. Its only job is to keep
-   concurrent runs from overwriting each other's files.
+   run. Any short unique token works — a session identifier the host already exposes, or the
+   current `YYYYMMDD-HHMMSS`. Its only job is to keep concurrent runs from overwriting each
+   other's files.
 
-3. **Write the question to a temp file** using the **Write tool** (not Bash heredoc — heredocs with markdown headers trigger Claude Code's security heuristic):
+3. **Write the question to a temp file** with a file-write tool, not a Bash heredoc — heredocs with markdown headers trip some hosts' shell security heuristics:
    Write to `<TMP>/codex-<ID>-question.md`:
    ```
    ## Question

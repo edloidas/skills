@@ -55,7 +55,12 @@ dry-run report.
 ## Workflow
 
 1. Run the script with no flags and show the user the **ORPHANED** and **LIVE** sections.
-2. If there are orphans and the user wants them gone, confirm with `AskUserQuestion` (or honor an explicit "kill them"), then run with `--apply --yes`.
+2. If there are orphans and the user wants them gone, confirm before killing anything, then
+   run with `--apply --yes`. An explicit "kill them" in the request already counts as
+   confirmation. Otherwise use `AskUserQuestion` when available; where the host cannot prompt
+   interactively, ask in normal chat and wait for the reply:
+   1. `Kill orphans` (Recommended) — reap the N orphaned processes listed above
+   2. `Keep them` — leave everything running
 3. Never run `--apply` against LIVE entries — surface duplicates and suggest an app restart instead.
 
 ## What it detects
