@@ -30,7 +30,7 @@ it. Nothing runs in the background, nothing is injected into every prompt.
 | [plan](#plan) | Issue drafting, scope analysis, backlog triage, full issue lifecycle | 4 |
 | [build](#build) | Conflict resolution, commits, findings fixes | 4 |
 | [review](#review) | Adversarial change review, cleanup, review board, PR feedback, spec extraction | 5 |
-| [audit](#audit) | CI, scripts, security, skills, workspace, Three.js, React, tests | 8 |
+| [audit](#audit) | CI, scripts, security, skills, workspace, tsconfig, Three.js, React, tests | 9 |
 | [maintain](#maintain) | Label/rule/config sync, lint migration, repo hardening, process cleanup | 7 |
 | [ship](#ship) | npm releases | 1 |
 | [assist](#assist) | Explanations, external opinions, discussion, handoffs, restatement | 6 |
@@ -258,7 +258,7 @@ noise are `code-cleanup`'s job, not its.
 
 ### Audit
 
-CI, script, security, skill, workspace, Three.js, React, and test-suite auditing skills.
+CI, script, security, skill, workspace, tsconfig, Three.js, React, and test-suite auditing skills.
 
 | Skill | Description | Agent |
 | ----- | ----------- | ----- |
@@ -269,6 +269,7 @@ CI, script, security, skill, workspace, Three.js, React, and test-suite auditing
 | [three-audit](./audit/skills/three-audit/) | Audit Three.js / React Three Fiber code for perf and best-practice issues | All |
 | [react-audit](./audit/skills/react-audit/) | Audit React code for effects misuse, conventions, and patterns | All |
 | [tests-audit](./audit/skills/tests-audit/) | Audit a test suite and report keep/tighten/rewrite/delete per test | All |
+| [tsconfig-audit](./audit/skills/tsconfig-audit/) | Audit tsconfig.json against TypeScript 7 and report what to drop, add, and keep | All |
 | [workspace-audit](./audit/skills/workspace-audit/) | Analyze pnpm workspace and monorepo setup | All |
 
 ### Maintain
