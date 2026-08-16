@@ -71,7 +71,7 @@ skips it. `tools/skills-release` is the one current example.
 - `plan/` — Issue drafting, analysis, triage, and full issue lifecycle (4 skills)
 - `build/` — Conflict resolution, commit summaries, quick commits, and findings fixes (4 skills)
 - `review/` — Adversarial change review, cleanup, critical review board, PR feedback triage, and spec extraction (5 skills)
-- `audit/` — CI, script, security, skill, workspace, Three.js, React, and test-suite auditing (8 skills)
+- `audit/` — CI, script, security, skill, workspace, tsconfig, Three.js, React, and test-suite auditing (9 skills)
 - `maintain/` — Label sync, instruction file sync, lint migration, agent rule sync, editor config sync, repo security hardening, and stale process cleanup (7 skills)
 - `ship/` — Release workflows for npm packages (1 skill)
 - `assist/` — External opinion, assistance, and plain restatement tools (6 skills)

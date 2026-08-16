@@ -1,0 +1,438 @@
+{
+  "$generated": "scripts/refresh-options.mjs -- do not edit by hand",
+  "tsVersion": "7.0.2",
+  "generatedFrom": {
+    "declarations": "https://raw.githubusercontent.com/microsoft/typescript-go/typescript/v7.0.2/internal/tsoptions/declscompiler.go",
+    "probedCompiler": "/private/tmp/claude-501/-Users-edloidas-repo-skills/6434b4bc-2b2e-430c-82b7-4227bba1a30c/scratchpad/probe/node_modules/.bin/tsc"
+  },
+  "knownOptions": [
+    "all",
+    "allowArbitraryExtensions",
+    "allowImportingTsExtensions",
+    "allowJs",
+    "allowSyntheticDefaultImports",
+    "allowUmdGlobalAccess",
+    "allowUnreachableCode",
+    "allowUnusedLabels",
+    "alwaysStrict",
+    "assumeChangesOnlyAffectDirectDependencies",
+    "baseUrl",
+    "checkJs",
+    "checkers",
+    "composite",
+    "customConditions",
+    "declaration",
+    "declarationDir",
+    "declarationMap",
+    "deduplicatePackages",
+    "diagnostics",
+    "disableReferencedProjectLoad",
+    "disableSizeLimit",
+    "disableSolutionSearching",
+    "disableSourceOfProjectReferenceRedirect",
+    "downlevelIteration",
+    "emitBOM",
+    "emitDeclarationOnly",
+    "emitDecoratorMetadata",
+    "erasableSyntaxOnly",
+    "esModuleInterop",
+    "exactOptionalPropertyTypes",
+    "experimentalDecorators",
+    "explainFiles",
+    "extendedDiagnostics",
+    "forceConsistentCasingInFileNames",
+    "generateCpuProfile",
+    "generateTrace",
+    "ignoreDeprecations",
+    "importHelpers",
+    "incremental",
+    "init",
+    "inlineSourceMap",
+    "inlineSources",
+    "isolatedDeclarations",
+    "isolatedModules",
+    "jsx",
+    "jsxFactory",
+    "jsxFragmentFactory",
+    "jsxImportSource",
+    "lib",
+    "libReplacement",
+    "listEmittedFiles",
+    "listFiles",
+    "mapRoot",
+    "maxNodeModuleJsDepth",
+    "module",
+    "moduleDetection",
+    "moduleResolution",
+    "moduleSuffixes",
+    "newLine",
+    "noCheck",
+    "noEmit",
+    "noEmitHelpers",
+    "noEmitOnError",
+    "noErrorTruncation",
+    "noFallthroughCasesInSwitch",
+    "noImplicitAny",
+    "noImplicitOverride",
+    "noImplicitReturns",
+    "noImplicitThis",
+    "noLib",
+    "noPropertyAccessFromIndexSignature",
+    "noResolve",
+    "noUncheckedIndexedAccess",
+    "noUncheckedSideEffectImports",
+    "noUnusedLocals",
+    "noUnusedParameters",
+    "outDir",
+    "outFile",
+    "paths",
+    "plugins",
+    "pprofDir",
+    "preserveConstEnums",
+    "preserveSymlinks",
+    "preserveWatchOutput",
+    "pretty",
+    "project",
+    "quiet",
+    "reactNamespace",
+    "removeComments",
+    "resolveJsonModule",
+    "resolvePackageJsonExports",
+    "resolvePackageJsonImports",
+    "rewriteRelativeImportExtensions",
+    "rootDir",
+    "rootDirs",
+    "singleThreaded",
+    "skipDefaultLibCheck",
+    "skipLibCheck",
+    "sourceMap",
+    "sourceRoot",
+    "stableTypeOrdering",
+    "strict",
+    "strictBindCallApply",
+    "strictBuiltinIteratorReturn",
+    "strictFunctionTypes",
+    "strictNullChecks",
+    "strictPropertyInitialization",
+    "stripInternal",
+    "target",
+    "traceResolution",
+    "tsBuildInfoFile",
+    "typeRoots",
+    "types",
+    "useDefineForClassFields",
+    "useUnknownInCatchVariables",
+    "verbatimModuleSyntax",
+    "version"
+  ],
+  "commandLineOnly": [
+    "help",
+    "help",
+    "ignoreConfig",
+    "listFilesOnly",
+    "locale",
+    "showConfig",
+    "watch"
+  ],
+  "removed": {
+    "downlevelIteration": {
+      "removedIn": "7.0",
+      "suggestion": null
+    },
+    "baseUrl": {
+      "removedIn": "7.0",
+      "suggestion": "\"paths\": {\"*\": [\"./*\"]}"
+    },
+    "outFile": {
+      "removedIn": "7.0",
+      "suggestion": null
+    }
+  },
+  "removedValues": {
+    "target": [
+      {
+        "value": "es5",
+        "suggestion": null
+      }
+    ],
+    "moduleResolution": [
+      {
+        "value": "node",
+        "suggestion": null
+      },
+      {
+        "value": "node10",
+        "suggestion": null
+      },
+      {
+        "value": "classic",
+        "suggestion": null
+      }
+    ],
+    "module": [
+      {
+        "value": "amd",
+        "suggestion": null
+      },
+      {
+        "value": "umd",
+        "suggestion": null
+      },
+      {
+        "value": "system",
+        "suggestion": null
+      }
+    ],
+    "esModuleInterop": [
+      {
+        "value": false,
+        "suggestion": null
+      }
+    ],
+    "allowSyntheticDefaultImports": [
+      {
+        "value": false,
+        "suggestion": null
+      }
+    ],
+    "alwaysStrict": [
+      {
+        "value": false,
+        "suggestion": null
+      }
+    ]
+  },
+  "legacyRemoved": [
+    "charset",
+    "importsNotUsedAsValues",
+    "preserveValueImports",
+    "noImplicitUseStrict",
+    "noStrictGenericChecks",
+    "keyofStringsOnly",
+    "suppressExcessPropertyErrors",
+    "suppressImplicitAnyIndexErrors",
+    "out",
+    "prepend"
+  ],
+  "lockedValues": {
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "alwaysStrict": true
+  },
+  "defaults": {
+    "preserveWatchOutput": false,
+    "listFiles": false,
+    "explainFiles": false,
+    "listEmittedFiles": false,
+    "pretty": true,
+    "traceResolution": false,
+    "diagnostics": false,
+    "extendedDiagnostics": false,
+    "generateCpuProfile": "profile.cpuprofile",
+    "declarationMap": false,
+    "emitDeclarationOnly": false,
+    "sourceMap": false,
+    "inlineSourceMap": false,
+    "noCheck": false,
+    "deduplicatePackages": true,
+    "noEmit": false,
+    "assumeChangesOnlyAffectDirectDependencies": false,
+    "all": false,
+    "version": false,
+    "init": false,
+    "checkJs": false,
+    "composite": false,
+    "tsBuildInfoFile": ".tsbuildinfo",
+    "removeComments": false,
+    "importHelpers": false,
+    "downlevelIteration": false,
+    "isolatedModules": false,
+    "verbatimModuleSyntax": false,
+    "isolatedDeclarations": false,
+    "erasableSyntaxOnly": false,
+    "libReplacement": false,
+    "strict": true,
+    "alwaysStrict": true,
+    "stableTypeOrdering": true,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "exactOptionalPropertyTypes": false,
+    "noImplicitReturns": false,
+    "noFallthroughCasesInSwitch": false,
+    "noUncheckedIndexedAccess": false,
+    "noImplicitOverride": false,
+    "noPropertyAccessFromIndexSignature": false,
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "preserveSymlinks": false,
+    "allowUmdGlobalAccess": false,
+    "allowImportingTsExtensions": false,
+    "rewriteRelativeImportExtensions": false,
+    "noUncheckedSideEffectImports": true,
+    "inlineSources": false,
+    "experimentalDecorators": false,
+    "emitDecoratorMetadata": false,
+    "jsxFactory": "`React.createElement`",
+    "jsxFragmentFactory": "React.Fragment",
+    "jsxImportSource": "react",
+    "resolveJsonModule": false,
+    "allowArbitraryExtensions": false,
+    "reactNamespace": "`React`",
+    "skipDefaultLibCheck": false,
+    "emitBOM": false,
+    "newLine": "lf",
+    "noErrorTruncation": false,
+    "noLib": false,
+    "noResolve": false,
+    "stripInternal": false,
+    "disableSizeLimit": false,
+    "disableSourceOfProjectReferenceRedirect": false,
+    "disableSolutionSearching": false,
+    "disableReferencedProjectLoad": false,
+    "noEmitHelpers": false,
+    "noEmitOnError": false,
+    "preserveConstEnums": false,
+    "skipLibCheck": false,
+    "forceConsistentCasingInFileNames": true,
+    "maxNodeModuleJsDepth": 0,
+    "rootDir": ".",
+    "types": []
+  },
+  "probeVerifiedDefaults": [
+    "rootDir",
+    "types"
+  ],
+  "derivedDefaults": {
+    "moduleResolution": {
+      "fallback": "bundler",
+      "explicitByModule": [
+        "node16",
+        "node18",
+        "node20",
+        "nodenext"
+      ]
+    }
+  },
+  "conditionalDefaults": {
+    "incremental": "X_false_unless_composite_is_set",
+    "declaration": "X_false_unless_composite_is_set",
+    "checkers": "X_4_unless_singleThreaded_is_passed",
+    "target": "ScriptTargetLatestStandard",
+    "allowJs": "X_false_unless_checkJs_is_set",
+    "rootDir": "Computed_from_the_list_of_input_files",
+    "noImplicitAny": "X_true_unless_strict_is_false",
+    "strictNullChecks": "X_true_unless_strict_is_false",
+    "strictFunctionTypes": "X_true_unless_strict_is_false",
+    "strictBindCallApply": "X_true_unless_strict_is_false",
+    "strictPropertyInitialization": "X_true_unless_strict_is_false",
+    "strictBuiltinIteratorReturn": "X_true_unless_strict_is_false",
+    "noImplicitThis": "X_true_unless_strict_is_false",
+    "useUnknownInCatchVariables": "X_true_unless_strict_is_false",
+    "moduleResolution": "X_nodenext_if_module_is_nodenext_node16_if_module_is_node16_or_node18_otherwise_bundler",
+    "rootDirs": "Computed_from_the_list_of_input_files",
+    "resolvePackageJsonExports": "X_true_when_moduleResolution_is_node16_nodenext_or_bundler_otherwise_false",
+    "resolvePackageJsonImports": "X_true_when_moduleResolution_is_node16_nodenext_or_bundler_otherwise_false",
+    "useDefineForClassFields": "X_true_for_ES2022_and_above_including_ESNext",
+    "moduleDetection": "X_auto_Colon_Treat_files_with_imports_exports_import_meta_jsx_with_jsx_Colon_react_jsx_or_esm_format_with_module_Colon_node16_as_modules"
+  },
+  "implications": {
+    "composite": {
+      "whenTrue": {
+        "declaration": true,
+        "incremental": true
+      }
+    },
+    "verbatimModuleSyntax": {
+      "whenTrue": {
+        "isolatedModules": true,
+        "preserveConstEnums": true
+      }
+    },
+    "module": {
+      "byValue": {
+        "node16": {
+          "moduleResolution": "node16",
+          "moduleDetection": "force",
+          "resolveJsonModule": false
+        },
+        "node18": {
+          "moduleResolution": "node16",
+          "moduleDetection": "force",
+          "resolveJsonModule": false
+        },
+        "node20": {
+          "moduleResolution": "node16",
+          "moduleDetection": "force"
+        },
+        "nodenext": {
+          "moduleResolution": "nodenext",
+          "moduleDetection": "force"
+        }
+      }
+    }
+  },
+  "enums": {
+    "module": [
+      "commonjs",
+      "es6",
+      "es2015",
+      "es2020",
+      "es2022",
+      "esnext",
+      "node16",
+      "node18",
+      "node20",
+      "nodenext",
+      "preserve"
+    ],
+    "moduleResolution": [
+      "node16",
+      "nodenext",
+      "bundler"
+    ],
+    "target": [
+      "es6",
+      "es2015",
+      "es2016",
+      "es2017",
+      "es2018",
+      "es2019",
+      "es2020",
+      "es2021",
+      "es2022",
+      "es2023",
+      "es2024",
+      "es2025",
+      "esnext"
+    ],
+    "jsx": [
+      "preserve",
+      "react-native",
+      "react-jsx",
+      "react-jsxdev",
+      "react"
+    ],
+    "moduleDetection": [
+      "auto",
+      "legacy",
+      "force"
+    ],
+    "newLine": [
+      "crlf",
+      "lf"
+    ]
+  },
+  "externalConsumers": [
+    "baseUrl",
+    "paths",
+    "rootDirs",
+    "moduleSuffixes",
+    "customConditions"
+  ],
+  "keepList": {
+    "strict": "Explicit `true` documents intent, and stricter checks are planned for future releases.",
+    "target": "The TS7 default floats to the newest stable ECMAScript version, so it changes under you on a compiler upgrade. An explicit target pins emit semantics.",
+    "module": "Emit format is a deployment contract, not a detail worth inferring. Keep it explicit even when it matches the current default.",
+    "lib": "Explicit `lib` pins the ambient surface. It often matches what `target` implies, but dropping it is only safe when `target` is pinned too, and it is the wrong thing to drop when the list was deliberately narrowed or widened (e.g. adding DOM)."
+  }
+}

@@ -1,0 +1,6 @@
+interface:
+  display_name: "Tsconfig Audit"
+  short_description: "Audit tsconfig.json against TypeScript 7 requirements"
+  default_prompt: "Audit this project's tsconfig.json against TypeScript 7 and report what to remove, add, and keep."
+policy:
+  allow_implicit_invocation: true
