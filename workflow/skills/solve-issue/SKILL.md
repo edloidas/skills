@@ -271,13 +271,20 @@ implementer's reasoning leaking into a place reviewers can read.
 
 Phase 5 squashes the snapshot away. Each round freezes again — round 2 must
 snapshot the round-1 fixes before dispatching, or the reviewers re-review the
-diff they already saw.
+diff they already saw. Round 2 and later also pass `--mode simple` with the
+previous round's snapshot as the base, so the reviewers attack the fix rather
+than re-reading the whole branch to check a two-line change.
+
+Carry your own list of findings you accepted rather than fixed. The reviewers are
+blind to previous rounds by design, so an accepted decision comes back every
+round — recognizing it is your job, not theirs.
 
 ### Run the review
 
 Invoke `/changes-review` via the Skill tool with `--base <base>` and
 `--issue <N>`, using the base branch detected in Phase 5. It dispatches the
-reviewers, dedupes, and returns structured findings. It changes nothing.
+reviewers, re-attacks its own findings — verification is on by default for a
+`--base` run — and returns what survives. It changes nothing.
 
 Pass **no other context**. Not the Phase 2 plan, not the Risks/decisions
 section, not a summary of what you were trying to do, not the previous round's

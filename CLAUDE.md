@@ -372,18 +372,20 @@ Only add `Codex` to a skill's `compatibility` frontmatter after reviewing that t
 actually Codex-safe. In this repo, Codex-compatible skills must also be exposed through
 `scripts/codex/catalog.json`.
 
-Five skills are `compatibility: Claude Code`, each locked by what it actually does. They
+Four skills are `compatibility: Claude Code`, each locked by what it actually does. They
 should stay Claude-only unless their workflow changes:
 
 - `review/skills/consilium` and `review/skills/code-to-spec` — dispatch fleets of
   plugin-namespaced subagents via `subagent_type` and key temp files on
   `${CLAUDE_SESSION_ID}`.
-- `review/skills/changes-review` — dispatches parallel reviewers through the Task tool
-  with per-agent `model` overrides. Role diversity survives a port; model diversity does not,
-  and the model split is half of why the reviewers disagree usefully. Widen only after
-  verifying a host can actually vary the model per subagent.
 - `plan/skills/issue-flow` and `workflow/skills/solve-issue` — orchestrate other skills
   through Claude's Skill tool and gate on `AskUserQuestion`.
+
+`review/skills/changes-review` was Claude-only for its per-agent `model` overrides. It now
+states model choice as intent — most capable model the host offers, next tier down when that is
+the orchestrator's own, a different one per reviewer where the host allows it — and degrades to
+role diversity alone where it does not. Model diversity is still half of why the reviewers
+disagree usefully, so the report says which kind of diversity a run actually got.
 
 `assist/skills/codex` is the one skill that is portable but deliberately not Codex-exposed:
 running it inside Codex would be recursive, while it is genuinely useful from OpenCode and
