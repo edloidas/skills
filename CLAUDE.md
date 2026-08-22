@@ -43,7 +43,11 @@ a real directory — never a symlink.** Two independent constraints force this:
    manifest points at.
 
 `.github/scripts/validate-skills.sh` enforces both: it rejects a symlinked skill directory
-and rejects a leftover pre-4.0 `<group>/<skill-name>` path.
+and rejects a leftover pre-4.0 `<group>/<skill-name>` path. It also enforces the per-skill
+rules that must never regress — required frontmatter, `name` matching the directory and the
+naming format, `description` within 1,024 chars, the combined discovery entry within 1,536,
+and no `references/`, `scripts/`, or `assets/` path in `SKILL.md` that the skill does not
+ship.
 
 Distribution trees are generated symlinks into that canonical location. Claude Code, Codex,
 OpenCode, and pi all resolve symlinks, so only the canonical directory has to be real:
@@ -344,7 +348,23 @@ The `description` determines when an agent activates the skill. Be specific and 
 4. Add `scripts/`, `references/`, or `assets/` directories as needed
 5. Update the appropriate "Available Skills" table in `README.md`
 6. Run `bash .github/scripts/validate-skills.sh` to verify marketplace, manifests, and skill layout
-7. Validate via `skill-audit` skill if available
+7. Run `skill-audit` and clear it before committing — see below
+
+## Skill Changes Are Gated
+
+Any change that creates, edits, moves, renames, or deletes a skill directory clears
+`audit/skills/skill-audit` before it is committed. The three checkers own different halves
+and none substitutes for another:
+
+| Checker | Owns | Failure |
+| ------- | ---- | ------- |
+| `.github/scripts/validate-skills.sh` | Marketplace and plugin manifests, canonical layout, per-skill frontmatter rules, dangling bundled paths | Hard, fails CI |
+| `scripts/validate-codex.sh` | Codex catalog, `compatibility` agreement, `agents/openai.yaml`, host subset rule | Hard, fails CI |
+| `skill-audit` | Discovery, instruction quality, context cost, portability, safety | Scored 1-5, PASS / FAIL |
+
+`skill-audit` never edits anything and never regenerates the packaging layer — a stale
+generated tree is one of its findings. Anything mechanically checkable belongs in one of the
+two scripts, not in the rubric; add new mechanical rules there and let the skill cite them.
 
 ## Plugin Manifests (`.claude-plugin/`)
 
