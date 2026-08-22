@@ -1,6 +1,0 @@
-interface:
-  display_name: "Claude"
-  short_description: "Quick external opinion or code review from Claude"
-  default_prompt: "Use $claude to get a quick second opinion or an independent review of the current changes."
-policy:
-  allow_implicit_invocation: false

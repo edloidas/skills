@@ -10,14 +10,14 @@
 
 <p align="center">
   <img src="https://img.shields.io/github/v/tag/edloidas/skills?style=flat-square&color=FD3DB5&label=release" alt="Release">
-  <img src="https://img.shields.io/badge/skills-39-FD3DB5?style=flat-square" alt="39 skills">
+  <img src="https://img.shields.io/badge/skills-38-FD3DB5?style=flat-square" alt="38 skills">
   <img src="https://img.shields.io/badge/agents-4-FD3DB5?style=flat-square" alt="4 agents">
   <img src="https://img.shields.io/badge/license-MIT-FD3DB5?style=flat-square" alt="MIT license">
 </p>
 
 ---
 
-39 skills for planning, building, reviewing, auditing, maintaining, and shipping software —
+38 skills for planning, building, reviewing, auditing, maintaining, and shipping software —
 written once and distributed to [Claude Code](https://docs.anthropic.com/en/docs/claude-code),
 [Codex](https://developers.openai.com/codex), [OpenCode](https://opencode.ai), and
 [pi](https://pi.dev), following the [Agent Skills specification](https://agentskills.io/specification).
@@ -42,16 +42,15 @@ it. Nothing runs in the background, nothing is injected into every prompt.
 
 | Agent | Install | What you get |
 | ----- | ------- | ------------ |
-| Claude Code | `/plugin marketplace add edloidas/skills` | 10 plugin groups, all 39 skills |
+| Claude Code | `/plugin marketplace add edloidas/skills` | 10 plugin groups, all 38 skills |
 | Codex | `codex plugin marketplace add edloidas/skills` | 9 wrapper plugins, 34 skills |
-| pi | `pi install git:github.com/edloidas/skills` | 35 skills |
-| OpenCode | `./scripts/skills-packaging.sh install-host opencode` | 35 skills |
-| Other | `npx skills add edloidas/skills --all` | All 39 skills |
+| pi | `pi install git:github.com/edloidas/skills` | 34 skills |
+| OpenCode | `./scripts/skills-packaging.sh install-host opencode` | 34 skills |
+| Other | `npx skills add edloidas/skills --all` | All 38 skills |
 
 Counts differ because each skill declares which hosts it supports. Four skills depend on
 Claude-only features — subagent fleets with per-agent model overrides, the Skill tool, Claude's
-own config files — and ship only there. One more, `assist/codex`, is portable but deliberately
-kept out of the Codex set, since running it inside Codex would be recursive. See [How skills reach each agent](#how-skills-reach-each-agent).
+own config files — and ship only there. See [How skills reach each agent](#how-skills-reach-each-agent).
 
 ### Claude Code
 
@@ -149,7 +148,7 @@ Opening this repository in OpenCode surfaces its generated repo-local set automa
 ### npx skills
 
 The [skills CLI](https://github.com/vercel-labs/skills) installs into any agent it supports and sees
-all 39 skills with no extra flags:
+all 38 skills with no extra flags:
 
 ```bash
 npx skills add edloidas/skills --list                                  # list
@@ -302,14 +301,14 @@ External opinion, assistance, and plain restatement tools.
 | Skill | Description | Agent |
 | ----- | ----------- | ----- |
 | [ask](./assist/skills/ask/) | Answer at maximum reasoning effort — explain, challenge, or verify | All |
-| [claude](./assist/skills/claude/) | Quick external opinion from Claude Code CLI | Codex, OpenCode, pi |
-| [codex](./assist/skills/codex/) | Quick external opinion from Codex CLI | Claude, OpenCode, pi |
 | [discuss](./assist/skills/discuss/) | Iterative discussion mode — analyze, push back, and polish, no code edits | All |
 | [handoff](./assist/skills/handoff/) | Compact the session into a handoff — inline text or per-project doc file | All |
+| [outsider](./assist/skills/outsider/) | Quick opinion or review from an agent CLI outside this session | All |
 | [bro](./assist/skills/bro/) | Say the last message again, straight — bottom line, what matters, next steps | All |
 
-`codex` and `claude` are mirrors of each other: each shells out to the other model family's CLI,
-so each ships everywhere except its own host, where it would be recursive.
+`outsider` shells out to whichever agent CLI is installed and is *not* the one running it — Codex
+from Claude Code, Claude from Codex, and so on. It ships everywhere because the host is excluded at
+selection time rather than by leaving a host out of `compatibility`.
 
 ### Write
 

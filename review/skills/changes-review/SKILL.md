@@ -178,13 +178,19 @@ A model family outside this process entirely, via a CLI.
 Invoke it through the collection's external-agent skill, `/outsider`, rather than calling a script by
 path — a repo-relative path resolves only inside one checkout. That skill picks an installed agent CLI
 that is not the host running this skill, so the reviewer is both a different model family and a
-different process. (On an install predating it, `/codex` or `/claude` does the same job.) The leg is
-optional: with no external agent available the run continues without it and the report says so.
+different process. The leg is optional: with no external agent available the run continues without it
+and the report says so.
 
-Tell it to run review mode with **the scope this run resolved in Phase 1** — a different scope means
-Phase 4 dedupes two different change sets, which is worse than skipping this reviewer. Pass `540` as
-its timeout and set the surrounding command timeout to its maximum. Do not retry, and never block on
-it.
+Tell `/outsider` to run **review** mode and pass it exactly three things:
+
+- `--host <the agent you are>`, so it does not select the host and review its own work
+- **the scope this run resolved in Phase 1**, as the matching scope flag — `--uncommitted`,
+  `--base <branch>`, or `--commit <sha>`. A different scope means Phase 4 dedupes two different
+  change sets, which is worse than skipping this reviewer
+- a timeout of `540`, with the surrounding command timeout set to its maximum
+
+Do not retry, and never block on it. A missing CLI is a skipped leg, not a failed run: the skill
+reports why and exits cleanly, and the report notes the reviewer was unavailable.
 
 This leg only ever gets a piped diff, so it is structurally cold — good at internal contradictions in
 the diff, prone to asking for context it cannot see. Weight it accordingly, and never upgrade its

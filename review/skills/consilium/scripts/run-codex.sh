@@ -1,5 +1,12 @@
 #!/usr/bin/env bash
 # Run Codex CLI as an independent reviewer for consilium.
+#
+# This duplicates assist/skills/outsider/scripts/run-outsider.sh and is meant to be
+# replaced by it: that script takes --preamble <file> for a caller's own prompt, and its
+# stdout can be redirected here. Tracked in issue #30 rather than done inline, because
+# consilium's Codex reviewer is a named board persona with its own prompt, its own
+# context-file / output-file contract, and session-keyed temp files.
+#
 # Usage: bash review/skills/consilium/scripts/run-codex.sh <context-file> <output-file> [timeout-seconds]
 set -euo pipefail
 

@@ -74,7 +74,7 @@ skips it. `tools/skills-release` is the one current example.
 - `audit/` — CI, script, security, skill, workspace, tsconfig, Three.js, React, and test-suite auditing (9 skills)
 - `maintain/` — Label sync, instruction file sync, lint migration, agent rule sync, editor config sync, repo security hardening, and stale process cleanup (7 skills)
 - `ship/` — Release workflows for npm packages (1 skill)
-- `assist/` — External opinion, assistance, and plain restatement tools (6 skills)
+- `assist/` — External opinion, assistance, and plain restatement tools (5 skills)
 - `write/` — Markdown, README, and repository documentation writing (1 skill)
 - `obsidian/` — Obsidian vault organization and working document management (1 skill)
 - `workflow/` — End-to-end workflows that orchestrate multiple skills (1 skill)
@@ -387,11 +387,11 @@ the orchestrator's own, a different one per reviewer where the host allows it �
 role diversity alone where it does not. Model diversity is still half of why the reviewers
 disagree usefully, so the report says which kind of diversity a run actually got.
 
-`assist/skills/codex` is the one skill that is portable but deliberately not Codex-exposed:
-running it inside Codex would be recursive, while it is genuinely useful from OpenCode and
-pi. Hence `compatibility: Claude Code, OpenCode, Pi`. This is exactly the case the per-host
-split exists for — before it, a Codex-specific exclusion also denied the skill to two
-unrelated hosts.
+`assist/skills/outsider` used to be two skills, `codex` and `claude`, each excluded from the
+host it would have called recursively. It now resolves an installed agent CLI that is not the
+current host, so it declares all four hosts and still never invokes itself. Recursion is a
+selection rule in `scripts/run-outsider.sh`, not a `compatibility` omission — which is the
+pattern to follow for anything else that shells out to an agent CLI.
 
 When adding a new skill, or when upgrading an existing skill to support Codex, make sure the
 Codex packaging layer is updated in the same change:
