@@ -211,7 +211,14 @@ const skills = skillDirs.map((dir) => {
 
   const headingSkips = [];
   let previousLevel = 0;
+  let headingFenceOpen = false;
   lines.forEach((line, index) => {
+    // Shell comments inside a fenced block are not headings.
+    if (/^\s*(```|~~~)/.test(line)) {
+      headingFenceOpen = !headingFenceOpen;
+      return;
+    }
+    if (headingFenceOpen) return;
     const heading = line.match(/^(#{1,6})\s/);
     if (!heading) return;
     const level = heading[1].length;
