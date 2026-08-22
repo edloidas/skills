@@ -1,0 +1,6 @@
+interface:
+  display_name: "Agent Config"
+  short_description: "Init and audit a repo's agent instruction layer"
+  default_prompt: "Use $agent-config to set up this repo's agent instruction files and report any drift from the actual project state."
+policy:
+  allow_implicit_invocation: false

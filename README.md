@@ -31,7 +31,7 @@ it. Nothing runs in the background, nothing is injected into every prompt.
 | [build](#build) | Conflict resolution, commits, findings fixes | 4 |
 | [review](#review) | Adversarial change review, cleanup, review board, PR feedback, spec extraction | 5 |
 | [audit](#audit) | CI, scripts, security, skills, workspace, tsconfig, Three.js, React, tests | 9 |
-| [maintain](#maintain) | Label/rule/config sync, lint migration, repo hardening, process cleanup | 7 |
+| [maintain](#maintain) | Agent config, label/rule/config sync, lint migration, repo hardening, process cleanup | 7 |
 | [ship](#ship) | npm releases | 1 |
 | [assist](#assist) | Explanations, external opinions, discussion, handoffs, restatement | 6 |
 | [write](#write) | Markdown, READMEs, repository documentation | 1 |
@@ -274,12 +274,12 @@ CI, script, security, skill, workspace, tsconfig, Three.js, React, and test-suit
 
 ### Maintain
 
-Label sync, instruction file sync, lint migration, agent rule sync, editor config sync, repo security hardening, and stale process cleanup.
+Agent instruction setup and drift check, label sync, lint migration, agent rule sync, editor config sync, repo security hardening, and stale process cleanup.
 
 | Skill | Description | Agent |
 | ----- | ----------- | ----- |
+| [agent-config](./maintain/skills/agent-config/) | Init a repo's agent instruction layer and check it for drift | All |
 | [labels-sync](./maintain/skills/labels-sync/) | Check, apply, or export GitHub repository labels as reusable JSON | All |
-| [claude-md-sync](./maintain/skills/claude-md-sync/) | Detect and fix stale references in project CLAUDE.md or AGENTS.md | All |
 | [editor-config](./maintain/skills/editor-config/) | Init or merge `.zed` / `.vscode` editor configs from a canonical set | All |
 | [lint-sync](./maintain/skills/lint-sync/) | Compare ESLint rules against Biome for overlap | All |
 | [rules-sync](./maintain/skills/rules-sync/) | Init or update `.claude/rules` / `.agents/rules` from a canonical set | All |

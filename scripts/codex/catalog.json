@@ -127,15 +127,16 @@
       "group": "maintain",
       "name": "edloidas-maintain",
       "displayName": "Edloidas Maintain",
-      "description": "A Codex-safe maintenance bundle for label sync, instruction-file sync, rule sync, and lint migration.",
-      "shortDescription": "Label sync, instruction sync, rules, and lint migration.",
-      "longDescription": "Install the maintenance bundle from edloidas/skills for syncing GitHub labels, validating repo instruction files, syncing agent rules, and migrating lint configs from Codex.",
+      "description": "A Codex-safe maintenance bundle for agent instruction setup, label sync, rule sync, and lint migration.",
+      "shortDescription": "Agent config, label sync, rules, and lint migration.",
+      "longDescription": "Install the maintenance bundle from edloidas/skills for setting up a repo's agent instruction layer, syncing GitHub labels, syncing agent rules, and migrating lint configs from Codex.",
       "category": "Coding",
       "websiteURL": "https://github.com/edloidas/skills",
       "keywords": [
         "skills",
         "codex",
         "maintain",
+        "agents",
         "labels",
         "sync",
         "lint",
@@ -143,7 +144,7 @@
         "processes"
       ],
       "skills": [
-        "maintain/skills/claude-md-sync",
+        "maintain/skills/agent-config",
         "maintain/skills/editor-config",
         "maintain/skills/labels-sync",
         "maintain/skills/lint-sync",

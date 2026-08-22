@@ -56,7 +56,7 @@
     {
       "name": "maintain",
       "source": "./maintain",
-      "description": "Label sync, instruction file sync, rule sync, lint migration, and repo hardening",
+      "description": "Agent config, label sync, rule sync, lint migration, and repo hardening",
       "version": "4.5.2",
       "author": {
         "name": "Mikita Taukachou",
