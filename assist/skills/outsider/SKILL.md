@@ -8,7 +8,7 @@ description: >
   you want a fast independent perspective. Lighter and faster than a full review board.
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
-allowed-tools: Bash(bash:assist/skills/outsider/*) Write(*/outsider-*)
+allowed-tools: Bash(bash:*) Write(*/outsider-*)
 user-invocable: true
 argument-hint: "[review] [agent], or empty for ask mode"
 metadata:
@@ -40,7 +40,7 @@ The script picks the agent. Always pass `--host <the agent you are>` — `claude
 the user named one; that overrides everything, host included.
 
 ```bash
-bash assist/skills/outsider/scripts/run-outsider.sh list --host claude
+bash <skill-dir>/scripts/run-outsider.sh list --host claude
 ```
 
 `list` prints what is installed and what would be selected, and spends nothing.
@@ -63,7 +63,7 @@ and how to add an agent.
 2. **Resolve the temp directory** (once per session):
 
    ```bash
-   bash assist/skills/outsider/scripts/resolve-tmp.sh
+   bash <skill-dir>/scripts/resolve-tmp.sh
    ```
 
    Use the output as `<TMP>`. Pick a run id `<ID>` once too — a session identifier the host already
@@ -84,7 +84,7 @@ and how to add an agent.
 4. **Run it:**
 
    ```bash
-   bash assist/skills/outsider/scripts/run-outsider.sh ask --host claude <TMP>/outsider-<ID>-question.md
+   bash <skill-dir>/scripts/run-outsider.sh ask --host claude <TMP>/outsider-<ID>-question.md
    ```
 
 ## Review Mode
@@ -101,7 +101,7 @@ Review takes 3–10 minutes. Pass `540` so the script's own timer fires first an
 timeout message, and set the surrounding command timeout to its maximum (600000ms in Claude Code):
 
 ```bash
-bash assist/skills/outsider/scripts/run-outsider.sh review --host claude --uncommitted 540
+bash <skill-dir>/scripts/run-outsider.sh review --host claude --uncommitted 540
 ```
 
 ## Presenting Output

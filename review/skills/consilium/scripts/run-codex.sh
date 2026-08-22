@@ -7,7 +7,7 @@
 # consilium's Codex reviewer is a named board persona with its own prompt, its own
 # context-file / output-file contract, and session-keyed temp files.
 #
-# Usage: bash review/skills/consilium/scripts/run-codex.sh <context-file> <output-file> [timeout-seconds]
+# Usage: bash <skill-dir>/scripts/run-codex.sh <context-file> <output-file> [timeout-seconds]
 set -euo pipefail
 
 CONTEXT_FILE="${1:-}"
@@ -15,7 +15,7 @@ OUTPUT_FILE="${2:-}"
 TIMEOUT="${3:-600}"
 
 if [[ -z "$CONTEXT_FILE" || -z "$OUTPUT_FILE" ]]; then
-  echo "Usage: bash review/skills/consilium/scripts/run-codex.sh <context-file> <output-file> [timeout-seconds]" >&2
+  echo "Usage: bash <skill-dir>/scripts/run-codex.sh <context-file> <output-file> [timeout-seconds]" >&2
   exit 1
 fi
 

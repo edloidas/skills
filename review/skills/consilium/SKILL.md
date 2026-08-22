@@ -10,7 +10,7 @@ description: >
   solution approaches. Autonomous — runs without user interaction, presents combined findings.
 license: MIT
 compatibility: Claude Code
-allowed-tools: Read Write(*/consilium-*) Edit(*/consilium-*) Glob Grep Task Bash(bash:review/skills/consilium/*) Bash(cat:*/consilium-*) Bash(codex:*)
+allowed-tools: Read Write(*/consilium-*) Edit(*/consilium-*) Glob Grep Task Bash(bash:*) Bash(cat:*/consilium-*) Bash(codex:*)
 user-invocable: true
 argument-hint: "[focus area, brainstorm, or empty]"
 metadata:
@@ -134,11 +134,11 @@ Minimum: 2 (core only). Maximum: 6 (all). Typical: 3–4.
 ### Step 3: Load Prompts and Launch Reviewers
 
 Read the prompt templates from `references/` for all selected reviewers:
-- `review/skills/consilium/references/seneca-prompt.md` (always)
-- `review/skills/consilium/references/scrutator-prompt.md` (if selected)
-- `review/skills/consilium/references/novator-prompt.md` (if selected)
-- `review/skills/consilium/references/librarius-prompt.md` (if selected)
-- `review/skills/consilium/references/censor-prompt.md` (if selected)
+- `<skill-dir>/references/seneca-prompt.md` (always)
+- `<skill-dir>/references/scrutator-prompt.md` (if selected)
+- `<skill-dir>/references/novator-prompt.md` (if selected)
+- `<skill-dir>/references/librarius-prompt.md` (if selected)
+- `<skill-dir>/references/censor-prompt.md` (if selected)
 
 For each Task-based reviewer, replace `{{CONTEXT}}` in the prompt template with the actual review content.
 
@@ -146,7 +146,7 @@ Launch **all applicable reviewers in a single message** (parallel execution):
 
 **Codex** (core) — via Bash:
 ```
-bash review/skills/consilium/scripts/run-codex.sh <TMP>/consilium-${CLAUDE_SESSION_ID}-context.md <TMP>/consilium-${CLAUDE_SESSION_ID}-codex.txt
+bash <skill-dir>/scripts/run-codex.sh <TMP>/consilium-${CLAUDE_SESSION_ID}-context.md <TMP>/consilium-${CLAUDE_SESSION_ID}-codex.txt
 ```
 Run in background so it doesn't block the other subagents.
 
@@ -189,7 +189,7 @@ Run in background so it doesn't block the other subagents.
 
 ### Step 5: Synthesize Report
 
-Read `review/skills/consilium/references/synthesis-guide.md` and follow it exactly:
+Read `<skill-dir>/references/synthesis-guide.md` and follow it exactly:
 
 1. **Deduplicate** — merge identical findings across reviewers
 2. **Resolve contradictions** — use your broader conversation context
@@ -268,7 +268,7 @@ Do NOT use Bash heredoc (`cat >`) — the Write tool avoids shell quote-parsing 
 
 ### Step B2: Phase 1 — Novator as Solution Architect
 
-1. Read `review/skills/consilium/references/novator-brainstorm-prompt.md`
+1. Read `<skill-dir>/references/novator-brainstorm-prompt.md`
 2. Replace `{{CONTEXT}}` with the problem description
 3. Launch a single Task:
    - `subagent_type`: `general-purpose`
@@ -301,7 +301,7 @@ Launch all Phase 2 reviewers in a single message (parallel execution):
 
 **Codex** (core) — via Bash:
 ```
-bash review/skills/consilium/scripts/run-codex.sh <TMP>/consilium-${CLAUDE_SESSION_ID}-phase2-context.md <TMP>/consilium-${CLAUDE_SESSION_ID}-codex.txt
+bash <skill-dir>/scripts/run-codex.sh <TMP>/consilium-${CLAUDE_SESSION_ID}-phase2-context.md <TMP>/consilium-${CLAUDE_SESSION_ID}-codex.txt
 ```
 Run in background.
 
@@ -335,7 +335,7 @@ Seneca uses its brainstorm-specific prompt (`seneca-brainstorm-prompt.md`) to ev
 
 1. Read Codex output via Bash: `cat <TMP>/consilium-${CLAUDE_SESSION_ID}-codex.txt`
 2. Parse Task results from Phase 2 subagent responses
-3. Read `review/skills/consilium/references/brainstorm-synthesis-guide.md` and follow it exactly
+3. Read `<skill-dir>/references/brainstorm-synthesis-guide.md` and follow it exactly
 
 ### Step B5.5: Autonomous Review
 
