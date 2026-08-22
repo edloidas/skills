@@ -6,12 +6,17 @@ description: >
   devicePixelRatio, fillrate blowups, missing disposals, render-loop
   allocations, and similar subtle pitfalls. Walks the agent through detecting
   each issue, assessing the offending sites in context, and reporting findings
-  grouped by severity. Use when reviewing a 3D scene's perf, before shipping a
-  Three.js / R3F build, or when investigating frame-rate regressions
-  ("smooth in dev preview, choppy in real fullscreen").
+  grouped by severity.
+when_to_use: >
+  Run when reviewing a 3D scene's performance, before shipping a Three.js / R3F build, or
+  when investigating a frame-rate regression — "smooth in dev preview, choppy in real
+  fullscreen", "why is my scene slow", "the scene hitches every few seconds". Also on
+  "three audit", "audit threejs", "audit r3f", "check three.js perf", "review my webgl
+  scene", or when reviewing a change that touches renderer setup, `useFrame` callbacks,
+  materials, shadows, instancing, or texture loading.
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
-allowed-tools: Bash Read Grep Glob
+allowed-tools: Read Grep Glob Bash(rg:*) Bash(jq:*) Bash(ls:*) Bash(find:*)
 user-invocable: true
 argument-hint: "[<target-dir>] [--check=<name>]"
 ---
@@ -35,9 +40,10 @@ Detection commands assume `rg` (ripgrep) and `jq` are on `PATH`. Substitute
 
 ## When to Use This Skill
 
-Trigger phrases: "three audit", "three-audit", "audit threejs", "audit r3f",
-"check three.js perf", "review my webgl scene", "why is my scene slow",
-"three.js performance review".
+- Reviewing a 3D scene's performance, or before shipping a Three.js / R3F build
+- Investigating a frame-rate regression, especially one that tracks window size
+- Reviewing a change that touches renderer setup, `useFrame`, materials, shadows,
+  instancing, or texture loading
 
 ## Workflow
 
@@ -190,9 +196,13 @@ still low.
 ## Out of Scope
 
 - GLSL shader correctness (covered by shader-specific tooling)
-- Asset pipeline / model authoring concerns (covered by DCC tooling)
+- Model authoring — mesh topology, UV layout, rigging, DCC export settings
 - Browser-level perf tracing (use Chrome DevTools / Spector.js directly)
 - General React patterns — effects, memoization, state architecture (use
   `react-audit`; this skill only covers React as it meets the Canvas)
 
-The audit focuses on patterns visible in the JS/TS source.
+The audit reads the JS/TS source. The one exception is
+[`texture-budget`](references/checks/texture-budget.md), which also sizes the
+texture files on disk, because how a texture is *delivered* — dimensions,
+format, colour space — is a renderer concern that the source alone cannot
+answer. How it was *authored* is not.
