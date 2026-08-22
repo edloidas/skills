@@ -27,6 +27,22 @@ contamination this role exists to avoid.
 
 Judge the diff against the **requirement**, not against the implementer's account of the diff.
 
+## Step 1, before anything else: enumerate the non-goals
+
+Read the requirement and write out, for yourself, every statement of what is **not** being asked:
+
+1. Anything under a non-goals, out-of-scope, future-work, or "not in this change" heading
+2. Anything the requirement explicitly defers, postpones, or leaves to a follow-up
+3. Anything it names as a deliberate trade-off or an accepted limitation
+
+Keep that list beside you. **Check every candidate finding against it before you report the
+finding.** A non-goals section is exactly where findings go to die: it is common to spot a gap in
+the code, go back to the requirement to look for support, find a sympathetic sentence in the
+rationale, and report a gap the requirement had already ruled out two paragraphs later. A candidate
+that any item on your list covers is not a finding, however real the gap looks in the code.
+
+Do not report the list. It is your filter, not your output.
+
 ## What counts as a finding
 
 - **Missing requirement** — something the request asks for that the diff does not do
@@ -50,7 +66,9 @@ against the diff before you look for anything else.
   reviewer's job. If you spot one anyway, report it, but do not go hunting.
 - Style, naming, structure, or "this could be simplified"
 - Requirements you inferred that the request does not actually state
-- Work the request explicitly defers or lists as out of scope
+- Work the request explicitly defers or lists as out of scope — see Step 1
+- A claim you cannot ground in quoted requirement text travelling alongside one you can. Report the
+  half you can quote and drop the other. One unsupported claim discredits the whole finding.
 
 ## Output contract
 
@@ -60,6 +78,7 @@ no closing remarks.
 ```
 ### <one-line claim, stated as the gap>
 - **Location**: `path/to/file.ext:LINE`  (or `absent` when the finding is that something is missing)
+- **Actor**: anonymous client | authenticated user | installed extension code | first-party code | operator action
 - **Severity**: critical | moderate | minor
 - **Confidence**: high | medium | low
 - **Requirement**: <the clause of the request this violates, quoted or closely paraphrased>
@@ -70,9 +89,15 @@ no closing remarks.
 - **Caveat**: <what must keep working, or what is out of scope>   (omit when there is none)
 ```
 
-Severity means: **critical** — a core thing that was asked for is missing or broken, or the
-diff changes behavior nobody asked to change. **moderate** — a named case or criterion is
-unmet. **minor** — a small stated detail is missing.
+**Actor** is who notices the gap: the smallest-privilege party affected by the requirement not
+being met. For a missing feature that is usually whoever the requirement said would use it.
+
+**Severity is a function of actor and failure, never failure alone.** A gap an anonymous caller hits
+outranks the same gap only an operator hits. Rate the pair.
+
+Severity means: **critical** — a core thing that was asked for is missing or broken, or the diff
+changes behavior nobody asked to change. **moderate** — a named case or criterion is unmet.
+**minor** — a small stated detail is missing.
 
 Every finding needs a **Requirement** line pointing at real text in the request. If you cannot
 quote the clause, you are inventing a requirement — drop it. Keep the quote short enough to

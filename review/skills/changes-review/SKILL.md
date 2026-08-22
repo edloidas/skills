@@ -1,51 +1,93 @@
 ---
 name: changes-review
 description: >
-  Attack a code change and report what survives. Spawns up to three independent reviewers in
-  parallel, on different models where more than one runs, each with a single job and no access
-  to the implementer's reasoning: one hunts correctness bugs blind to the issue, one hunts
-  requirement gaps against the issue text. Returns structured findings and changes nothing — no
-  tooling, no autofix, no edits. Use before committing, when you want a change attacked rather
-  than assessed, or as the find step ahead of a fix pass.
+  Attack a code change and report what survives. Dispatches independent reviewers in parallel,
+  each with a single job and no access to the implementer's reasoning: one hunts correctness bugs
+  blind to the issue, one hunts requirement gaps against the issue text, one runs outside the
+  process entirely. Optionally re-attacks its own findings before reporting, then synthesizes what
+  is left. Returns findings and changes nothing — no tooling, no autofix, no edits, no posting.
+  Use before committing, when you want a change attacked rather than assessed, or as the find step
+  behind a fix pass or a PR review skill. Every phase is configurable by the caller.
 license: MIT
-compatibility: Claude Code
-allowed-tools: Bash(git:*) Bash(gh:*) Bash(bash:*) Read Glob Grep Task Skill
-argument-hint: "[--base <branch> | --uncommitted | --commit <sha>] [--issue <N>] [--no-external]"
+compatibility: Claude Code, Codex, OpenCode, Pi
+allowed-tools: Bash(git:*) Bash(gh:*) Read Glob Grep Task Skill
+argument-hint: "[--base <branch> | --uncommitted | --commit <sha>] [--issue <N>] [--mode <simple|standard|deep>] [--no-external]"
 metadata:
   author: edloidas
 ---
 
 # Changes Review
 
-Attack a change from two directions at once and report what survives. This skill **finds**;
-it never fixes, never runs tooling, and never touches the working tree.
+Attack a change from several directions at once and report what survives. This skill **finds**;
+it never fixes, never runs tooling, never touches the working tree, and never posts anywhere.
+
+It is a primitive. Whoever calls it — a person, a PR workflow, an issue workflow — gets the same
+three stages, find, verify, synthesize, and configures them rather than forking the behavior.
+Anything needing the pull request itself, the project's architecture, a round loop, or a published
+comment belongs to the caller, not here.
 
 ## The premise
 
-The agent that wrote the code wants it accepted. A reviewer that shares its context inherits
-its blind spots — it reads the implementer's reasoning, finds it persuasive, and confirms the
-work. So every reviewer here is dispatched **cold to the implementer's reasoning**: no plan,
-no rationale, no commit message body, no prior-round findings, no account of why the change
-looks the way it does. Each gets one job and is told to find the way the change is wrong.
+The agent that wrote the code wants it accepted. A reviewer that shares its context inherits its
+blind spots — it reads the implementer's reasoning, finds it persuasive, and confirms the work. So
+every reviewer is dispatched **cold to the implementer's reasoning**: no plan, no rationale, no
+commit message body, no prior-round findings, no account of why the change looks the way it does.
 
 The bugs this catches are the ones that compile and pass lint — premature drops, floor-vs-truncate
 on negative numbers, eager evaluation where laziness was meant. Tooling cannot see them and a
 context-rich reviewer rationalizes them away.
 
-Conventions and cleanup are **not** this skill's job. A reviewer told to find bugs *and* tidy
-the code softens into a quality reviewer and stops finding bugs. Style, naming, comment noise,
-and convention drift belong to `/code-cleanup`.
+Conventions and cleanup are **not** this skill's job. A reviewer told to find bugs *and* tidy the
+code softens into a quality reviewer and stops finding bugs. Style, naming, comment noise, and
+convention drift belong to a cleanup pass, and this skill will not report them.
 
-## Arguments
+## Configuration
 
-| Argument | Meaning |
-| -------- | ------- |
-| (none) | Uncommitted changes; falls back to the last commit when the tree is clean |
-| `--base <branch>` | Review `git diff <branch>...HEAD` — the whole branch |
-| `--uncommitted` | Staged + unstaged changes only |
-| `--commit <sha>` | The change introduced by one commit |
-| `--issue <N>` | Use issue `<N>` as the requirement. Skips auto-detection |
-| `--no-external` | Skip the third-party CLI reviewer even when one is installed |
+| Setting | Flag | Default |
+| ------- | ---- | ------- |
+| Scope | `--base <branch>` / `--uncommitted` / `--commit <sha>` | Uncommitted changes; the last commit when the tree is clean |
+| Requirement | `--issue <N>` | Auto-detected (Phase 2) |
+| Mode | `--mode <simple\|standard\|deep>` | `standard` for `--base`, `simple` for a single commit or an uncommitted diff |
+| External reviewer | `--no-external` | On whenever a third-party CLI is available |
+
+**Mode is the one dial.** It sets how many reviewers run and how hard the findings get verified,
+because those two scale together — there is no useful run with four reviewers and no verification.
+
+| Mode | Reviewers | Verification |
+| ---- | --------- | ------------ |
+| `simple` | 2 — cold and intent; the external leg is dropped first, since it is the one that cannot read the repo | `reachability` only |
+| `standard` | 3 — cold, intent, external | all three lenses |
+| `deep` | 4 — two cold on different models, intent, external | all three lenses, the killed claims too, and a synthesis critic on the assembled report |
+
+With no requirement resolved, `simple` is one reviewer and `standard` is two — the intent reviewer
+needs something to check against. Verification always runs; the mode sets its depth, not whether it
+happens, and it roughly doubles the run, which is why the default follows the scope.
+
+A late round in a fix loop is a `simple` run over the fix: small diff, spec settled two rounds ago,
+and reachability is the lens that still changes the outcome. A whole branch reviewed cold is
+`standard`. `deep` is for a large change or a high cost of missing something — two cold reviewers on
+different models diverge usefully, where a second intent reviewer mostly repeats the first.
+
+Every rule here that reads as arbitrary has an observation behind it, recorded with its outcome in
+`references/calibration.md`. Read that before loosening one.
+
+Two things only a calling skill can supply:
+
+- **System facts.** Who can execute code in this system, what is already privileged, which
+  surfaces are deprecated or unsupported. A caller that knows the platform should say so. These
+  facts reach **only the reachability verifier** — never a finder, which stays cold. Without them
+  the verifier works out what it can from the repo.
+- **The requirement**, when the caller already resolved it. Pass the issue text, not a summary of
+  it, and never the implementer's account of the diff.
+
+A caller must not pass a plan, a rationale, a previous round's findings, or a description of what
+the change is trying to do. Those defeat the premise, and this skill cannot detect that it happened.
+
+**Round loops belong to the caller.** This skill reviews once and stops. A caller looping should pass
+the fix itself as the scope on rounds after the first — the snapshot commit, or `--base` against it —
+rather than re-reviewing a whole branch to check a two-line change. It also has to keep its own list
+of findings it consciously accepted: reviewers here are blind to previous rounds by design, so an
+accepted decision is found again every round and only the caller can recognize it.
 
 ## Phase 1: Resolve scope
 
@@ -61,11 +103,14 @@ Filter out `*-lock.*`, `dist/`, `build/`, `.next/`, `*.min.js`, `*.map`, `*.d.ts
 **Trivial diffs** — only version bumps, formatting, or lock files → print
 `Trivial changes only. Nothing to attack.` and stop. Do not spend reviewers on them.
 
-**Dirty tree under `--base`.** `git diff <base>...HEAD` excludes uncommitted work, so a dirty
-tree means the reviewers judge a change set that is not what exists on disk. Say so and review
+**Dirty tree under `--base`.** `git diff <base>...HEAD` excludes uncommitted work, so a dirty tree
+means the reviewers judge a change set that is not what exists on disk. Say so and review
 `<base>...HEAD` plus the uncommitted diff together, or ask the caller to commit first.
 
 Announce the resolved scope in one line: `Attacking 6 files, 240 lines (base: master).`
+
+Do not read the project's architecture here. Establishing how the system is built is another
+skill's job, and doing it in this phase would leak into the finders.
 
 ## Phase 2: Resolve the requirement
 
@@ -73,106 +118,185 @@ Only the intent reviewer uses this. Resolve it before dispatch:
 
 1. `--issue <N>` was passed → `gh issue view <N> --json title,body`
 2. Current branch matches `issue-<N>` → same, with that number
-3. An open PR exists for the branch → `gh pr view --json title,body,closingIssuesReferences`
-   and prefer the linked issue's body over the PR description
+3. An open PR exists for the branch → `gh pr view --json title,body,closingIssuesReferences` and
+   prefer the linked issue's body over the PR description
 4. Last commit message contains `#<N>` → same, with that number
 
 Take the issue **description** only. Exclude comments the agent itself posted during this run —
 they are the implementer's reasoning wearing a different hat.
 
-If nothing resolves, print `No requirement found — running the cold reviewer only.` and skip
-the intent reviewer. Do not invent a requirement from the diff; a reviewer checking a change
-against a requirement inferred from that same change finds nothing.
+If nothing resolves, print `No requirement found — running the cold reviewer only.` and skip the
+intent reviewer. Do not invent a requirement from the diff; a reviewer checking a change against a
+requirement inferred from that same change finds nothing.
 
 ## Phase 3: Dispatch reviewers
 
-**Launch every reviewer in a single message so they run concurrently.** They must not see each
-other's output. Do not summarize the change for them, do not explain what it is trying to do,
-and do not pass along anything from a previous round.
+**Launch every reviewer at once so they run concurrently.** They must not see each other's output.
+Do not summarize the change for them, do not explain what it is trying to do, and do not pass along
+anything from a previous round.
+
+Choosing models, stated as intent rather than as names, since the roster changes and each host names
+its own:
+
+- Give each reviewer the **most capable model the host offers**. If that is the model running this
+  skill, take the next tier down — a reviewer on the orchestrator's own model shares whatever the
+  orchestrator already believes about this change.
+- Where the host lets you pick a model per reviewer, **give each a different one**. Same-model
+  reviewers differ only by sampling; same-role reviewers only by phrasing. Where it does not, run the
+  default and say so: role diversity survives that, model diversity does not.
+
+On a host with no subagents, run each prompt in turn and never show one reviewer another's output.
+Say in the report that they were not isolated — a sequential run leaks earlier findings into later
+ones.
 
 ### Reviewer 1 — cold (always)
 
-- Task tool, `subagent_type: "general-purpose"`
-- `model`: the first of `fable → opus → sonnet` that is **not** the model running this skill
-- Prompt: the contents of `references/cold-reviewer-prompt.md`, then the diff
+Dispatch a reviewer that hunts correctness bugs and returns findings in the shape its prompt
+specifies. Prompt: the contents of `references/cold-reviewer-prompt.md`, then the diff.
 
-Repo-aware and issue-blind: it may read callers, types, and tests, but the prompt forbids
-fetching the issue or PR. That prohibition is a soft guard, not a sandbox — a determined
-subagent could still run `gh`. It holds in practice because the reviewer is never handed an
-issue number and has no reason to hunt for one. Do not put the issue number in its prompt,
-not even in passing.
+Repo-aware and issue-blind: it may read callers, types, and tests, but the prompt forbids fetching
+the issue or PR. That prohibition is a soft guard, not a sandbox. It holds in practice because the
+reviewer is never handed an issue number and has no reason to hunt for one. Do not put the issue
+number in its prompt, not even in passing.
 
 ### Reviewer 2 — intent (whenever a requirement resolved)
 
-- Task tool, `subagent_type: "general-purpose"`
-- `model`: the next entry in `fable → opus → sonnet` after Reviewer 1's, wrapping to the start,
-  skipping the model running this skill. It must differ from Reviewer 1's.
-- Prompt: `references/intent-reviewer-prompt.md` with `{{REQUIREMENT}}` replaced by the
-  resolved issue title and body, then the diff
+Dispatch a reviewer that hunts requirement gaps and returns findings in the shape its prompt
+specifies. Prompt: `references/intent-reviewer-prompt.md` with `{{REQUIREMENT}}` replaced by the
+resolved issue title and body, then the diff.
 
-Role diversity and model diversity are both free here, so take both. They cover different
-failure modes: same-model reviewers differ only by sampling, same-role reviewers only by
-phrasing.
+### Reviewer 3 — second cold (`deep` mode only)
 
-### Reviewer 3 — external model (when available, unless `--no-external`)
+The same cold prompt on a different model. Two cold reviewers on different models produce
+meaningfully different findings; a second *intent* reviewer largely duplicates the first, so depth
+is bought with another bug hunter, never another requirement checker.
 
-A third model family, via a CLI that is genuinely outside this process.
+### External reviewer (`standard` and `deep`, when available, unless `--no-external`)
 
-**Invoke the `/codex` skill through the Skill tool** — do not call its script by path. The
-script lives in a different plugin (`assist`), so a repo-relative `bash assist/...` command
-resolves only inside this repository's own checkout and fails with exit 127 everywhere else.
-The Skill tool resolves the plugin wherever it is installed.
+A model family outside this process entirely, via a CLI.
 
-Tell it to run review mode with **the scope this run resolved in Phase 1** — `--base <branch>`,
-`--uncommitted`, or `--commit <sha>`. Passing a different scope than the native reviewers got
-means Phase 4 dedupes findings from two different change sets, which is worse than skipping
-this reviewer.
+Invoke it through the collection's external-agent skill, `/outsider`, rather than calling a script by
+path — a repo-relative path resolves only inside one checkout. That skill picks an installed agent CLI
+that is not the host running this skill, so the reviewer is both a different model family and a
+different process. (On an install predating it, `/codex` or `/claude` does the same job.) The leg is
+optional: with no external agent available the run continues without it and the report says so.
 
-Pass `540` as the timeout so the script's own timer fires before the tool's, and set the Bash
-timeout to its 600000ms maximum. If the `/codex` skill or the CLI is unavailable, note it and
-continue with the native reviewers. Do not retry, and never block the run on it.
+Tell it to run review mode with **the scope this run resolved in Phase 1** — a different scope means
+Phase 4 dedupes two different change sets, which is worse than skipping this reviewer. Pass `540` as
+its timeout and set the surrounding command timeout to its maximum. Do not retry, and never block on
+it.
 
-This leg only ever gets a piped diff, so it is structurally cold — it cannot read the repo. That
-makes it good at spotting internal contradictions in the diff and prone to asking for context
-it cannot see. Weight it accordingly during dedup.
+This leg only ever gets a piped diff, so it is structurally cold — good at internal contradictions in
+the diff, prone to asking for context it cannot see. Weight it accordingly, and never upgrade its
+confidence to match a native reviewer's.
 
-It is the one reviewer with no output contract you control — it returns whatever its CLI emits.
-Map each of its findings onto the same fields the native reviewers return: claim, location,
-severity, confidence, defect, cases. Where it gives you a claim and a location but no severity
-or confidence, assign `moderate` / `low` and say in the signal line that it came from one
-reviewer. Where a finding has no concrete case you can name from the diff, drop it under Phase 4
-step 1 like any other. Never upgrade its confidence to match a native reviewer's.
+It is the one reviewer with no output contract you control. Map each finding onto the fields the
+native reviewers return: claim, location, actor, severity, confidence, defect, cases. Missing severity
+or confidence becomes `moderate` / `low`; a missing actor is resolved in Phase 6, not guessed here.
 
-## Phase 4: Merge and report
+## Phase 4: Consolidate
 
-Reviewers return findings in the labelled shape their prompts specify. That is an internal
-contract for merging, not the report — render the report in the format below.
+Reviewers over-report, over-rate, and file one insight three times. Cut that down before spending
+anything on verification.
 
-1. **Drop non-findings.** Any finding without a concrete failure — inputs or state leading to a
-   named wrong result — is a worry, not a finding. Cut it. Same for intent findings with no
-   quotable requirement clause.
-2. **Dedupe.** Two reviewers hitting the same `file:line` with the same claim is **one** finding
-   reported at the higher severity and higher confidence. Independent corroboration is a strong
-   signal — say so in the signal line, and never let it look like two problems.
-3. **Order.** Severity first, then confidence.
-4. **Never soften.** Report each finding in the reviewer's own framing. You are the messenger
-   here, not the judge — triage belongs to whoever called this skill.
+1. **Kill non-findings.** No concrete failure — inputs or state leading to a named wrong result —
+   is a worry, not a finding. Same for an intent finding with no quotable requirement clause.
+2. **Kill unproven halves.** A finding pairing a demonstrated claim with one nobody could
+   demonstrate ships as the demonstrated claim alone — the weakest claim sets the credibility of the
+   whole finding.
+3. **Dedupe.** Two reviewers hitting the same `file:line` with the same claim is **one** finding at
+   the higher severity and confidence. Independent corroboration is a strong signal — say so, and
+   never let it look like two problems.
+4. **Cluster by root cause.** Ask whether one structural change would fix two or more findings. If
+   so, report the root and nest its symptoms beneath it; filed separately, both are understated.
 
-### Finding format
+Keep what you killed. Verification rules on the drops too, and a drop confirmed is worth more than
+a drop assumed.
 
-A title, a signal line, a paragraph stating the defect, and a `Concretely:` list of what
-happens versus what should happen. No field labels — a reader should be able to understand
-*and* fix the issue from the prose alone.
+## Phase 5: Verify
+
+Takes the **consolidated** findings and is dispatched like any other reviewer — all lenses at once,
+none seeing another. The mode decides which lenses run: `reachability` alone in `simple`, all three
+otherwise.
+
+Lenses come from `references/verification-prompt.md` with `{{LENS}}` set:
+
+| Lens | Question | May do |
+| ---- | -------- | ------ |
+| `mechanism` | Does the code actually do this? | Read the repo, compile, run probes |
+| `reachability` | Who triggers it, and does the consequence follow? | Read the repo; receives the caller's system facts |
+| `spec` | Is the quoted requirement real, and did this diff cause it? | Read the requirement and `git log` |
+
+Every lens is told to **default to refuting** when it cannot demonstrate a claim. Pass the claims
+you killed in Phase 4 as well, marked as dropped — a verifier confirming a drop is cheap, and it
+sometimes corrects the reason.
+
+One extra job for the `mechanism` lens whenever the change ships its own test, story, or fixture:
+**check that the artifact exercises the path it claims to guard.** A fixture that quietly supplies
+the missing precondition is worse than no fixture — it turns an open question into a passing check.
+
+**Merge rule.** A finding dies when `mechanism` refutes it, when `reachability` cannot name an
+actor who reaches it, or when `spec` kills it. Nothing else removes a finding. Where a lens returns
+`narrowed`, keep only the part it says survives.
+
+Severity is then whatever the lenses justify — take `reachability`'s rating when it named an actor,
+since that is the actor-aware one, and `mechanism`'s otherwise. **Verification is not a downgrade
+pass.** A finding that came in reasoned and goes out demonstrated should come out *sharper*: higher
+confidence, and higher severity where the demonstration widened it. A verify phase whose ratings only
+ever fall is miscalibrated.
+
+**Verify the reasoned ones hardest.** Every finding killed in verification across both calibration
+runs was established by reading; none established by execution was killed or downgraded. Sort the
+queue accordingly: reasoning-only findings first, then anything a reviewer rated low confidence.
+
+## Phase 6: Rate and order
+
+The last judgment call, and the one the caller cannot make for itself.
+
+1. **Re-rate by actor.** Severity is a function of **actor and failure, never failure alone**. A
+   defect reachable only by code that already holds full trust is not a security finding, whatever
+   the mechanism looks like. Every finding names an actor: anonymous client, authenticated user,
+   installed extension code, first-party code, or operator action. When verification ran, the
+   reachability lens already named it — take that one over the finder's.
+2. **Order.** Severity, then confidence. Decisions last, whatever their severity.
+3. **Separate decisions from defects.** A finding whose entire blast radius is a deprecated,
+   unsupported, or already-documented-as-broken surface is not a defect the author will fix — it is a
+   question about whether that is acceptable. Mark it as a decision and say what the decision is.
+4. **Check the framing carries the consequence.** A finding framed around what a caller or consumer
+   cannot do gets a real fix; the same finding framed around what an internal counter does wrong gets
+   a literal one-line patch. Where both framings are available, lead with the consequence.
+5. **Do not rewrite the claim.** Severity and survival are yours to judge; the defect itself is
+   reported in the reviewer's own framing. Do not soften a claim you kept.
+
+## Phase 7: Critique the synthesis (`deep` mode)
+
+Everything so far judged findings one at a time. Nothing has read the assembled report as a whole,
+and you assembled it — the same self-review problem this skill exists to avoid, one level up.
+
+Dispatch one reviewer with `references/synthesis-critic-prompt.md`, the assembled report, and the
+diff. It attacks the report, never the code: a root cause split across separate symptoms, a finding
+leading with the wrong half instead of the durable one, ranking that contradicts itself, an unproven
+clause still riding along, a decision filed as a defect, and at most one area nobody covered. It
+cannot add findings.
+
+Apply what it returns, or say why not. It reads a report rather than a repository, so it is the
+cheapest agent in the run — and the only one that sees the findings as a set.
+
+## Report
+
+A title, a signal line, a paragraph stating the defect, and a `Concretely:` list of what happens
+versus what should happen. No field labels — a reader should be able to understand *and* fix the
+issue from the prose alone.
 
 ```
 ### <one-line claim, stated as the defect>
 
-<Severity> severity. <Confidence> confidence — <corroboration>.
+<Severity> severity, reachable by <actor>. <Confidence> confidence — <corroboration>.
 
 <A paragraph naming the defect: what the code does, why that is wrong, and what the correct
-behavior is. This is the part someone fixes from. For an intent finding, quote the clause of
-the request it violates here, inline — the caller needs to see what was actually asked before
-deciding whether to fix the code or push back on the issue.>
+behavior is. This is the part someone fixes from. For an intent finding, quote the clause of the
+request it violates here, inline — the caller needs to see what was actually asked before deciding
+whether to fix the code or push back on the issue.>
 
 Concretely:
 
@@ -186,59 +310,68 @@ Look at `path/to/file.ext:120`, `path/to/other.ext:44`.
 
 Rules for the shape:
 
-- Severity is `critical` / `moderate` / `minor`; confidence is `high` / `medium` / `low`. Both
-  sit in the signal line directly under the title, never in a field list.
-- The corroboration clause counts reviewers, never names them: `one reviewer`, `corroborated
-  by 2 reviewers`, `corroborated by all 3 reviewers`. Which reviewer found it is a debugging
-  detail; how many found it independently is the signal. Count only reviewers that actually
-  ran — a skipped intent or external leg is not a reviewer that failed to corroborate.
-- Each `Concretely:` bullet is a self-contained sentence pair, one case per bullet however many
-  there are. Bullets rather than prose because a finding with ten cases has to stay as readable
-  as one with two.
-- Write the actual-state clause as a verb phrase so it reads after "currently" — `currently
-  parses without error`, not `currently accepted`.
+- Severity is `critical` / `moderate` / `minor`; confidence is `high` / `medium` / `low`. Both sit
+  in the signal line directly under the title, never in a field list.
+- The actor sits in the signal line too, because it is what makes the severity legible.
+- A **decision** takes the same shape with `Decision, not a defect` where the severity would go, and
+  its paragraph ends in the question being asked rather than the fix. Decisions come after every
+  finding, however severe they look: they need an answer, not a patch, and mixed in among defects
+  they read as accusations and get closed.
+- The corroboration clause counts reviewers, never names them: `one reviewer`, `corroborated by 2
+  reviewers`. Which reviewer found it is a debugging detail; how many found it independently is the
+  signal. Count only reviewers that actually ran.
+- Say how the finding was established: `demonstrated by execution` when a reviewer or the mechanism
+  lens ran the failing case, `reasoned` when it came from reading. It is the strongest thing a finding
+  can carry and the best predictor of whether it survives contact with the author.
+- A clustered finding reports the root as the finding and nests each symptom as its own
+  `Concretely:` bullet with its own location.
+- Each bullet is a self-contained sentence pair, one case per bullet however many there are.
+- Write the actual-state clause as a verb phrase so it reads after "currently" — `currently parses
+  without error`, not `currently accepted`.
 - Locations go last. A reader triages on the claim and the severity, not on the path.
-- When a reviewer reports `absent` for location — the finding is that something is missing —
-  omit the `Look at` line entirely. Do not name a plausible file: the case list already says
-  what is missing, and a guessed path sends the fixer to the wrong place.
+- When the finding is that something is **missing**, omit the `Look at` line. Do not name a
+  plausible file: the case list already says what is missing, and a guessed path sends the fixer to
+  the wrong place.
 
 ### Output
 
 ```
-## Changes review: N findings (C critical, M moderate, m minor)
+## Changes review: N findings (C critical, M moderate, m minor) · D decisions
 
-Scope: <files, lines, base>
+Scope: <files, lines, base> · mode: <simple|standard|deep>
 Reviewers: cold (<model>) · intent (<model>|skipped) · external (<cli>|skipped)
+Verification: <lenses run, K findings dropped, J re-rated>
 
-<findings, most severe first>
+<findings, most severe first, then decisions>
 ```
 
-When every reviewer returns nothing:
+Drop the `· D decisions` clause when there are none. When every reviewer returns nothing:
 
 ```
 ## Changes review: no findings
 
-Scope: <files, lines, base>
+Scope: <files, lines, base> · mode: <simple|standard|deep>
 Reviewers: cold (<model>) · intent (<model>|skipped) · external (<cli>|skipped)
 ```
 
-A clean result is a real result. Do not pad it with observations.
+A clean result is a real result. Do not pad it with observations, and do not add a section listing
+what was checked and found sound — it reads as padding and nobody acts on it.
 
-### After reporting
+One report serves every caller. A caller wanting something shorter condenses what it got.
 
-Stop. Do not fix anything, do not offer to fix anything, do not run a second round on your own
-initiative. Hand the findings to whichever skill or caller asked for them — round policy belongs
-to the caller.
+Then stop. Do not fix, do not offer to fix, do not post, and do not start a second round. Round
+policy, publication, and triage belong to the caller.
 
 ## Rules
 
-- **One job per reviewer.** A reviewer told to find bugs *and* suggest improvements softens into
-  a quality reviewer and stops finding bugs. Never merge the prompts.
-- **No reasoning reaches a reviewer.** Not the plan, not the rationale, not a summary of intent,
-  not a previous round's findings or verdicts.
+- **One job per reviewer.** A reviewer told to find bugs *and* suggest improvements softens into a
+  quality reviewer and stops finding bugs. Never merge the prompts.
+- **No reasoning reaches a reviewer.** Not the plan, not the rationale, not a summary of intent, not
+  a previous round's findings or verdicts.
 - **Never mutate.** No edits, no autofix, no commits, no stashes. Callers rely on this.
-- **Concrete failure or it does not exist.** This is the difference between a review and a list
-  of anxieties.
+- **Concrete failure or it does not exist.** This is the difference between a review and a list of
+  anxieties.
+- **Severity needs an actor.** A rating that does not say who can reach the defect is not a rating.
 - **No manufactured findings.** A reviewer returning "No findings" on sound code is correct
   behavior, not a failed run.
 
@@ -250,5 +383,9 @@ to the caller.
 | Trivial diff only | Print `Trivial changes only. Nothing to attack.` and stop |
 | No requirement resolves | Run the cold reviewer only, say so in the report |
 | External CLI missing or times out | Note it in the Reviewers line, continue |
+| Host cannot vary models per reviewer | Run them on the default, say so in the report |
+| Host has no subagents | Run reviewers sequentially, say they were not isolated |
+| A verification lens fails | Apply the merge rule with the lenses that returned, say which is missing |
+| A reviewer stalls or returns nothing | Relaunch it once with a narrowed file list and a stated tool budget — not the same prompt again. A reviewer that goes quiet on a wide diff is usually still reading it |
 | A native reviewer returns nothing usable | Report the remaining reviewers, name the gap |
 | Every reviewer fails | Say so plainly. Do not substitute your own review — that is the one thing this skill exists to avoid |

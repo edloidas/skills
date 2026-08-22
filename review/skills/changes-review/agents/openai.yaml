@@ -1,0 +1,6 @@
+interface:
+  display_name: "Changes Review"
+  short_description: "Attack a code change with independent reviewers, verify the findings, report what survives"
+  default_prompt: "Use $changes-review to attack the current change with independent reviewers blind to the implementer's reasoning, verify the findings, and report what survives. Change nothing."
+policy:
+  allow_implicit_invocation: false
