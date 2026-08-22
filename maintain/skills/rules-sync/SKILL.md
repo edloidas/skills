@@ -6,7 +6,7 @@ description: >
   directory vs a symlink and writes only to the real one. Overwrites existing
   canonical rules, adds missing canonical rules only when the project actually
   uses the relevant technology (React, Tailwind, Storybook, Radix, Vitest,
-  Three.js, TypeScript), and never touches project-specific rule files outside
+  TypeScript), and never touches project-specific rule files outside
   the canonical set. Use when initializing rules in a new repo or refreshing
   rules in an existing one.
 license: MIT
@@ -33,7 +33,7 @@ Trigger phrases: "rules sync", "rules-sync", "sync rules", "init rules",
 
 ## Canonical Set
 
-Ten rule files, all stored in `assets/rules/`:
+Nine rule files, all stored in `assets/rules/`:
 
 | File | Applies when |
 |------|--------------|
@@ -45,7 +45,6 @@ Ten rule files, all stored in `assets/rules/`:
 | `storybook.md` | `@storybook/*` in deps, or `.storybook/` exists |
 | `tailwind.md` | `tailwindcss` or `@tailwindcss/*` in deps |
 | `testing.md` | `vitest` in deps (rule is Vitest-specific) |
-| `three.md` | `three` or `@react-three/*` in deps |
 | `kotlin.md` | `.kt` files under `src/`, or `kotlin(...)` plugin in `build.gradle.kts` |
 
 A rule is **applicable** when its detection check passes. Detection runs only
