@@ -132,7 +132,8 @@ now handles that structurally, so there is nothing left to suppress.
 Other skills invoke this one as a skill, not by script path — a repo-relative path only resolves
 inside one checkout.
 
-`review/skills/consilium` still ships its own `scripts/run-codex.sh`. The decision is to move it
+`review/skills/consilium` still ships its own copy at
+`review/skills/consilium/scripts/run-codex.sh`. The decision is to move it
 onto this script; the script already accepts `--preamble <file>` to swap in a caller's own prompt,
 and stdout can be redirected to consilium's output file. The port is tracked in issue #30, not done
 here, because consilium's reviewer is a named board persona with its own prompt and session-keyed

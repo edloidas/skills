@@ -1,189 +1,183 @@
 # Evaluation Rubric
 
-Detailed criteria and scoring anchors for skill audits. Each category lists specific checks and what score each level maps to.
+Five judgment categories, each scored 1–5. Everything mechanically checkable was moved into
+`.github/scripts/validate-skills.sh`, `scripts/validate-codex.sh`, and
+`scripts/skill-metrics.mjs` — cite their output as evidence, never re-derive it, and never
+score a skill down for something they report clean.
 
-## 1. Specification Compliance
+Scale: **5** could serve as a template · **4** minor issues, ship it · **3** should be fixed
+next cycle · **2** fix before publishing · **1** unusable or actively misleading.
 
-Objective checks against the Agent Skills specification.
+## 1. Discovery
+
+Discovery is the only phase every skill pays for in every session. `name`, `description`,
+and `when_to_use` are all the host reads before deciding — everything below the frontmatter
+is invisible at this point.
 
 **Checks:**
-- [ ] `name` field present in frontmatter
-- [ ] `description` field present in frontmatter
-- [ ] `name` matches directory name exactly
-- [ ] `name` format: 1-64 chars, lowercase `a-z`, `0-9`, `-` only, no leading/trailing/consecutive hyphens
-- [ ] `description` is 1-1024 characters
-- [ ] Description includes at least one trigger phrase or use-case (e.g., "when user asks...", "use if...")
-- [ ] Description avoids overly generic phrasing (e.g., "helps with X" without specifics)
-- [ ] Optional fields (`license`, `compatibility`, `metadata`, `allowed-tools`) correctly formatted when present
-- [ ] Body is under 500 lines
-- [ ] Token estimate under ~5000 (heuristic: character count / 4)
 
-**Claude Code extension fields:** The following frontmatter fields are valid Claude Code extensions and must NOT be flagged as non-standard or unknown: `model`, `user-invocable`, `context`, `agent`, `argument-hint`, `disable-model-invocation`, `hooks`, `arguments`. Note that `user-invocable` defaults to `true` — its absence is not a gap and should not be penalized.
+- [ ] The description names a *situation*, not a stance. "Reviews code critically and does
+      not let bad things slide" describes an attitude and can never match a request.
+      "Reviews a diff for correctness bugs before committing" can.
+- [ ] Trigger phrasing is present and reads like something a user would actually type.
+- [ ] The description says what the skill *does*, what it takes as input, and when it
+      applies — not just its topic.
+- [ ] No sibling skill claims the same trigger. Check the discovery-overlap section of the
+      metrics output; a high-scoring pair means at least one of the two never wins.
+- [ ] Where two skills legitimately live near each other, each description states the
+      boundary explicitly ("for X use this, for Y use `<other-skill>`").
+- [ ] `when_to_use` carries the trigger phrases rather than a `## Keywords` section in the
+      body, which is loaded too late to affect discovery at all.
+- [ ] The discovery entry is proportionate: a narrow skill does not spend 900 characters.
 
-**Scoring anchors:**
+**Anchors:**
+
 | Score | Criteria |
-|-------|----------|
-| 5 | All checks pass. Description is specific and actionable. |
-| 4 | All required fields valid. One minor optional field issue (e.g., missing `license`). |
-| 3 | Required fields present but description is vague or body slightly over 500 lines. |
-| 2 | Name mismatch, or description missing trigger phrases entirely. |
-| 1 | Missing required fields (`name` or `description`) or invalid `name` format. |
+| ----- | -------- |
+| 5 | Specific, situational, unmistakably distinct from every sibling. Would fire when it should and stay quiet otherwise. |
+| 4 | Clear and triggerable. One vague clause, or a near neighbour whose boundary is implied rather than stated. |
+| 3 | Fires, but over- or under-broadly. Topic is clear, the triggering situation is not. |
+| 2 | Overlaps a sibling with no stated boundary, or describes attitude and capability instead of a situation. |
+| 1 | Nothing in the entry could match a real request. The skill is effectively unreachable. |
 
 ## 2. Instruction Quality
 
-How clear, structured, and actionable the instructions are.
+Whether an agent can follow the body to the end without guessing.
 
 **Checks:**
-- [ ] Has clear sections with headings (##, ###)
-- [ ] Uses numbered or bulleted lists for multi-step workflows
-- [ ] Includes at least one example (input/output pair or code block)
-- [ ] Documents at least 2 edge cases or failure modes (where applicable)
-- [ ] Prefers positive instructions ("do X") over negative ("don't do Y")
-- [ ] Output format explicitly specified when skill produces structured output
-- [ ] No conflicting or contradictory instructions
-- [ ] Has a "When to Use" section or trigger phrases
-- [ ] Steps are ordered logically (gather context before analysis, analysis before report)
 
-**Scoring anchors:**
+- [ ] Steps are ordered so each one has what it needs: context, then analysis, then output.
+- [ ] At least one worked example or concrete command per non-obvious step.
+- [ ] Output format is specified when the skill produces structured output.
+- [ ] Edge cases and failure modes are documented, including what to do when a dependency
+      is missing.
+- [ ] No contradictions between sections, or between the body and the frontmatter.
+- [ ] Every artefact the body promises actually ships. `validate-skills.sh` catches a
+      dangling path; this catches the softer version — a body describing a checklist,
+      catalog, or template in prose that exists nowhere in the skill.
+- [ ] Every bundled file is reachable — named by `SKILL.md` or by another bundled file. The
+      metrics script lists the unreachable ones; dead weight in a skill ships in the package.
+- [ ] Instructions say what to do rather than what to avoid, where both work.
+
+**Anchors:**
+
 | Score | Criteria |
-|-------|----------|
-| 5 | Well-structured with headings, examples, edge cases, and clear output format. Could serve as a template. |
-| 4 | Good structure and examples. Minor gaps (e.g., one edge case could be documented). |
-| 3 | Has structure but missing examples OR edge cases. Instructions are followable but could be clearer. |
-| 2 | Flat wall of text, or steps are unclear/out of order. Missing both examples and edge cases. |
-| 1 | Instructions are contradictory, incomprehensible, or effectively absent. |
+| ----- | -------- |
+| 5 | Followable start to finish. Examples, output format, and failure modes all present. |
+| 4 | Good structure. One gap — a thin example, or an edge case worth documenting. |
+| 3 | Followable but underspecified: missing examples or missing edge cases, not both. |
+| 2 | Steps out of order or unclear; promises material it does not ship; no examples and no edge cases. |
+| 1 | Contradictory or effectively absent instructions. |
 
-## 3. Tool & Integration Design
+## 3. Context Efficiency
 
-How well the skill declares and uses tools, models, and integrations.
+Whether the body earns its size, and whether the heavy material is deferred.
 
 **Checks:**
-- [ ] `allowed-tools` declarations match actual tool usage. A portable skill's instructions are forbidden from naming its dispatch tool, so a declared `Task` / `Agent` with intent-only prose in the body is correct, not a mismatch
-- [ ] `allowed-tools` aren't overly permissive (e.g., bare `Bash` when `Bash(git:*)` would suffice)
-- [ ] `model` override (if present) is justified — not using expensive model for simple tasks
-- [ ] Subagents used where parallel independent work would genuinely benefit
-- [ ] Skills declaring a non-Claude host describe dispatch as intent — what to spawn and what it must return — and never name a tool, an agent type, or a model. Per-host "Claude Code path / Codex path" splits count as a violation, not a fallback
-- [ ] `AskUserQuestion` in a portable skill has a plain-chat fallback
-- [ ] Scripts (if any) are well-integrated into the workflow, not orphaned
-- [ ] `user-invocable` field present when skill is meant to be invoked by user
-- [ ] `arguments` field present when skill accepts user input
-- [ ] No tools declared but unused, no tools used but undeclared
 
-**Scoring anchors:**
+- [ ] Body under 500 lines / ~5000 tokens. Take the numbers from the metrics script.
+- [ ] Reference material — lookup tables, rule catalogs, prompt templates, mappings — lives
+      in `references/`, loaded on demand, not inlined. The metrics script reports the
+      largest inline table or code block; a 60-line table in the body is the classic case.
+- [ ] `references/` files are focused and single-purpose.
+- [ ] No nested reference chains — a reference file pointing at another reference file
+      means the agent pays twice to reach the content.
+- [ ] No content duplicated between `SKILL.md` and a reference file.
+- [ ] Body length is proportionate to what the skill does. A 400-line body for a
+      three-step task is a finding even though it is under the cap.
+
+**Anchors:**
+
 | Score | Criteria |
-|-------|----------|
-| 5 | Tools precisely scoped, model justified, scripts integrated, invocation fields correct. |
-| 4 | Tools mostly correct. One minor over-permission or missing `user-invocable`. |
-| 3 | Some tool mismatch (declared but unused, or used but undeclared). Or overly permissive `Bash`. |
-| 2 | Significant tool mismatches. Scripts exist but aren't referenced in workflow. |
-| 1 | No `allowed-tools` despite using tools, or tools are dangerously over-permissive. |
+| ----- | -------- |
+| 5 | Lean body, heavy content deferred, size proportionate to the task. |
+| 4 | Well balanced. One table or block that would be better in `references/`. |
+| 3 | Under the cap but bloated, or no references where splitting would clearly help. |
+| 2 | Over the guidance with reference material inlined, or the same content in two places. |
+| 1 | Body far past the token estimate; the skill is expensive to load before it does anything. |
 
-## 4. Context Efficiency
+## 4. Portability & Integration
 
-How well the skill manages token budget and progressive disclosure.
+Whether `compatibility` tells the truth about what the body requires, and whether tools and
+scripts are declared honestly.
+
+`compatibility` is not documentation — `scripts/skills-packaging.sh sync-repo` parses it to
+decide which host trees the skill lands in. A wrong value ships the skill to a host that
+cannot run it.
 
 **Checks:**
-- [ ] Description is compact enough for discovery phase (~100 tokens, roughly 400 chars)
-- [ ] SKILL.md body stays focused on instructions (not bloated with reference material)
-- [ ] Heavy content (lookup tables, mappings, templates >50 lines) lives in `references/`
-- [ ] Reference files (if any) are focused and single-purpose
-- [ ] No deeply nested reference chains (reference pointing to another reference)
-- [ ] Token budget well-managed (body estimated under ~5000 tokens)
-- [ ] No duplicated content between SKILL.md and reference files
 
-**Scoring anchors:**
+- [ ] Every host in `compatibility` can actually execute the body. A skill declaring Codex,
+      OpenCode, or Pi must not require a Claude-only facility to complete its main path.
+- [ ] Dispatch is written as intent — what to spawn and what it must return — never as
+      mechanism. Naming a tool, an agent type, or a model is a violation, and so are
+      per-host "Claude Code path / Codex path" splits and host-hint parentheticals.
+- [ ] `AskUserQuestion` in a skill declaring a non-Claude host has a plain-chat fallback:
+      the same decision as a short numbered list, recommended option first.
+- [ ] Legitimate exceptions are not flagged. `allowed-tools` is a declaration, not an
+      instruction — a portable skill that dispatches workers *should* declare `Task` /
+      `Agent`. Per-host **data** in a table with a documented default is also fine.
+- [ ] The metrics script's host-mechanism hits are each accounted for: either a real
+      violation, or per-host data that belongs where it is.
+- [ ] A Claude-only `compatibility` has a reason a reader can see in the body.
+- [ ] `allowed-tools` matches what the body does, and is scoped — `Bash(git:*)` over bare
+      `Bash` where the narrower form suffices.
+- [ ] A `model` override, where present, is justified by the work rather than habit.
+- [ ] Bundled scripts are invoked from the workflow, with their runtime dependency stated.
+- [ ] **Codex surface**, where the repo has one: `agents/openai.yaml` carries a
+      `display_name` and a `short_description` that reads like the skill, and
+      `allow_implicit_invocation: false` for anything destructive or environment-specific.
+      Catalog membership and the host-subset rule are `validate-codex.sh`'s job — cite it.
+
+**Anchors:**
+
 | Score | Criteria |
-|-------|----------|
-| 5 | Lean body, heavy content in references, description under ~100 tokens. Exemplary progressive disclosure. |
-| 4 | Good balance. Minor inefficiency (e.g., one table could move to references). |
-| 3 | Body somewhat bloated but under token limit. Or no references when content could benefit from splitting. |
-| 2 | Body significantly over recommended size. Large tables/templates inline that should be in references. |
-| 1 | Body exceeds 5000 token estimate. Or massive inline content making the skill slow to load. |
+| ----- | -------- |
+| 5 | `compatibility` matches the body exactly. Dispatch is intent-only, tools scoped, Codex metadata accurate. |
+| 4 | Accurate overall. One over-broad tool declaration or a thin `short_description`. |
+| 3 | A declared host would hit friction but could still finish, or `allowed-tools` drifts from what the body does. |
+| 2 | A declared host cannot complete the main path; dispatch names a tool, agent type, or model; `AskUserQuestion` with no fallback. |
+| 1 | `compatibility` is contradicted outright by the body — the skill ships to hosts that cannot run it. |
 
 ## 5. Safety & Robustness
 
-How well the skill handles mutations, errors, and dependencies.
+Whether the skill can damage something without being told to.
 
 **Checks:**
-- [ ] User approval gates before mutations (file edits, git push, API calls, creating issues/PRs)
-- [ ] Error handling documented in scripts (exit codes, error messages)
-- [ ] External dependencies explicitly documented (tools: `gh`, `jq`, `fd`, `pdftotext`, etc.)
-- [ ] No undeclared dependencies in scripts
-- [ ] `allowed-tools` not overly permissive for the task scope
-- [ ] Sensitive operations have safeguards (confirmation prompts, dry-run options)
-- [ ] Scripts validate inputs before acting
-- [ ] Destructive operations (delete, overwrite, force-push) are gated or warned about
 
-**Scoring anchors:**
+- [ ] Mutations are gated on explicit user approval: file writes outside the skill's own
+      scratch space, `git push`, force-push, branch or tag deletion, issue and PR creation,
+      merges, publishes, and any `gh api` write.
+- [ ] Destructive operations are called out in the body, not just implied by a command.
+- [ ] Bundled scripts validate inputs, set failure modes (`set -euo pipefail` or the
+      equivalent), and emit an error message a reader can act on.
+- [ ] External dependencies are named — `gh`, `jq`, `node`, `rg`, whatever — with what
+      happens when one is missing.
+- [ ] Read-only skills say so, and their `allowed-tools` reflects it.
+- [ ] Nothing writes into a generated tree that a sync script owns.
+
+**Anchors:**
+
 | Score | Criteria |
-|-------|----------|
-| 5 | All mutations gated, dependencies documented, scripts have error handling, tools minimally scoped. |
-| 4 | Good safety practices. One minor gap (e.g., a script missing error handling for edge case). |
-| 3 | Some mutations ungated, or dependencies partially documented. No critical safety issues. |
-| 2 | Mutations proceed without user approval, or undeclared dependencies in scripts. |
-| 1 | Destructive operations without safeguards. Could cause data loss or unintended side effects. |
+| ----- | -------- |
+| 5 | Every mutation gated, dependencies named with fallbacks, scripts fail loudly, tools minimally scoped. |
+| 4 | Sound. One gap — a script missing an input check, or a dependency named without a fallback. |
+| 3 | A low-stakes mutation is ungated, or dependencies are only partly documented. |
+| 2 | A meaningful mutation runs without approval, or a script has undeclared dependencies. |
+| 1 | A destructive operation with no gate and no warning. Could lose work. |
 
-**Note for read-only skills:** Skills that only read and analyze (no mutations) should score 4-5 here by default, as the risk surface is minimal. Deduct only for undeclared dependencies or overly permissive tools.
+A skill that only reads starts at 5 here and loses points only for undeclared dependencies
+or over-broad tools. Absence of risk surface is not a gap.
 
-## 6. Formatting & Syntax
+## Scoring Guidelines
 
-Correctness and consistency of YAML, Markdown, and code formatting.
-
-**Checks:**
-- [ ] Valid YAML frontmatter (parseable, no syntax errors)
-- [ ] Consistent markdown formatting (heading hierarchy: h1 > h2 > h3, no skipped levels)
-- [ ] Code blocks use language tags (` ```bash `, ` ```yaml `, ` ```json `, etc.)
-- [ ] No improperly mixed HTML tags and markdown
-- [ ] Tables properly formatted (aligned pipes, header separators)
-- [ ] No broken references to non-existent files in the skill directory
-- [ ] Consistent list style (all `-` or all `*`, not mixed)
-- [ ] No trailing whitespace issues that affect rendering
-- [ ] Frontmatter field values properly quoted when needed (strings with special chars)
-
-**Scoring anchors:**
-| Score | Criteria |
-|-------|----------|
-| 5 | Clean formatting throughout. Valid YAML, consistent markdown, all code blocks tagged. |
-| 4 | Minor formatting issues (e.g., one code block missing language tag). |
-| 3 | Several formatting inconsistencies but nothing that breaks rendering. |
-| 2 | YAML issues that could cause parse failures, or broken file references. |
-| 1 | Frontmatter is invalid YAML, or formatting severely impacts readability. |
-
-## 7. Codex Integration
-
-Conditional checks for skills that declare Codex support or are exposed through the repo's Codex packaging layer.
-
-**Apply this category when any are true:**
-- `compatibility` includes `Codex`
-- `agents/openai.yaml` exists
-- the skill appears in `scripts/codex/catalog.json`
-
-Otherwise, score this category as `N/A` and exclude it from the overall average.
-
-**Checks:**
-- [ ] `agents/openai.yaml` exists when the skill is Codex-compatible in this repo
-- [ ] `agents/openai.yaml` includes `interface.display_name`, `interface.short_description`, and `policy.allow_implicit_invocation`
-- [ ] `compatibility` includes `Codex` when the skill is exposed through the Codex catalog
-- [ ] the skill appears in `scripts/codex/catalog.json` when it claims Codex support in this repo
-- [ ] the catalog entry places the skill under the correct source group
-- [ ] generated outputs (`.agents/skills/`, wrapper plugin symlinks, plugin manifests, marketplace manifest) reflect the source contract rather than a hand-maintained parallel source of truth
-- [ ] instructions point contributors to `scripts/codex/catalog.json` and `scripts/skills-packaging.sh sync-repo`, not direct edits to generated wrapper files
-- [ ] if `scripts/validate-codex.sh` exists, its checks align with the skill's claimed Codex readiness
-
-**Scoring anchors:**
-| Score | Criteria |
-|-------|----------|
-| 5 | Codex metadata, compatibility, catalog exposure, and generated layer are aligned. No contract gaps. |
-| 4 | One minor Codex metadata or exposure gap, but the contract is still mostly aligned. |
-| 3 | Partial Codex readiness. Metadata exists but catalog or generated-layer contract is incomplete or stale. |
-| 2 | Multiple Codex contract mismatches, or the skill claims Codex support without a clear packaging path. |
-| 1 | Skill is presented as Codex-ready but core contract files are missing or contradictory. |
-
-## General Scoring Guidelines
-
-- **Be specific**: Every score must cite line numbers, quotes, or file paths as evidence.
-- **Be fair**: Read-only skills without scripts naturally have less to evaluate in Safety — don't penalize for absence of risk surface.
-- **Be consistent**: Apply the same standards across all skills. A 4 for one skill should mean the same quality bar as a 4 for another.
-- **Prioritize impact**: Issues that affect the user's experience or the skill's correctness matter more than cosmetic concerns.
-- **Context matters**: A skill's complexity should be proportional to its task. A simple text-fixing skill doesn't need subagents.
-- **Agent-awareness matters**: Do not penalize Claude-specific frontmatter extensions themselves, but do flag instructions that require an agent-specific tool without telling another supported agent what to do instead.
+- **Evidence or nothing.** A score without a line, quote, or path is invalid.
+- **Same bar everywhere.** A 4 must mean the same thing for a 60-line skill and a 500-line one.
+- **Impact over cosmetics.** A heading skip is worth a sentence; a description that never
+  fires is worth the finding that gets the skill rewritten.
+- **Proportionality.** Complexity should track the task. A skill that reformats text does
+  not need workers, references, and a scoring rubric.
+- **Do not penalise Claude Code extension fields.** `model`, `user-invocable`, `context`,
+  `agent`, `argument-hint`, `disable-model-invocation`, `hooks`, `paths`, `effort`, `shell`,
+  and `arguments` are valid frontmatter that other hosts ignore. `user-invocable` defaults
+  to `true`; its absence is not a gap.

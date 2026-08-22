@@ -12,8 +12,10 @@ set -euo pipefail
 # - each skill is a real directory at <group>/skills/<name>, not a symlink, and the
 #   pre-4.0 <group>/<name> authoring path is gone
 # - source groups do not embed Codex wrapper manifests directly
+# - each SKILL.md declares a name matching its directory, a description within the
+#   discovery caps, and no reference to a bundled file it does not ship
 #
-# The Codex wrapper contract is validated separately by scripts/validate-codex.sh.
+# The Codex wrapper contract is validated separately by $(grep -ohE '(^|[^A-Za-z0-9._/-])(references|scripts|assets)/[A-Za-z0-9._/-]+' "$skill_dir/SKILL.md" | sed -E 's/^[^A-Za-z]//; s/\.$//' | sort -u)/validate-codex.sh.
 
 MARKETPLACE=".claude-plugin/marketplace.json"
 
@@ -67,6 +69,105 @@ skill_has_codex_compatibility() {
       exit(found ? 0 : 1)
     }
   '
+}
+
+# Reads a single frontmatter scalar, joining YAML folded/literal continuation lines
+# into one space-separated string so length caps can be measured on the real value.
+frontmatter_scalar() {
+  local skill_dir="$1"
+  local key="$2"
+  awk -v key="$key" '
+    BEGIN { depth = 0; capturing = 0; out = "" }
+    $0 == "---" { depth++; if (depth >= 2) exit; next }
+    depth == 1 {
+      if (capturing) {
+        if ($0 ~ /^[ \t]/) {
+          line = $0
+          sub(/^[ \t]+/, "", line)
+          out = out (out == "" ? "" : " ") line
+          next
+        }
+        capturing = 0
+      }
+      if ($0 ~ "^" key ":") {
+        value = $0
+        sub("^" key ":[ \t]*", "", value)
+        if (value == "" || value ~ /^[|>][-+]?$/) {
+          capturing = 1
+          out = ""
+        } else {
+          out = value
+        }
+        next
+      }
+    }
+    END {
+      gsub(/^["'"'"']|["'"'"']$/, "", out)
+      print out
+    }
+  ' "$skill_dir/SKILL.md"
+}
+
+# Hard per-skill rules. Judgment belongs to the skill-audit skill; everything checked
+# here is mechanical, unambiguous, and must never regress.
+validate_skill_content() {
+  local skill_dir="$1"
+  local skill_name="$2"
+  local declared_name description when_to_use combined ref
+
+  if [ "$(head -n 1 "$skill_dir/SKILL.md")" != "---" ]; then
+    error "Skill '$skill_name': SKILL.md does not open with a YAML frontmatter block"
+    return
+  fi
+
+  declared_name=$(frontmatter_scalar "$skill_dir" "name")
+  description=$(frontmatter_scalar "$skill_dir" "description")
+  when_to_use=$(frontmatter_scalar "$skill_dir" "when_to_use")
+
+  if [ -z "$declared_name" ]; then
+    error "Skill '$skill_name': frontmatter is missing a name"
+  else
+    if [ "$declared_name" != "$skill_name" ]; then
+      error "Skill '$skill_name': frontmatter name '$declared_name' does not match the directory name"
+    fi
+    if ! printf '%s' "$declared_name" | grep -qE '^[a-z0-9]+(-[a-z0-9]+)*$'; then
+      error "Skill '$skill_name': name '$declared_name' must be lowercase a-z, 0-9 and single hyphens, with no leading or trailing hyphen"
+    fi
+    if [ "${#declared_name}" -gt 64 ]; then
+      error "Skill '$skill_name': name is ${#declared_name} chars; the limit is 64"
+    fi
+  fi
+
+  if [ -z "$description" ]; then
+    error "Skill '$skill_name': frontmatter is missing a description"
+  elif [ "${#description}" -gt 1024 ]; then
+    error "Skill '$skill_name': description is ${#description} chars; the limit is 1024"
+  fi
+
+  if [ -n "$when_to_use" ]; then
+    combined="$description $when_to_use"
+    if [ "${#combined}" -gt 1536 ]; then
+      error "Skill '$skill_name': description + when_to_use is ${#combined} chars; the discovery entry is truncated past 1536"
+    fi
+  fi
+
+  # A body that points at references/, scripts/, or assets/ it does not ship sends the
+  # agent looking for material that is not there. Paths whose last segment has no
+  # extension are prose, not file references, and are skipped.
+  while IFS= read -r ref; do
+    [ -n "$ref" ] || continue
+    case "$ref" in
+      */) ;;
+      *.*) ;;
+      *) continue ;;
+    esac
+    if [ -e "$skill_dir/$ref" ] || [ -e "$ref" ]; then
+      continue
+    fi
+    error "Skill '$skill_name': SKILL.md references '$ref', which the skill does not ship"
+  done <<EOF
+$(grep -ohE '(^|[^A-Za-z0-9._/-])(references|scripts|assets)/[A-Za-z0-9._/-]+' "$skill_dir/SKILL.md" | sed -E 's/^[^A-Za-z]//; s/\.$//' | sort -u)
+EOF
 }
 
 require_jq
@@ -154,6 +255,8 @@ for i in $(seq 0 $((plugin_count - 1))); do
     if [ -e "$source/$skill_name" ]; then
       error "Plugin '$name': legacy skill path '$source/$skill_name' still exists; the canonical location is '$skill_dir'"
     fi
+
+    validate_skill_content "$skill_dir" "$skill_name"
 
     if skill_has_codex_compatibility "$skill_dir"; then
       codex_compatible_count=$((codex_compatible_count + 1))
