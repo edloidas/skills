@@ -265,7 +265,7 @@ CI, script, security, skill, workspace, tsconfig, Three.js, React, and test-suit
 | [ci-audit](./audit/skills/ci-audit/) | Analyze GitHub Actions workflows for optimization | All |
 | [scripts-audit](./audit/skills/scripts-audit/) | Analyze package.json scripts for naming, composition, and consistency | All |
 | [security-audit](./audit/skills/security-audit/) | Audit GitHub Actions, release config, and repo settings for supply chain | All |
-| [skill-audit](./audit/skills/skill-audit/) | Audit skills for quality, specification compliance, and Codex readiness | All |
+| [skill-audit](./audit/skills/skill-audit/) | Gate a skill change on discovery, instructions, context cost, portability, and safety | All |
 | [three-audit](./audit/skills/three-audit/) | Audit Three.js / React Three Fiber code for perf and best-practice issues | All |
 | [react-audit](./audit/skills/react-audit/) | Audit React code for effects misuse, conventions, and patterns | All |
 | [tests-audit](./audit/skills/tests-audit/) | Audit a test suite and report keep/tighten/rewrite/delete per test | All |
