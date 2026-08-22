@@ -1,7 +1,7 @@
 {
   "name": "maintain",
   "version": "4.5.2",
-  "description": "Label sync, instruction file sync, rule sync, lint migration, and repo hardening",
+  "description": "Agent config, label sync, rule sync, lint migration, and repo hardening",
   "author": {
     "name": "Mikita Taukachou",
     "url": "https://edloidas.io"
@@ -10,6 +10,7 @@
   "license": "MIT",
   "keywords": [
     "skills",
+    "agents",
     "maintain",
     "labels",
     "sync",
