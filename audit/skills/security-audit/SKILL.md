@@ -309,7 +309,7 @@ Sort findings within each severity bin worst-first (most exploitable first; poli
 
 ### Step 4: Hand Off Findings (Tasks + Planned Changes Report)
 
-This skill audits and reports; it does not mutate. Do not edit files, do not run `gh api` writes, do not create GitHub issues, do not invoke `/build:fix-findings` / `/plan:issue-flow` / any other skill on the user's behalf. Step 4 produces two artifacts side by side — a task queue for downstream work to consume, and a Planned Changes report for the user to read — and stops. Hosts differ in whether they have a task tracker; where none exists, the Planned Changes report *is* the handoff and the task options below collapse to option 4.
+This skill audits and reports; it does not mutate. Do not edit files, do not run `gh api` writes, do not create GitHub issues, do not invoke `/build:fix-and-reverify` / `/plan:issue-flow` / any other skill on the user's behalf. Step 4 produces two artifacts side by side — a task queue for downstream work to consume, and a Planned Changes report for the user to read — and stops. Hosts differ in whether they have a task tracker; where none exists, the Planned Changes report *is* the handoff and the task options below collapse to option 4.
 
 When `AskUserQuestion` is available, use it. Otherwise present the same options in normal chat as a numbered list and wait for the user's reply:
 
@@ -376,7 +376,7 @@ Plan-of-record (not an execution transcript). Render of the Step 3 findings as c
 
 After rendering the report and emitting tasks, print one of:
 
-- Option 1: "N tasks emitted. Run `/build:fix-findings` to walk through them."
+- Option 1: "N tasks emitted. Run `/build:fix-and-reverify` to walk through them."
 - Option 2: "N tasks emitted with `file_issue` flag. Run `/plan:issue-flow` per task when you're ready."
 - Option 3: "Single summary task emitted. Run `/plan:issue-flow` to file it as a tracking issue."
 - Option 4: "No tasks emitted; the report above is the full audit output."

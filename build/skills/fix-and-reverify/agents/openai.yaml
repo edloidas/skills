@@ -1,0 +1,6 @@
+interface:
+  display_name: "Fix and Reverify"
+  short_description: "Fix review findings in rounds, re-reviewing each fix"
+  default_prompt: "Use $fix-and-reverify to fix the findings that clear the severity and confidence gate, verify the checks still pass, and re-review the fix."
+policy:
+  allow_implicit_invocation: true

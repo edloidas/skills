@@ -62,7 +62,7 @@
         "build/skills/commit-summary",
         "build/skills/resolve-conflicts",
         "build/skills/commit",
-        "build/skills/fix-findings"
+        "build/skills/fix-and-reverify"
       ]
     },
     {

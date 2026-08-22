@@ -16,7 +16,7 @@ metadata:
 
 ## Purpose
 
-Fetch PR review comments (inline and general), analyze each against the code context, and produce a triaged report. Does not auto-fix — outputs analysis only. The "To Fix" section is structured for downstream consumption by `fix-findings`.
+Fetch PR review comments (inline and general), analyze each against the code context, and produce a triaged report. Does not auto-fix — outputs analysis only. The "To Fix" section is structured for downstream consumption by `fix-and-reverify`.
 
 ## When to Use
 
@@ -161,7 +161,7 @@ Show "To Fix" first, then "Skipped". Omit empty sections. Numbering is continuou
 
 ## Rules
 
-1. **Analysis only** — never auto-fix; output is for the user (or `fix-findings`) to act on
+1. **Analysis only** — never auto-fix; output is for the user (or `fix-and-reverify`) to act on
 2. **Preserve reviewer's words** — blockquote the original comment verbatim, including suggestions
 3. **Be honest in skips** — don't dismiss valid feedback; if skipping, give a real technical reason
 4. **Read the code** — don't guess from the comment alone; check the actual file when the diff context isn't enough
