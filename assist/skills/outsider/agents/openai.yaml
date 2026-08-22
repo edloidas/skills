@@ -1,0 +1,6 @@
+interface:
+  display_name: "Outsider"
+  short_description: "Quick opinion or code review from an agent CLI outside this session"
+  default_prompt: "Use $outsider to get a quick outside opinion or an independent review of the current changes."
+policy:
+  allow_implicit_invocation: true

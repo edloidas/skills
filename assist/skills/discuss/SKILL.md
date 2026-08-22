@@ -94,5 +94,7 @@ The skill ends when the user greenlights implementation — phrases like "let's 
 - One-shot question that just needs an answer → use `assist/skills/ask`.
 - Full structured exploration with requirements gathering → use `superpowers:brainstorming`.
 - The user has already decided and wants the change made → just implement.
-- External second opinion needed → use `assist/skills/outsider`, which runs an agent CLI from
-  another harness, or `review:consilium` for a full board.
+- External second opinion needed → use `assist/skills/outsider` in **ask** mode, passing
+  `--host <the agent you are>` and a question file holding the point under discussion plus only the
+  context needed to judge it — the responder sees nothing else. Use `review:consilium` for a full
+  board instead.
