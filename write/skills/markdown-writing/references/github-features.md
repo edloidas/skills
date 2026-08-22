@@ -147,7 +147,8 @@ commit-SHA form (press `y` on the file page) so it does not rot.
 
 In issues, PRs, and commit messages: `#123` links the issue, `owner/repo#123`
 links across repos, and a bare 40-char SHA links the commit. Closing keywords
-(`Closes #1 #23`) wire up the automation — put them on one line.
+wire up the automation, but each reference needs its own keyword: `Closes #1 #23`
+links only #1. Write one `Closes #<n>` per line.
 
 ## What GitHub does not support
 

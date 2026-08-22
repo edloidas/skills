@@ -518,7 +518,7 @@ When working on an issue, create a new branch named `issue-<number>`.
 
 - **Title:** `<type>: <description> #<number>`
 - **Body:** concise what/why, no emojis, one blank line between sections.
-- Multiple issues go on one `Closes` line: `Closes #1 #23 #456`.
+- One `Closes #<number>` per line. GitHub links only the first reference after a keyword, so `Closes #1 #23 #456` closes #1 and silently leaves the rest open.
 - Never append a generated footer, `---` rule, session link, `<sub>` attribution, or promotional line, including on PRs created from the web.
 
 ## License

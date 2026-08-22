@@ -97,7 +97,7 @@ Read the target repo's CLAUDE.md for project-specific formatting. Use these defa
 - **Issue titles**: `<type>: <description>` (conventional commit format)
 - **Commit subjects**: `<Issue Title> #<number>`
 - **PR titles**: `<Issue Title> #<number>`
-- **PR body**: concise change list + `Closes #<number>`. Multiple issues go on one `Closes` line: `Closes #1 #2 #3`
+- **PR body**: concise change list + `Closes #<number>`, one per line. GitHub links only the first reference after a keyword, so `Closes #1 #2 #3` closes #1 and leaves #2 and #3 open
 
 Common types: `feat`, `fix`, `docs`, `chore`, `refactor`, `test`, `style`, `ci`
 
