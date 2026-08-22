@@ -89,7 +89,7 @@ OUTSIDER_EFFORT_CLAUDE="high"
 Check what a given configuration resolves to without spending a request:
 
 ```bash
-bash assist/skills/outsider/scripts/run-outsider.sh list --host claude
+bash <skill-dir>/scripts/run-outsider.sh list --host claude
 ```
 
 ## Host detection
