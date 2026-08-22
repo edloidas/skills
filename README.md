@@ -238,7 +238,7 @@ Conflict resolution, commit summaries, quick commits, and findings fixes.
 | [resolve-conflicts](./build/skills/resolve-conflicts/) | Semi-automatic merge and rebase conflict resolution | All |
 | [commit](./build/skills/commit/) | Fast staged-or-scoped commit with conventional message | All |
 | [commit-summary](./build/skills/commit-summary/) | Generate formatted Git commit message summaries | All |
-| [fix-findings](./build/skills/fix-findings/) | Triage and fix problems from reviews, consilium, or debugging | All |
+| [fix-and-reverify](./build/skills/fix-and-reverify/) | Fix review findings in rounds, re-reviewing each fix | All |
 
 ### Review
 
