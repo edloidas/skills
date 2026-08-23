@@ -1,0 +1,6 @@
+interface:
+  display_name: "Issue Flow"
+  short_description: "Pick, create, branch, commit, push, PR, and merge GitHub issues."
+  default_prompt: "Use $issue-flow to run the GitHub issue lifecycle — pick the next issue, create it, branch, commit, push, open a PR, and merge."
+policy:
+  allow_implicit_invocation: false

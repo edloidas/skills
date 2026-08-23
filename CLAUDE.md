@@ -72,7 +72,7 @@ symlink into `.claude/skills/` — Claude Code follows the symlink, while `npx s
 skips it. `tools/skills-release` is the one current example.
 
 **Plugin groups:**
-- `plan/` — Issue drafting, analysis, triage, and full issue lifecycle (4 skills)
+- `plan/` — Issue drafting, analysis, and the full issue lifecycle (3 skills)
 - `build/` — Conflict resolution, commit summaries, quick commits, and findings fixes (4 skills)
 - `review/` — Adversarial change review, cleanup, critical review board, PR feedback triage, and spec extraction (5 skills)
 - `audit/` — CI, script, security, skill, workspace, tsconfig, Three.js, React, and test-suite auditing (9 skills)
@@ -93,6 +93,7 @@ Wrapper plugin names and display names for Codex:
 - `plugins/edloidas-assist/` → `edloidas-assist` / `Edloidas Assist`
 - `plugins/edloidas-write/` → `edloidas-write` / `Edloidas Write`
 - `plugins/edloidas-obsidian/` → `edloidas-obsidian` / `Edloidas Obsidian`
+- `plugins/edloidas-workflow/` → `edloidas-workflow` / `Edloidas Workflow`
 
 The Codex wrapper layer is driven from `scripts/codex/catalog.json`. After changing the Codex-exposed
 skill set or plugin metadata, run:
@@ -392,14 +393,21 @@ Only add `Codex` to a skill's `compatibility` frontmatter after reviewing that t
 actually Codex-safe. In this repo, Codex-compatible skills must also be exposed through
 `scripts/codex/catalog.json`.
 
-Four skills are `compatibility: Claude Code`, each locked by what it actually does. They
+Two skills are `compatibility: Claude Code`, each locked by what it actually does. They
 should stay Claude-only unless their workflow changes:
 
 - `review/skills/consilium` and `review/skills/code-to-spec` — dispatch fleets of
   plugin-namespaced subagents via `subagent_type` and key temp files on
   `${CLAUDE_SESSION_ID}`.
-- `plan/skills/issue-flow` and `workflow/skills/solve-issue` — orchestrate other skills
-  through Claude's Skill tool and gate on `AskUserQuestion`.
+
+`plan/skills/issue-flow` and `workflow/skills/solve-issue` were Claude-only for the same
+reason `changes-review` was: they named the mechanism. Both now state delegation as intent
+("invoke `issue-flow`", "dispatch one subagent"), each call site documents what to do when
+the host cannot chain skills or has no subagents, and both carry the standard
+`AskUserQuestion` fallback in a single `Asking the User` convention rather than repeating
+it at sixteen call sites. `issue-flow` owns every git and `gh` write in the pipeline, so
+`solve-issue` holds no duplicate of its commit format or squash rules — the seam is what
+made them portable.
 
 `review/skills/changes-review` was Claude-only for its per-agent `model` overrides. It now
 states model choice as intent — most capable model the host offers, next tier down when that is

@@ -1,0 +1,6 @@
+interface:
+  display_name: "Solve Issue"
+  short_description: "End-to-end issue workflow: analyze, implement, verify, review, commit, ship."
+  default_prompt: "Use $solve-issue to take a GitHub issue end to end — analyze, plan, implement, verify, adversarially review, clean up, then commit and ship via $issue-flow."
+policy:
+  allow_implicit_invocation: false

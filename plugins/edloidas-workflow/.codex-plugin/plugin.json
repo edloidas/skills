@@ -1,7 +1,7 @@
 {
-  "name": "edloidas-plan",
+  "name": "edloidas-workflow",
   "version": "4.5.2",
-  "description": "A Codex-safe planning bundle for issue drafting, scope analysis, backlog triage, and the full issue lifecycle.",
+  "description": "A Codex-safe end-to-end workflow bundle that takes a GitHub issue from analysis to merged.",
   "author": {
     "name": "Mikita Taukachou",
     "url": "https://edloidas.io"
@@ -12,17 +12,16 @@
   "keywords": [
     "skills",
     "codex",
-    "plan",
+    "workflow",
     "issues",
     "github",
-    "triage",
-    "lifecycle"
+    "automation"
   ],
   "skills": "./skills/",
   "interface": {
-    "displayName": "Edloidas Plan",
-    "shortDescription": "Issue drafting, scope analysis, triage, and lifecycle.",
-    "longDescription": "Install the planning bundle from edloidas/skills for drafting GitHub issues, analyzing issue scope, picking what to work on next, and driving the branch-commit-PR-merge lifecycle from Codex.",
+    "displayName": "Edloidas Workflow",
+    "shortDescription": "End-to-end issue workflow in one command.",
+    "longDescription": "Install the workflow bundle from edloidas/skills to take a GitHub issue end to end from Codex — analyze, plan, implement, verify, adversarially review, clean up, commit, and ship.",
     "developerName": "Mikita Taukachou",
     "category": "Coding",
     "websiteURL": "https://github.com/edloidas/skills",

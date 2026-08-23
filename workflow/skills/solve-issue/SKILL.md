@@ -1,18 +1,17 @@
 ---
 name: solve-issue
 description: >
-  End-to-end GitHub issue workflow: analyze the issue, branch, plan and
-  implement, verify with available tests/build/lint (and optionally Playwright
-  + Storybook), simplify, attack the change with parallel adversarial reviewers
-  and fix what they find, trim comments and artifacts, squash to one commit,
-  and choose a push / PR /
-  merge endgame via AskUserQuestion. Use when the user wants a single
-  autonomous command for an issue they already consider simple enough to
-  delegate end-to-end, e.g. `/solve-issue 69` or `/solve-issue` (asks which
-  issue first).
+  End-to-end GitHub issue workflow: analyze the issue, plan and implement,
+  verify with available tests/build/lint (and optionally Playwright +
+  Storybook), simplify, attack the change with parallel adversarial reviewers
+  and fix what they find, trim comments and artifacts, then choose a push / PR /
+  merge endgame via AskUserQuestion. Every git and GitHub action is delegated to
+  `issue-flow`. Use when the user wants a single autonomous command for an issue
+  they already consider simple enough to delegate end-to-end, e.g.
+  `/solve-issue 69` or `/solve-issue` (asks which issue first).
 license: MIT
-compatibility: Claude Code
-allowed-tools: Bash(gh:*) Bash(git:*) Bash(bash:*) Bash(jq:*) Bash(rm:*) Bash(ls:*) Read Edit Write Glob Grep Task AskUserQuestion
+compatibility: Claude Code, Codex, OpenCode, Pi
+allowed-tools: Bash(git diff:*) Bash(git status:*) Bash(git log:*) Bash(jq:*) Bash(rm:*) Bash(ls:*) Read Edit Write Glob Grep Task Skill AskUserQuestion
 argument-hint: "[issue-number]"
 metadata:
   author: edloidas
@@ -21,22 +20,62 @@ metadata:
 # Solve Issue
 
 Runs the full issue workflow in one command: analyze → branch → plan →
-implement → verify → advisors → cleanup → squash commit → push/PR/merge.
+implement → verify → advisors → cleanup → commit → push/PR/merge.
 Designed for issues the user already judged simple. When uncertainty appears,
 pause and ask rather than guess.
+
+**This skill owns engineering judgment only.** Every git and `gh` action —
+issue selection, branch, snapshot, commit, squash, push, PR, merge — is
+delegated to `issue-flow`, which owns them. Do not run a git or `gh` write
+command here, and do not restate `issue-flow`'s commit format or squash rules;
+read-only `git diff` / `git status` / `git log` for scoping verification is
+fine.
+
+## Conventions
+
+### Asking the User
+
+Every question below is written as `AskUserQuestion` options. Use that tool where the
+host offers it, or the host's nearest structured-choice equivalent. Where the host has
+neither, ask the same question in normal chat as a numbered list of 2–5 options —
+recommended first, one short line each — and wait for the user to reply with a number.
+
+The endgame question in Phase 6 is never skipped. Every other gate defaults to
+proceeding, so a host that cannot prompt still completes the flow.
+
+### Delegating to Other Skills
+
+This skill is an orchestrator: it invokes `issue-flow`, `issue-analyze`,
+`changes-review`, `code-cleanup`, and `commit-summary` rather than reimplementing them.
+"Invoke `<name>`" means hand control to that skill however the host chains skills.
+
+**`issue-flow` and `issue-analyze` are hard prerequisites.** Every git and GitHub
+action in the flow lives in `issue-flow`, and the scope analysis it works from comes from
+`issue-analyze`; a host that cannot invoke another skill cannot run this one. Stop with
+`solve-issue needs to invoke issue-flow and issue-analyze; this host cannot chain
+skills.` rather than reimplementing the lifecycle inline. The other three —
+`changes-review`, `code-cleanup`, `commit-summary` — are graceful: each call site says
+what to do when that skill is missing.
+
+### Tracking Progress
+
+Where the host has a task list, put one entry per **Changes** item in it and update
+entries as you go. Where it does not, keep the printed numbered Changes list as the
+tracker and state which item you are on before starting it. Either way, progress is
+visible per item — never a single opaque "implementing" step.
 
 ## Flow Overview
 
 | Phase | Step                              | Asks user?                              |
 | ----- | --------------------------------- | --------------------------------------- |
 | 0     | Resolve issue number              | Only if `$ARGUMENTS` is empty           |
-| 1     | Analyze via `/issue-analyze`      | No                                      |
+| 1     | Analyze via `issue-analyze`       | No                                      |
 | 2     | Plan + create branch              | Only if plan is genuinely uncertain     |
 | 3     | Implement                         | Only on hard blockers                   |
 | 4     | Verify (tests, build, lint, PW)   | Only to opt into Playwright             |
 | 4.4   | Subtle simplification pass        | No                                      |
 | 4.5   | Advisor round(s) + apply fixes    | No                                      |
-| 5     | Comment cleanup + squash commit   | No                                      |
+| 5     | Comment cleanup + commit          | No                                      |
 | 6     | Summary + choose endgame          | Always — 4 options via AskUserQuestion  |
 
 ## Phase 0: Resolve Issue
@@ -47,21 +86,22 @@ skip to Phase 1.
 If empty, ask via `AskUserQuestion`:
 
 - **question**: "No issue number provided. How should I pick one?"
-- **Option 1** — header `Next issue`, label `Pick via /next-issue` `(Recommended)` — `Run /next-issue to recommend the most relevant open issue.`
+- **Option 1** — header `Next issue`, label `Let issue-flow pick` `(Recommended)` — `Rank the backlog and recommend the most relevant open issue.`
 - **Option 2** — header `Manual`, label `Stop and ask` — `Exit so you can re-run with an explicit issue number.`
 
-If `AskUserQuestion` is unavailable, ask the same as a 2-item numbered list
-and wait for the user to reply with `1` or `2`.
-
-- Option 1 → invoke `/next-issue` via the Skill tool. That skill will also
-  run `/issue-analyze` on the selected issue, so continue from Phase 2.
+- Option 1 → invoke `issue-flow` with intent `"pick an issue"`. That runs its
+  Step 0, which ranks the backlog, lets the user choose, and chains into
+  `issue-analyze` on the selection — so continue from Phase 2. If the user picks
+  `None` there, stop.
 - Option 2 → print `Re-run with an issue number, e.g. /solve-issue 42.` and
   stop.
 
 ## Phase 1: Analyze
 
-Invoke `/issue-analyze <N>` via the Skill tool. Do not duplicate its work
-inline. Capture the Scope Analysis and Implementation Tasks it emits.
+Invoke `issue-analyze` on `<N>`. Do not duplicate its work inline — capture the
+Scope Analysis and Implementation Tasks it emits. It is a prerequisite, not a
+nice-to-have: it resolves the issue title this flow commits under, and the
+blockers Phase 1 stops on.
 
 Stop conditions from the analyzer:
 - Issue is closed → print its status line and stop.
@@ -115,8 +155,8 @@ Rules for the plan body:
 - Risks section names alternatives. `None` is valid when the choice is
   forced.
 
-After printing the plan, also create TodoWrite entries — one per Changes
-item — so progress is trackable during Phase 3.
+After printing the plan, set up progress tracking per **Conventions → Tracking
+Progress** — one entry per Changes item.
 
 ### When to pause for approval
 
@@ -144,20 +184,28 @@ Wait for the reply before continuing.
 
 ### Create branch
 
-Invoke `/issue-flow` via the Skill tool with intent `"start work on #<N>"`.
-That runs `/issue-flow` Step 2, which checks out `issue-<N>` off the correct
-base branch and updates the project board to "In Progress" when available.
+Invoke `issue-flow` with intent `"start work on #<N>"`. That runs its Step 2,
+which checks out `issue-<N>` off the correct base branch and updates the project
+board to "In Progress" when available.
 
-If `issue-<N>` already exists, let `/issue-flow` handle the
-switch-vs-recreate prompt.
+If `issue-<N>` already exists, let `issue-flow` handle the switch-vs-recreate
+prompt.
+
+Record the `Base:` value from its Step 2 report — later phases need it to scope
+verification and to pass `--base` to the reviewers. Do not detect the base
+yourself; `issue-flow` owns base detection, and its `detect-base.sh` handles the
+`epic-*` cases a naive `origin/HEAD` lookup gets wrong. If the flow was entered
+on an existing branch and no Step 2 report was printed, ask `issue-flow` for the
+base.
 
 ## Phase 3: Implement
 
-Work through the TodoWrite list sequentially. Mark each todo `in_progress`
-when starting and `completed` as soon as it's done — no batching.
+Work through the tracked Changes items sequentially. Mark each one started when
+you begin it and done as soon as it is done — no batching.
 
-Intermediate commits are allowed during implementation for safety. They will
-be squashed in Phase 5. Do **not** push between tasks.
+For a checkpoint mid-implementation, invoke `issue-flow` with intent
+`"snapshot"` — its Step 3 snapshot mode freezes the tree into a content-free
+`wip:` commit. Phase 5 squashes those away. Do **not** push between tasks.
 
 If a task hits a hard blocker (missing credentials, external service down,
 decision required), stop and ask the user.
@@ -220,9 +268,9 @@ If any verification step fails:
 Run this **before** the advisor round, so the reviewers attack the code that
 will actually ship. A simplification applied after review ships unreviewed.
 
-Dispatch one subagent (Task tool, `subagent_type: "general-purpose"`) over the
-changed files with a single instruction: apply subtle, behavior-preserving
-simplifications, and nothing else.
+Dispatch one subagent over the changed files with a single instruction: apply
+subtle, behavior-preserving simplifications against the bar below, and nothing
+else. If the host has no subagent facility, run the same instruction inline.
 
 ### The simplification bar
 
@@ -249,31 +297,27 @@ Independent reviewers attack the change in parallel, then their findings are
 triaged and fixed. This always runs once verification is green — it is the
 polish pass, not an optional extra.
 
-The review itself belongs to `/changes-review`. This phase owns only what
-is workflow policy: freezing the diff, triaging findings, and deciding whether
-to run a second round. Do not duplicate the reviewer prompts here, and do not
-invoke `/consilium` — this is deliberately lighter.
+The review itself belongs to `changes-review`. This phase owns only what is
+workflow policy: freezing the diff, triaging findings, and deciding whether to
+run a second round. Do not duplicate the reviewer prompts here, and do not
+invoke `consilium` — this is deliberately lighter.
 
 ### Freeze the diff first
 
 Every reviewer must see the same change set. Before dispatching, delete the
-cruft listed under Phase 5 → Remove cruft — `git add -A` would otherwise bake
-scratch files and screenshots into the snapshot, where Phase 5's untracked-file
-check can no longer see them. Then snapshot, if the tree is dirty:
+cruft listed under Phase 5 → Remove cruft — the snapshot stages everything, so
+scratch files and screenshots would otherwise be baked in where Phase 5's
+untracked-file check can no longer see them.
 
-```bash
-git status --short          # confirm nothing scratch is about to be staged
-git add -A && git commit -m "wip: pre-advisor snapshot"
-```
+Then, if the tree is dirty, invoke `issue-flow` with intent `"snapshot"`. Its
+Step 3 snapshot mode stages the tree and commits it under a content-free `wip:`
+subject. Phase 5 squashes it away.
 
-Keep that subject content-free. A snapshot message describing the work is the
-implementer's reasoning leaking into a place reviewers can read.
-
-Phase 5 squashes the snapshot away. Each round freezes again — round 2 must
-snapshot the round-1 fixes before dispatching, or the reviewers re-review the
-diff they already saw. Round 2 and later also pass `--mode simple` with the
-previous round's snapshot as the base, so the reviewers attack the fix rather
-than re-reading the whole branch to check a two-line change.
+Each round freezes again — round 2 must snapshot the round-1 fixes before
+dispatching, or the reviewers re-review the diff they already saw. Round 2 and
+later also pass `--mode simple` with the previous round's snapshot as the base,
+so the reviewers attack the fix rather than re-reading the whole branch to
+check a two-line change.
 
 Carry your own list of findings you accepted rather than fixed. The reviewers are
 blind to previous rounds by design, so an accepted decision comes back every
@@ -281,8 +325,8 @@ round — recognizing it is your job, not theirs.
 
 ### Run the review
 
-Invoke `/changes-review` via the Skill tool with `--base <base>` and
-`--issue <N>`, using the base branch detected in Phase 5. It dispatches the
+Invoke `changes-review` with `--base <base>` and `--issue <N>`, using the base
+recorded in Phase 2. It dispatches the
 reviewers, re-attacks its own findings — verification is on by default for a
 `--base` run — and returns what survives. It changes nothing.
 
@@ -332,82 +376,65 @@ Otherwise stop at one round. **Hard cap: two rounds.** If round 2 surfaces
 another large batch, do not run a third — apply the clear fixes, list the rest
 as Notes, and let the PR review catch them.
 
-## Phase 5: Cleanup + Squash
+## Phase 5: Cleanup + Commit
 
 ### Trim comments
 
-Invoke `/code-cleanup --comments-only` via the Skill tool, scoped to the
-change. This is the step that stops verbose AI commentary from reaching the
-commit: it removes comments that restate the code, compacts genuine gotchas
-to a line or two, and surfaces design rationale for the commit body.
+Invoke `code-cleanup --comments-only`, scoped to the change. This is the step
+that stops verbose AI commentary from reaching the commit: it removes comments
+that restate the code, compacts genuine gotchas to a line or two, and surfaces
+design rationale for the commit body.
 
 `--comments-only` is deliberate — **no code changes at commit time.** Any
 simplification opportunity belongs to Phase 4.5, where it was reviewed. If
-`/code-cleanup` reports suggested refactors, carry them into the Phase 6
+`code-cleanup` reports suggested refactors, carry them into the Phase 6
 summary as Notes; do not apply them here.
 
 Feed its **Suggested for commit message** section into the commit body below.
 
-If `/code-cleanup` is unavailable, do the comment pass inline: delete comments
-that narrate what the code already says, keep non-obvious gotchas at one to
-two lines, and leave documentation comments and `HACK`/`FIXME`/`TODO` markers
+If `code-cleanup` is not installed, do the comment pass inline: delete comments
+that narrate what the code already says, keep non-obvious gotchas at one to two
+lines, and leave documentation comments and `HACK`/`FIXME`/`TODO` markers
 alone.
 
 ### Remove cruft
 
 Delete anything that should not ship with the commit:
 
-- Scratch files under `.claude/plans/`, `.claude/plan/`, `docs/superpowers/`
-  (per repo CLAUDE.md, these are gitignored working artifacts)
+- Plan and scratch files under `.claude/plans/`, `.claude/plan/`, or
+  `docs/superpowers/` — gitignored working artifacts, per the repo's
+  instructions file. Only files this run created; never a config directory.
 - Temp files under `tmp/` or `.tmp/` at the repo root that were created
   during this run
 - Screenshot artifacts under `.playwright-mcp/` if they were throwaway
 
 Use `git status --short` to sanity-check that no untracked scratch files are
-about to be staged. If Phase 4.5 snapshotted a file that is now deleted, stage
-the deletion too (`git add -A`) — a `git reset --soft` leaves it in the index
-otherwise, and it ships.
+about to be staged, and that every intended deletion shows up.
 
-### Squash to one commit
+### Commit
 
-Detect the base branch:
+Invoke `issue-flow` with intent `"commit #<N>"`. Its Step 3 squashes the branch
+to one commit, writes the subject and body, and reports the result. It owns the
+commit subject format, the body, and the squash rules for every `wip:` snapshot
+Phase 4.5 created — do not restate any of them here, and do not run the git
+commands yourself.
 
-```bash
-base=$(git rev-parse --abbrev-ref origin/HEAD 2>/dev/null | sed 's|origin/||')
-[ -z "$base" ] && base=$(git branch -rl 'origin/main' 'origin/master' 'origin/next' --format='%(refname:short)' | head -n1 | sed 's|origin/||')
-[ -z "$base" ] && base=main
-git log "$base"..HEAD --oneline
-```
+Pass along, as context for the commit body:
 
-Then:
+- The issue title and number, so the subject can be built.
+- The design rationale `code-cleanup` pulled out of the source, if it produced
+  any — that text is why the comment pass could delete it.
 
-- **0 commits**: stage only the files changed by the implementation and
-  create one fresh commit.
-- **1 commit** with a final subject: leave the commit as-is, but the comment
-  trim above almost certainly dirtied the tree — `git add -A` and
-  `git commit --amend --no-edit` so those edits land. Never leave Phase 5 with
-  a dirty tree; the endgame pushes the commit, not the working copy.
-- **1 commit** that is the Phase 4.5 `wip:` snapshot, or **2+ commits**:
-  `git reset --soft "origin/$base"` (or `"$base"` if no upstream ref) then
-  create one commit with the combined changes.
-
-Whichever branch runs, finish with `git status --short` empty.
-
-No `wip:` subject may survive into the final history.
-
-Commit subject: `<Issue Title> #<N>` (issue title already in conventional
-format from `/issue-analyze`).
-
-Commit body: invoke `/commit-summary` via the Skill tool. If unavailable,
-fall back inline: past-tense summary, one line per logical change, 2–6 lines.
-Append the design rationale `/code-cleanup` pulled out of the source, if it
-produced any — that text is why the comment pass could delete it.
+Capture the short SHA and subject from Step 3's report for the Phase 6 summary.
+If Step 3 comes back with a dirty tree or more than one commit, that is a
+failure of the commit step — re-invoke it rather than fixing the history here.
+The endgame pushes the commit, not the working copy.
 
 ## Phase 6: Summary + Endgame
 
 Print a compact summary in this exact shape (omit rows that don't apply):
 
-```
+```text
 ## Solved #<N>: <title>
 
 **Changed**
@@ -439,24 +466,21 @@ is the one failure mode this whole phase is built to prevent.
 Then ask via `AskUserQuestion`:
 
 - **question**: "What's next for this commit?"
-- **Option 1** — header `PR + merge`, label `Push, PR, auto-merge` `(Recommended)` — `Push, open a PR, wait for checks, merge when green (via /issue-flow Steps 4–6).`
-- **Option 2** — header `PR only`, label `Push and open PR` — `Push and open PR, stop before merge (via /issue-flow Steps 4–5).`
+- **Option 1** — header `PR + merge`, label `Push, PR, auto-merge` `(Recommended)` — `Push, open a PR, wait for checks, merge when green (via issue-flow Steps 4–6).`
+- **Option 2** — header `PR only`, label `Push and open PR` — `Push and open PR, stop before merge (via issue-flow Steps 4–5).`
 - **Option 3** — header `Push only`, label `Push the branch` — `Push the branch. No PR.`
 - **Option 4** — header `Nothing`, label `Leave it local` — `Keep the commit local. No push.`
 
-If `AskUserQuestion` is unavailable, ask the same as a 4-item numbered list
-and wait for the reply.
+Route via `issue-flow`:
 
-Route via `/issue-flow`:
-
-| Choice              | `/issue-flow` intent                                      |
+| Choice              | `issue-flow` intent                                       |
 | ------------------- | --------------------------------------------------------- |
 | PR + merge          | `"push, PR, and merge #<N>"` — Steps 4, 5, 6 in order     |
 | PR only             | `"push and open PR for #<N>"` — Steps 4 and 5             |
 | Push only           | `"push #<N>"` — Step 4                                    |
 | Nothing             | Stop — commit stays local                                 |
 
-Let `/issue-flow` handle the per-step AskUserQuestion it already owns (squash
+Let `issue-flow` handle the per-step questions it already owns (squash
 confirmation, reviewer selection, merge pre-checks). Do not duplicate those
 prompts here.
 
@@ -464,9 +488,9 @@ prompts here.
 
 Both PR endgames must end with a mergeability verdict, not just a PR URL:
 
-- **PR + merge** — `/issue-flow` Step 6 waits on CI and merges. Report the
+- **PR + merge** — `issue-flow` Step 6 waits on CI and merges. Report the
   merged state, or the specific failing check that blocked it.
-- **PR only** — `/issue-flow` Step 5 still verifies mergeability. Report the
+- **PR only** — `issue-flow` Step 5 still verifies mergeability. Report the
   `Mergeable:` line it produces. Do not watch CI for this path, but do not
   claim the PR is ready without that line either.
 
@@ -477,21 +501,22 @@ force-push, re-check, and report the resolved state.
 
 | Situation                                | Action                                                          |
 | ---------------------------------------- | --------------------------------------------------------------- |
-| `gh` not authenticated                   | Stop: `Run 'gh auth login' first.`                              |
+| `gh` not authenticated                   | `issue-flow` or `issue-analyze` reports it — stop, relay it      |
 | Not in a git repo                        | Stop: `Not inside a git repository.`                            |
-| Issue closed                             | Stop after Phase 1, print `/issue-analyze` status               |
+| Issue closed                             | Stop after Phase 1, print `issue-analyze` status                |
 | Open blocker                             | Stop after Phase 1 unless user explicitly says to proceed       |
 | Working tree dirty before Phase 2        | Stop: `Uncommitted changes on base branch — resolve first.`     |
 | Verification keeps failing               | Stop after 2 fix attempts in Phase 3/4, hand back to user       |
-| `/changes-review` unavailable            | Note it in the summary, skip Phase 4.5, continue to Phase 5     |
+| `changes-review` unavailable             | Note it in the summary, skip Phase 4.5, continue to Phase 5     |
 | Advisor fixes break verification twice   | Revert those fixes, list them as Notes, continue to Phase 5     |
 | Simplification breaks a check            | Revert it — behavior-preserving means the check should not move |
 | User picks `Stop` on any AskUserQuestion | Exit cleanly, leave local state as-is                           |
-| `AskUserQuestion` tool unavailable       | Use 2–4 item numbered list in chat, wait for user's number      |
+| Host has no structured-choice tool       | Numbered list in chat per **Asking the User**, wait for a number |
+| Host cannot chain skills                 | Use each call site's documented inline fallback                 |
 
 ## Scope
 
 This skill is for issues the user already decided are simple enough to
-delegate end-to-end. If `/issue-analyze` surfaces an epic, a multi-file
+delegate end-to-end. If `issue-analyze` surfaces an epic, a multi-file
 architecture decision, or a contract change, trigger the Phase 2 plan
 approval gate rather than attempting it silently.
