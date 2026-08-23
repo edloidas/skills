@@ -70,9 +70,9 @@
       "group": "review",
       "name": "edloidas-review",
       "displayName": "Edloidas Review",
-      "description": "A curated Codex-safe review bundle for change review, PR feedback triage, and post-change cleanup.",
-      "shortDescription": "Change review, PR feedback triage, and post-change cleanup.",
-      "longDescription": "Install the Codex-ready review bundle from edloidas/skills for adversarial change review, PR feedback triage, and post-implementation cleanup.",
+      "description": "A curated Codex-safe review bundle for change review, approach boards, PR feedback triage, and post-change cleanup.",
+      "shortDescription": "Change review, approach boards, PR feedback triage, and cleanup.",
+      "longDescription": "Install the Codex-ready review bundle from edloidas/skills for adversarial change review, approach boards for design decisions, PR feedback triage, and post-implementation cleanup.",
       "category": "Coding",
       "websiteURL": "https://github.com/edloidas/skills",
       "keywords": [
@@ -82,12 +82,15 @@
         "cleanup",
         "diff",
         "pull-request",
-        "feedback"
+        "feedback",
+        "approaches",
+        "decisions"
       ],
       "skills": [
         "review/skills/changes-review",
         "review/skills/code-cleanup",
-        "review/skills/pr-feedback"
+        "review/skills/pr-feedback",
+        "review/skills/consilium"
       ]
     },
     {

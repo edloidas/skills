@@ -257,8 +257,9 @@ implement and a branch was left open, say which one rather than filling it in si
   answer contains nothing to disagree with.
 - **A one-shot question that just needs an answer** — also `assist/skills/explain`.
 - **The user has already decided** — implement it.
-- **Several independent perspectives are wanted, not a dialogue** — `review:consilium` runs a panel;
-  this is one voice working the problem with the user in the loop.
+- **The question is which approach to take, and independent seats should rank the options** —
+  `review:consilium` runs a board that generates candidate approaches and attacks them
+  comparatively; this is one voice working the problem with the user in the loop.
 - **A second opinion from outside the session would settle it** — `assist/skills/outsider` in ask
   mode, passing `--host <the agent you are>` and a question file holding the point under discussion
   plus only the context needed to judge it. The responder sees nothing else.

@@ -87,6 +87,20 @@ and how to add an agent.
    bash <skill-dir>/scripts/run-outsider.sh ask --host claude <TMP>/outsider-<ID>-question.md
    ```
 
+### Custom preamble
+
+Both modes prepend a prompt file to whatever you pipe them — `references/prompt.md` for ask,
+`references/review-prompt.md` for review. A caller with its own prompt for the responder passes
+`--preamble <file>` to swap it:
+
+```bash
+bash <skill-dir>/scripts/run-outsider.sh ask --host claude \
+  --preamble <caller-skill-dir>/references/its-own-prompt.md <TMP>/outsider-<ID>-question.md
+```
+
+The preamble replaces the default entirely, so it has to carry the responder's whole brief —
+including its output shape. `review:consilium` uses this for its outside board seat.
+
 ## Review Mode
 
 Pick the scope first:
@@ -132,9 +146,6 @@ now handles that structurally, so there is nothing left to suppress.
 Other skills invoke this one as a skill, not by script path — a repo-relative path only resolves
 inside one checkout.
 
-`review/skills/consilium` still ships its own copy at
-`review/skills/consilium/scripts/run-codex.sh`. The decision is to move it
-onto this script; the script already accepts `--preamble <file>` to swap in a caller's own prompt,
-and stdout can be redirected to consilium's output file. The port is tracked in issue #30, not done
-here, because consilium's reviewer is a named board persona with its own prompt and session-keyed
-temp files, and rewiring it is not a rename.
+`review:consilium` runs its outside board seat through this skill, passing its own seat prompt as
+the preamble. That was the last duplicate runner in the collection; there is now one implementation
+of "call an agent CLI that is not the host".

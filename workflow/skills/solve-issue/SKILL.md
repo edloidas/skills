@@ -309,7 +309,8 @@ polish pass, not an optional extra.
 The review itself belongs to `changes-review`. This phase owns only what is
 workflow policy: freezing the diff, triaging findings, and deciding whether to
 run a second round. Do not duplicate the reviewer prompts here, and do not
-invoke `consilium` — this is deliberately lighter.
+invoke `consilium` — that board ranks candidate approaches to a problem and has
+nothing to say about whether a finished diff is correct.
 
 ### Freeze the diff first
 

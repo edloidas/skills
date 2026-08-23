@@ -173,6 +173,25 @@ strip_ansi() {
   sed -e 's/'$'\033''\[[0-9;?]*[a-zA-Z]//g'
 }
 
+# An explicit --preamble that does not resolve is a caller bug, and the expensive
+# kind: the agent would run with no brief and return something that reads like a
+# real answer. A missing default prompt file is only a degraded prompt, so it
+# stays a warning.
+check_preamble() {
+  local file="$1"
+  if [[ -f "$file" ]]; then return 0; fi
+  if [[ -n "$PREAMBLE" ]]; then
+    echo "Preamble file not found: $file"
+    echo "The preamble carries the responder's whole brief, including its output shape."
+    echo "Running without it would return an unbriefed answer, so this is a hard stop."
+    echo "Pass a path that resolves from the current directory ($PWD), or omit --preamble"
+    echo "to use the default prompt."
+    return 1
+  fi
+  echo "[outsider] default prompt file missing ($file) — sending the input unframed."
+  return 0
+}
+
 run_agent() {
   local agent="$1" timeout_s="$2" raw rc=0
   raw="$TMP_ROOT/outsider-$agent-$$.raw"
@@ -270,6 +289,7 @@ fi
 case "$MODE" in
   ask)
     PROMPT_FILE="${PREAMBLE:-$SCRIPT_DIR/../references/prompt.md}"
+    if ! check_preamble "$PROMPT_FILE"; then exit 0; fi
     PROMPT=""
     if [[ -f "$PROMPT_FILE" ]]; then
       PROMPT="$(cat "$PROMPT_FILE")"$'\n'
@@ -290,6 +310,7 @@ case "$MODE" in
       exit 0
     fi
     PROMPT_FILE="${PREAMBLE:-$SCRIPT_DIR/../references/review-prompt.md}"
+    if ! check_preamble "$PROMPT_FILE"; then exit 0; fi
     PROMPT=""
     if [[ -f "$PROMPT_FILE" ]]; then
       PROMPT="$(cat "$PROMPT_FILE")"$'\n'
