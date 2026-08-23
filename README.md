@@ -250,8 +250,10 @@ Code review, cleanup, approach boards, and quality improvement skills.
 `changes-review` attacks a diff — parallel reviewers on different models, each blind to the
 implementer's reasoning, then a verification round that re-attacks the findings before you see
 them. It finds and never fixes; it posts only when asked, and then a finding reaches the author only
-if it can be demonstrated and attributed to the branch rather than to the base. Every phase is
-configurable, so `pr-feedback` and `solve-issue` drive the same primitive. Conventions and comment noise are `code-cleanup`'s job.
+if it can be demonstrated and attributed to the branch rather than to the base. Publication takes the
+shape the pull request allows — one issue comment on your own branch, a real review with per-line
+comments and a verdict on someone else's. Every phase is configurable, so `pr-feedback` and
+`solve-issue` drive the same primitive. Conventions and comment noise are `code-cleanup`'s job.
 When the diff touches a stack one of the audit skills knows deeply, `changes-review` also loads it as
 a lens — `react-audit` for React files, `three-audit` for Three.js and R3F — so a general reviewer
 does not have to carry a stack-specific failure catalog. Both stay directly invocable on their own.
@@ -265,7 +267,7 @@ decisions that are expensive to reverse.
 
 | Skill | Description | Agent |
 | ----- | ----------- | ----- |
-| [changes-review](./review/skills/changes-review/) | Parallel cold reviewers that hunt bugs and requirement gaps, verify them, and optionally publish the review to the author — finds, never fixes | All |
+| [changes-review](./review/skills/changes-review/) | Parallel cold reviewers that hunt bugs and requirement gaps, verify them, and optionally publish as a comment or a full review — finds, never fixes | All |
 | [code-cleanup](./review/skills/code-cleanup/) | Trim AI comment noise, apply project conventions, simplify correct code | All |
 | [consilium](./review/skills/consilium/) | Approach board — generate candidate approaches, attack them comparatively, recommend one | All |
 | [pr-feedback](./review/skills/pr-feedback/) | Analyze PR review comments — triage into fix/skip with reasoning | All |

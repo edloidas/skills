@@ -1,7 +1,8 @@
 # Where the rules in this skill come from
 
-Three runs of this skill were followed to an outcome — a maintainer's commits in the first, a
-browser-checkable result in the second, a published comment and the author's response in the third.
+Four runs of this skill were followed to an outcome — a maintainer's commits in the first, a
+browser-checkable result in the second, a published comment and the author's response in the third,
+and the second run published as a review on someone else's branch in the fourth.
 Every rule in `SKILL.md` that looks arbitrary is here with the observation that produced it. Read
 this when deciding whether to change one of them.
 
@@ -87,6 +88,36 @@ published 4.
 - The published comment ran four sections and roughly 900 words for a 145-line diff — the observation
   behind the per-kind length budget, since nothing in the rules capped it.
 
+## Run 4 — run 2, published as a review
+
+The same shadow-DOM pull request as run 2, on a colleague's branch rather than the reviewer's own, so
+publication was a GitHub review rather than an issue comment. Run 2's 14 merged findings went out as
+**8 inline comments plus a body**, verdict `REQUEST_CHANGES`.
+
+- **14 findings became 8 comments.** Three minors were grouped into a single comment opening `Three
+  small ones, grouped.` A reader counts comments, and the grouping is what kept the review readable.
+- Every comment was anchored to the line its finding was about, across six different files. None was
+  parked on a convenient nearby line.
+- **The body repeated no finding text.** It carried standing, the grouping, the exclusion, and the
+  blockers — nothing else. Every measurement and reproduction lived in the inline comment it belonged
+  to.
+- Standing named the **method**, not the effort: *"reading computed styles rather than class names"*.
+  That clause is the reason the rest is believable.
+- It conceded first, at length — the portal plumbing, the theme class, the scroll fix all confirmed
+  working — before any defect appeared.
+- It stated what it deliberately excluded and why: the run started on an earlier commit, so the
+  reverted `.light` token selector was out of scope and said so.
+- **Two findings were named as blocking, in prose, in the body** — which is where severity survived
+  once the labels were gone. The API verdict said the same thing a second time.
+- Findings that were scope gaps quoted the issue with `>` blockquotes rather than paraphrasing what
+  it asked for.
+- One finding explicitly refused to argue against the change it was about: *"this is not an argument
+  against the change, only the other half of it."*
+- One handed the decision over outright: *"this second one is arguably the embedder's problem rather
+  than the library's, so I will leave the call with you."*
+- The target repo prescribes a `<sub>*Drafted with AI assistance*</sub>` footer and it was applied —
+  the case that proves the footer cannot be hardcoded, since this repository forbids that exact line.
+
 ## Which rule each observation justifies
 
 | Rule in `SKILL.md` | Evidence |
@@ -113,3 +144,10 @@ published 4.
 | Withdraw the review's own errors in the published text | Run 3: both rounds withdrew explicitly, and the concession is what made the rest credible |
 | Per-kind length budget, four sections maximum | Run 3: four sections and ~900 words for a 145-line diff, with no rule capping it |
 | A clean run is one closing paragraph, never a section list | Runs 2 and 3: the "checked and clear" section drew no response either time |
+| One inline comment per finding, minors grouped into one | Run 4: 14 findings published as 8 comments, and the grouping is what kept it readable |
+| The review body is a map, not a summary | Run 4: the body repeated no finding text; every measurement stayed on the line it belonged to |
+| The verdict follows from whether a blocker survived | Run 4: two findings named as blocking in prose, `REQUEST_CHANGES` saying it again |
+| Standing names the method, not the effort | Run 4: "reading computed styles rather than class names" is why the rest was believable |
+| Say what was deliberately excluded | Run 4: the run started on an earlier commit, and the reverted selector was called out as out of scope |
+| Never anchor a finding to a convenient nearby line | Run 4: eight comments across six files, each on its own finding's line |
+| The attribution footer cannot be hardcoded | Run 4: the target repo prescribes the exact footer this repository forbids |

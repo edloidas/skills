@@ -6,13 +6,14 @@ description: >
   blind to the issue, one hunts requirement gaps against the issue text, one runs outside the
   process entirely. Optionally re-attacks its own findings before reporting, then synthesizes what
   is left. Returns findings and changes nothing — no tooling, no autofix, no edits. On request it
-  also publishes the review as a comment written to the author, gated on demonstrated evidence.
+  also publishes to the author, as an issue comment on your own pull request or as a real review with
+  inline comments and a verdict on someone else's, gated on demonstrated evidence.
   Use before committing, when you want a change attacked rather than assessed, or as the find step
   behind a fix pass or a PR review skill. Every phase is configurable by the caller.
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
 allowed-tools: Bash(git:*) Bash(gh:*) Read Glob Grep Task Skill
-argument-hint: "[--base <branch> | --uncommitted | --commit <sha>] [--issue <N>] [--mode <simple|standard|deep>] [--no-external] [--no-lens] [--comment]"
+argument-hint: "[--base <branch> | --uncommitted | --commit <sha>] [--issue <N>] [--mode <simple|standard|deep>] [--no-external] [--no-lens] [--comment | --review]"
 metadata:
   author: edloidas
 ---
@@ -52,7 +53,7 @@ convention drift belong to a cleanup pass, and this skill will not report them.
 | Mode | `--mode <simple\|standard\|deep>` | `standard` for `--base`, `simple` for a single commit or an uncommitted diff |
 | External reviewer | `--no-external` | On whenever a third-party CLI is available |
 | Stack lenses | `--no-lens` | On whenever the diff matches a lens (Phase 3) |
-| Publication | `--comment` | Off — report to the caller and stop (Phase 8) |
+| Publication | `--comment` / `--review` | Off — report to the caller and stop (Phase 8) |
 
 **Mode is the one dial.** It sets how many reviewers run and how hard the findings get verified,
 because those two scale together — there is no useful run with four reviewers and no verification.
@@ -401,14 +402,22 @@ One report serves every caller. A caller wanting something shorter condenses wha
 Then stop. Do not fix, do not offer to fix, and do not start a second round. Round policy and
 triage belong to the caller. Publish only if the caller asked — Phase 8.
 
-## Phase 8: Publish (on `--comment` only)
+## Phase 8: Publish (on `--comment` or `--review`)
 
-Off by default. The report above is the deliverable; this phase turns it into a comment addressed to
-the person who wrote the code. Those are different artifacts with an inverted rule. The report is
-unjudged on purpose; a published comment must be judged, because unjudged output costs its reader
-their time.
+Off by default. The report above is the deliverable; this phase turns it into correspondence
+addressed to the person who wrote the code. Those are different artifacts with an inverted rule. The
+report is unjudged on purpose; published text must be judged, because unjudged output costs its
+reader their time.
 
-Read `references/publishing-a-review.md` before composing. Four steps, in order:
+**Two shapes, and whose branch it is decides.** On your own pull request GitHub refuses a review, so
+publication is a single issue comment — `--comment`. On someone else's it is a real review —
+`--review`: one inline comment per finding anchored to the line it concerns, minors grouped into one,
+anything that fits no line in the review body, and a verdict. When the caller names neither shape,
+resolve authorship with `gh pr view --json author` against `gh api user --jq .login` and take the one
+that fits.
+
+Read `references/publishing-a-review.md` before composing. It owns the composition rules, the length
+budget, the anchoring mechanics and the verdict mapping. Five steps, in order:
 
 1. **Verify** — already done, in Phase 5. A finding that phase killed is never published, and one it
    could not demonstrate does not get a section.
@@ -416,23 +425,25 @@ Read `references/publishing-a-review.md` before composing. Four steps, in order:
    this branch introduced the blamed code. Reclassify it as pre-existing, or narrow the claim to the
    part that is new. Reviewers are blind to the base, so this is the first point it can happen.
 3. **Compose** — one section per cause, ordered by what the author should act on first, following the
-   composition rules and the length budget in the reference.
+   composition rules and the length budget in the reference. In review shape each section becomes an
+   inline comment, and the lead and closing paragraphs become the review body.
 4. **Gate** — refuse any section lacking a demonstration or an attribution, and refuse a fifth
    section: more than four means clustering failed. Unverified residue gets one flagged sentence in
    the closing paragraph, never a section.
-5. **Confirm, then post.** Show the composed comment and ask before it goes anywhere. `--comment`
-   authorizes the phase, not the text: this is outward-facing correspondence published under the
-   user's account, and they have to see it first. Offer post as written / edit first / discard, with
-   post as written recommended. Where the host has no structured prompt, ask the same thing in chat
-   as a short numbered list and wait for a reply. A caller running unattended does not get to skip
-   this — it prints the comment and stops.
+5. **Confirm, then post.** Show the composed text — in review shape every inline comment, the body,
+   and the verdict — and ask before any of it goes anywhere. The flag authorizes the phase, not the
+   words: this is outward-facing correspondence published under the user's account, and an approving
+   verdict is the one output that cannot be walked back gracefully. Offer post as written / edit
+   first / discard, with post as written recommended. Where the host has no structured prompt, ask
+   the same thing in chat as a short numbered list and wait for a reply. A caller running unattended
+   does not get to skip this — it prints everything and stops.
 
 **The mandate here inverts Phase 6's.** There you do not soften a claim you kept; here you drop,
 narrow and re-attribute before you speak. Both are right for their own audience.
 
-Attribution policy, the length budget, and where to post are all in the reference — it resolves the
-**target** repo's instruction file rather than hardcoding a footer. A clean run still publishes, as
-one short paragraph.
+The attribution footer resolves from the **target** repo's instruction file rather than being
+hardcoded. A clean run still publishes: one short paragraph, and in review shape an approving
+verdict.
 
 ## Rules
 
@@ -464,5 +475,8 @@ one short paragraph.
 | A native reviewer returns nothing usable | Report the remaining reviewers, name the gap |
 | Every reviewer fails | Say so plainly. Do not substitute your own review — that is the one thing this skill exists to avoid |
 | `--comment` and every finding fails the gate | Publish the clean-run paragraph, and tell the caller which findings were withheld and why |
-| `--comment` but no PR resolves for the branch | Print the composed comment instead of posting, and say no PR was found |
-| `--comment` and the user declines or does not answer | Print the comment, post nothing. A declined publication is a normal outcome, not a failed run |
+| `--comment` or `--review` but no PR resolves for the branch | Print the composed text instead of posting, and say no PR was found |
+| The user declines or does not answer | Print everything, post nothing. A declined publication is a normal outcome, not a failed run |
+| `--review` on a pull request the user authored | GitHub refuses it. Fall back to the issue-comment shape and say why |
+| A finding's line is outside the diff | Move it to the review body. Never anchor it to a nearby line the API happens to accept |
+| No write access to the target repository | Print everything and say it cannot post. `viewerCanUpdate` answers this before the attempt |

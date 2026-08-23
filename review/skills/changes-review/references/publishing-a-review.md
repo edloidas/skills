@@ -133,6 +133,97 @@ that posted them. The rules above are all about **substance** — demonstration,
 withdrawal, open decision — and those transfer to anyone. Cadence does not, so do not prescribe it
 beyond *write plainly and lead with the point*, which `write:markdown-writing` already says.
 
+## Publishing as a review (someone else's pull request)
+
+On a branch you did not author, publication is a GitHub review rather than one comment: the findings
+sit next to the code and the whole thing carries a verdict. Everything above still applies — the
+gate, the attribution, the length budget. Only the container changes.
+
+**One inline comment per finding**, anchored to the line it concerns. Minors do not each get one:
+group them into a single comment anchored at the first of them, and open it by saying so — `Three
+small ones, grouped.` A reader counts comments, and eight reads as a review where fifteen reads as a
+wall.
+
+**Anchoring is constrained by the diff.** A comment can only sit on a line the pull request touches.
+Use `side: RIGHT` for added or changed lines, `side: LEFT` for a claim about a line the branch
+removed. When a finding's line falls outside the diff — a consequence in a file the branch never
+touched — it belongs in the body. Never anchor it to the nearest line the API happens to accept:
+that sends the reader to code that is not the problem.
+
+**The body is not a summary of the inline comments** and never repeats a finding's text. It carries
+only what the whole review can say:
+
+- what was run, and what held up — the standing paragraph, same rule as above
+- how the findings group, in a sentence or two
+- what was deliberately excluded, and why
+- which ones you would not merge without
+- the closing paragraph, with unverified residue and the tooling result
+
+**The verdict follows from what survived**, never from how many findings there are:
+
+| What survived | Event |
+| ------------- | ----- |
+| At least one finding you would not merge without | `REQUEST_CHANGES` |
+| Findings, but every one a judgement call | `COMMENT` |
+| Nothing | `APPROVE` |
+
+`COMMENT` is the honest verdict for a review that found real things, none of them blocking. Do not
+reach for `REQUEST_CHANGES` to signal effort, and do not `APPROVE` around an open question — the
+middle option exists for exactly that.
+
+Check `viewerCanUpdate` before composing something you cannot submit. Build the payload as JSON and
+submit once, so the comments and the verdict land together rather than as a trickle of notifications:
+
+```bash
+gh api repos/<owner>/<repo>/pulls/<N>/reviews --input review.json
+```
+
+```json
+{
+  "event": "REQUEST_CHANGES",
+  "body": "<the review body>",
+  "comments": [
+    { "path": "src/components/app-root/app-root.tsx", "line": 71, "side": "RIGHT", "body": "<finding>" }
+  ]
+}
+```
+
+### The body that shipped, annotated
+
+From calibration run 4 — eight inline comments, `REQUEST_CHANGES`, abridged here:
+
+````markdown
+I pulled the branch and worked through the AppRoot story in Storybook, reading computed styles
+rather than class names. The core of this holds up. The portal plumbing resolves the way the prop
+doc describes, the theme class lands inside the root so `dark:` utilities actually match, and the
+scroll fix is doing real work — I confirmed a scroll inside the root is invisible to
+`window.addEventListener('scroll', fn, true)` and visible to the same listener on the root.
+
+What I found falls into two groups. Three are shadow-root behaviours the code gets wrong or does
+not cover, and I could reproduce each one. The rest are scope questions against the issue — things
+it asks for that are not here, and things here it did not ask for.
+
+I started on the earlier commit and re-read everything against the current head first, so this
+excludes the `.light` token selector — reverting that and making `theme='light'` emit nothing is the
+right call, and one consequence of it is in the grouped comment at the end.
+
+One comment per finding, next to the code it concerns, with the small ones grouped at the end. The
+two I would not merge without are the stylesheet situation on `AppRoot` and the portal layer's
+containing block. Both are reproducible, and both land on the acceptance case the issue names.
+````
+
+| Part | Why it is there |
+| ---- | --------------- |
+| "I pulled the branch and worked through the AppRoot story… reading computed styles rather than class names" | Standing, earned in the first clause. It names the method, and the method is the reason to believe the rest |
+| "The core of this holds up… the scroll fix is doing real work" | What works, before what does not. A review that concedes first is answerable; one that opens on defects is a list of accusations |
+| "What I found falls into two groups" | The shape, so a reader knows what is coming before they meet it |
+| "so this excludes the `.light` token selector" | What was deliberately left out and why. Without it, a re-review reads as having missed something |
+| "One comment per finding, next to the code it concerns" | Tells the reader where the rest of the review is. The body is a map, not a summary |
+| "The two I would not merge without are…" | The verdict, in prose, before the API's verdict says the same thing. This is where severity survives |
+
+Nothing in that body restates a finding. Every claim, measurement and reproduction lives in the
+inline comment on the line it belongs to.
+
 ## A clean run
 
 A review that found nothing still publishes, in one short paragraph: what was run, what held up, and
