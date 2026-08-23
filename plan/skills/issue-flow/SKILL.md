@@ -494,9 +494,44 @@ No `wip:` subject may survive into the final history.
 
 ### Body
 
-Invoke the `commit-summary` skill to generate the commit body. If the host cannot invoke another skill, or `commit-summary` is not installed, generate the body inline: past-tense summary, one line per logical change, 2-6 lines, backticks for code references.
+Invoke the `commit-summary` skill to generate the commit body. It weighs the change and
+either derives a body from the code — what the running code does that forced the change,
+which call paths reach it, what breaks on update, when it broke, what was deliberately left
+alone — or returns two to three lines for a mechanical or generated change.
 
-When the caller supplies design rationale pulled out of source comments (the `code-cleanup` skill produces this), append it to the body — that text is the reason the comment pass could delete it.
+If the host cannot invoke another skill, or `commit-summary` is not installed, do the same
+inline. Derive when the change alters behaviour, a contract, a public type, or a default, or
+fixes a defect; otherwise write two or three past-tense lines and stop. To derive, answer in
+blank-line-separated paragraphs wrapped at 80, skipping any question with no real answer:
+what the running code does that forces the change (read the implementation, not the diff
+again), which call paths reach it and which are ruled out, how it failed observably, what
+breaks for someone who updates and why it is still correct, when it broke
+(`git log -S '<removed expression>' -- <path>`, `git blame`), what the tests pin, and what
+was noticed and deliberately not fixed. A hash appears only if a command returned it in this
+session; no result means the paragraph is dropped, not softened.
+
+When the caller supplies design rationale pulled out of source comments (the `code-cleanup`
+skill produces this), it answers the first question — fold it into that paragraph. It is not
+a block to append at the end of the body.
+
+### No attribution
+
+This step runs the `git commit`, so it is the last place an attribution footer can be caught.
+Read the assembled message before committing and **remove** any of these, wherever they came
+from — a body another skill returned, text a caller passed in, a message being amended:
+
+- "Drafted with AI", "Generated with", or any line naming a model, an assistant, or a tool
+- a session, chat, or transcript link
+- a `<sub>` attribution line, a trailing `---` rule, a badge, or a promotional line
+- a `Co-Authored-By` trailer crediting an assistant
+
+Do not add one either, and **do not copy one forward from the previous commit.** A trailer
+already in the log is not licence to repeat it; mirroring the last commit's footer is how one
+reproduces itself indefinitely.
+
+A trailer crediting a *human* is fine where the repo's convention asks for one. The only
+exception is an explicit request — the repo's instruction file, the user's configuration, or
+the user's prompt asking for attribution outright. Finding one in `git log` is not that.
 
 ### Consolidate
 
@@ -862,7 +897,7 @@ Print the Step 6 merged report.
 
 ## Integration
 
-- For commit message body → invoke the `commit-summary` skill; fall back to inline if the host cannot chain skills
+- For commit message body → invoke the `commit-summary` skill; fall back to the inline derivation in **Step 3 → Body** if the host cannot chain skills
 - For project token setup → see `references/project-integration.md`
 - For report templates → see `references/report-format.md`
 - For sub-issues and blocked-by relationships → see `references/github-relationships.md`

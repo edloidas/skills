@@ -401,7 +401,10 @@ simplification opportunity belongs to Phase 4.5, where it was reviewed. If
 `code-cleanup` reports suggested refactors, carry them into the Phase 6
 summary as Notes; do not apply them here.
 
-Feed its **Suggested for commit message** section into the commit body below.
+Its **Suggested for commit message** section is an *input* to the commit body — it
+answers why the code is built the way it is, which is the first thing the body has
+to establish. Pass it along under Commit below; `issue-flow` folds it into that
+paragraph rather than tacking it on at the end.
 
 If `code-cleanup` is not installed, do the comment pass inline: delete comments
 that narrate what the code already says, keep non-obvious gotchas at one to two
@@ -434,7 +437,8 @@ Pass along, as context for the commit body:
 
 - The issue title and number, so the subject can be built.
 - The design rationale `code-cleanup` pulled out of the source, if it produced
-  any — that text is why the comment pass could delete it.
+  any — that text is why the comment pass could delete it, and it answers the
+  body's first question. It is not a block to append at the end.
 
 Capture the short SHA and subject from Step 3's report for the Phase 6 summary.
 If Step 3 comes back with a dirty tree or more than one commit, that is a

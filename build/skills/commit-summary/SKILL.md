@@ -1,107 +1,136 @@
 ---
 name: commit-summary
-description: Generate commit message body summaries from git changes. Produces technical, past-tense descriptions formatted as one-line-per-change. Use when the user asks for a commit summary, commit message body, or change description — not for full commit creation.
+description: >
+  Write a commit message body by deriving it from the code, not by summarizing
+  the diff. Weighs the change, then either answers seven questions against the
+  implementation — what forces the change, which call paths reach it, how it
+  failed, what breaks on update, when it broke, what the tests pin, what was
+  deliberately left alone — or produces a two-to-three-line body for mechanical
+  and generated changes. Use when the user asks for a commit body, commit
+  summary, or change description, and when another skill needs a body composed.
+  Not for full commit creation.
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
-allowed-tools: Read Bash(git status:*) Bash(git diff:*) Bash(git log:*) Bash(git show:*)
+allowed-tools: Read Grep Bash(git status:*) Bash(git diff:*) Bash(git log:*) Bash(git show:*) Bash(git blame:*)
 argument-hint: "['staged only', instructions, or empty]"
 ---
 
-# Git Commit Message Summary Generator
+# Commit body writer
 
-## Commands
+Produce the part of a commit message that is **not recoverable from the diff**.
+Whoever reads the commit later already has the diff; what they do not have is what
+the running code does that forced the change, which call reaches the broken path,
+what breaks for someone who updates, when the defect was introduced, and what was
+noticed and deliberately left alone.
 
-| Command | Description |
-|---------|-------------|
-| `/commit-summary` | Analyze all changes (staged + unstaged) |
-| `/commit-summary staged only` | Only staged changes |
-| `/commit-summary [custom]` | Follow custom instructions |
+Output the body text only — no subject line, no preamble, no commentary. The caller
+owns the subject.
 
-## Workflow
+## Arguments
 
-### Step 1: Analyze Changes
+| Argument | Behavior |
+| --- | --- |
+| (empty) | Analyze staged + unstaged changes |
+| `staged only` | Analyze the index only |
+| a commit ref | Analyze that commit |
+| anything else | Treat as additional instructions or context |
+
+## Step 1: See the change
 
 ```bash
-git status
+git status --short
 git diff
 git diff --cached
 ```
 
-### Step 2: Generate Summary
+Read the actual hunks, not just the stat. You need the semantics of the edit to
+weigh it.
 
-Apply the output format rules below.
+## Step 2: Weigh the change
 
-## Output Format Rules
+**Derive** (Step 3) when the change alters behaviour, a contract, a public type, or
+a default, or when it fixes a defect.
 
-1. Each change on a NEW LINE — one sentence per line, ending with a period
-2. NO blank lines between regular lines (only before footer)
-3. Start immediately — no preamble or explanatory text
-4. 2-6 lines total for body
-5. Use backticks for code: `ClassName`, `functionName()`
-6. No bullet points (`-` or `*`), no paragraphs
+**Report** (Step 4) when the change is mechanical (a rename, a mass import rewrite,
+a formatting pass), generated (lockfiles, build output, snapshots, regenerated
+trees), or purely additive scaffolding with no behaviour to describe.
 
-**Correct:**
-```
-Implemented `Toolbar` component with ARIA-compliant keyboard navigation using roving tabindex.
-Added `ToggleGroup` subcomponent supporting single/multiple selection with `value`/`onValueChange` API.
-Refactored selection logic in `ToggleGroup` to eliminate redundant state management.
-Created Storybook stories demonstrating toolbar patterns with separators and disabled items.
-```
+Weight decides, not diff size. A one-line semantic fix derives. A rename across 30
+files is one fact and reports.
 
-**Incorrect:**
-- Everything in one paragraph
-- Using bullet points (`-` or `*`)
-- Text continuing on next line without sentence structure
+A mixed change is weighed on its heaviest part: derive for the behaviour change,
+and give the mechanical remainder one line.
 
-## Writing Style
+## Step 3: Derive
 
-**Tense:** Past participle (elliptical past tense)
-- "Implemented `useKeyboard` hook"
-- "Refactored `Button` to accept `asChild` prop"
-- NOT: "Implement hook" or "Implementing hook"
+Read `references/commit-body.md` and follow it. It carries the seven questions, the
+table of which code is authoritative for each kind of change, the evidence rules,
+the writing rules, and three worked bodies.
 
-**Depth:** Technical and specific
-- "Refactored `ToggleGroup` to use single `value` prop instead of separate `singleValue`/`multipleValue`"
-- NOT: "Refactored ToggleGroup component" (too vague)
+Three things from it that decide whether the output is worth its cost:
 
-**Focus:** HOW and WHY — mention approach/pattern used, explain benefit when non-obvious
+- **Answer against the code**, not the diff. Open the implementation behind the
+  declaration, the client behind the handler, the changelog behind the bump.
+- **Skip any question with no real answer.** Three honest paragraphs beat seven
+  padded ones. Padding is the failure mode of this skill.
+- **Never invent provenance.** A hash appears only if a command returned it in this
+  session; an enumerated call path is traced in the source or reproduced. No result
+  means the paragraph is dropped, not softened.
+- **Plain words, short sentences**, in the register of the `explain` skill: trace the
+  mechanism on real symbols instead of characterising it. Each paragraph opens on a
+  past-tense verb, and the sentence after it is the reason, stated as behaviour.
 
-**Grouping:** Group related changes (component + tests + stories → one line). Order by importance: main feature first, supporting second, cleanup last. Avoid obvious statements like "Added new file" — describe what was implemented.
+When the caller hands over design rationale pulled out of source comments — a
+cleanup pass reporting "Suggested for commit message" — that text answers *why the
+code is built this way*. Fold it into the first paragraph. Do not append it as a
+block at the end.
 
-## Preferred Verbs
+Output paragraphs, blank-line separated, wrapped at 80.
 
-| Verb | Use for |
-|------|---------|
-| Implemented | New complex features/patterns |
-| Added | New functionality, components |
-| Refactored | Code restructuring |
-| Updated | Modified existing behavior |
-| Removed | Deleted code/functionality |
-| Fixed | Bug fixes |
-| Integrated | Connected systems |
-| Extracted | Separated into reusable pieces |
+## Step 4: Report
 
-## Footer (Optional)
-
-Add only if needed:
-- Issue references: `Fixes #123` or `Resolves #456`
-- Breaking changes: `BREAKING CHANGE: Removed legacyMode prop`
-- Co-authors: `Co-authored-by: Name <email>`
-
-## Examples
+For mechanical and generated changes, one sentence per line, two or three lines,
+past tense, no blank lines, no bullets:
 
 ```
-Implemented `DatePicker` component with keyboard navigation and locale support.
-Added `useDateRange` hook for managing start/end date state with validation.
-Integrated with `Popover` component for consistent dropdown positioning.
-Created comprehensive Storybook stories covering all date selection patterns.
+Renamed `useToggle` to `useToggleGroup` across 31 call sites.
+Regenerated the Codex wrapper symlink trees.
 ```
 
-```
-Fixed focus trap in `Dialog` not releasing when closed via Escape key.
-Updated `useKeyDown` hook to properly cleanup event listeners on unmount.
-```
+Name what a reader cannot see from the file list — the count, the mechanism, the
+tool that generated it. Do not invent a rationale paragraph for a change that has
+none.
 
-## Keywords
+## Repo conventions win
 
-commit, message, summary, git, conventional, changelog
+Check the project's `CLAUDE.md`, `AGENTS.md`, or `CONTRIBUTING.md` for commit
+conventions. A house style that caps body width, forbids paragraphs, prescribes a
+template, or requires another language overrides both formats above. Answer as many
+questions as it has room for, in order, and drop the rest.
+
+## Footer
+
+Add only when it applies, after a blank line:
+
+- `Fixes #123` / `Resolves #456`
+- `BREAKING CHANGE: <what changed>`
+- `Co-authored-by: <a human's name> <email>`
+
+## No attribution
+
+The body ends on its last paragraph. Emit no "Drafted with AI" or "Generated with"
+line, no session or transcript link, no `<sub>` line, no `---` rule, no badge, and no
+`Co-Authored-By` trailer crediting an assistant. Never copy one forward from an
+existing message — a trailer already in the log is not licence to repeat it.
+
+This skill returns text and never runs `git commit`, so it cannot be the only guard.
+The skill that assembles the final message strips these on the way to the commit —
+see `build:commit` step 5 and `issue-flow` Step 3.
+
+## Out of scope
+
+- Subject lines, conventional-commit types, and issue-number suffixes.
+- Running `git commit`. This skill returns text.
+- Splitting a change into multiple commits. Question 7 makes the seam visible; the
+  caller decides what to do about it.
+- PR bodies and release notes. Different audience, different contract.

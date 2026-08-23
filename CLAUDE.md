@@ -4,7 +4,7 @@ A collection of Claude Code and other agents skills following the [Agent Skills 
 
 **Never commit or push changes unless explicitly asked.** Never commit directly to the main branch unless explicitly asked.
 
-**No AI footers:** Do not add "Drafted with AI assistance", Claude Code session links, `<sub>` attribution lines, or anything similar to issue or PR bodies.
+**No AI footers:** Do not add "Drafted with AI assistance", Claude Code session links, `<sub>` attribution lines, or anything similar to commit messages, issue bodies, or PR bodies. No `Co-Authored-By` trailer crediting an assistant either, and an existing one in git history is not licence to repeat it. Add attribution only when this file, the user's own instructions, or the user's prompt asks for it.
 
 ## Canonical Repo Instructions
 

@@ -240,7 +240,7 @@ Conflict resolution, commit summaries, quick commits, and findings fixes.
 | ----- | ----------- | ----- |
 | [resolve-conflicts](./build/skills/resolve-conflicts/) | Semi-automatic merge and rebase conflict resolution | All |
 | [commit](./build/skills/commit/) | Fast staged-or-scoped commit with conventional message | All |
-| [commit-summary](./build/skills/commit-summary/) | Generate formatted Git commit message summaries | All |
+| [commit-summary](./build/skills/commit-summary/) | Derive a commit message body from the code behind the change | All |
 | [fix-and-reverify](./build/skills/fix-and-reverify/) | Fix review findings in rounds, re-reviewing each fix | All |
 
 ### Review
