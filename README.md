@@ -309,7 +309,7 @@ External opinion, assistance, and plain restatement tools.
 | [discuss](./assist/skills/discuss/) | Talk a design through — investigate, take a position, push back; never writes | All |
 | [handoff](./assist/skills/handoff/) | Compact the session into a handoff — inline text or per-project doc file | All |
 | [outsider](./assist/skills/outsider/) | Quick opinion or review from an agent CLI outside this session | All |
-| [bro](./assist/skills/bro/) | Say the last message again, straight — bottom line, what matters, next steps | All |
+| [bro](./assist/skills/bro/) | Say the last message again, straight — shorter, plainer, decision last | All |
 
 `outsider` shells out to whichever agent CLI is installed and is *not* the one running it — Codex
 from Claude Code, Claude from Codex, and so on. It ships everywhere because the host is excluded at
