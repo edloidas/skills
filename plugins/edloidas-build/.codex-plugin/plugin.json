@@ -1,6 +1,6 @@
 {
   "name": "edloidas-build",
-  "version": "4.5.2",
+  "version": "5.0.0",
   "description": "A Codex-safe build bundle for merge-conflict resolution, commit creation, and findings triage.",
   "author": {
     "name": "Mikita Taukachou",

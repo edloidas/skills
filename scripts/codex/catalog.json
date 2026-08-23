@@ -1,5 +1,5 @@
 {
-  "version": "4.5.2",
+  "version": "5.0.0",
   "marketplace": {
     "name": "edloidas-skills",
     "displayName": "Edloidas Skills"
@@ -249,7 +249,7 @@
       "displayName": "Edloidas Workflow",
       "description": "A Codex-safe end-to-end workflow bundle that takes a GitHub issue from analysis to merged.",
       "shortDescription": "End-to-end issue workflow in one command.",
-      "longDescription": "Install the workflow bundle from edloidas/skills to take a GitHub issue end to end from Codex \u2014 analyze, plan, implement, verify, adversarially review, clean up, commit, and ship.",
+      "longDescription": "Install the workflow bundle from edloidas/skills to take a GitHub issue end to end from Codex — analyze, plan, implement, verify, adversarially review, clean up, commit, and ship.",
       "category": "Coding",
       "websiteURL": "https://github.com/edloidas/skills",
       "keywords": [

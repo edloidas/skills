@@ -1,6 +1,6 @@
 {
   "name": "edloidas-review",
-  "version": "4.5.2",
+  "version": "5.0.0",
   "description": "A curated Codex-safe review bundle for change review, approach boards, PR feedback triage, and post-change cleanup.",
   "author": {
     "name": "Mikita Taukachou",
