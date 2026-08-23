@@ -19,9 +19,25 @@ if ! command -v jq &> /dev/null; then
 fi
 
 # Get the last version tag
-LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+# `--match` restricts the baseline to version tags. Without it,
+# `git describe --tags --abbrev=0` returns the nearest reachable tag of ANY kind,
+# so a scratch tag or a vendor marker becomes the release baseline and every
+# count, stat, and recommendation below is measured from the wrong place.
+LAST_TAG=$(git describe --tags --abbrev=0 --match 'v[0-9]*' 2>/dev/null || echo "")
 
 if [[ -z "$LAST_TAG" ]]; then
+  # `describe` only reports tags reachable from HEAD. Version tags that exist but
+  # are not ancestors mean this branch forked before the last release, which is a
+  # completely different bump decision from a first release — and announcing
+  # "first release" on a v4.x repo is a confidently wrong answer a human acts on.
+  if [[ -n "$(git tag --list 'v[0-9]*')" ]]; then
+    NEWEST_TAG=$(git tag --list 'v[0-9]*' --sort=-v:refname 2>/dev/null | head -n 1)
+    echo "ERROR: version tags exist, but none is reachable from HEAD"
+    echo "       Newest overall: ${NEWEST_TAG:-unknown}"
+    echo "       This branch forked before the last release. Analyze from a branch"
+    echo "       that includes it, or rebase onto the release line first."
+    exit 1
+  fi
   echo "INFO: No previous release tags found (first release)"
   CURRENT_VERSION=$(jq -r '.version' ./package.json 2>/dev/null || echo "unknown")
   echo "Current version: $CURRENT_VERSION"
@@ -38,7 +54,7 @@ echo "Current version: $CURRENT_VERSION"
 echo "Last release tag: $LAST_TAG"
 
 # Count commits since last tag
-COMMIT_COUNT=$(git rev-list $LAST_TAG..HEAD --count)
+COMMIT_COUNT=$(git rev-list "$LAST_TAG"..HEAD --count)
 
 if [[ $COMMIT_COUNT -eq 0 ]]; then
   echo "INFO: No new commits since last release"
@@ -50,20 +66,20 @@ echo ""
 
 # Show commits
 echo "=== Commit History ==="
-git log $LAST_TAG..HEAD --oneline
+git log "$LAST_TAG"..HEAD --oneline
 echo ""
 
 # Show file statistics
 echo "=== File Changes ==="
-git diff $LAST_TAG..HEAD --stat
+git diff "$LAST_TAG"..HEAD --stat
 echo ""
 
 # Analyze commit types
-FEAT_COUNT=$(git log $LAST_TAG..HEAD --oneline | grep -i -E "(feat|feature|add)" | wc -l | tr -d ' ')
-FIX_COUNT=$(git log $LAST_TAG..HEAD --oneline | grep -i -E "(fix|bug)" | wc -l | tr -d ' ')
-REFACTOR_COUNT=$(git log $LAST_TAG..HEAD --oneline | grep -i -E "(refactor|refact)" | wc -l | tr -d ' ')
-DOCS_COUNT=$(git log $LAST_TAG..HEAD --oneline | grep -i -E "(doc|docs)" | wc -l | tr -d ' ')
-BREAKING_COUNT=$(git log $LAST_TAG..HEAD --oneline | grep -i -E "(breaking|break)" | wc -l | tr -d ' ')
+FEAT_COUNT=$(git log "$LAST_TAG"..HEAD --oneline | grep -i -E "(feat|feature|add)" | wc -l | tr -d ' ')
+FIX_COUNT=$(git log "$LAST_TAG"..HEAD --oneline | grep -i -E "(fix|bug)" | wc -l | tr -d ' ')
+REFACTOR_COUNT=$(git log "$LAST_TAG"..HEAD --oneline | grep -i -E "(refactor|refact)" | wc -l | tr -d ' ')
+DOCS_COUNT=$(git log "$LAST_TAG"..HEAD --oneline | grep -i -E "(doc|docs)" | wc -l | tr -d ' ')
+BREAKING_COUNT=$(git log "$LAST_TAG"..HEAD --oneline | grep -i -E "(breaking|break)" | wc -l | tr -d ' ')
 
 echo "=== Change Summary ==="
 echo "Features: $FEAT_COUNT"

@@ -25,9 +25,25 @@ CURRENT_VERSION=$(jq -r '.plugins[0].version' "$MARKETPLACE_JSON" 2>/dev/null ||
 echo "Current version: $CURRENT_VERSION"
 
 # Get the last version tag
-LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+# `--match` restricts the baseline to version tags. Without it,
+# `git describe --tags --abbrev=0` returns the nearest reachable tag of ANY kind,
+# so a scratch tag or a vendor marker becomes the release baseline and every
+# count, stat, and recommendation below is measured from the wrong place.
+LAST_TAG=$(git describe --tags --abbrev=0 --match 'v[0-9]*' 2>/dev/null || echo "")
 
 if [[ -z "$LAST_TAG" ]]; then
+  # `describe` only reports tags reachable from HEAD. Version tags that exist but
+  # are not ancestors mean this branch forked before the last release, which is a
+  # completely different bump decision from a first release — and announcing
+  # "first release" on a v4.x repo is a confidently wrong answer a human acts on.
+  if [[ -n "$(git tag --list 'v[0-9]*')" ]]; then
+    NEWEST_TAG=$(git tag --list 'v[0-9]*' --sort=-v:refname 2>/dev/null | head -n 1)
+    echo "ERROR: version tags exist, but none is reachable from HEAD"
+    echo "       Newest overall: ${NEWEST_TAG:-unknown}"
+    echo "       This branch forked before the last release. Analyze from a branch"
+    echo "       that includes it, or rebase onto the release line first."
+    exit 1
+  fi
   echo "INFO: No previous release tags found (first release)"
   echo ""
   echo "Recent commits (last 20):"

@@ -33,6 +33,13 @@ this skill resolves the agent instead of naming one.
 - A quick external sanity check on an approach or decision
 - An independent review of the current code changes
 
+## Requirements
+
+`timeout` or `gtimeout` must be on PATH — both ship with GNU coreutils. Stock macOS has
+neither; `brew install coreutils` provides `gtimeout`. Without one the script skips instead
+of running an agent CLI unbounded, because a hung agent would hang the caller's turn.
+`run-outsider.sh list` reports it when it is missing.
+
 ## Agent Selection
 
 The script picks the agent. Always pass `--host <the agent you are>` — `claude`, `codex`,
@@ -134,6 +141,9 @@ the response is not interpretable without it.
 
 - **No agent installed, or only the host is** — the script says so and exits 0. Don't retry.
 - **Timeout** — the script prints a timeout message. Note it and proceed without.
+- **No `timeout` binary** — the script skips rather than running an agent unbounded, and
+  says which tool is missing. Report that to the user and proceed without an outside
+  opinion; do not retry.
 - **Large context** — keep ask mode under 2000 words. For large changes use review mode, which
   extracts the diff itself.
 
