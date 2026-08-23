@@ -5,11 +5,21 @@
 # Algorithm:
 #   1. Get default branch from GitHub (main/master)
 #   2. If current branch is a base-like branch (main/master/next/epic-*), use it directly
-#   3. If current branch is issue-*, check for epic-* ancestor branches
-#   4. Among matching epic branches, pick the one with the most recent merge-base
-#   5. If no epic match, use default branch
+#   3. If current branch is issue-*, find the epic-* branch it was cut from by
+#      ordering fork points by ancestry, with the default branch as the floor
+#   4. If no epic beats the default branch, use the default branch
 #
-# Output (last line): base branch name
+# Limitation: when two epic branches share the exact same fork point, git cannot
+# tell which one the branch was cut from. The first enumerated wins.
+#
+# Output (last line): a BRANCH NAME, never a rev.
+#   The name may not resolve as a rev — an epic branch can exist only on the
+#   remote, in which case `git log <base>..HEAD` fails with "unknown revision".
+#   Callers that need a rev must resolve it themselves:
+#     baseref=$(git rev-parse --verify --quiet "origin/$base" \
+#               || git rev-parse --verify --quiet "$base")
+#   Callers that need a name (git checkout, gh pr create --base) use it as-is.
+#
 # Exit codes: 0 = found, 1 = not git repo, 2 = no remote
 
 set -e
@@ -41,28 +51,57 @@ if [[ "$CURRENT_BRANCH" == "main" || "$CURRENT_BRANCH" == "master" || "$CURRENT_
   exit 0
 fi
 
-# If on an issue-* branch, check for epic-* ancestor branches
+# If on an issue-* branch, find the epic-* branch it was cut from.
+#
+# Deliberately NOT `merge-base --is-ancestor origin/<epic> HEAD`: that asks
+# "is the epic tip contained in my branch", which goes false the moment the
+# epic gains a commit after you branched off it, silently demoting the base to
+# the default branch. The real question is "which branch did I fork from", so
+# compare fork points and pick the one furthest down the history.
+#
+# Ordering is by ancestry, not commit timestamp. Timestamps tie whenever two
+# commits land in the same second, and a tie made the epic lose to the floor.
 if [[ "$CURRENT_BRANCH" == issue-* ]]; then
   git fetch origin --quiet 2>/dev/null || true
 
-  BEST_EPIC=""
-  BEST_TIMESTAMP=0
+  resolve_ref() {
+    git rev-parse --verify --quiet "origin/$1" || git rev-parse --verify --quiet "$1"
+  }
 
-  # Check all remote epic-* branches
+  fork_point() {
+    local ref
+    ref=$(resolve_ref "$1") || return 1
+    [[ -n "$ref" ]] || return 1
+    git merge-base "$ref" HEAD 2>/dev/null
+  }
+
+  # The default branch is the floor. An epic wins only when its fork point is
+  # strictly a descendant of the default branch's fork point — i.e. the branch
+  # really did leave the default branch by way of that epic.
+  BEST_EPIC=""
+  BEST_FORK=$(fork_point "$DEFAULT_BRANCH" || true)
+
+  # Both remote and local epic branches — an epic may exist only locally.
   while IFS= read -r ref; do
     EPIC_BRANCH="${ref#refs/remotes/origin/}"
+    EPIC_BRANCH="${EPIC_BRANCH#refs/heads/}"
+    [[ -n "$EPIC_BRANCH" ]] || continue
 
-    # Check if epic branch is an ancestor of current branch
-    if git merge-base --is-ancestor "origin/$EPIC_BRANCH" HEAD 2>/dev/null; then
-      MERGE_BASE=$(git merge-base "origin/$EPIC_BRANCH" HEAD 2>/dev/null) || continue
-      TIMESTAMP=$(git log -1 --format='%ct' "$MERGE_BASE" 2>/dev/null) || continue
+    FORK=$(fork_point "$EPIC_BRANCH") || continue
+    [[ -n "$FORK" ]] || continue
 
-      if (( TIMESTAMP > BEST_TIMESTAMP )); then
-        BEST_TIMESTAMP=$TIMESTAMP
-        BEST_EPIC="$EPIC_BRANCH"
-      fi
+    if [[ -z "$BEST_FORK" ]]; then
+      BEST_FORK="$FORK"
+      BEST_EPIC="$EPIC_BRANCH"
+      continue
     fi
-  done < <(git for-each-ref --format='%(refname)' 'refs/remotes/origin/epic-*' 2>/dev/null)
+
+    # Strictly newer: BEST_FORK is an ancestor of FORK, and they differ.
+    if [[ "$FORK" != "$BEST_FORK" ]] && git merge-base --is-ancestor "$BEST_FORK" "$FORK" 2>/dev/null; then
+      BEST_FORK="$FORK"
+      BEST_EPIC="$EPIC_BRANCH"
+    fi
+  done < <(git for-each-ref --format='%(refname)' 'refs/remotes/origin/epic-*' 'refs/heads/epic-*' 2>/dev/null)
 
   if [[ -n "$BEST_EPIC" ]]; then
     echo "Detected epic branch: $BEST_EPIC" >&2

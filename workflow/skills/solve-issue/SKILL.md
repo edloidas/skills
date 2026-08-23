@@ -91,8 +91,13 @@ If empty, ask via `AskUserQuestion`:
 
 - Option 1 → invoke `issue-flow` with intent `"pick an issue"`. That runs its
   Step 0, which ranks the backlog, lets the user choose, and chains into
-  `issue-analyze` on the selection — so continue from Phase 2. If the user picks
-  `None` there, stop.
+  `issue-analyze` on the selection — so continue from Phase 2 with the number and
+  the analysis it returns.
+
+  Two of its outcomes are not a selection: the user picks `None`, or the branch it
+  short-circuited on carries no issue number. Both end the run — stop, and say which
+  one happened. Do not continue to Phase 2 without a scope analysis and a resolved
+  issue title; Phase 5 commits under that title.
 - Option 2 → print `Re-run with an issue number, e.g. /solve-issue 42.` and
   stop.
 
@@ -191,12 +196,15 @@ board to "In Progress" when available.
 If `issue-<N>` already exists, let `issue-flow` handle the switch-vs-recreate
 prompt.
 
-Record the `Base:` value from its Step 2 report — later phases need it to scope
-verification and to pass `--base` to the reviewers. Do not detect the base
-yourself; `issue-flow` owns base detection, and its `detect-base.sh` handles the
-`epic-*` cases a naive `origin/HEAD` lookup gets wrong. If the flow was entered
-on an existing branch and no Step 2 report was printed, ask `issue-flow` for the
-base.
+Record the `Fork:` SHA from its Step 2 report — later phases diff against it to
+scope verification and pass it to the reviewers. Use `Fork:`, not `Base:`:
+`Base:` is a branch *name*, and an epic branch that exists only on the remote
+fails in `git diff <name>..HEAD` with `unknown revision`. A SHA always resolves.
+
+Do not detect the base yourself; `issue-flow` owns base detection, and its
+`detect-base.sh` handles the `epic-*` cases a naive `origin/HEAD` lookup gets
+wrong. If the flow was entered on an existing branch and no Step 2 report was
+printed, ask `issue-flow` for the fork point.
 
 ## Phase 3: Implement
 
@@ -235,7 +243,8 @@ Pick the runner from the lockfile:
 
 ### Scope-aware selection
 
-Use the changed file set from `git diff --name-only <base>..HEAD` to choose:
+Use the changed file set from `git diff --name-only <fork>..HEAD` to choose,
+with the `Fork:` SHA from Phase 2:
 
 - **Source code changes** (`src/`, `lib/`, `app/`, similar) → type-check +
   build (if present) + unit tests
@@ -325,8 +334,9 @@ round — recognizing it is your job, not theirs.
 
 ### Run the review
 
-Invoke `changes-review` with `--base <base>` and `--issue <N>`, using the base
-recorded in Phase 2. It dispatches the
+Invoke `changes-review` with `--base <fork>` and `--issue <N>`, using the
+`Fork:` SHA recorded in Phase 2 — it resolves as a rev where a branch name may
+not. It dispatches the
 reviewers, re-attacks its own findings — verification is on by default for a
 `--base` run — and returns what survives. It changes nothing.
 

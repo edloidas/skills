@@ -19,8 +19,13 @@ Include `Milestone: <name>` only when a milestone was set.
 
 ```
 ### [2] Branch Created
-Branch: issue-<number> | Base: <base-branch>
+Branch: issue-<number> | Base: <base-branch> | Fork: <short-sha>
 ```
+
+`Base:` is a branch **name**; `Fork:` is the merge-base SHA the branch was cut from.
+Callers that need to diff against the branch point use `Fork:` — a name does not resolve
+as a rev when the base exists only on the remote. Omit `Fork:` only when the base could
+not be resolved.
 
 ### Step 3: Committed
 
@@ -30,7 +35,9 @@ Branch: issue-<number> | Base: <base-branch>
 <N> files changed (+<insertions> -<deletions>)
 ```
 
-For multiple commits, list each on its own line.
+One line per commit. Step 3 normally ends at a single commit; several lines appear only
+in the one case Consolidate leaves them — the user chose "Keep as-is" on commits with
+genuinely different subjects.
 
 ### Step 4: Pushed
 
