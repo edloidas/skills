@@ -28,7 +28,7 @@ Located in `scripts/` relative to this skill:
 | Script                     | Purpose                                         |
 | -------------------------- | ----------------------------------------------- |
 | `check-env.sh`             | Validate git repo, gh CLI, authentication       |
-| `detect-base.sh`           | Detect base branch (main/master/next/epic-*)    |
+| `detect-base.sh`           | Detect base branch name (main/master/next/epic-*) |
 | `repo-context.sh`          | Fetch labels, collaborators, projects           |
 | `repo-ownership.sh`        | Classify repo as personal / org / external      |
 | `pr-reviewers.sh`          | Rank top PR reviewers by recent review activity |
@@ -37,6 +37,26 @@ Located in `scripts/` relative to this skill:
 | `get-issue-projects.sh`    | List projects an issue is already a member of   |
 | `suggest-projects.sh`      | Rank up to 4 likely projects (USED + RELATED)   |
 | `project-status.sh`        | Update project board status                     |
+
+`detect-base.sh` prints a **branch name, not a rev.** An epic branch can exist only on
+the remote, so `git log <base>..HEAD` fails with `unknown revision` on a name that has no
+local branch. Use it as-is where a name is wanted (`git checkout`, `git pull origin`,
+`gh pr create --base`); resolve it first wherever a rev is wanted:
+
+```bash
+baseref=$(git rev-parse --verify --quiet "origin/$base" || git rev-parse --verify --quiet "$base")
+```
+
+It exits `2` when the repo has no remote, in which case there is no base to detect —
+stop and tell the user to add a remote rather than guessing `main`.
+
+The name can also be missing in the *other* direction: it scans local `epic-*` branches
+too, so the base may be a branch the remote has never seen. Anything that talks to the
+remote with it — `git pull origin <base>`, `git rebase origin/<base>`,
+`gh pr create --base <base>` — fails on such a base. Check before those steps and stop
+with `Base branch <base> is not on the remote — push it first.` Detection is still right
+to find it: falling back to the default branch would make Consolidate treat the whole
+epic as commits ahead and squash it.
 
 Run scripts from the skill directory:
 
@@ -164,7 +184,7 @@ gh api user --jq .login
 If `gh repo view` fails, stop: `Not inside a GitHub repository.`
 
 Then run the ranking pipeline in `references/issue-selection.md`. It reads local git
-state, plan files, open PRs, and the backlog, ranks candidates into six tiers, and
+state, plan files, open PRs, and the backlog, ranks candidates into five tiers, and
 presents up to four picks via `AskUserQuestion`. Every command it runs is a read — Step
 0 never writes.
 
@@ -238,7 +258,20 @@ If the question is skipped or unanswered, default to `@me` — never create the 
 
 ### Type
 
-Check if the repository supports issue types: `gh issue create --type bug --dry-run 2>&1`. If types are supported, map the conventional commit type to an issue type. If not supported, skip silently.
+Issue types are an organization-level feature. Probe for them:
+
+```bash
+gh api "repos/<owner>/<repo>/issue-types" --jq '.[].name' 2>/dev/null || true
+```
+
+- Names returned → map the conventional commit type onto the closest one and pass
+  `--type "<name>"` to `gh issue create`.
+- `404 Not Found` → the repo has no issue types. This is the normal answer for a
+  personal repo, since only orgs define them. Skip silently.
+
+Do **not** probe with `gh issue create --type bug --dry-run`. There is no `--dry-run`
+flag on `gh issue create`; it fails with `unknown flag` regardless of whether the repo
+supports types, so the probe always reports "unsupported".
 
 ### Project
 
@@ -308,7 +341,7 @@ Use when an aggregated (parent) issue should group related child issues. Needs t
 
 ### Procedure
 
-Fetch each child's integer ID, then POST it. Use `<owner>/<repo>` from `repo-context.sh` first line.
+Fetch each child's integer ID, then POST it. Use the `<owner>/<repo>` value from `repo-context.sh` — it is the line *after* the `=== Repository ===` header, not the first line of output.
 
 ```bash
 PARENT=<parent_number>
@@ -353,7 +386,7 @@ When linking many children to the same parent (see **## Batch Issue Creation**),
 
 ## Blocked-By
 
-Use when child issues have dependencies between them — e.g., issue B cannot start until issue A is done. Requires GraphQL **node IDs** (not issue numbers or integer IDs) — see `references/github-relationships.md`. Use `<owner>/<repo>` from `repo-context.sh` first line.
+Use when child issues have dependencies between them — e.g., issue B cannot start until issue A is done. Requires GraphQL **node IDs** (not issue numbers or integer IDs) — see `references/github-relationships.md`. Use the `<owner>/<repo>` value from `repo-context.sh` — it is the line *after* the `=== Repository ===` header, not the first line of output.
 
 ### Procedure
 
@@ -436,7 +469,15 @@ Update project status to "In Progress" (if project integration is available):
 bash "<skill-dir>/scripts/project-status.sh" <number> "In Progress"
 ```
 
-Print the Step 2 report.
+Resolve the fork point for the report, so callers never have to turn the base name back
+into a rev:
+
+```bash
+baseref=$(git rev-parse --verify --quiet "origin/$base" || git rev-parse --verify --quiet "$base")
+git merge-base "$baseref" HEAD
+```
+
+Print the Step 2 report, including both `Base:` and `Fork:`.
 
 ## Step 3: Commit
 
@@ -466,11 +507,15 @@ The branch must end this step at **exactly one commit**, and this section owns t
 Count and reset must use the **same** ref, and it must be an ancestor of `HEAD`. Resolve it once:
 
 ```bash
-base=$(bash "<skill-dir>/scripts/detect-base.sh" 2>/dev/null | tail -n1)
+base=$(bash "<skill-dir>/scripts/detect-base.sh" 2>/dev/null | tail -n1) || base=""
+[ -n "$base" ] || { echo "No base branch — add a remote first."; exit 1; }
 baseref=$(git rev-parse --verify --quiet "origin/$base" || git rev-parse --verify --quiet "$base")
 fork=$(git merge-base "$baseref" HEAD)
 git log "$fork"..HEAD --oneline
 ```
+
+Stop if `base` is empty. `detect-base.sh` exits 2 with no output when the repo has no
+remote, and `git merge-base "" HEAD` just errors — there is no base to consolidate against.
 
 **Never reset to `origin/<base>`, and never to a branch name.** `origin/<base>` moves whenever anything fetches, and `detect-base.sh` fetches on its own. Reset to it and the new commit's parent is *newer* than the point the branch was cut from, so the commit silently reverts every upstream change made since — and Step 5 force-pushes that, and Step 6 merges it. `$fork` is an ancestor of `HEAD` by construction, so it cannot have that effect.
 
@@ -559,9 +604,13 @@ git push --force-with-lease
 If the user asks to amend the last commit:
 
 ```bash
-git commit --amend
+git commit --amend -m "<subject>" -m "<body>"
 git push --force-with-lease
 ```
+
+Always pass the message. A bare `git commit --amend` opens `$EDITOR`, which hangs a
+non-interactive shell. Use `--no-edit` only when the existing message is being kept
+verbatim and nothing new needs to land in it.
 
 Print the Step 4 report.
 
@@ -590,7 +639,10 @@ This must happen before PR body generation, since consolidating changes the comm
 ### Title and Body
 
 - **Title**: `<Issue Title> #<number>`
-- **Body**: Generate from `git log <base>..HEAD --oneline`, add `Closes #<number>`
+- **Body**: Generate from `git log "$fork"..HEAD --oneline` — reuse the `$fork` that
+  **Step 3 → Consolidate** just resolved. Do not write `git log <base>..HEAD`: `<base>`
+  is a branch name, and an epic branch that exists only on the remote fails there with
+  `unknown revision`. Add `Closes #<number>`.
 
 ```markdown
 ## Changes
@@ -619,8 +671,8 @@ Output: `<user>\t<count>` per row, up to 3 rows (excludes self and bots; counts 
 
 - **0 results**: skip the prompt entirely and create the PR without `--reviewer`. Do **not** fall back to the generic `repo-context.sh` collaborator list — repo members with zero review history are not real reviewer candidates, and inventing labels like "Frequent collaborator" misleads the user.
 - **1+ results**: compose `AskUserQuestion`:
-  1. First result (Recommended), description: `"Reviewed <count> of last 100 PRs"`
-  2. Second result (if any), description: `"Reviewed <count> of last 100 PRs"`
+  1. First result (Recommended), description: `"<count> review events across the last 100 PRs"`
+  2. Second result (if any), description: `"<count> review events across the last 100 PRs"`
   3. "No reviewer"
 
 Check if the selected reviewer is the same as the PR creator:
@@ -706,25 +758,42 @@ PR #<number> is ready for review by @<reviewer> (mergeable: <state from Step 5>)
 
 If reviewer AND assignee are the current user (self-review), or user explicitly asked to merge, proceed below.
 
-### Suggest Merge (Full Flow)
+### Entering Step 6 at all
 
-When **all** of these are true:
-- Full flow was performed (entered at Step 1 and ran through Step 5)
+**Step 6 runs only when merging was asked for.** Reaching Step 5 is not an invitation to
+merge — a caller whose intent was `"push and open PR for #<N>"` wants the flow to end at
+Step 5, and suggesting a merge there overrides a choice the user already made.
+
+Step 6 is entered on exactly three things: an intent naming the merge
+(`"merge #<N>"`, `"push, PR, and merge #<N>"`), the user answering the suggestion below,
+or the user asking to merge in conversation. Otherwise stop after Step 5.
+
+### Confirm exactly once
+
+The merge is confirmed **once per flow**, and this section decides where that happens.
+Classify the entry, then take one branch and skip the other.
+
+| Entry | Confirmation |
+| ----- | ------------ |
+| **The intent already names the merge** — `"push, PR, and merge #<N>"`, `"merge #<N>"` from an orchestrating skill that already put the question to the user | Already confirmed. Print the pre-merge summary for the record and go straight to **Pre-checks**. Asking again is the duplicate prompt callers are told not to create. |
+| **A full flow that entered at Step 1 and was never told what to do about merging** | Not yet confirmed. Print the pre-merge summary and suggest merging (below). |
+| **Direct entry at Step 6 by the user**, no earlier step in this flow | Not yet confirmed. Print the pre-merge summary and **MUST stop and confirm** before merging. |
+
+When confirmation is still needed, ask via `AskUserQuestion`:
+1. "Merge now" (Recommended) — wait for checks and merge
+2. "Skip" — leave PR open, end flow
+
+"Skip" → print the skip message and stop. "Merge now" → continue to **Pre-checks**.
+
+Either way the pre-merge summary is printed (see `references/report-format.md`) — it is
+the record of what is about to be merged, not the prompt itself.
+
+The suggestion branch additionally requires all of:
 - Issue assignee is the current user
 - PR assignee is the current user
 - No external reviewer was set on the PR
 
-Then print the Step 6 pre-merge summary (see `references/report-format.md`) and suggest merging via `AskUserQuestion`:
-1. "Merge now" (Recommended) — wait for checks and merge
-2. "Skip" — leave PR open, end flow
-
-If user picks "Skip", print the skip message and stop. If "Merge now", continue to Pre-checks below. Mark that the user has **already confirmed** merge intent (skip the pre-merge confirmation later).
-
-### Pre-merge Confirmation (Direct Entry Only)
-
-When the user entered **directly at Step 6** (not via the full-flow suggestion above), **MUST stop and confirm before merging.**
-
-Print the Step 6 pre-merge summary (see `references/report-format.md`) and wait for confirmation.
+If any of those is false, the **Skip Condition** above already applies and Step 6 ends.
 
 ### Pre-checks
 
@@ -788,7 +857,7 @@ Print the Step 6 merged report.
 - **Branch already exists**: Ask user via `AskUserQuestion` (switch vs. recreate).
 - **CI checks failing**: Report failed checks, do not attempt merge.
 - **No CLAUDE.md**: Use the default conventions listed above.
-- **No remote**: Stop at push step, tell user to add a remote.
+- **No remote**: `detect-base.sh` exits 2 and there is no base branch. Steps 2, 3, 5, and 6 all depend on it, so stop at whichever of them was entered and tell the user to add a remote. Do not fall back to `main`.
 - **Host cannot show structured choices**: Fall back to a numbered list in chat per **### Asking the User**. Do not skip the question.
 
 ## Integration

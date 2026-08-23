@@ -4,7 +4,8 @@ The ranking pipeline behind **Step 0: Select Issue**. Gathers local git state, p
 files, open PRs, and the issue backlog, ranks candidates into tiers, and presents the
 top picks.
 
-Run the phases in order. Each short-circuit skips straight to **Output**.
+Run the phases in order. A short-circuit skips the remaining discovery phases and goes
+to **Output**; it does not skip the selection itself.
 
 Questions here follow **SKILL.md → Conventions → Asking the User**: use the host's
 structured-choice tool where it exists, otherwise the same options as a numbered list in
@@ -50,13 +51,23 @@ Store as `<current-pr>` if one exists.
 
 ### Short-circuit: feature branch with open PR
 
-On a feature branch **and** `<current-pr>` exists → skip Phases 2–4 and ask via
-`AskUserQuestion`:
+On a feature branch **and** `<current-pr>` exists → skip Phases 2–4.
+
+First check that the branch name yielded a `<branch-issue>` number. If it did not, there
+is nothing to select and nothing to analyse: report the open PR and stop. Do not ask the
+question below — its first option is labelled `Issue #<N>` and there is no `<N>`.
+
+With a number in hand, ask via `AskUserQuestion`:
 
 1. `Issue #<N>` `(Recommended)` — `Unfinished work: PR #<pr-number> "<pr-title>". Continue this before picking a new issue.`
 2. `New issue` — `Skip current work and pick a different issue.`
 
-Option 1 → show the PR summary and stop. Option 2 → continue from Phase 2.
+Option 1 → this **is** a selection, so treat it as one: report the PR context, then go to
+**Output → After selection** like any other pick. Callers are told selection always ends
+in an analysis, and one that stopped at a PR summary would leave them running with no
+scope analysis and no resolved issue title.
+
+Option 2 → continue from Phase 2.
 
 ### Recently merged on base
 
@@ -72,11 +83,18 @@ Informational only — identifies recently completed work. Not ranked.
 
 Glob for:
 
-- `<git-root>/.claude/plan/*.md`
-- `<git-root>/.claude/PRD.md`
-- `<git-root>/.claude/SPEC.md`
+- `<git-root>/docs/superpowers/*.md` — specs and plans
+- `<git-root>/.claude/plan/*.md`, `<git-root>/.claude/plans/*.md`
+- `<git-root>/.agents/plan/*.md`
+- `<git-root>/.claude/PRD.md`, `<git-root>/.claude/SPEC.md`
+- `<git-root>/docs/PRD.md`, `<git-root>/docs/SPEC.md`
 
-If none are found, skip this phase.
+Where the repo's own instructions file names a plan directory, prefer that over the list
+above — it is the authoritative answer for that repo. If nothing is found, skip this
+phase; Tier 1 then never fires, which is expected in a repo that keeps no plans.
+
+The `.claude/` entries are one host's convention, not the only one. Do not treat their
+absence as "no plans exist".
 
 ### Parse issue references
 
@@ -152,21 +170,34 @@ Store as `<unassigned-issues>`.
 
 ### Blocked status
 
-Per candidate, check for open blockers. Primary method:
+Per candidate, check for open blockers. The field is `blockedByIssues` — the same
+relationship SKILL.md's **Blocked-By** section writes with `addBlockedBy`. Issue it as a
+**separate** best-effort call, since it is part of GitHub's issue-dependencies preview
+and is unavailable on most repos and plans:
 
 ```bash
 gh api graphql -f query='{
   repository(owner: "<owner>", name: "<repo>") {
     issue(number: <N>) {
-      trackedInIssues(first: 5) { nodes { number title state } }
-      closedByPullRequestsReferences(first: 5) { nodes { number title state } }
+      blockedByIssues(first: 10) { nodes { number title state } }
     }
   }
-}'
+}' 2>&1 || true
 ```
 
-If GraphQL fails, fall back to body text: `blocked by #<M>`, `depends on #<M>`,
-`waiting on #<M>`.
+When the field is unavailable, `gh api` exits 1 and prints an `undefinedField` GraphQL
+error on **stdout**. The `|| true` keeps that from surfacing as a tool error; treat any
+response carrying an `errors` field as "not available" and parse
+`data.repository.issue.blockedByIssues` only when it does not.
+
+Do **not** read `trackedInIssues` or `closedByPullRequestsReferences` as blockers.
+Neither is one: `trackedInIssues` is the parent or epic that *tracks* the issue (see
+`issue-analyze`, which documents the same field), and an open PR that would close the
+issue is the opposite of a blocker. Treating them as blockers flags every child of an
+open epic as blocked and buries the whole epic at the bottom of the ranking.
+
+If the query is unavailable, fall back to body text: `blocked by #<M>`,
+`depends on #<M>`, `waiting on #<M>`.
 
 An issue is blocked when any referenced blocker is still open. Flag it `blocked: true`
 and keep the blocker numbers.
@@ -175,12 +206,11 @@ and keep the blocker numbers.
 
 | Tier | Source                  | Description                                                  |
 | ---- | ----------------------- | ------------------------------------------------------------ |
-| 1    | Plan-referenced         | Found in `.claude/plan/`, PRD, or SPEC                       |
+| 1    | Plan-referenced         | Found in a plan, PRD, or SPEC file (see Phase 2)             |
 | 2    | Open PR                 | Linked to your open PR — continue work                        |
 | 3    | Assigned + milestone    | Assigned to you with a milestone deadline                     |
 | 4    | Assigned                | Assigned to you, no milestone                                 |
-| 5    | Unassigned + referenced | Not assigned, referenced by a recently closed issue           |
-| 6    | Unassigned + recent     | Not assigned, created recently, no plan reference             |
+| 5    | Unassigned + recent     | Not assigned, created recently, no plan reference             |
 
 Within a tier: milestone deadline first (earliest), then creation date (oldest first).
 
@@ -192,13 +222,14 @@ metadata from all of them.
 
 ## Phase 6: Ambiguity Gate
 
-Fires only when **all** hold: no plan files, no open PRs by the current user, and more
-than 5 candidates share the top tier.
+Fires only when **all** hold: no plan files, no open PRs by the current user, and
+25 or more unblocked candidates share the top tier.
 
-Fewer than 25 unblocked candidates → skip the prompt, rank on the available signals
-(labels, milestone, creation date, assignment) and go to Output.
+Below that, rank on the available signals (labels, milestone, creation date, assignment)
+and go to Output without asking. Narrowing 6 candidates by label costs the user a
+question and saves nothing.
 
-25 or more → ask via `AskUserQuestion`:
+When it fires, ask via `AskUserQuestion`:
 
 - **question**: "I found N open issues but no plan files to guide priority. How should I narrow down?"
 - **Option 1** — `Scan all` `(Recommended)` — `Review all open issues and rank by signals.`
@@ -214,7 +245,8 @@ same procedure.
 
 Present the top candidates via `AskUserQuestion`.
 
-**Header:** `Issue #<N>` — must be 12 characters or fewer.
+**Header:** `Issue #<N>` — must be 12 characters or fewer. That holds to four digits;
+for a longer number drop the word and use `#<N>` alone.
 
 **Description per option:**
 
@@ -254,4 +286,4 @@ No issue selected. You can browse issues manually:
 | GraphQL query fails                   | Skip silently, fall back to text pattern matching       |
 | Plan files found but no issue refs    | Skip Phase 2, continue to Phase 3                       |
 | Feature branch with open PR           | Short-circuit after Phase 1                             |
-| No plan files, no PRs, none assigned  | Ambiguity gate (Phase 6)                                |
+| No plan files, no PRs, 25+ candidates | Ambiguity gate (Phase 6)                                |
