@@ -150,6 +150,23 @@ run_tests() {
       HOME="$sandbox/home"
       export HOME
       mkdir -p "$HOME"
+      # The host environment must not reach a case. Every variable the scripts
+      # under test consult is neutralized here, so a run is identical on a
+      # laptop, inside an agent harness that exports CLAUDECODE, and on CI —
+      # where XDG_CONFIG_HOME is set and three config cases failed because the
+      # fixture wrote to $HOME/.config while the script read somewhere else.
+      XDG_CONFIG_HOME="$HOME/.config"
+      export XDG_CONFIG_HOME
+      unset CLAUDECODE CLAUDE_CODE_ENTRYPOINT CODEX_SANDBOX \
+            CODEX_SANDBOX_NETWORK_DISABLED OPENCODE OPENCODE_BIN_PATH
+      # A leaked GIT_DIR or GIT_WORK_TREE would point every fixture at the real
+      # repository instead of the sandbox.
+      unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_OBJECT_DIRECTORY
+      # OUTSIDER_* is configuration, and the environment outranks the config
+      # file, so one exported by the developer would silently win.
+      for _leaked in $(env | sed -n 's/^\(OUTSIDER_[A-Za-z0-9_]*\)=.*/\1/p'); do
+        unset "$_leaked"
+      done
       # Fixtures anchor stub directories here rather than at $PWD, so a stub dir
       # never lands inside a fixture repo and show up as an untracked change.
       SANDBOX="$sandbox"
