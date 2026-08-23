@@ -1,6 +1,6 @@
 interface:
   display_name: "Repo Hardening"
-  short_description: "Apply a GitHub security baseline: rulesets, Actions defaults, environments"
-  default_prompt: "Use $repo-hardening to inventory the current repository security settings and apply the hardening baseline — branch and tag rulesets, Actions token defaults, security features, and branch-restricted environments for deploy secrets."
+  short_description: "Apply a GitHub security baseline: rulesets, Actions defaults, immutable releases, environments"
+  default_prompt: "Use $repo-hardening to inventory the current repository security settings and apply the hardening baseline — branch and tag rulesets, Actions token defaults, security features, immutable releases, workflow linting, and branch-restricted environments for deploy secrets. This writes; confirm the diff first."
 policy:
   allow_implicit_invocation: false

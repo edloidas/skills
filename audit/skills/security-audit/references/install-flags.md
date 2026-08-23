@@ -2,6 +2,12 @@
 
 When to use which install command in a CI or release workflow.
 
+**Scope.** This file covers every manager, unlike `package-manager-checklist.md`, which
+audits pnpm and bun only. The difference is deliberate: the Release subagent reads whatever
+workflow a repo already has, so it must recognize `npm ci` and `yarn install --immutable`
+on sight. Recognizing a command is not recommending the manager — when a finding needs a
+*replacement* command, write it in the manager the repo actually uses.
+
 ## Frozen / Immutable Lockfile
 
 Required in every CI and release workflow. Never use a plain `install` command in automated contexts.
@@ -41,6 +47,41 @@ Use ONLY when producing a runtime artifact. Pair with frozen lockfile.
 - ❌ **CI test/lint/typecheck/format workflows** — all require devDependencies.
 - ❌ **npm publish workflows** — publishing a library does not ship `node_modules`; consumers install their own deps. The build before publish needs devDependencies.
 - ❌ **Storybook / docs deploy workflows** — Storybook itself is typically a devDependency.
+
+### `--omit=dev` as attack-surface reduction in a build job
+
+The rules above are about *correctness* — `--prod` in a build step breaks the build. There is
+one case where skipping devDependencies is a security move rather than a size move, and it
+inverts the usual dependency layout.
+
+In a monorepo, keep the build toolchain (compiler, bundler) in the **root `dependencies`**
+and keep test/lint tooling in `devDependencies`. The build job then installs production
+dependencies only:
+
+```bash
+pnpm install --prod --frozen-lockfile --ignore-scripts
+# bun:  bun install --production --frozen-lockfile --ignore-scripts
+# npm:  npm ci --omit=dev --ignore-scripts
+```
+
+The build still has its compiler, but the linters, test runners, and their transitive trees
+never enter the job that produces the artifact you publish. On a typical repo that is the
+larger half of the dependency graph, and every package in it is code that would otherwise
+execute next to the build output.
+
+**Two caveats to report with this recommendation, not after it:**
+
+- Moving a package between `dependencies` and `devDependencies` changes the published
+  package metadata. Consumers installing the library will now resolve the build toolchain as
+  a real dependency unless the package is `private` or the field is stripped at pack time.
+  For a published library this is usually the wrong trade; for a private app or a monorepo
+  root that is never published, it is free.
+- It only pays off if the build job is genuinely separate from the test job. If one job
+  installs everything and then runs build *and* test, the flag changes nothing.
+
+This is a suggestion to raise, not a finding to flag — a repo not doing it is not
+misconfigured. Pair it with `release-checklist.md` item 9 (the credentialed publish job
+installs nothing at all), which is the stronger version of the same idea.
 
 ## Multi-stage Docker Pattern
 

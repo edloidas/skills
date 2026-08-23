@@ -2,9 +2,18 @@
 
 Detailed criteria for the Package Manager audit subagent. Covers install-time supply-chain controls — which manager, lifecycle script execution, release-age gating, registry scoping, and version pinning.
 
-Only two managers meet the bar for modern supply-chain hardening: **pnpm v10.26+** (v11+ recommended) and **bun**. Everything else (npm, yarn 1, yarn berry) lacks at least one of: per-package lifecycle allowlist, release-age gate, or both. Treat their presence as a finding, not a configuration to tune.
+**Supported managers: pnpm and bun.** This audit covers those two and no others. npm and yarn are out of scope — not because they lack the primitives (npm gained `min-release-age` in 11.10 and deny-by-default install scripts in 12; yarn berry has `npmMinimalAgeGate` and defaults `enableScripts` to false), but because keeping a second and third configuration surface current is maintenance this collection is not taking on. A repo on either gets one finding and a migration path, not a tuning guide.
 
-**Severity note.** "Critical" in this checklist is used for two distinct things: (a) currently-exploitable misconfigurations like a downgraded `verifyStoreIntegrity`, and (b) the *absence of a hardening primitive that this audit treats as mandatory* — e.g. running on a manager that has no release-age gate at all. Type (b) is a policy floor, not a CVE rating. Calibrate fixes accordingly: type (a) is "drop everything", type (b) is "schedule the migration this sprint."
+Say it that way in the report. "npm and yarn are outside this audit's supported set" is accurate and actionable; "npm and yarn lack a release-age gate" is not true and undermines every other finding in the report.
+
+| Manager | Release-age gate | Lifecycle allowlist | Fail-closed switch | Floor |
+|---|---|---|---|---|
+| pnpm | `minimumReleaseAge` | `allowBuilds` | `strictDepBuilds` | **10.26** (11+ recommended) |
+| bun | `install.minimumReleaseAge` | `trustedDependencies` | none | current |
+
+Both deny dependency lifecycle scripts by default at those floors, so items 3–7 are about the audit log, the fail-closed behavior, and the release-age floor — never about turning the gate on.
+
+**Severity note.** "Critical" in this checklist is used for two distinct things: (a) currently-exploitable misconfigurations like a downgraded `verifyStoreIntegrity`, and (b) the *absence of a hardening primitive that this audit treats as mandatory* — e.g. no release-age gate configured, or an unsupported manager. Type (b) is a policy floor, not a CVE rating. Calibrate fixes accordingly: type (a) is "drop everything", type (b) is "schedule it this sprint."
 
 Defaults and field names below were verified against the current docs at the time of writing:
 - pnpm settings: <https://pnpm.io/settings>
@@ -12,7 +21,7 @@ Defaults and field names below were verified against the current docs at the tim
 - bun install config: <https://bun.com/docs/runtime/bunfig#install>
 - bun security scanner: <https://bun.com/docs/install/security-scanner-api>
 
-## 1. Package Manager Choice
+## 1. Manager and Version Floor
 
 **Detection:**
 
@@ -21,21 +30,43 @@ ls package-lock.json pnpm-lock.yaml yarn.lock bun.lock bun.lockb 2>/dev/null
 jq -r '.packageManager // "unset"' package.json 2>/dev/null
 ```
 
+When `packageManager` is unset, resolve the actual version from CI (`setup-node` inputs, or an explicit `npm i -g pnpm@x`) and from the lockfile format version. An unpinned manager is part of the finding — the floor cannot be guaranteed across machines.
+
 **Severity:**
-- `package-lock.json` (npm) or `yarn.lock` (yarn 1/berry) only — **critical (policy floor)** — see the severity note above; npm and yarn are not exploitable by virtue of being installed, but they cannot satisfy items 3–5 of this checklist, so this audit treats their presence as a non-negotiable migration target
-- Multiple lockfiles — **high** (ambiguous source of truth; one will silently drift)
-- `pnpm-lock.yaml` or `bun.lock` only — **pass**
+- `yarn.lock` present (any version) — **critical (policy)**. Outside the supported set; migrate.
+- `package-lock.json` present (any npm version) — **critical (policy)**. Outside the supported set; migrate.
+- pnpm or bun below its floor in the table above — **high (policy)**. Name the specific primitive the version lacks; this is a one-line bump, not a migration.
+- `packageManager` **unset** — **high**. Capability is unverifiable and drifts between contributors and CI.
+- **Multiple lockfiles** — **high**. Ambiguous source of truth; only the one the install command actually reads is governed by the config that was audited, and the other will silently drift.
+- pnpm or bun at or above its floor with items 3–7 configured — **pass**.
 
-**Why:** npm and yarn lack a per-package lifecycle-script allowlist (`allowBuilds` / `trustedDependencies`) and a release-age gate (`minimumReleaseAge`). Both are first-line defenses against the two most common npm-ecosystem supply-chain attacks: malicious postinstall scripts and time-of-publish injection. The TanStack and `eslint-config-prettier` 2025 compromises both relied on victims installing within minutes of publish.
+**Why the floor matters:** a release-age gate and a per-package script allowlist are what stop the two most common npm-ecosystem attacks — malicious install scripts, and time-of-publish injection. The TanStack and `eslint-config-prettier` 2025 compromises both relied on victims installing within minutes of publish, which the gate blocks outright.
 
-**Fix:**
-- npm → pnpm: commit a `pnpm-lock.yaml` via `pnpm import` (reads `package-lock.json`), delete the npm lockfile, add `packageManager: "pnpm@11.x"` to `package.json`.
-- yarn → pnpm: `pnpm import` reads `yarn.lock`. Same cleanup.
-- npm/yarn → bun: `bun install` reads existing lockfiles. Verify the resulting `bun.lock` and remove the old one.
+**Why only two managers:** every additional manager is another set of field names, units, defaults, and version floors to keep correct. Two is what this audit can keep accurate. Report the migration as a scope decision the audit is making, not as a defect in the tool the team chose — a maintainer who knows npm 12 has these controls will discard the whole report over an overreaching claim.
 
-**Exceptions:** Repos that publish to npm as a library and have no `node_modules` build step (pure source-only packages) carry less install-time risk for their own CI, but their consumers do — so this is still a finding, just deprioritized to **medium**.
+**Fix — pnpm or bun below floor.** One line:
 
-## 2. pnpm Version Floor
+```json
+{ "packageManager": "pnpm@11.0.0" }
+```
+
+**Fix — npm or yarn present.** Migrate. Both readers preserve the resolved tree, so this is usually a single commit plus a CI change:
+
+```bash
+pnpm import          # reads package-lock.json or yarn.lock, writes pnpm-lock.yaml
+# or
+bun install          # reads existing lockfiles, writes bun.lock
+```
+
+Then delete the old lockfile, set `packageManager`, update the CI install step, and apply items 3–7. Verify the resulting tree before committing — `pnpm import` resolves from the old lockfile's ranges, so a diff is expected and worth reading.
+
+Choose by what the team needs: pnpm has the fail-closed switch (`strictDepBuilds`) and the more granular allowlist; bun is faster and safe by default with less to configure. Both clear this audit.
+
+**Exception:** a source-only library with no build step carries less install-time risk in its own CI, but its consumers inherit whatever it ships. Still a finding, deprioritized one level.
+
+## 2. pnpm Version Floor (pnpm only)
+
+Item 1 covers the floor for every manager. This item is the pnpm-specific detail, because pnpm's floor has a second edge: the legacy split keys survive between 10.26 and 11.
 
 **Detection (only when `pnpm-lock.yaml` exists):**
 
@@ -44,7 +75,7 @@ jq -r '.packageManager // "unset"' package.json
 # Expect: pnpm@11.x or higher (pnpm@10.26+ minimum)
 ```
 
-Cross-check `pnpm-workspace.yaml` for the v10-era settings listed at the end of this checklist (item 8).
+Cross-check `pnpm-workspace.yaml` for the v10-era settings surfaced by the Quick Audit Block at the end of this checklist.
 
 **Severity:**
 - `packageManager` unset, OR pins pnpm `< 10.26` — **high** (no `allowBuilds` available at all)
@@ -132,11 +163,20 @@ ignoreScripts = true
 
 Use only in tightly controlled environments — this breaks any dep that legitimately needs a build step (sharp, esbuild on glibc/musl edge cases, etc.).
 
-## 4. minimumReleaseAge
+## 4. Release-Age Gate
 
 A 3-day floor is the strongest finding-to-friction ratio in this checklist. Most malicious package releases are detected and unpublished within 24–48 hours; waiting 72h before installing a newly-published version absorbs the entire detection window for free.
 
 This is also where the audit's policy floor differs most visibly from the ecosystem defaults — call it out explicitly when reporting findings.
+
+**One value, four units.** 72 hours in each manager's own unit. Copying a number between managers is the single most common error in this audit, and it fails silently in both directions.
+
+| Manager | Key | File | Unit | 72h value | Default |
+|---|---|---|---|---|---|
+| pnpm | `minimumReleaseAge` | `pnpm-workspace.yaml` | minutes | `4320` | `1440` on v11 |
+| bun | `install.minimumReleaseAge` | `bunfig.toml` | seconds | `259200` | none |
+
+`4320` in bun's field is 72 minutes — approximately no protection. `259200` in pnpm's field is 180 days — nothing installs, which at least fails loudly.
 
 ### 4a. pnpm
 
@@ -185,7 +225,7 @@ Bun does not currently expose `Strict` or `IgnoreMissingTime` equivalents — th
 
 **Common Mistake:** copying pnpm's 4320 into bun's setting. 4320 seconds = 72 minutes. That is approximately no protection at all.
 
-## 5. minimumReleaseAgeExclude (owned scopes only)
+## 5. Release-Age Exclusions (owned scopes only)
 
 The release-age gate blocks new versions of every package equally, including the team's own internal libraries. For workspaces that publish their own scoped packages, every release of an internal lib is invisible to consumers for 3 days. The exclude list bypasses the gate for trusted scopes — but **only for the team's own org scopes**, never for arbitrary `@scope/*` deps the audit happens to see.
 
@@ -193,7 +233,9 @@ The release-age gate blocks new versions of every package equally, including the
 
 1. Read `name:` from the workspace root `package.json`. If it is `@<prefix>/<pkg>`, the owned prefix is `<prefix>`.
 2. Owned scope patterns are `@<prefix>/*` AND any scope matching `@<prefix>-*/*` (so for `enonic`, both `@enonic/*` and `@enonic-types/*`, `@enonic-cli/*` are owned).
-3. Already-covered scopes are anything appearing in `minimumReleaseAgeExclude` (pnpm), `minimumReleaseAgeExcludes` (bun), `registries:`/`[install.scopes]`, or `@scope:registry=` in `.npmrc` — these are user-approved and never flagged.
+3. Already-covered scopes are anything appearing in `minimumReleaseAgeExclude` (pnpm), `minimumReleaseAgeExcludes` (bun), `registries:` / `[install.scopes]`, or `@scope:registry=` in `.npmrc` — these are user-approved and never flagged.
+
+**Note the pnpm field is singular and bun's is plural:** `minimumReleaseAgeExclude` vs `minimumReleaseAgeExcludes`.
 
 If the workspace root has no scoped name, no owned scopes are detected and items 5–6 emit nothing. Maximum security default: every `@scope/*` package in the lockfile stays under the release-age and dependency-confusion gates.
 
@@ -269,7 +311,7 @@ Same severity and owned-scope gating as pnpm.
 
 ## 7. Defaults Pinning (Defense Against Future Drift)
 
-pnpm and bun ship sensible defaults for several supply-chain settings. Audit only flags **explicit downgrades** — values that override a safe default with a permissive one.
+pnpm and bun both ship sensible defaults for several supply-chain settings. This item only flags **explicit downgrades** — a value that overrides a safe default with a permissive one. An unset key at or above the version floor is a pass, not a finding.
 
 **pnpm — flag any of these:**
 
@@ -286,7 +328,7 @@ pnpm and bun ship sensible defaults for several supply-chain settings. Audit onl
 | Dependency lifecycle scripts | denied (allowlist + built-in defaults) | covered in item 3b — bun's default is safe |
 | `install.ignoreScripts` | `false` | `true` is the safer value if you don't need any scripts |
 
-**Severity:** any explicit downgrade of a pnpm default in the table above is **high**.
+**Severity:** any explicit downgrade in the tables above is **high**.
 
 **Note on `enablePrePostScripts`:** the pnpm setting `enablePrePostScripts: true` is the default and is sometimes mistaken for a dependency-script control. It is not. It governs whether `pnpm foo` automatically runs `prefoo` / `postfoo` from the **current project's** `package.json` scripts — i.e., user-defined shell-script hooks around `pnpm run` invocations. Dependency build scripts are gated by `allowBuilds` + `strictDepBuilds` (item 3a). Do not treat `enablePrePostScripts` as a supply-chain finding.
 
@@ -324,16 +366,14 @@ These are out of scope for this audit but worth knowing:
 Run during Step 1 to gather everything the subagent needs:
 
 ```bash
-# Manager detection
+# Manager detection — an unsupported lockfile short-circuits the rest
 ls package-lock.json pnpm-lock.yaml yarn.lock bun.lock bun.lockb 2>/dev/null
 jq -r '{packageManager, trustedDependencies}' package.json 2>/dev/null
 
-# pnpm config
-cat pnpm-workspace.yaml 2>/dev/null
-cat .npmrc 2>/dev/null
-
-# bun config
-cat bunfig.toml 2>/dev/null
+# Supported-manager config
+cat pnpm-workspace.yaml 2>/dev/null   # pnpm
+cat bunfig.toml 2>/dev/null           # bun
+cat .npmrc 2>/dev/null                # scope->registry mapping, read by both
 
 # Surface scoped deps
 grep -hoE '@[a-z0-9-]+/[a-z0-9-]+' pnpm-lock.yaml bun.lock 2>/dev/null | sort -u

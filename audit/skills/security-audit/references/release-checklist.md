@@ -213,6 +213,18 @@ Grouping into one PR per week keeps noise low while preserving the update cadenc
 
 **Fix:** the publish job should contain exactly: registry auth setup (`setup-node` with `registry-url`), artifact download, and the publish command with `--ignore-scripts`. No checkout, no install, no cache. All building, checking, and smoking happens in earlier uncredentialed jobs (items 2 and 8).
 
+**Cache is part of this finding.** `actions/setup-node` restores a dependency cache by default when `cache:` is set, and an `actions/cache` step does the same explicitly. Cache scope is the whole repository (see `actions-checklist.md` item 5), so an entry poisoned by a fork PR or a lower-privilege workflow can be restored *inside* the credentialed job. Disable it there:
+
+```yaml
+- uses: actions/setup-node@<sha>
+  with:
+    node-version: 24
+    registry-url: https://registry.npmjs.org
+    package-manager-cache: false   # slower, but no cache can reach the publish identity
+```
+
+A cache miss costs seconds in a job that installs nothing. Flag `cache:` or any `actions/cache` step in the credentialed job as **high** — it reopens the exact bridge item 5 exists to close.
+
 ## 10. Publisher-Side Settings (npm)
 
 **Applies when `release_publishes_to_npm` is `true`.** Not auditable via `gh` — these live on npmjs.com's package settings page. Report as ask-the-user verification items:
@@ -221,3 +233,40 @@ Grouping into one PR per week keeps noise low while preserving the update cadenc
 - **Publishing access** set to *Require two-factor authentication and disallow bypass 2fa tokens* once OIDC is the only publish path. This kills the token fallback entirely and does not affect Trusted Publishing.
 
 **Why:** the tag ruleset and workflow hardening protect the OIDC path, but a leaked legacy automation token bypasses all of it unless token publishing is disallowed registry-side.
+
+## 11. Staged Publishing
+
+**Applies when `release_publishes_to_npm` is `true`.**
+
+**Scope note.** `package-manager-checklist.md` supports pnpm and bun only as *installers*. That has no bearing here. Publishing to the npm registry is in scope for every project, and the publish command should be `npm` even when pnpm or bun installs the tree — one tool in the credentialed job rather than two, and npm is where staged publishing lives. The exception is a project relying on a pnpm-only packing feature (the `workspace:` protocol, a `beforePacking` hook in `.pnpmfile.cjs`); there, use `pnpm publish` and check first that the pinned pnpm version supports staged publishing rather than silently dropping to an unstaged publish.
+
+**Detection:** the publish step runs `npm publish` rather than `npm stage publish`. Also check the npm CLI version the workflow resolves to — staged publishing needs npm >= 11.15.0 and Node >= 22.14.0.
+
+**Severity:**
+- `npm publish` where the package's Trusted Publisher is configured stage-only — **high**. The release will be rejected at publish time; this is a broken pipeline as well as a weaker one.
+- `npm publish` with no stage-only restriction — **medium (policy)**. Nothing is currently failing, but the release path has no human gate.
+- `npm stage publish` present with a stage-only Trusted Publisher — pass.
+
+**Why:** provenance and Trusted Publishing prove *which workflow* produced an artifact. Neither proves the artifact is one a maintainer intended to ship. A compromised CI job — poisoned cache, malicious transitive build dependency, altered workflow on a stale branch — holds a legitimate OIDC identity and can publish immediately. Staged publishing splits that: CI stages the release, and a maintainer approves it with 2FA before it becomes installable. The approval requires proof of presence and cannot use an OIDC token, so it is the one step in the chain that compromised CI cannot forge.
+
+**Fix:** in the workflow, change the publish command:
+
+```yaml
+- name: Stage the release
+  run: npm stage publish --ignore-scripts
+```
+
+`npm stage publish` never prompts for 2FA regardless of token type, so it is safe in a non-interactive job. The maintainer then approves out of band:
+
+```bash
+npm stage list                    # see what is waiting
+npm stage view <stage-id>         # inspect before approving
+npm stage approve <stage-id>      # 2FA; or use Staged Packages on npmjs.com
+npm stage reject <stage-id>
+```
+
+Every subcommand other than `publish` requires interactive authentication and cannot run from CI — that is the design, not a limitation.
+
+**Registry-side half.** Restricting the Trusted Publisher to stage-only is what makes the control binding; without it, a `npm publish` still succeeds and the stage step is merely a convention. That is a publisher-side setting (item 10) and is applied by `repo-hardening` Step 6, not here. Report it as a paired item: the workflow change and the registry restriction are only useful together.
+
+**Not for every project.** A package with a single maintainer who releases from CI on a tag push gains a real gate. A package with automated dependency-bump releases (changesets, semantic-release on merge) gains a manual step in a flow designed not to have one — say so in the finding rather than recommending it blindly. Note also that `--provenance` and staged publishing are complementary, not alternatives: keep item 5's recommendation either way.

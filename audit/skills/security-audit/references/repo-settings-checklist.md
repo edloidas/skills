@@ -295,6 +295,35 @@ gh api -X POST repos/<owner>/<repo>/environments/<env-name>/deployment-branch-po
 
 **Companion — provider-side token scope:** the token itself should be least-privilege (e.g. a Cloudflare token with only `Account · Cloudflare Pages · Edit`, not account-wide). Not auditable from the repo; report as an ask-the-user verification item.
 
+## 11. Immutable Releases
+
+**Detection:**
+```bash
+gh api repos/<owner>/<repo>/immutable-releases
+```
+
+Returns `{"enabled": bool, "enforced_by_owner": bool}`. `enforced_by_owner: true` means the org or user account mandates it and the repo cannot opt out — record it as already hardened.
+
+**Severity:** high when the repo publishes GitHub Releases or has a tag-triggered release workflow. Informational when it publishes no releases at all.
+
+**Why:** without this, a release's tag and its uploaded assets stay mutable after publication. An actor with push access — or a leaked token, or a workflow with `contents: write` — can move the tag to a different commit and replace the attached binaries, leaving the version number, release notes, and publication date intact. Consumers pinning `v1.2.3` then fetch different bytes than the ones that were reviewed. Immutable releases makes the tag and assets permanent at publish time, so swapping content requires a new version number, which is visible.
+
+This closes a gap the tag ruleset (item 6) leaves open. The ruleset stops tag *creation and deletion* by non-admins; immutable releases stops the *release contents* from changing even for someone who can bypass the ruleset.
+
+**Fix:**
+```bash
+gh api -X PUT repos/<owner>/<repo>/immutable-releases
+```
+
+Revert (rarely wanted):
+```bash
+gh api -X DELETE repos/<owner>/<repo>/immutable-releases
+```
+
+Requires admin access. Enabling it is not retroactive — releases published before the flip stay mutable, so a repo with a long release history keeps that exposure on old versions. Say so in the finding rather than implying the whole history is sealed.
+
+**Companion checks:** item 6 (tag rulesets) and `release-checklist.md` item 11 (staged publishing). The three cover the same attack from different sides: who can mint a tag, who can approve a package release, and whether a published release can be altered afterwards.
+
 ## Bypass Actor Patterns
 
 This is a pattern reference, not a numbered finding. Use it when remediating items 4, 5, 6.
