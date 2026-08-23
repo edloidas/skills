@@ -64,8 +64,8 @@ because those two scale together — there is no useful run with four reviewers 
 | `standard` | 3 — cold, intent, external | all three lenses |
 | `deep` | 4 — two cold on different models, intent, external | all three lenses, the killed claims too, and a synthesis critic on the assembled report |
 
-With no requirement resolved, `simple` is one reviewer and `standard` is two — the intent reviewer
-needs something to check against. Verification always runs; the mode sets its depth, not whether it
+With no requirement resolved, `simple` is one reviewer, `standard` is two and `deep` is three — the
+intent reviewer needs something to check against. Verification always runs; the mode sets its depth, not whether it
 happens, and it roughly doubles the run, which is why the default follows the scope.
 
 A late round in a fix loop is a `simple` run over the fix: small diff, spec settled two rounds ago,
@@ -105,8 +105,10 @@ git ls-files --others --exclude-standard     # new untracked files
 
 Filter out `*-lock.*`, `dist/`, `build/`, `.next/`, `*.min.js`, `*.map`, `*.d.ts`.
 
-**Trivial diffs** — only version bumps, formatting, or lock files → print
-`Trivial changes only. Nothing to attack.` and stop. Do not spend reviewers on them.
+**Trivial diffs** — only version bumps, lock files, or formatting that moved no non-whitespace token
+→ print `Trivial changes only. Nothing to attack.` and stop. Do not spend reviewers on them. A
+reformat that moved a token is not formatting: a reflowed ternary, or a `return` that ended up inside
+a different branch, gets reviewed like any other change.
 
 **Dirty tree under `--base`.** `git diff <base>...HEAD` excludes uncommitted work, so a dirty tree
 means the reviewers judge a change set that is not what exists on disk. Say so and review
@@ -119,16 +121,22 @@ skill's job, and doing it in this phase would leak into the finders.
 
 ## Phase 2: Resolve the requirement
 
-Only the intent reviewer uses this. Resolve it before dispatch:
+The intent reviewer uses this, and so does the `spec` verification lens in Phase 5. Resolve it once
+here, before dispatch, and hold the text for the whole run — the lens must not re-fetch it:
 
 1. `--issue <N>` was passed → `gh issue view <N> --json title,body`
 2. Current branch matches `issue-<N>` → same, with that number
 3. An open PR exists for the branch → `gh pr view --json title,body,closingIssuesReferences` and
-   prefer the linked issue's body over the PR description
+   take the linked issue's body; the PR description only under the rule below
 4. Last commit message contains `#<N>` → same, with that number
 
 Take the issue **description** only. Exclude comments the agent itself posted during this run —
 they are the implementer's reasoning wearing a different hat.
+
+**A pull request body is not a requirement when an agent wrote it.** In this repo's own workflows the
+implementer writes it, which makes it an account of the diff — the one thing no reviewer may see. Use
+it only when a human authored it and it reads as a request rather than a summary of the change.
+Otherwise fall through to step 4, and if nothing resolves print the no-requirement line instead.
 
 If nothing resolves, print `No requirement found — running the cold reviewer only.` and skip the
 intent reviewer. Do not invent a requirement from the diff; a reviewer checking a change against a
@@ -198,8 +206,8 @@ Do not retry, and never block on it. A missing CLI is a skipped leg, not a faile
 reports why and exits cleanly, and the report notes the reviewer was unavailable.
 
 This leg only ever gets a piped diff, so it is structurally cold — good at internal contradictions in
-the diff, prone to asking for context it cannot see. Weight it accordingly, and never upgrade its
-confidence to match a native reviewer's.
+the diff, prone to asking for context it cannot see. Never upgrade its confidence to match a native
+reviewer's.
 
 It is the one reviewer with no output contract you control. Map each finding onto the fields the
 native reviewers return: claim, location, actor, severity, confidence, defect, cases. Missing severity
@@ -218,8 +226,10 @@ Match the resolved file list against this table and dispatch a lens for each row
 | files importing `three` or `@react-three/*` | `audit:three-audit` |
 
 Invoke the lens skill by name, the same way the external leg goes through `/outsider`, and tell it
-three things: that it is running in **lens mode**, the exact files Phase 1 resolved, and the base ref
-when the scope has one. A lens must not widen its own scope — a lens that audits the whole project
+four things: that it is running in **lens mode**, the exact files Phase 1 resolved, the base ref when
+the scope has one, and the fields to return — claim, location, actor, severity, confidence, defect,
+cases. Both lens skills return whatever shape the caller asks for, so a lens nobody asks returns its
+own tally on its own scale, and Phase 4 gets no actor or confidence to work with. A lens must not widen its own scope — a lens that audits the whole project
 returns findings this run cannot attribute to the change.
 
 Map what comes back onto the finding contract the native reviewers use. A lens rates its own
@@ -256,7 +266,12 @@ Takes the **consolidated** findings and is dispatched like any other reviewer �
 none seeing another. The mode decides which lenses run: `reachability` alone in `simple`, all three
 otherwise.
 
-Lenses come from `references/verification-prompt.md` with `{{LENS}}` set:
+Lenses come from `references/verification-prompt.md`. Fill all four placeholders before dispatch:
+`{{LENS}}` the lens name, `{{FINDINGS}}` the consolidated findings including the ones you killed,
+`{{DIFF}}` the change set Phase 1 resolved, and `{{SYSTEM_FACTS}}` the caller's system facts or
+`None supplied.` when there are none. Substitute globally — `{{SYSTEM_FACTS}}` sits inside the
+reachability section, so filling every copy still satisfies the rule that those facts reach only that
+lens.
 
 | Lens | Question | May do |
 | ---- | -------- | ------ |
@@ -377,7 +392,7 @@ Rules for the shape:
 ## Changes review: N findings (C critical, M moderate, m minor) · D decisions
 
 Scope: <files, lines, base> · mode: <simple|standard|deep>
-Reviewers: cold (<model>) · intent (<model>|skipped) · external (<cli>|skipped)
+Reviewers: cold (<model>) · cold-2 (<model>|skipped) · intent (<model>|skipped) · external (<cli>|skipped)
 Lenses: <lens skills that ran, or none matched|skipped>
 Verification: <lenses run, K findings dropped, J re-rated>
 
@@ -390,7 +405,7 @@ Drop the `· D decisions` clause when there are none. When every reviewer return
 ## Changes review: no findings
 
 Scope: <files, lines, base> · mode: <simple|standard|deep>
-Reviewers: cold (<model>) · intent (<model>|skipped) · external (<cli>|skipped)
+Reviewers: cold (<model>) · cold-2 (<model>|skipped) · intent (<model>|skipped) · external (<cli>|skipped)
 Lenses: <lens skills that ran, or none matched|skipped>
 ```
 
@@ -412,9 +427,9 @@ reader their time.
 **Two shapes, and whose branch it is decides.** On your own pull request GitHub refuses a review, so
 publication is a single issue comment — `--comment`. On someone else's it is a real review —
 `--review`: one inline comment per finding anchored to the line it concerns, minors grouped into one,
-anything that fits no line in the review body, and a verdict. When the caller names neither shape,
-resolve authorship with `gh pr view --json author` against `gh api user --jq .login` and take the one
-that fits.
+anything that fits no line in the review body, and a verdict. When the caller asked to publish but named no
+shape, resolve authorship with `gh pr view --json author` against `gh api user --jq .login` and take
+the one that fits.
 
 Read `references/publishing-a-review.md` before composing. It owns the composition rules, the length
 budget, the anchoring mechanics and the verdict mapping. Five steps, in order:
@@ -438,22 +453,17 @@ budget, the anchoring mechanics and the verdict mapping. Five steps, in order:
    the same thing in chat as a short numbered list and wait for a reply. A caller running unattended
    does not get to skip this — it prints everything and stops.
 
-**The mandate here inverts Phase 6's.** There you do not soften a claim you kept; here you drop,
-narrow and re-attribute before you speak. Both are right for their own audience.
-
 The attribution footer resolves from the **target** repo's instruction file rather than being
 hardcoded. A clean run still publishes: one short paragraph, and in review shape an approving
 verdict.
 
 ## Rules
 
-- **One job per reviewer.** A reviewer told to find bugs *and* suggest improvements softens into a
-  quality reviewer and stops finding bugs. Never merge the prompts.
+- **One job per reviewer.** Never merge the prompts.
 - **No reasoning reaches a reviewer.** Not the plan, not the rationale, not a summary of intent, not
   a previous round's findings or verdicts.
 - **Never mutate.** No edits, no autofix, no commits, no stashes. Callers rely on this.
-- **Concrete failure or it does not exist.** This is the difference between a review and a list of
-  anxieties.
+- **Concrete failure or it does not exist.**
 - **Severity needs an actor.** A rating that does not say who can reach the defect is not a rating.
 - **No manufactured findings.** A reviewer returning "No findings" on sound code is correct
   behavior, not a failed run.
@@ -474,9 +484,4 @@ verdict.
 | A reviewer stalls or returns nothing | Relaunch it once with a narrowed file list and a stated tool budget — not the same prompt again. A reviewer that goes quiet on a wide diff is usually still reading it |
 | A native reviewer returns nothing usable | Report the remaining reviewers, name the gap |
 | Every reviewer fails | Say so plainly. Do not substitute your own review — that is the one thing this skill exists to avoid |
-| `--comment` and every finding fails the gate | Publish the clean-run paragraph, and tell the caller which findings were withheld and why |
-| `--comment` or `--review` but no PR resolves for the branch | Print the composed text instead of posting, and say no PR was found |
-| The user declines or does not answer | Print everything, post nothing. A declined publication is a normal outcome, not a failed run |
-| `--review` on a pull request the user authored | GitHub refuses it. Fall back to the issue-comment shape and say why |
-| A finding's line is outside the diff | Move it to the review body. Never anchor it to a nearby line the API happens to accept |
-| No write access to the target repository | Print everything and say it cannot post. `viewerCanUpdate` answers this before the attempt |
+| Anything fails during publication | See the failure table in `references/publishing-a-review.md`. Every case ends in print-and-do-not-post |
