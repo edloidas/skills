@@ -1,13 +1,14 @@
 ---
 name: pr-review
 description: >
-  Handle a pull request from whichever side of it you are on. On someone else's branch it reviews:
-  attacks the diff through changes-review, then publishes a real review with per-line comments and a
-  verdict. On your own it works the threads people and bots left — decides its standing in each,
-  verifies the claim before it answers, runs the project's checks, then replies and resolves. It
-  verifies before it speaks and changes no code unless asked. Use when the user wants a pull request
-  reviewed, wants PR feedback addressed or answered, wants Copilot or other bot comments dealt with,
-  or asks what is still open on a pull request.
+  Handle a pull request from whichever side you are on. On someone else's branch it attacks
+  the diff through changes-review, then publishes a real review with per-line comments and a
+  verdict. On your own it works the threads people and bots left — decides its standing in
+  each, verifies the claim before answering, runs the project's checks, then replies and
+  resolves. Changes no code unless asked.
+when_to_use: >
+  When a pull request needs reviewing, when PR feedback needs addressing or answering, when
+  Copilot or other bot comments need dealing with, or on "what is still open on this PR".
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
 allowed-tools: Bash(git:*) Bash(gh:*) Bash(pnpm:*) Bash(npm:*) Read Glob Grep Edit Task Skill AskUserQuestion

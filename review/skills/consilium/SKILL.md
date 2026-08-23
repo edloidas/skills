@@ -1,14 +1,16 @@
 ---
 name: consilium
 description: >
-  Approach board for a problem or a decision. Dispatches independent seats — some that generate
-  candidate approaches, including one agent outside this process entirely, and some that attack the
-  assembled candidate set comparatively — then verifies the surviving objections and reports a
-  ranked recommendation with its trade-offs. Use when the question is what to build or how to frame the
-  problem, not whether a diff is correct: "how should we approach this", "what are the options",
-  "is this the right way", "think hard about this", "stress-test this plan", "what if we did it
-  differently". An approach already on the table enters the board as one candidate among several.
-  Autonomous — runs without user interaction and changes nothing.
+  Approach board for a problem or a decision. Dispatches independent seats — some generating
+  candidate approaches, including one agent outside this process entirely, some attacking the
+  assembled set comparatively — then verifies the surviving objections and reports a ranked
+  recommendation with its trade-offs. An approach already on the table enters as one candidate
+  among several. Autonomous; changes nothing.
+when_to_use: >
+  When the question is what to build or how to frame the problem, not whether a diff is
+  correct: "how should we approach this", "what are the options", "is this the right way",
+  "think hard", "ultrathink", "stress-test this plan". Also for an architecture decision, a
+  PRD review, or weighing trade-offs, prior art, blast radius, and lock-in.
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
 allowed-tools: Read Glob Grep Task Skill Write(*/outsider-*)
@@ -339,10 +341,3 @@ and note the reasoning for any override. You have context no seat had — use it
 - **No modifications**: this board reads and reasons. It never edits the thing it examines.
 - **Name the agent that answered** for Peregrinus, and say which kind of diversity the run got.
 - **Honest synthesis**: disagree with the board when your broader context warrants it, and say so.
-
-## Keywords
-
-consilium, approach board, how should we, what are the options, best way to, explore approaches,
-solution design, design space, alternatives, trade-offs, think hard, ultrathink, stress-test this
-plan, is this the right approach, what if we did it differently, architecture decision, PRD review,
-second opinion, devil's advocate, prior art, blast radius, lock-in

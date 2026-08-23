@@ -1,12 +1,13 @@
 ---
 name: working-docs
 description: >
-  Manage working documents in an Obsidian vault using a two-tier system
-  (Inbox for quick dumps, Dev/Claude for persistent docs). Handles creating,
-  finding, promoting, updating, and completing working documents with proper
-  naming, headers, and lifecycle. Use when creating notes for multi-step tasks,
-  looking up previous work, managing cross-session state, or when the user asks
-  to write something to Obsidian.
+  Manage working documents in an Obsidian vault using a two-tier system — Inbox for quick
+  dumps, Dev/Claude for persistent docs. Creates, finds, promotes, updates, and completes
+  working documents with proper naming, headers, and lifecycle.
+when_to_use: >
+  When creating notes for a multi-step task, looking up previous work, or carrying state
+  across sessions. Also on "write this to Obsidian", "put this in my vault", or "find my note
+  about X".
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
 allowed-tools: Read Write Edit Glob Grep Bash(ls:*)

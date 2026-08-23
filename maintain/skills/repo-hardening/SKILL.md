@@ -1,14 +1,15 @@
 ---
 name: repo-hardening
 description: >
-  Apply a security hardening baseline to a GitHub repository via gh api — branch and
-  tag rulesets, Actions token defaults, secret scanning, Dependabot, private
-  vulnerability reporting, CodeQL, immutable releases, workflow linting, and
-  branch-restricted environments for deploy secrets. This is the write half of the pair
-  with audit:security-audit, which finds the same gaps read-only. Use when the user asks
-  to harden a repo, protect a branch, lock down releases or tags, set up rulesets, move
-  deploy secrets into an environment, enable immutable releases, or bootstrap security
-  settings for a new repository or pipeline.
+  Apply a security hardening baseline to a GitHub repository via gh api — branch and tag
+  rulesets, Actions token defaults, secret scanning, Dependabot, private vulnerability
+  reporting, CodeQL, immutable releases, and branch-restricted environments for deploy
+  secrets. The write half of the pair with audit:security-audit, which finds the same gaps
+  read-only.
+when_to_use: >
+  On "harden this repo", "protect the main branch", "lock down releases or tags", "set up
+  rulesets", "move deploy secrets into an environment", or "enable immutable releases", and
+  when bootstrapping security settings for a new repository or pipeline.
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
 allowed-tools: Bash Read AskUserQuestion

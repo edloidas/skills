@@ -1,10 +1,12 @@
 ---
 name: scripts-audit
 description: >
-  Analyze package.json scripts for naming, composition, lifecycle hooks,
-  consistency, and performance. Use when auditing or designing npm, pnpm,
-  or Bun scripts, standardizing script conventions, or checking whether a
-  package's public script interface fits its role.
+  Audit package.json scripts for naming, composition, lifecycle hooks, consistency, and
+  performance.
+when_to_use: >
+  When auditing or designing npm, pnpm, or Bun scripts, standardizing script conventions, or
+  checking whether a package's public script interface fits its role. Also on "audit scripts",
+  "check package.json scripts", or "clean up my build scripts".
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
 allowed-tools: Bash(jq:*) Read Glob Grep
@@ -446,7 +448,3 @@ Optional Biome companion scripts:
   "validate": "bun run check && bun run test"
 }
 ```
-
-## Keywords
-
-package.json, scripts, npm, pnpm, bun, naming, composition, build, lint, format, test, validate, lifecycle

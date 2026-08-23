@@ -1,11 +1,13 @@
 ---
 name: code-to-spec
 description: >
-  Extract a behavioral specification from a source-code bundle — from a handful of files up to a
-  whole 500+ file application. Produces reproducible, stack-neutral specs that another engineer or
-  LLM could use to rebuild the same observable behavior without reading the original source. Use
-  when the user wants to reverse-engineer a library or module's contract, understand an
-  application in detail, or prepare input for a reimplementation.
+  Extract a behavioral specification from a source-code bundle — a handful of files up to a
+  whole 500+ file application. Produces reproducible, stack-neutral specs another engineer or
+  LLM could use to rebuild the same observable behavior without reading the original source.
+when_to_use: >
+  When reverse-engineering a library or module's contract, understanding an application in
+  detail, or preparing input for a reimplementation. Also on "extract a spec", "what is this
+  module's contract", "map the architecture", or "document the public API surface".
 license: MIT
 compatibility: Claude Code
 allowed-tools: Read Write Glob Grep Task Bash
@@ -307,7 +309,3 @@ The caps balance throughput against context and rate-limit pressure. Do not exce
 - **Temp files under `<TMP>/code-to-spec-${CLAUDE_SESSION_ID}/`** — left for OS cleanup.
 - **No source modification.** The skill only reads source and writes to the destination.
 - **One run per invocation.** Re-running overwrites only if the user accepts.
-
-## Keywords
-
-spec, specification, behavioral spec, reverse engineer, reimplementation, contract extraction, architecture map, module analysis, audit, behavior contract, public API surface

@@ -1,11 +1,13 @@
 ---
 name: explain
 description: >
-  Explain how something actually works — code, a type, an error, a fix, a design — by tracing the
-  mechanism on concrete values instead of describing it. Also checks whether the user's own account
-  of something is correct. Use when the user asks how or why something works, wants a walkthrough or
-  a step-by-step, says an earlier answer did not land ("explain again", "simpler", "I still don't
-  get it"), or asks whether what they wrote about it is right.
+  Explain how something actually works — code, a type, an error, a fix, a design — by tracing
+  the mechanism on concrete values instead of describing it. Also checks whether the user's
+  own account of something is correct.
+when_to_use: >
+  When the user asks how or why something works, wants a walkthrough or a step-by-step, says
+  an earlier answer did not land ("explain again", "simpler", "I still don't get it"), or asks
+  whether what they wrote about it is right.
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
 allowed-tools: Read Glob Grep Bash Task

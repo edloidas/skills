@@ -1,12 +1,14 @@
 ---
 name: fix-and-reverify
 description: >
-  Fix what a review found, then review the fix. Runs review and fix in rounds: triage findings by
-  severity and confidence, fix the ones that clear the gate, confirm the tree still builds and its
-  tests still pass, then attack the fix itself rather than the whole change again. Fixes
-  automatically by default and reports anything with a real trade-off; `--interactive` asks instead.
-  Use after implementing a change, after a review has produced findings, or when asked to fix
-  findings, address what a reviewer raised, or close out a review loop.
+  Fix what a review found, then review the fix. Runs review and fix in rounds: triage findings
+  by severity and confidence, fix the ones that clear the gate, confirm the tree still builds
+  and its tests still pass, then attack the fix itself rather than the whole change again.
+  Fixes automatically by default and reports anything with a real trade-off; `--interactive`
+  asks instead.
+when_to_use: >
+  After implementing a change, after a review has produced findings, or on "fix the findings",
+  "address what the reviewer raised", "close out the review loop".
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
 allowed-tools: Bash Read Write Edit Glob Grep Task Skill AskUserQuestion

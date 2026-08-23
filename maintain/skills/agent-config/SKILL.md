@@ -1,17 +1,15 @@
 ---
 name: agent-config
 description: >
-  Set up and maintain a repository's agent instruction layer — one real root
-  instruction file, an AGENTS.md symlink so every agent reads the same document,
-  a comment-convention block, and a drift check that catches documented commands,
-  paths, structures, and counts that no longer match the repo. Use when the user
-  asks to init or set up AI/agent config, create CLAUDE.md or AGENTS.md, wire
-  AGENTS.md to CLAUDE.md, or check whether repo instructions are still accurate.
+  Set up and maintain a repository's agent instruction layer — one real root instruction file,
+  an AGENTS.md symlink so every agent reads the same document, a comment-convention block, and
+  a drift check that catches documented commands, paths, structures, and counts that no longer
+  match the repo.
 when_to_use: >
-  On "init ai config", "set up agent config", "create CLAUDE.md", "make AGENTS.md a
-  symlink", "check repo instructions", "are my repo docs still accurate", "sync CLAUDE.md".
-  Also right after renaming or removing build scripts, moving directories the instruction
-  file names, changing build tooling, or changing a count it documents.
+  On "init ai config", "set up agent config", "create CLAUDE.md", "make AGENTS.md a symlink",
+  "check repo instructions", "are my repo docs still accurate", "sync CLAUDE.md". Also right
+  after renaming or removing build scripts, moving directories the instruction file names,
+  changing build tooling, or changing a count it documents.
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
 allowed-tools: Read Edit Glob Grep AskUserQuestion Bash(bash:*) Bash(git status:*) Bash(git diff:*) Bash(jq:*) Bash(ls:*)

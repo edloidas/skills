@@ -2,14 +2,14 @@
 name: changes-review
 description: >
   Attack a code change and report what survives. Dispatches independent reviewers in parallel,
-  each with a single job and no access to the implementer's reasoning: one hunts correctness bugs
-  blind to the issue, one hunts requirement gaps against the issue text, one runs outside the
-  process entirely. Optionally re-attacks its own findings before reporting, then synthesizes what
-  is left. Returns findings and changes nothing — no tooling, no autofix, no edits. On request it
-  also publishes to the author, as an issue comment on your own pull request or as a real review with
-  inline comments and a verdict on someone else's, gated on demonstrated evidence.
-  Use before committing, when you want a change attacked rather than assessed, or as the find step
-  behind a fix pass or a PR review skill. Every phase is configurable by the caller.
+  each with a single job and no access to the implementer's reasoning: one hunts correctness
+  bugs blind to the issue, one hunts requirement gaps against the issue text, one runs outside
+  the process entirely. Optionally re-attacks its own findings, then synthesizes what is left.
+  Returns findings and changes nothing — no tooling, no autofix, no edits. On request it
+  publishes to the author, gated on demonstrated evidence. Every phase is configurable.
+when_to_use: >
+  Before committing, when a change should be attacked rather than assessed, or as the find
+  step behind a fix pass or a PR review.
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
 allowed-tools: Bash(git:*) Bash(gh:*) Read Glob Grep Task Skill

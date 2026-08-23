@@ -1,10 +1,12 @@
 ---
 name: bro
 description: >
-  Say the last message again, straight. Reworks the previous answer — or the connected thread of
-  answers — into something shorter and easier to act on: the bottom line first, only what matters,
-  and anything you have to decide at the end. Use when the user runs /bro, or asks to say that again
-  simply, cut the fluff, or put it in plain words.
+  Restate the previous answer — or the connected thread of answers — as something shorter and
+  easier to act on: the bottom line first, only what matters, and anything to decide at the
+  end.
+when_to_use: >
+  On /bro, "say that again simply", "cut the fluff", "put it in plain words", or "what's the
+  bottom line".
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
 disable-model-invocation: true

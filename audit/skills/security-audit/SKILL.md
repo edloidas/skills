@@ -1,6 +1,15 @@
 ---
 name: security-audit
-description: Use when the user asks to audit a repository for security risks — supply-chain, CI, release, runtime, secrets, repository settings (rulesets, Actions defaults, immutable releases), package manager and install-time controls for pnpm and bun (lifecycle-script allowlists, release-age gating, dependency confusion), or any combination. Reads and reports only; never mutates the repo or its GitHub settings. Aggregates findings from focused subagents across whichever audit areas the repo exposes. Trigger phrases include "audit security", "security audit", "check supply chain", "harden CI", "harden release", "harden settings", "audit rulesets", "audit install scripts", "audit lifecycle scripts", "audit package manager", "review for vulnerabilities".
+description: >
+  Audit a repository for security risks — supply chain, CI, release, runtime, secrets,
+  repository settings, and package-manager install-time controls for pnpm and bun. Reads and
+  reports only; never mutates the repo or its GitHub settings. Aggregates findings from
+  focused subagents across whichever areas the repo exposes.
+when_to_use: >
+  On "audit security", "check supply chain", "harden CI", "harden release", "audit rulesets",
+  "audit install scripts", or "review for vulnerabilities". Also for SHA pinning,
+  `pull_request_target`, npm provenance and trusted publishers, immutable releases,
+  Dependabot, branch and tag protection, secret scanning, or lifecycle-script allowlists.
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
 allowed-tools: Bash Read Agent
@@ -272,7 +281,3 @@ Then stop. Do not invoke any of those skills yourself.
 | `references/package-manager-checklist.md` | Per-manager field names, units, defaults, and fix examples |
 | `references/install-flags.md` | Frozen-lockfile and `--prod` flags per manager, multi-stage Docker |
 | `references/code-security-checklist.md` | Injection and unsafe-execution vectors by stack |
-
-## Keywords
-
-security audit, supply chain, github actions, sha pinning, pinact, persist-credentials, pull_request_target, pwn request, zizmor, release security, npm provenance, oidc, trusted publishers, staged publishing, npm stage publish, immutable releases, frozen lockfile, npm ci, prod flag, devDependencies, dependabot, harden ci, cache poisoning, branch protection, tag protection, rulesets, bypass actors, sha_pinning_required, default_workflow_permissions, secret scanning, package manager, pnpm, bun, allowBuilds, strictDepBuilds, trustedDependencies, minimumReleaseAge, lifecycle scripts, postinstall, dependency confusion, registries, scope mapping
