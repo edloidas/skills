@@ -45,9 +45,11 @@ function walk(dir, depth = 0) {
   }
   const found = [];
   for (const entry of entries) {
-    if (entry.name.startsWith('.') || ['node_modules', 'dist', 'build'].includes(entry.name)) continue;
+    if (entry.name.startsWith('.')) continue;
     if (!entry.isDirectory()) continue;
     const full = join(dir, entry.name);
+    // Skip build output, but never a plugin group that happens to be named `build`.
+    if (['node_modules', 'dist', 'build'].includes(entry.name) && !existsSync(join(full, 'skills'))) continue;
     if (existsSync(join(full, 'SKILL.md'))) found.push(full);
     else found.push(...walk(full, depth + 1));
   }

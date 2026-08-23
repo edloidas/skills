@@ -7,7 +7,6 @@ description: >
   "only staged", "relevant", or "amend".
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
-effort: medium
 user-invocable: true
 argument-hint: "[instructions]"
 allowed-tools: Read Grep Bash(git:*) Agent

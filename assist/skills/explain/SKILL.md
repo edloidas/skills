@@ -10,7 +10,6 @@ license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
 allowed-tools: Read Glob Grep Bash Task
 argument-hint: "[what to explain]"
-effort: high
 metadata:
   author: edloidas
 ---
