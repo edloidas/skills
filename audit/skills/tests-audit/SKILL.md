@@ -163,4 +163,5 @@ Full catalog with mechanisms, detection, and worked fixes: `references/anti-patt
   template, and the fix-pass order for whoever applies the report
 - `references/anti-patterns.md` — full catalog: symptom, mechanism, detection, fix
 - `references/writing-tests.md` — how to rewrite a flagged test: contract listing, naming, case
-  selection, doubles, worked example, per-stack idioms (Vitest/TS, JUnit/Mockito, WebdriverIO)
+  selection, doubles, worked example, per-stack idioms (Vitest/TS, R3F, JUnit/Mockito,
+  WebdriverIO)

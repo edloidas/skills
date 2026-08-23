@@ -127,9 +127,9 @@
       "group": "maintain",
       "name": "edloidas-maintain",
       "displayName": "Edloidas Maintain",
-      "description": "A Codex-safe maintenance bundle for agent instruction setup, label sync, rule sync, and lint migration.",
-      "shortDescription": "Agent config, label sync, rules, and lint migration.",
-      "longDescription": "Install the maintenance bundle from edloidas/skills for setting up a repo's agent instruction layer, syncing GitHub labels, syncing agent rules, and migrating lint configs from Codex.",
+      "description": "A Codex-safe maintenance bundle for agent instruction setup, label sync, lint migration, and repo hardening.",
+      "shortDescription": "Agent config, label sync, lint migration, and hardening.",
+      "longDescription": "Install the maintenance bundle from edloidas/skills for setting up a repo's agent instruction layer, syncing GitHub labels, migrating lint configs, and hardening repository security from Codex.",
       "category": "Coding",
       "websiteURL": "https://github.com/edloidas/skills",
       "keywords": [
@@ -140,7 +140,6 @@
         "labels",
         "sync",
         "lint",
-        "rules",
         "processes"
       ],
       "skills": [
@@ -149,7 +148,6 @@
         "maintain/skills/labels-sync",
         "maintain/skills/lint-sync",
         "maintain/skills/repo-hardening",
-        "maintain/skills/rules-sync",
         "maintain/skills/stale-process-cleanup"
       ]
     },

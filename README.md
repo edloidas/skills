@@ -279,7 +279,7 @@ stack lenses for `changes-review`.
 
 ### Maintain
 
-Agent instruction setup and drift check, label sync, lint migration, agent rule sync, editor config sync, repo security hardening, and stale process cleanup.
+Agent instruction setup and drift check, label sync, lint migration, editor config sync, repo security hardening, and stale process cleanup.
 
 | Skill | Description | Agent |
 | ----- | ----------- | ----- |
@@ -287,7 +287,6 @@ Agent instruction setup and drift check, label sync, lint migration, agent rule 
 | [labels-sync](./maintain/skills/labels-sync/) | Check, apply, or export GitHub repository labels as reusable JSON | All |
 | [editor-config](./maintain/skills/editor-config/) | Init or merge `.zed` / `.vscode` editor configs from a canonical set | All |
 | [lint-sync](./maintain/skills/lint-sync/) | Compare ESLint rules against Biome for overlap | All |
-| [rules-sync](./maintain/skills/rules-sync/) | Init or update `.claude/rules` / `.agents/rules` from a canonical set | All |
 | [repo-hardening](./maintain/skills/repo-hardening/) | Apply a GitHub security baseline: rulesets, Actions defaults, environments | All |
 | [stale-process-cleanup](./maintain/skills/stale-process-cleanup/) | Find and reap orphaned dev servers, LSP, and MCP processes | All |
 
