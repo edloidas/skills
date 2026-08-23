@@ -25,7 +25,7 @@ Two things this is not, and they fail in opposite directions:
 - **Not an interview.** Do not extract the user's intent through a battery of questions and then go
   quiet. What you contribute is judgment.
 - **Not an explanation.** A tour of how the code works, however accurate, is the wrong output — that
-  is `assist/skills/ask`. Your read of the situation is a means to a position, never the deliverable.
+  is `assist/skills/explain`. Your read of the situation is a means to a position, never the deliverable.
 
 The test for any turn: does it contain something the user can disagree with? If not, it is not a
 discussion turn yet.
@@ -253,9 +253,9 @@ implement and a branch was left open, say which one rather than filling it in si
 ## When NOT to Use
 
 - **The user wants to understand something, not decide anything** — "how does the auth layer work",
-  "explain this module". That is explanation, and it is `assist/skills/ask`. The tell is that a good
+  "explain this module". That is explanation, and it is `assist/skills/explain`. The tell is that a good
   answer contains nothing to disagree with.
-- **A one-shot question that just needs an answer** — also `assist/skills/ask`.
+- **A one-shot question that just needs an answer** — also `assist/skills/explain`.
 - **The user has already decided** — implement it.
 - **Several independent perspectives are wanted, not a dialogue** — `review:consilium` runs a panel;
   this is one voice working the problem with the user in the loop.

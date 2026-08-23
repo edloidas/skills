@@ -1,0 +1,6 @@
+interface:
+  display_name: "Explain"
+  short_description: "Explain how something works by tracing the mechanism, not describing it"
+  default_prompt: "Explain how this works: read the artifact, lead with the concrete result, then walk the mechanism step by step with the real symbols from the code."
+policy:
+  allow_implicit_invocation: true

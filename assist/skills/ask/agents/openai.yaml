@@ -1,6 +1,0 @@
-interface:
-  display_name: "Ask"
-  short_description: "Answer at maximum reasoning effort: explain, challenge, or verify"
-  default_prompt: "Use $ask to answer the current question at the highest reasoning effort available, explaining a concept, challenging a decision, or verifying a claim."
-policy:
-  allow_implicit_invocation: false
