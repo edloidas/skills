@@ -305,7 +305,7 @@ External opinion, assistance, and plain restatement tools.
 
 | Skill | Description | Agent |
 | ----- | ----------- | ----- |
-| [ask](./assist/skills/ask/) | Answer at maximum reasoning effort — explain, challenge, or verify | All |
+| [explain](./assist/skills/explain/) | Explain how something works by tracing the mechanism, not describing it | All |
 | [discuss](./assist/skills/discuss/) | Talk a design through — investigate, take a position, push back; never writes | All |
 | [handoff](./assist/skills/handoff/) | Compact the session into a handoff — inline text or per-project doc file | All |
 | [outsider](./assist/skills/outsider/) | Quick opinion or review from an agent CLI outside this session | All |
