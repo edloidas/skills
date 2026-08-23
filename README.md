@@ -287,7 +287,7 @@ stack lenses for `changes-review`.
 
 | Skill | Description | Agent |
 | ----- | ----------- | ----- |
-| [ci-audit](./audit/skills/ci-audit/) | Analyze GitHub Actions workflows for optimization | All |
+| [ci-audit](./audit/skills/ci-audit/) | Audit GitHub Actions for wall clock, spend, and whether the gating actually gates | All |
 | [scripts-audit](./audit/skills/scripts-audit/) | Analyze package.json scripts for naming, composition, and consistency | All |
 | [security-audit](./audit/skills/security-audit/) | Find supply-chain gaps in Actions, release config, repo settings, and package manager — read-only | All |
 | [skill-audit](./audit/skills/skill-audit/) | Gate a skill change on discovery, instructions, context cost, portability, and safety | All |
