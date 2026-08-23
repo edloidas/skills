@@ -416,7 +416,10 @@ instead, so the distribution layer never sees them.
 
 A test file sources `tests/lib/assert.sh` and `tests/lib/fixture.sh`, defines `test_*`
 functions, and ends with `run_tests`. Each case runs in its own subshell in its own sandbox
-directory, with `HOME` and `TMPDIR` pointed inside it. `fixture.sh` builds throwaway git
+directory, with `HOME`, `TMPDIR`, and `XDG_CONFIG_HOME` pointed inside it and every
+environment variable the scripts under test consult unset — `CLAUDECODE`, `OUTSIDER_*`,
+`GIT_DIR`, and the rest. A script that starts reading a new variable needs that variable
+added to the scrub in `run_tests`, or a case will pass or fail based on who ran it. `fixture.sh` builds throwaway git
 repos with a local bare "remote" and replaces `PATH` with a sandbox pair — a stub directory
 plus symlinks to a fixed list of core tools — which is what makes "the tool is not
 installed" testable at all. Nothing reaches the network, real `$HOME`, or a real remote.
