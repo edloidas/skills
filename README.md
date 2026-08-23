@@ -33,7 +33,7 @@ it. Nothing runs in the background, nothing is injected into every prompt.
 | [audit](#audit) | CI, scripts, security, skills, workspace, tsconfig, Three.js, React, tests | 9 |
 | [maintain](#maintain) | Agent config, label/rule/config sync, lint migration, repo hardening, process cleanup | 7 |
 | [ship](#ship) | npm releases | 1 |
-| [assist](#assist) | Explanations, external opinions, discussion, handoffs, restatement | 6 |
+| [assist](#assist) | Explanations, external opinions, design discussion, handoffs, restatement | 5 |
 | [write](#write) | Markdown, READMEs, repository documentation | 1 |
 | [obsidian](#obsidian) | Working documents in an Obsidian vault | 1 |
 | [workflow](#workflow) | End-to-end issue workflow | 1 |
@@ -114,7 +114,7 @@ Install the whole collection as a pi package:
 pi install git:github.com/edloidas/skills
 ```
 
-This resolves the 35 pi-compatible skills through the `pi.skills` manifest in `package.json`.
+This resolves the 34 pi-compatible skills through the `pi.skills` manifest in `package.json`.
 
 Add `-l` to install project-locally into `.pi/settings.json` instead of globally. Note that
 `pi list` only reports global packages, so a `-l` install shows up in `.pi/settings.json` rather
@@ -139,7 +139,7 @@ cd skills
 ./scripts/skills-packaging.sh install-host opencode
 ```
 
-That links the 35 OpenCode-compatible skills into `~/.config/opencode/skills`. Pass `--dest <path>`
+That links the 34 OpenCode-compatible skills into `~/.config/opencode/skills`. Pass `--dest <path>`
 to install elsewhere. Re-run after `git pull`; it prunes only links pointing into this repo, so
 unrelated skills in the destination are left alone.
 
@@ -301,7 +301,7 @@ External opinion, assistance, and plain restatement tools.
 | Skill | Description | Agent |
 | ----- | ----------- | ----- |
 | [ask](./assist/skills/ask/) | Answer at maximum reasoning effort — explain, challenge, or verify | All |
-| [discuss](./assist/skills/discuss/) | Iterative discussion mode — analyze, push back, and polish, no code edits | All |
+| [discuss](./assist/skills/discuss/) | Talk a design through — investigate, take a position, push back; never writes | All |
 | [handoff](./assist/skills/handoff/) | Compact the session into a handoff — inline text or per-project doc file | All |
 | [outsider](./assist/skills/outsider/) | Quick opinion or review from an agent CLI outside this session | All |
 | [bro](./assist/skills/bro/) | Say the last message again, straight — bottom line, what matters, next steps | All |

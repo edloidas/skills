@@ -78,7 +78,7 @@ skips it. `tools/skills-release` is the one current example.
 - `audit/` — CI, script, security, skill, workspace, tsconfig, Three.js, React, and test-suite auditing (9 skills)
 - `maintain/` — Agent instruction layer setup and drift check, label sync, lint migration, agent rule sync, editor config sync, repo security hardening, and stale process cleanup (7 skills)
 - `ship/` — Release workflows for npm packages (1 skill)
-- `assist/` — External opinion, assistance, and plain restatement tools (5 skills)
+- `assist/` — External opinion, design discussion, assistance, handoffs, and plain restatement tools (5 skills)
 - `write/` — Markdown, README, and repository documentation writing (1 skill)
 - `obsidian/` — Obsidian vault organization and working document management (1 skill)
 - `workflow/` — End-to-end workflows that orchestrate multiple skills (1 skill)
