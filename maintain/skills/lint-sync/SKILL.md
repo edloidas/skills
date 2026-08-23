@@ -1,10 +1,13 @@
 ---
 name: lint-sync
 description: >
-  Migrate ESLint/Prettier to Biome or Oxc (including Vite+), or modernize existing configs.
-  Detects source and target configs, compares rules, flags stale nursery rules,
+  Migrate ESLint and Prettier to Biome or Oxc (including Vite+), or modernize an existing
+  config. Detects source and target configs, compares rules, flags stale nursery rules,
   suggests new features, and generates actionable config changes.
-  Use when asked to sync lint rules, migrate linters, modernize configs, or update tool settings.
+when_to_use: >
+  On "sync lint rules", "migrate to Biome", "migrate to Oxlint", "modernize the lint config",
+  or "update the formatter". Also when a config still carries nursery rules that have since
+  been promoted, or ESLint and Prettier overlap on the same rules.
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
 allowed-tools: Bash Read Glob Grep WebFetch Write AskUserQuestion
@@ -499,7 +502,3 @@ For each new version found, add entry to `biome-versions.json` or `oxc-versions.
 - `scripts/get-eslint-rules.sh` — Extract active ESLint rules via `--print-config`
 - `scripts/get-biome-rules.sh` — Extract active Biome rules via `biome rage --linter`
 - `scripts/get-oxlint-rules.sh` — Extract active Oxlint rules
-
-## Keywords
-
-eslint, biome, oxlint, oxfmt, oxc, prettier, vite-plus, viteplus, lint, rules, sync, overlap, migration, modernize, nursery, promote, type-aware, performance, disable, redundant, formatter, update

@@ -1,15 +1,14 @@
 ---
 name: ci-audit
 description: >
-  Audit GitHub Actions workflows for the things that cost wall clock, cost money, or let a pipeline
+  Audit GitHub Actions workflows for what costs wall clock, costs money, or lets a pipeline
   pass without checking anything. Builds the job graph, then runs a catalog covering gating
-  correctness (matrix jobs whose failures read as passing, gates that cannot fail), the critical path
-  (serialized independent work, expensive jobs on every event, duplicated setup, double runs),
-  caching effectiveness (key derivation, restore-keys, redundant auto-caches), and spend (missing
-  timeouts, artifact retention, concurrency groups, cancel-in-progress on irreversible releases).
-  Reads and reports only; never edits a workflow. Use when the user asks to audit or review CI, speed
-  up a pipeline, cut Actions minutes, parallelize jobs, fix caching, or work out why a check is not
-  blocking what it should.
+  correctness, the critical path, caching effectiveness, and spend. Reads and reports only;
+  never edits a workflow.
+when_to_use: >
+  On "audit CI", "review the workflows", "speed up the pipeline", "cut Actions minutes",
+  "parallelize jobs", or "fix caching". Also when a matrix job's failure reads as a pass, a
+  check is not blocking what it should, or a release is being cancelled mid-run.
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
 allowed-tools: Bash(yq:*) Bash(gh:*) Bash(ls:*) Read Glob Grep

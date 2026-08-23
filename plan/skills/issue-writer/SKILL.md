@@ -1,11 +1,14 @@
 ---
 name: issue-writer
-description: Use this skill when the user asks to draft, write, or update a GitHub issue. It analyzes the user's description, asks clarifying questions, and produces a well-structured issue title and description following the project's template. It can also update existing issues or prepare a draft for later creation on GitHub.
+description: >
+  Draft or update a GitHub issue. Analyzes the description, asks clarifying questions, and
+  produces a well-structured title and body following the project's template. Can update an
+  existing issue or prepare a draft for filing later.
 when_to_use: >
-  On "draft an issue", "write an issue", "write this up as an issue", "update issue #N",
-  "edit that issue", or "reword the issue body". Also when a bug report, feature request,
-  task, or documentation gap has to become a well-formed GitHub issue before work starts,
-  or when a draft is wanted for later filing rather than immediate creation.
+  On "draft an issue", "write an issue", "write this up as an issue", "update issue #N", "edit
+  that issue", or "reword the issue body". Also when a bug report, feature request, task, or
+  documentation gap has to become a well-formed GitHub issue before work starts, or when a
+  draft is wanted for later filing rather than immediate creation.
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
 allowed-tools: Bash Read Glob AskUserQuestion

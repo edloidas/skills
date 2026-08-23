@@ -1,10 +1,12 @@
 ---
 name: commit
 description: >
-  Stage safe changes on the current branch and create a single conventional
-  commit. Use when the user wants to quickly commit current work. Skips
-  generated artifacts, caches, logs, and editor cruft. Accepts hints like
-  "only staged", "relevant", or "amend".
+  Stage safe changes on the current branch and create a single conventional commit. Skips
+  generated artifacts, caches, logs, and editor cruft. Accepts hints like "only staged",
+  "relevant", or "amend".
+when_to_use: >
+  When current work should be committed quickly — "commit this", "commit my changes", "amend
+  that". Not for pushing, opening PRs, or splitting work across several commits.
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
 argument-hint: "[instructions]"

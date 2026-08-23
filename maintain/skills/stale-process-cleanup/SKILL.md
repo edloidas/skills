@@ -1,11 +1,13 @@
 ---
 name: stale-process-cleanup
 description: >
-  Find and kill stale, leftover, or orphaned developer processes owned by the
-  current user — abandoned dev servers (Vite / Vite+), editor LSP servers
-  (oxlint), and duplicate or zombie MCP servers (playwright, context7, obsidian)
-  left running after a shell, editor, or agent session exited. Use when the user
-  notices stray node processes, asks who spawned them, or wants to clean them up.
+  Find and kill stale, leftover, or orphaned developer processes owned by the current user —
+  abandoned dev servers (Vite / Vite+), editor LSP servers (oxlint), and duplicate or zombie
+  MCP servers (playwright, context7, obsidian) left running after a shell, editor, or agent
+  session exited.
+when_to_use: >
+  When stray node processes turn up, when the user asks who spawned them, or on "kill the
+  stale servers", "what is still running", "clean up leftover dev servers".
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
 allowed-tools: Bash Read AskUserQuestion

@@ -1,11 +1,12 @@
 ---
 name: issue-analyze
 description: >
-  Fetches a GitHub issue by number or URL, analyzes its scope of work, cross-references
-  local project docs in `.claude/`, `.agents/`, and repo instruction files, checks
-  blocking relationships, and produces a structured implementation analysis with a
-  task list. Use before starting work on any issue to understand what needs to be
-  built and plan implementation steps.
+  Fetch a GitHub issue by number or URL, analyze its scope of work, cross-reference local
+  project docs and repo instruction files, check blocking relationships, and produce a
+  structured implementation analysis with a task list.
+when_to_use: >
+  Before starting work on an issue, to understand what has to be built and plan the steps.
+  Also on "analyze issue #N", "what does this issue involve", or "is anything blocking this".
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
 allowed-tools: Bash(gh:*) Bash(git:*) Read Glob Grep

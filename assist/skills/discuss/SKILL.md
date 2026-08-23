@@ -1,12 +1,14 @@
 ---
 name: discuss
 description: >
-  Work through a design question with the user, as a dialogue rather than a lecture — investigate the
-  ground, take a position on it, lay out the options with a pick among them, and push back on what
-  will not hold up. Works one part of the design at a time. Reads and verifies; writes nothing. Use
-  when the user brings a proposal, plan, or set of findings to be judged, asks "should we X", asks
-  for an opinion before deciding, or names a broad area to talk through — "discuss the backend
-  architecture here", "let's talk about the store layer".
+  Work through a design question as a dialogue rather than a lecture — investigate the ground,
+  take a position on it, lay out the options with a pick among them, and push back on what
+  will not hold up. Works one part of the design at a time. Reads and verifies; writes
+  nothing.
+when_to_use: >
+  When the user brings a proposal, plan, or set of findings to be judged, asks "should we X",
+  wants an opinion before deciding, or names a broad area to talk through — "discuss the
+  backend architecture here", "let's talk about the store layer".
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
 allowed-tools: Read Glob Grep Task

@@ -15,7 +15,7 @@ set -euo pipefail
 # - each SKILL.md declares a name matching its directory, a description within the
 #   discovery caps, and no reference to a bundled file it does not ship
 #
-# The Codex wrapper contract is validated separately by $(grep -ohE '(^|[^A-Za-z0-9._/-])(references|scripts|assets)/[A-Za-z0-9._/-]+' "$skill_dir/SKILL.md" | sed -E 's/^[^A-Za-z]//; s/\.$//' | sort -u)/validate-codex.sh.
+# The Codex wrapper contract is validated separately by scripts/validate-codex.sh.
 
 MARKETPLACE=".claude-plugin/marketplace.json"
 
@@ -110,6 +110,19 @@ EOF
 # Adding a row is a deliberate decision that needs a reason in CLAUDE.md.
 CLAUDE_ONLY_EXEMPT="audit/skills/skill-audit"
 
+# A tool name in `description` or `when_to_use` is dead weight on every host, Claude Code
+# included: discovery text exists to match what a person types, and nobody asks for a skill
+# by naming the tool it calls. So unlike CLAUDE_ONLY_PATTERNS this applies to Claude-only
+# skills too, and the reason is usefulness rather than portability.
+#
+# Only unambiguous identifiers are listed. `Task`, `Agent`, `Skill`, `Read`, `Write`, `Edit`,
+# `Glob`, `Grep`, and `Bash` are ordinary English and appear legitimately in real
+# descriptions — "Audit Agent Skills", "Write Markdown", "Reads and reports only" — so they
+# are caught only in the explicit "<Name> tool" phrasing.
+DISCOVERY_TOOL_PATTERNS="tool|(AskUserQuestion|ToolSearch|TodoWrite|SlashCommand|NotebookEdit|WebFetch|WebSearch|StructuredOutput)
+tool|(Task|Agent|Skill|Read|Write|Edit|Glob|Grep|Bash)[ ]tool
+subagent field|subagent_type"
+
 CLAUDE_ONLY_PATTERNS="dynamic-injection|^!\`[^ \`/!][^\`]*\`
 dynamic-injection|[[:space:]]!\`[^ \`/!][^\`]*\`
 Claude-only substitution|[$]{?CLAUDE_(SESSION_ID|SKILL_DIR|PLUGIN_ROOT)
@@ -196,7 +209,7 @@ validate_skill_content() {
   local skill_dir="$1"
   local skill_name="$2"
   local declared_name description when_to_use combined ref body_lines body_budget
-  local rule label pattern hit
+  local rule label pattern hit key field match
 
   if [ "$(head -n 1 "$skill_dir/SKILL.md")" != "---" ]; then
     error "Skill '$skill_name': SKILL.md does not open with a YAML frontmatter block"
@@ -243,6 +256,25 @@ validate_skill_content() {
       error "Skill '$skill_name': body is $body_lines lines; its budgeted allowance is $body_budget. Trim it, or raise the budget deliberately"
     fi
   fi
+
+  for key in description when_to_use; do
+    field=$(frontmatter_scalar "$skill_dir" "$key")
+    [ -n "$field" ] || continue
+    while IFS= read -r rule; do
+      [ -n "$rule" ] || continue
+      label="${rule%%|*}"
+      pattern="${rule#*|}"
+      # `|| true` is load-bearing: grep exits 1 when it finds nothing, and under
+      # `set -euo pipefail` that aborts the whole script silently instead of passing
+      # the skill. Without it the validator exited 1 with no output at all.
+      match=$(printf '%s\n' "$field" | grep -oE "$pattern" | head -n 1 || true)
+      if [ -n "$match" ]; then
+        error "Skill '$skill_name': $key names the $label '$match'. Discovery text is matched against what a user types, so a tool name there can never help it fire — describe the behaviour instead"
+      fi
+    done <<EOF
+$DISCOVERY_TOOL_PATTERNS
+EOF
+  done
 
   if skill_declares_non_claude_host "$skill_dir" && ! claude_only_exempt "$skill_dir"; then
     while IFS= read -r rule; do

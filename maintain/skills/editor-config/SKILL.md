@@ -1,11 +1,12 @@
 ---
 name: editor-config
 description: >
-  Initialize a project with canonical editor configurations (Zed, VSCode).
-  Asks which editors to set up, then writes or merges the bundled settings
-  into the repo. On conflict, our values win — keys we do not define are
-  preserved. Use when the user asks to set up, init, apply, or sync editor
-  configs / .zed / .vscode in a project.
+  Initialize a project with canonical editor configurations (Zed, VSCode). Asks which editors
+  to set up, then writes or merges the bundled settings into the repo. On conflict our values
+  win; keys we do not define are preserved.
+when_to_use: >
+  On "set up editor config", "init .zed", "apply .vscode settings", or "sync the editor
+  configs".
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
 allowed-tools: Bash Read AskUserQuestion

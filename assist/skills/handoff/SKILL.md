@@ -1,11 +1,12 @@
 ---
 name: handoff
 description: >
-  Compact the current conversation into a handoff so a fresh agent (or
-  future-you) can pick up the work cold. Use when the user asks to hand off,
-  summarize the session, or prepare context for the next session. With `doc`,
-  `document`, or `--doc` keyword, writes a per-project handoff file and prints
-  only the path and a copy-paste shortcut to start the next session.
+  Compact the current conversation into a handoff so a fresh agent, or future-you, can pick up
+  the work cold. With a `doc`, `document`, or `--doc` keyword, writes a per-project handoff
+  file and prints only its path plus a shortcut to start the next session.
+when_to_use: >
+  On "hand off", "summarize the session", or "prepare context for the next session", and when
+  a session is ending with work unfinished.
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
 argument-hint: "[doc] [focus...]"

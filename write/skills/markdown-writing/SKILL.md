@@ -1,11 +1,12 @@
 ---
 name: markdown-writing
 description: >
-  Write Markdown that people actually read — READMEs, docs, PR bodies, issue
-  bodies and comments, release notes, changelogs. Covers GitHub-flavored extras
-  (alerts, collapsible sections, task lists, mermaid), prose that leads with the
-  point instead of burying it, and a README skeleton. Use whenever you are
-  drafting or editing a .md file, a PR description, or an issue comment.
+  Write Markdown that people actually read — READMEs, docs, PR bodies, issue bodies and
+  comments, release notes, changelogs. Covers GitHub-flavored extras (alerts, collapsible
+  sections, task lists, mermaid), prose that leads with the point instead of burying it, and a
+  README skeleton.
+when_to_use: >
+  Whenever drafting or editing a .md file, a PR description, or an issue comment.
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
 argument-hint: "[file or topic]"

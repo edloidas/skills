@@ -1,14 +1,15 @@
 ---
 name: solve-issue
 description: >
-  End-to-end GitHub issue workflow: analyze the issue, plan and implement,
-  verify with available tests/build/lint (and optionally Playwright +
-  Storybook), simplify, attack the change with parallel adversarial reviewers
-  and fix what they find, trim comments and artifacts, then choose a push / PR /
-  merge endgame via AskUserQuestion. Every git and GitHub action is delegated to
-  `issue-flow`. Use when the user wants a single autonomous command for an issue
-  they already consider simple enough to delegate end-to-end, e.g.
-  `/solve-issue 69` or `/solve-issue` (asks which issue first).
+  End-to-end GitHub issue workflow: analyze the issue, plan and implement, verify with
+  available tests/build/lint (and optionally Playwright + Storybook), simplify, attack the
+  change with parallel adversarial reviewers and fix what they find, trim comments and
+  artifacts, then choose a push / PR / merge endgame. Every git and GitHub action is delegated
+  to `issue-flow`.
+when_to_use: >
+  When a single autonomous command is wanted for an issue already considered simple enough to
+  delegate end-to-end — `/solve-issue 69`, or a bare `/solve-issue` to be asked which issue
+  first.
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
 allowed-tools: Bash(git diff:*) Bash(git status:*) Bash(git log:*) Bash(jq:*) Bash(rm:*) Bash(ls:*) Read Edit Write Glob Grep Task Skill AskUserQuestion

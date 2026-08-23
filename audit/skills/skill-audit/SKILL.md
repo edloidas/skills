@@ -1,17 +1,16 @@
 ---
 name: skill-audit
 description: >
-  Audit Agent Skills for the things no validator can decide: whether a description will
-  ever fire, whether the instructions are followable, whether the body earns its token
-  cost, whether `compatibility` matches what the body actually requires, and whether
-  mutations are gated. Runs the repo's structural validators first, scores five judgment
-  categories with cited evidence, and returns a PASS / FAIL verdict.
+  Audit Agent Skills for what no validator can decide: whether a description will ever fire,
+  whether the instructions are followable, whether the body earns its token cost, whether
+  `compatibility` matches what the body requires, and whether mutations are gated. Runs the
+  repo's structural validators first, scores five judgment categories with cited evidence, and
+  returns a PASS / FAIL verdict.
 when_to_use: >
-  Run before committing any change that creates, edits, moves, renames, or deletes a skill
+  Before committing any change that creates, edits, moves, renames, or deletes a skill
   directory — it is the acceptance gate for skill work. Also on "audit skills", "score this
-  skill", "check the skill against the spec", "is this skill Codex-ready", "why does this
-  skill never activate", or when reviewing a diff that touches SKILL.md, references/,
-  scripts/codex/catalog.json, or agents/openai.yaml.
+  skill", "is this skill Codex-ready", "why does this skill never activate", or when reviewing
+  a diff touching SKILL.md, references/, or agents/openai.yaml.
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
 allowed-tools: Read Glob Grep Task Bash(node:*) Bash(git diff:*) Bash(git status:*) Bash(git merge-base:*) Bash(bash:.github/scripts/validate-skills.sh) Bash(bash:scripts/validate-codex.sh)

@@ -200,7 +200,20 @@ Detection lives in `CLAUDE_ONLY_PATTERNS` in that script. Note the comment there
 alternative matches nothing on macOS while passing on CI's GNU grep. Two `-e` patterns are
 the portable form.
 
-One skill is exempt, via `CLAUDE_ONLY_EXEMPT`:
+A separate rule covers **discovery text**. `validate-skills.sh` rejects a tool name in
+`description` or `when_to_use` — `AskUserQuestion`, `ToolSearch`, `TodoWrite`,
+`SlashCommand`, `NotebookEdit`, `WebFetch`, `WebSearch`, `StructuredOutput`,
+`subagent_type`, and the explicit `<Name> tool` phrasing. Unlike the rule above this
+applies to **every** skill, Claude-only ones included, because the reason is different:
+discovery text is matched against what a person types, and nobody asks for a skill by
+naming the tool it calls. A tool name there cannot help the skill fire on any host.
+
+`Task`, `Agent`, `Skill`, `Read`, `Write`, `Edit`, `Glob`, `Grep`, and `Bash` are ordinary
+English and appear legitimately — "Audit Agent Skills", "Write Markdown", "Reads and
+reports only" — so they are caught only in the `<Name> tool` form. `allowed-tools` is
+untouched by this rule; it is a declaration, and naming tools is its whole job.
+
+One skill is exempt from the *portability* patterns, via `CLAUDE_ONLY_EXEMPT`:
 
 | Skill | Why |
 | ----- | --- |

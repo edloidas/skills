@@ -1,6 +1,14 @@
 ---
 name: workspace-audit
-description: Analyze pnpm 10+ workspace configuration and monorepo setup for optimization
+description: >
+  Audit a pnpm 10+ workspace for configuration and monorepo problems: dependency placement,
+  workspace protocol usage, hoisting, catalog configuration, build order and build hooks,
+  dependency rules, and .npmrc settings that are now defaults. Reads and reports only.
+when_to_use: >
+  When setting up or cleaning up a pnpm monorepo, diagnosing why a dependency resolves oddly
+  across packages, or reviewing `pnpm-workspace.yaml`. Also on "audit the workspace", "check
+  the monorepo setup", "pnpm catalog", "hoisting", or when wiring build order through
+  Turborepo or Nx.
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
 allowed-tools: Bash(pnpm:*) Bash(npm:*) Bash(node:*) Bash(npx:*) Bash(turbo:*) Read Glob Grep
@@ -332,7 +340,3 @@ pnpm install  # removes stale entries if cleanupUnusedCatalogs is enabled
 ```
 
 See `references/workspace-template.md` for an optimized pnpm-workspace.yaml template.
-
-## Keywords
-
-pnpm, workspace, monorepo, dependencies, hoisting, catalog, turbo, nx

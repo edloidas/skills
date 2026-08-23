@@ -1,9 +1,11 @@
 ---
 name: labels-sync
 description: >
-  Synchronize or export GitHub repository labels with a predefined label set.
-  Compares, creates, updates, deletes, or reads labels as reusable JSON definitions.
-  Use when the user asks to sync, check, manage, or export GitHub labels.
+  Synchronize or export GitHub repository labels against a predefined label set. Compares,
+  creates, updates, deletes, or reads labels as reusable JSON definitions.
+when_to_use: >
+  On "sync labels", "check the labels", or "export the labels", and when a new repository
+  needs the standard label set applied.
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
 allowed-tools: Bash Read AskUserQuestion

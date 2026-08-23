@@ -1,10 +1,12 @@
 ---
 name: skills-release
 description: >
-  Release workflow for the edloidas/skills collection. Validates git state,
-  analyzes commits since last tag, recommends a version bump (major/minor/patch),
-  updates Claude and Codex packaging metadata, commits, tags, and pushes.
-  Use when the user asks to release, version, or tag this skills repository.
+  Release workflow for the edloidas/skills collection. Validates git state, analyzes commits
+  since the last tag, recommends a version bump (major/minor/patch), updates Claude and Codex
+  packaging metadata, commits, tags, and pushes.
+when_to_use: >
+  On "release the skills repo", "version this repo", or "tag a skills release". For an
+  ordinary npm package, use npm-release instead.
 license: MIT
 compatibility: Claude Code
 allowed-tools: Bash Read Glob Task AskUserQuestion
@@ -197,7 +199,3 @@ If any step fails:
 **Tag already exists:**
 - The execute script will refuse to create a duplicate tag
 - Either delete the old tag or choose a different version
-
-## Keywords
-
-release, version, bump, tag, skills, publish, deploy, ship, new version, create release

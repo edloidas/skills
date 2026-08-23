@@ -1,6 +1,11 @@
 ---
 name: npm-release
-description: This skill should be used when the user asks to release, publish, or create a new version of an npm/pnpm/bun package. It guides through version bumping, validation, git tagging, and publishing with proper safety checks and user approval.
+description: >
+  Release an npm, pnpm, or bun package: version bump, validation, git tagging, and publishing,
+  with safety checks and explicit user approval before anything is pushed.
+when_to_use: >
+  On "release this", "publish a new version", "bump the version", "tag a release", or "ship
+  it". For the edloidas/skills repo itself, use skills-release instead.
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
 allowed-tools: Bash Read Glob AskUserQuestion
@@ -394,7 +399,3 @@ This skill is self-contained and requires no project-specific setup. However:
 2. **Documentation**: Projects can reference this skill in their CLAUDE.md or README
 3. **Custom Scripts**: If projects already have release scripts, use those instead of bundled ones
 4. **Flexibility**: All steps can be performed manually if bundled scripts don't fit the workflow
-
-## Keywords
-
-release, publish, version, bump, tag, npm, pnpm, bun, package, deploy, ship, new version, create release

@@ -3,10 +3,11 @@ name: tests-audit
 description: >
   Audit an existing test suite for anti-patterns — tautological mock round-trips, weak
   assertions (toBeDefined / assertNotNull), implementation coupling, flaky timing, snapshot
-  rubber-stamping, and tests claiming guarantees they cannot provide — and report a
-  keep / tighten / rewrite / delete verdict per test.
-  Use when asked to audit or review the quality of a test suite, judge whether existing tests
-  are worth keeping, diagnose flaky or brittle tests, or find out why a green suite isn't
+  rubber-stamping, and tests claiming guarantees they cannot provide — and report a keep /
+  tighten / rewrite / delete verdict per test.
+when_to_use: >
+  When asked to audit or review the quality of a test suite, judge whether existing tests are
+  worth keeping, diagnose flaky or brittle tests, or find out why a green suite is not
   catching bugs.
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
