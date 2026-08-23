@@ -157,3 +157,66 @@ grep -hE 'uses: [^@]+@' .github/workflows/*.yml \
 **Why:** push-event workflows execute the workflow file from the pushed ref — any branch push can rewrite the workflow and use repository-level secrets, including deploying that branch over production. Repository-level secrets are readable from every branch's workflow; only environment secrets can be branch-restricted.
 
 **Fix:** split the workflow into an uncredentialed `build` job (all branches) and a `deploy` job gated to the production branch and attached to a branch-restricted environment. Full remediation order (environment creation before workflow reference, write-only secret migration, repo-level secret deletion) lives in `repo-settings-checklist.md` item 10 — the settings auditor owns it; report the workflow-side finding and cross-reference.
+
+## 9. Workflow Static Analysis in CI
+
+**Detection:** no workflow in `.github/workflows/` runs a workflow linter over the workflows themselves. Grep for `zizmor` (the `zizmorcore/zizmor-action` action, or a `docker run … ghcr.io/zizmorcore/zizmor` step).
+
+**Severity:** medium.
+
+**Why:** items 1–8 are exactly what a workflow linter enforces, and a one-off audit does not prevent regression. Without a linter in CI, the next PR can reintroduce a tag-pinned `uses:`, a `pull_request_target` checkout, or a template-injection sink, and nothing fails. This is the difference between "hardened today" and "stays hardened."
+
+**Fix:** run it locally first and clear the findings:
+
+```bash
+docker run --rm -t -v "$(pwd):/repo:ro" ghcr.io/zizmorcore/zizmor:latest /repo/.github/workflows
+```
+
+Then add a workflow that keeps it enforced. `repo-hardening` Step 3 applies this file:
+
+```yaml
+name: Lint CI workflows
+on:
+  push:
+    branches: ['<default-branch>']
+  pull_request:
+    branches: ['**']
+jobs:
+  zizmor:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@<sha> # pin per item 1
+        with:
+          persist-credentials: false
+      - uses: zizmorcore/zizmor-action@<sha> # pin per item 1
+        with:
+          advanced-security: false
+```
+
+Set `advanced-security: false` unless the repo has GitHub Advanced Security — otherwise the SARIF upload step fails.
+
+**Note:** the linter overlaps this checklist but does not replace it. It has no view of repository settings (item 2 of `repo-settings-checklist.md`), release semantics, or package-manager config, and it cannot know which `pull_request_target` uses are intentional.
+
+## 10. Stale Branches Carrying Old Workflow Versions
+
+**Detection:** list branches whose `.github/workflows/` differs from the default branch, oldest first:
+
+```bash
+git fetch --all --prune
+for b in $(git branch -r --format='%(refname:short)' | grep -v HEAD); do
+  if ! git diff --quiet "origin/$(git rev-parse --abbrev-ref origin/HEAD | cut -d/ -f2)" "$b" -- .github/workflows/ 2>/dev/null; then
+    echo "$b  $(git log -1 --format=%cs "$b")"
+  fi
+done
+```
+
+For each branch returned, read its workflow files and apply items 1–8. A branch is a finding only when its copy carries a vulnerability the default branch has already fixed.
+
+**Severity:** high when a stale branch carries a `pull_request_target` that checks out PR code, or a credentialed job that has since been split into build/deploy. Medium for unpinned actions or missing `permissions:` only. Informational for a branch merged and pending deletion.
+
+**Why:** hardening the default branch does not retire the old workflow files. Several triggers can still reach a non-default ref — `workflow_dispatch` with a branch selector, `push:` filters that match the stale branch, and a `schedule:` in a workflow file that exists only there. The Nx compromise ran through a workflow version that had already been fixed on the default branch. Long-lived forks and abandoned release branches are the usual carriers.
+
+**Fix:** delete the branch if it is merged or abandoned (`git push origin --delete <branch>`). If it must stay, forward-port the workflow fix to it. A branch ruleset restricting `creation` does not help here — the branch already exists.

@@ -3,10 +3,12 @@ name: repo-hardening
 description: >
   Apply a security hardening baseline to a GitHub repository via gh api — branch and
   tag rulesets, Actions token defaults, secret scanning, Dependabot, private
-  vulnerability reporting, CodeQL, and branch-restricted environments for deploy
-  secrets. Use when the user asks to harden a repo, protect a branch, lock down
-  releases or tags, set up rulesets, move deploy secrets into an environment, or
-  bootstrap security settings for a new repository or pipeline.
+  vulnerability reporting, CodeQL, immutable releases, workflow linting, and
+  branch-restricted environments for deploy secrets. This is the write half of the pair
+  with audit:security-audit, which finds the same gaps read-only. Use when the user asks
+  to harden a repo, protect a branch, lock down releases or tags, set up rulesets, move
+  deploy secrets into an environment, enable immutable releases, or bootstrap security
+  settings for a new repository or pipeline.
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
 allowed-tools: Bash Read AskUserQuestion
@@ -18,15 +20,22 @@ argument-hint: "[apply|check]"
 
 ## Purpose
 
-Apply a proven hardening baseline to a GitHub repository in one scripted pass. Everything
-here is done with `gh api` from the user's machine — no admin UI clicking. The baseline
-covers: Actions token defaults, security features, a branch protection ruleset, a release
-tag ruleset, and branch-restricted environments for deploy secrets.
+**This skill writes.** It changes repository settings, creates rulesets and
+environments, and adds workflow files. Everything is done with `gh api` from the user's
+machine — no admin UI clicking. The baseline covers Actions token defaults, security
+features, immutable releases, a branch protection ruleset, a release tag ruleset, a
+workflow-linting workflow, and branch-restricted environments for deploy secrets.
 
-This is the **apply** counterpart to the `security-audit` skill: the audit finds and
-reports gaps read-only; this skill sets the baseline proactively (new repos, new
-pipelines) or after an audit. The audit's reference checklists document the *why* for
-every item here in more depth.
+`audit:security-audit` is the read half of the pair. It detects the same gaps and never
+mutates anything — no file edit, no `gh api` write. Its findings are this skill's input.
+Run this skill after an audit, or standalone to set the baseline proactively on a new repo
+or pipeline. If the user wants gaps listed rather than changes made, that is the skill to
+use.
+
+Because this skill writes, Step 0 is not optional: inventory first, show the diff, get
+confirmation, and skip anything already in place. The audit's reference checklists
+document the *why* for every item here in more depth, and are worth reading when a user
+questions an item.
 
 ## When to Use This Skill
 
@@ -60,6 +69,8 @@ gh api repos/<owner>/<repo>/rulesets --jq '[.[] | {id, name, target, enforcement
 gh api repos/<owner>/<repo>/actions/secrets --jq '[.secrets[].name]'
 gh api repos/<owner>/<repo>/environments --jq '[.environments[].name]'
 gh api repos/<owner>/<repo>/private-vulnerability-reporting
+gh api repos/<owner>/<repo>/immutable-releases
+ls .github/workflows/ 2>/dev/null
 ```
 
 Present the diff and confirm scope with the user before applying (see Asking the User).
@@ -86,6 +97,19 @@ gh api -X PUT repos/<owner>/<repo>/automated-security-fixes
 gh api -X PUT repos/<owner>/<repo>/private-vulnerability-reporting
 gh api -X PATCH repos/<owner>/<repo>/code-scanning/default-setup -f state=configured
 ```
+
+Then immutable releases, when the repo publishes GitHub Releases or has a tag-triggered
+release workflow:
+
+```bash
+gh api -X PUT repos/<owner>/<repo>/immutable-releases
+```
+
+Once enabled, a published release's tag and assets can no longer be moved or replaced, so
+swapping content requires a new version number. Two things to tell the user before
+applying: it is **not retroactive** (releases published earlier stay mutable), and any
+release automation that edits or re-uploads assets after publishing will start failing.
+Revert is `gh api -X DELETE repos/<owner>/<repo>/immutable-releases`.
 
 Plan-related errors (private repo without Advanced Security) are informational — record
 and continue. If the repo has a `SECURITY.md`, verify the reporting channel it advertises
@@ -166,18 +190,91 @@ Tell the user the cost up front: branch preview deploys stop working. Restoring 
 safely needs a second provider project with its own scoped token in a separate
 unprotected environment.
 
-### Step 6: Manual Items — Report, Don't Skip Silently
+### Step 6: Keep Workflows Linted
+
+Applies when `.github/workflows/` exists. The rulesets and settings above are enforced by
+GitHub; the workflow files themselves are not, so nothing stops the next PR from
+reintroducing a tag-pinned `uses:` or a `pull_request_target` that checks out PR code.
+
+Clear the existing findings first — do not add a check that fails on day one:
+
+```bash
+docker run --rm -t -v "$(pwd):/repo:ro" ghcr.io/zizmorcore/zizmor:latest /repo/.github/workflows
+```
+
+If Docker is unavailable, ask the user to run it and paste the output. Fix what it reports,
+re-run until clean, then add `.github/workflows/check-workflows.yml`:
+
+```yaml
+name: Lint CI workflows
+on:
+  push:
+    branches: ['<default-branch>']
+  pull_request:
+    branches: ['**']
+jobs:
+  zizmor:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@<sha>
+        with:
+          persist-credentials: false
+      - uses: zizmorcore/zizmor-action@<sha>
+        with:
+          advanced-security: false
+```
+
+Resolve both `<sha>` values to real 40-char commit SHAs before writing the file — a
+workflow-linting workflow that is itself tag-pinned will fail its own check. Set
+`advanced-security: false` unless the repo has GitHub Advanced Security, or the SARIF
+upload step errors.
+
+If Step 3 added `required_status_checks`, decide with the user whether `Lint CI workflows`
+joins the required list. Adding it means a linter regression blocks merges; leaving it out
+means the check is advisory. Either is defensible — but if it goes in the ruleset, the
+check name must match the workflow's `name:` exactly, or every PR blocks permanently.
+
+Two related items this does not cover, because neither is a `gh api` write:
+
+- **Stale branches** still carrying pre-hardening workflow files. Old refs are reachable by
+  `workflow_dispatch` and by `push:` filters that match them, and the Nx compromise ran
+  through a workflow version already fixed on the default branch. List them and let the
+  user decide:
+  ```bash
+  git branch -r --format='%(refname:short) %(committerdate:short)' | grep -v HEAD
+  ```
+  Deleting someone's branch is not this skill's call — report and ask.
+- **`sha_pinning_required`** (Actions setting). Flip it only once zizmor reports every
+  `uses:` SHA-pinned; enabling it earlier breaks every workflow run. See Common Mistakes.
+
+### Step 7: Manual Items — Report, Don't Skip Silently
 
 These cannot be done via `gh`; list them for the user in the final report:
 
-- **npm** (when the repo publishes packages): Trusted Publisher pinned to the exact
-  `owner/repo` + workflow filename; Publishing access set to *require 2FA and disallow
-  bypass tokens* once OIDC is the only publish path.
+- **npm** (when the repo publishes packages), at
+  `https://www.npmjs.com/package/<name>/access` — give the user the resolved URL, one per
+  public package in a monorepo, not a generic "your package settings":
+  - Trusted Publisher pinned to the exact `owner/repo` + release workflow filename.
+  - **Enable only "Allow npm stage publish"**, so a plain `npm publish` from that workflow
+    is rejected and every release has to pass through a maintainer's 2FA approval
+    (`npm stage approve <stage-id>`, or Staged Packages on npmjs.com). This is the control
+    a fully compromised CI job cannot forge — the workflow holds a legitimate OIDC
+    identity, and staging is what stops that identity from being enough. It only binds if
+    it is set registry-side; the workflow using `npm stage publish` without this
+    restriction is a convention, not a control.
+  - Publishing access set to *require 2FA and disallow bypass tokens* once OIDC is the
+    only publish path. Warn first: this revokes existing tokens, so any other automation
+    publishing with a token breaks.
+  - Requires npm CLI >= 11.15.0 and Node >= 22.14.0 in the release workflow. Check the
+    workflow's `node-version` before recommending the switch.
 - **Provider token scope**: the deploy token itself should be least-privilege (e.g.
   Cloudflare: only `Account · Cloudflare Pages · Edit`). Verified in the provider
   dashboard, not the repo.
 
-### Step 7: Report
+### Step 8: Report
 
 End with a compact table: each baseline item → `applied` / `already set` / `skipped
 (reason)` / `manual (user)`. Include the exact commands for anything deferred.
@@ -192,10 +289,18 @@ in chat and wait for a reply:
    single-maintainer repos) / Team (no bypass, 1+ approvals) / Skip rulesets.
 2. **Deploy secrets** — Migrate to environment now (recommended; previews break) / Leave
    at repo level (records a critical finding in the report).
+3. **Immutable releases** — Enable (recommended; not retroactive, and breaks automation
+   that re-uploads release assets) / Skip. Ask only when Step 0 found releases or a
+   tag-triggered workflow.
 
 Required status checks and the environment name are derived from the repo (CI run check
 names; provider name like `cloudflare-production`) — state them in the confirmation
-rather than asking.
+rather than asking. Same for the workflow linter in Step 6: apply it if
+`.github/workflows/` exists, and raise the required-check decision there rather than in
+this round.
+
+Keep it to one round. If the repo has no deploy secrets and no releases, questions 2 and 3
+drop and only ruleset strictness is asked.
 
 ## Common Mistakes
 
@@ -209,3 +314,13 @@ rather than asking.
   repo without a bypass** — the maintainer can never merge; nobody else can approve.
 - **Enabling `sha_pinning_required` while workflows still use tag refs** — every workflow
   run fails until all `uses:` entries are SHA-pinned. Pin first, then flip.
+- **Adding the workflow-linting workflow before clearing its findings** — the first run
+  fails and the user's impression is that the hardening broke CI. Run it locally, fix,
+  then commit the workflow.
+- **Tag-pinning the linter's own actions** — a `check-workflows.yml` using `@v1` fails its
+  own SHA-pinning rule. Resolve real SHAs before writing the file.
+- **Enabling immutable releases without saying it is not retroactive** — the user assumes
+  old releases are sealed too. They are not, and a repo with a long release history keeps
+  that exposure on every version published before the flip.
+- **Deleting a stale branch on the user's behalf** — report the list and let them decide.
+  A branch that looks abandoned may be someone's long-running work.

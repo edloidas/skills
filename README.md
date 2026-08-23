@@ -273,7 +273,7 @@ stack lenses for `changes-review`.
 | ----- | ----------- | ----- |
 | [ci-audit](./audit/skills/ci-audit/) | Analyze GitHub Actions workflows for optimization | All |
 | [scripts-audit](./audit/skills/scripts-audit/) | Analyze package.json scripts for naming, composition, and consistency | All |
-| [security-audit](./audit/skills/security-audit/) | Audit GitHub Actions, release config, and repo settings for supply chain | All |
+| [security-audit](./audit/skills/security-audit/) | Find supply-chain gaps in Actions, release config, repo settings, and package manager — read-only | All |
 | [skill-audit](./audit/skills/skill-audit/) | Gate a skill change on discovery, instructions, context cost, portability, and safety | All |
 | [three-audit](./audit/skills/three-audit/) | Audit Three.js / React Three Fiber code for perf and best-practice issues | All |
 | [react-audit](./audit/skills/react-audit/) | Audit React code for effect misuse, memoization, state architecture, and conventions | All |
@@ -291,7 +291,7 @@ Agent instruction setup and drift check, label sync, lint migration, editor conf
 | [labels-sync](./maintain/skills/labels-sync/) | Check, apply, or export GitHub repository labels as reusable JSON | All |
 | [editor-config](./maintain/skills/editor-config/) | Init or merge `.zed` / `.vscode` editor configs from a canonical set | All |
 | [lint-sync](./maintain/skills/lint-sync/) | Compare ESLint rules against Biome for overlap | All |
-| [repo-hardening](./maintain/skills/repo-hardening/) | Apply a GitHub security baseline: rulesets, Actions defaults, environments | All |
+| [repo-hardening](./maintain/skills/repo-hardening/) | Apply a GitHub security baseline: rulesets, Actions defaults, immutable releases, environments | All |
 | [stale-process-cleanup](./maintain/skills/stale-process-cleanup/) | Find and reap orphaned dev servers, LSP, and MCP processes | All |
 
 ### Ship
