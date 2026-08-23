@@ -374,10 +374,17 @@ EOF
 # Every agent invocation goes through `timeout`, which stock macOS does not ship —
 # it arrives with Homebrew coreutils as `gtimeout`. A missing one is a local tool
 # problem and must not be reported as the agent failing.
+#
+# `unstub` both spellings. CORE_TOOLS seeds whichever the host has into the
+# sandbox, so removing only `timeout` leaves `gtimeout` behind on a machine with
+# coreutils installed and the script correctly uses it — which is a different
+# scenario, covered by test_gtimeout_is_used_when_timeout_is_absent below. Left
+# half-scrubbed, these cases pass on CI and fail on a developer's Mac.
 test_a_missing_timeout_binary_is_reported_as_a_local_tool_problem() {
   only_agents claude opencode
   stub_agent opencode
   unstub timeout
+  unstub gtimeout
   outsider ask --host claude <<< "question"
   assert_eq 0 "$STATUS" "exit status"
   assert_contains "$STDOUT" "neither 'timeout' nor 'gtimeout' is on PATH" "output"
@@ -392,6 +399,7 @@ test_a_missing_timeout_binary_does_not_run_the_agent_unbounded() {
   only_agents claude opencode
   stub_agent opencode "SHOULD NOT RUN"
   unstub timeout
+  unstub gtimeout
   outsider ask --host claude <<< "question"
   assert_eq 0 "$STATUS" "exit status"
   assert_not_contains "$STDOUT" "SHOULD NOT RUN" "output"
@@ -419,6 +427,7 @@ EOF
 test_list_reports_a_missing_timeout_binary() {
   only_agents codex claude
   unstub timeout
+  unstub gtimeout
   outsider list --host claude
   assert_eq 0 "$STATUS" "exit status"
   assert_contains "$STDOUT" "timeout: MISSING" "list output"
