@@ -33,7 +33,11 @@ future-you) can pick up without re-reading the session. Two output modes:
    issue, PR, or diff, link or path-reference it. Do not restate it.
 3. **No fabrication.** Every fact in the handoff comes from the in-context
    conversation, files you read this session, or tool output you observed.
-   Don't invent decisions, file paths, or commit messages.
+   Don't invent decisions, file paths, or commit messages. Provenance is the
+   easiest thing to fake and the hardest to catch: a commit hash, a date, a
+   version, or a "this broke in" claim appears only if a command returned it in
+   this session. No result means the claim is dropped, not softened into
+   "has likely been broken for a while".
 4. **Redact secrets.** Never include API keys, tokens, passwords, PII, or
    credentials visible in the conversation. If a secret is load-bearing
    context, reference where it lives (env var name, 1Password item, secret

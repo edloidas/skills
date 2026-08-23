@@ -9,7 +9,7 @@ license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
 user-invocable: true
 argument-hint: "[instructions]"
-allowed-tools: Read Grep Bash(git:*) Agent
+allowed-tools: Read Grep Bash(git:*) Agent Skill
 metadata:
   author: edloidas
 ---
@@ -131,10 +131,18 @@ diff inline, and the main thread already has the conventions context.
    - Types: `feat`, `fix`, `docs`, `chore`, `refactor`, `test`, `style`, `ci`.
    - Follow the project convention from the grep block when present.
    - If the current branch is `issue-<N>`, append ` #<N>` to the title.
-   - Body only if the diff spans 3+ distinct changes: 2–4 short lines,
-     past participle, no bullets.
-   - Trailers: only include `Co-Authored-By` if the last commit already uses
-     one. Never add promotional footers.
+   - Body: invoke the `commit-summary` skill and use what it returns. It weighs
+     the change and either derives a body from the code or returns two to three
+     mechanical lines. See **Body** below for the inline fallback.
+   - Attribution: this step runs the `git commit`, so it is the last place a
+     footer can be caught. Read the assembled message and **remove** any
+     "Drafted with AI" or "Generated with" line, session or transcript link,
+     `<sub>` line, trailing `---` rule, badge, promotional line, or
+     `Co-Authored-By` trailer crediting an assistant — wherever it came from,
+     including a body `commit-summary` returned and a message being amended.
+     Add none either, and do not copy one forward from the previous commit: a
+     trailer already in the log is not licence to repeat it. A *human*
+     co-author trailer is fine where the repo's convention asks for one.
 6. Commit:
    ```bash
    git commit -m "$(cat <<'EOF'
@@ -149,6 +157,51 @@ diff inline, and the main thread already has the conventions context.
    create a NEW commit (do not amend unless the user asked).
 8. Final output: one line — `Committed <short-sha> on <branch>: <title>` —
    followed by a short `skipped: …` list if anything was left out.
+
+## Body
+
+The body is the part a reader cannot recover from the diff: what the running code
+does that forced the change, which call paths reach it, what breaks on update, when
+it broke, and what was deliberately left alone.
+
+Invoke the `commit-summary` skill to compose it. If the host cannot chain skills or
+`commit-summary` is not installed, do it inline:
+
+**Weigh the change first.** Derive when it alters behaviour, a contract, a public
+type, or a default, or when it fixes a defect. Otherwise — a rename, a formatting
+pass, generated output, additive scaffolding — write two or three past-tense lines
+naming what the file list does not show, and stop. Weight decides, not diff size.
+
+**To derive**, answer these against the code, in order, in blank-line-separated
+paragraphs wrapped at 80. Skip any question with no real answer:
+
+1. What changed, and what does the running code do that forces it? Open the
+   implementation behind the declaration, the client behind the handler, the
+   changelog behind the bump — not the diff again. A change holding several
+   independent decisions gets one paragraph each, including anything the fix
+   revealed and anything it made redundant.
+2. Which concrete inputs or call paths reach it, and which are ruled out?
+3. How did it fail observably — what a user saw, not "the type was wrong".
+4. What breaks for someone who updates, and why is it still correct?
+5. When did it break? `git log -S '<removed expression>' -- <path>` or
+   `git blame -L '<line>,+1'`.
+6. What do the tests pin? Name the cases, never "added tests".
+7. What did you notice and deliberately not fix?
+
+**Never invent provenance.** A hash appears only if a command returned it in this
+session; a named call path was read in the source. No result means the paragraph is
+dropped, not softened into "has likely been broken for a while".
+
+Write it in plain words and short sentences. Each paragraph opens on a past-tense
+verb, and the sentence after it is the reason, stated as behaviour.
+
+Design rationale handed over from a comment-cleanup pass answers question 1 — fold
+it into that paragraph rather than appending it as a block.
+
+A project convention from the grep block above overrides all of this. Some repos cap
+body width or forbid paragraphs outright.
+
+Nothing is appended after the last paragraph — see the trailer rule in step 5.
 
 ## Out of scope
 

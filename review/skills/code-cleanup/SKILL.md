@@ -281,7 +281,10 @@ rules imply.
 ```
 
 The **Suggested for commit message** section is the home for the design-rationale text removed from
-the code — formatted so it can be pasted straight into the commit body.
+the code. It is an *input* to the commit body, not a block to be pasted at the end of one: it answers
+why the code is built the way it is, which is the first thing a body has to establish, so the commit
+writer folds it into that opening paragraph. Write it as prose that can carry that weight — the
+reason, not a label for it.
 
 ## Examples
 
