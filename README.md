@@ -252,11 +252,17 @@ implementer's reasoning, then a verification round that re-attacks the findings 
 them. It finds and never fixes; it posts only when asked, and then a finding reaches the author only
 if it can be demonstrated and attributed to the branch rather than to the base. Publication takes the
 shape the pull request allows — one issue comment on your own branch, a real review with per-line
-comments and a verdict on someone else's. Every phase is configurable, so `pr-feedback` and
+comments and a verdict on someone else's. Every phase is configurable, so `pr-review` and
 `solve-issue` drive the same primitive. Conventions and comment noise are `code-cleanup`'s job.
 When the diff touches a stack one of the audit skills knows deeply, `changes-review` also loads it as
 a lens — `react-audit` for React files, `three-audit` for Three.js and R3F — so a general reviewer
 does not have to carry a stack-specific failure catalog. Both stay directly invocable on their own.
+
+`pr-review` is the caller that primitive was built for. On someone else's branch it drives
+`changes-review` and publishes the result as a real review; on your own it works the threads, and the
+posture step decides whether answering is even its business before it decides what the answer is. It
+verifies a claim's premise separately from its conclusion, because bot reviewers get the premise wrong
+far more often than the conclusion, and it changes no code unless asked.
 
 `consilium` is not a review skill. It takes a problem or a decision, not a diff: three seats generate
 candidate approaches — one of them an agent outside this process, with none of the conversation's
@@ -270,7 +276,7 @@ decisions that are expensive to reverse.
 | [changes-review](./review/skills/changes-review/) | Parallel cold reviewers that hunt bugs and requirement gaps, verify them, and optionally publish as a comment or a full review — finds, never fixes | All |
 | [code-cleanup](./review/skills/code-cleanup/) | Trim AI comment noise, apply project conventions, simplify correct code | All |
 | [consilium](./review/skills/consilium/) | Approach board — generate candidate approaches, attack them comparatively, recommend one | All |
-| [pr-feedback](./review/skills/pr-feedback/) | Analyze PR review comments — triage into fix/skip with reasoning | All |
+| [pr-review](./review/skills/pr-review/) | Review someone else's PR, or verify and answer the feedback on yours — replies and resolves | All |
 | [code-to-spec](./review/skills/code-to-spec/) | Extract a behavioral spec from a codebase (1 file up to 500+ files) | Claude |
 
 ### Audit
