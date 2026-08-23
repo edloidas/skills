@@ -397,12 +397,19 @@ The 500-line body cap is mechanical, so it lives in `validate-skills.sh` rather 
 | Skill | Allowance | Why |
 | ----- | --------- | --- |
 | `plan/skills/issue-flow` | 1000 | **Sanctioned.** It owns every git and `gh` write in the issue pipeline — base detection, the fork point, the squash rules, the force-push lease. That concentration is the seam that let `solve-issue` and `changes-review` become portable, and splitting it would put the same rules in two files, which this repo treats as the drift mechanism. Its size is the cost of being the single writer. |
-| `workflow/skills/solve-issue` | 540 | Marginally over. Trim on the next substantive edit rather than raising the budget. |
-| `plan/skills/issue-writer` | 530 | Marginally over. Same. |
+| `workflow/skills/solve-issue` | 540 | Marginally over at 520. Trim on the next substantive edit rather than raising the budget. |
 
 A budget is a per-skill ceiling, not an exemption — a budgeted skill that grows past its
 allowance still fails, so a deliberate size cannot drift into an accidental one. Adding a
 row is a decision that needs a reason in this table.
+
+`body_line_count` counts every line after the frontmatter, **horizontal rules included**.
+It used to skip each `---` in the file rather than only the two delimiters, which made a
+body measure smaller than what the agent actually loads: `issue-writer` reported 498 lines
+against a real 507, because nine `---` rules sit inside its issue templates. Six other
+skills were undercounted too, none of them across a ceiling — `lint-sync` at 493 is now
+the closest to the cap. A checker that reads low is worse than no checker, so if the two
+counts ever disagree again, trust neither until you know which one is wrong.
 
 `skill-audit` does not re-score a budgeted skill for its size. The validator owns the
 mechanical limit; the rubric still judges whether heavy material is deferred, whether the

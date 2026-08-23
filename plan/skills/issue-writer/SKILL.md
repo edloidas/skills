@@ -1,6 +1,11 @@
 ---
 name: issue-writer
 description: Use this skill when the user asks to draft, write, or update a GitHub issue. It analyzes the user's description, asks clarifying questions, and produces a well-structured issue title and description following the project's template. It can also update existing issues or prepare a draft for later creation on GitHub.
+when_to_use: >
+  On "draft an issue", "write an issue", "write this up as an issue", "update issue #N",
+  "edit that issue", or "reword the issue body". Also when a bug report, feature request,
+  task, or documentation gap has to become a well-formed GitHub issue before work starts,
+  or when a draft is wanted for later filing rather than immediate creation.
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
 allowed-tools: Bash Read Glob AskUserQuestion
@@ -243,126 +248,9 @@ Use the appropriate template based on the selected format.
 2. Use present tense for existing problems ("the button does not respond", not "the button did not respond" or "added responsive button handling") — describe the issue as it currently exists
 3. Preserve the user's original wording where possible — restructure, don't rewrite
 
-#### Full Issue Template
-
-Use this comprehensive template for Full format issues (includes all sections as needed):
-
-```markdown
-{{BRIEF_DESCRIPTION}}
-
----
-
-### Rationale
-
-{{Include only if the "why" isn't obvious}}
-
-- {{RATIONALE_POINT}}
-
----
-
-### References
-
-{{Include if there are relevant links}}
-
-- {{REFERENCE: description}}
-
----
-
-### Things to Consider
-
-{{Include if there are important edge cases or decisions}}
-
-- {{CONSIDERATION}}
-
----
-
-### Implementation
-
-> [!IMPORTANT]
-> This is not a step-by-step guide — it's a functional checklist ordered logically.
-
-{{Include for medium/large scope issues}}
-
-1. {{IMPLEMENTATION_STEP}}
-
-**UI Behavior:**
-
-{{Include if there are specific interaction requirements}}
-
-- {{UI_BEHAVIOR}}
-
----
-
-### Acceptance Criteria
-
-{{Always include — defines "done"}}
-
-- [ ] {{CRITERION}}
-
----
-
-### Testing Steps
-
-{{Include if testing isn't obvious}}
-
-1. {{TESTING_STEP}}
-
----
-
-### Examples
-
-{{Include if visual examples help clarify}}
-
-**{{EXAMPLE_CASE}}**
-
-![{{ALT_TEXT}}]({{IMAGE_URL}})
-
----
-
-### Out of Scope _(Optional)_
-
-{{Include only if scope boundaries need explicit definition}}
-
-- {{OUT_OF_SCOPE_ITEM}}
-
----
-
-### Technical Constraints _(Optional)_
-
-{{Include only if there are specific technical requirements}}
-
-- {{CONSTRAINT}}
-```
-
-#### Short Issue Template
-
-Use this minimal template for Short format issues. No section headers, no horizontal rules:
-
-```markdown
-{{DESCRIPTION — 4-6 sentences. Explain the issue naturally: what happens, what's affected, why it matters. Keep the user's original phrasing.}}
-
-**Rationale:** {{WHY_NEEDED — 1-2 sentences}}
-```
-
-#### Default Issue Template
-
-Use this template for Default format issues. Use h4 headers, no horizontal rules:
-
-```markdown
-{{DESCRIPTION — 4-8 sentences: what the issue is, what it affects, how to reproduce (when applicable), what's impacted. Keep the user's original phrasing.}}
-
-#### Rationale
-
-{{WHY_NEEDED — explain why this needs to be fixed or implemented}}
-
-#### References
-
-{{Include only if there are relevant links or related issues}}
-
-#### Implementation Notes
-
-{{Include only if the approach is already known — brief notes on what needs to be done}}
-```
+The templates live in `references/templates.md`, one per format — Full, Default, and
+Short. Read the one matching the chosen format. `## Template Section Guidelines` below
+says what belongs in each section.
 
 ### Step 6: Present to User
 
@@ -513,7 +401,3 @@ See `references/helper-scripts.md` for detailed script documentation, usage exam
 
 - If `gh` CLI is not available, skip update operations and just provide the formatted output
 - If not in a git repository, skip GitHub integration and just provide the formatted output
-
-## Keywords
-
-issue, github, draft issue, write issue, update issue, edit issue, modify issue, bug report, feature request, task, documentation

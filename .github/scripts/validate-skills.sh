@@ -125,13 +125,17 @@ Claude-only subagent field|subagent_type"
 # unnoticed. Adding a row is a deliberate decision that needs a reason in CLAUDE.md.
 BODY_LINE_CAP=500
 BODY_LINE_BUDGETS="plan/skills/issue-flow=1000
-workflow/skills/solve-issue=540
-plan/skills/issue-writer=530"
+workflow/skills/solve-issue=540"
 
 # Lines after the closing frontmatter delimiter.
+#
+# Only the first two `---` lines are delimiters. Skipping every one of them — as this
+# did — silently discards each horizontal rule in the body, so a skill measured smaller
+# than it is: `issue-writer` reported 498 lines against a real 507 because nine `---`
+# rules sit inside its issue templates. The cap has to count what the agent loads.
 body_line_count() {
   awk 'BEGIN { delimiter_count = 0 }
-    $0 == "---" { delimiter_count++; next }
+    delimiter_count < 2 && $0 == "---" { delimiter_count++; next }
     delimiter_count >= 2 { print }
   ' "$1/SKILL.md" | wc -l | tr -d ' '
 }

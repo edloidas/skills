@@ -28,7 +28,7 @@ and scope, then commit.
 | `relevant` / `scoped`         | Stage only files that fit the current task's scope; leave unrelated tweaks out.        |
 | `amend`                       | Use `git commit --amend --no-edit` after staging. Do not rewrite the existing message. |
 | `no trailer`                  | Never append a `Co-Authored-By` trailer, even if the repo uses them.                   |
-| anything else                 | Treat as a message hint or additional constraint.                                      |
+| anything else                 | Treat as a message hint or additional constraint — see step 5.                          |
 
 ## Current state
 
@@ -113,6 +113,10 @@ diff inline, and the main thread already has the conventions context.
    - Types: `feat`, `fix`, `docs`, `chore`, `refactor`, `test`, `style`, `ci`.
    - Follow the project convention from **Current state** when present.
    - If the current branch is `issue-<N>`, append ` #<N>` to the title.
+   - A hint in `$ARGUMENTS` — whatever the Arguments table did not match — steers the
+     message, not the staging: let it shape the title's description, and pass it
+     verbatim to `commit-summary` so the body reflects it too. It narrows what the
+     message leads with; it never drops changes the commit contains.
    - Body: invoke the `commit-summary` skill and use what it returns. It weighs
      the change and either derives a body from the code or returns two to three
      mechanical lines. See **Body** below for the inline fallback.
