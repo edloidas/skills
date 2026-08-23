@@ -210,6 +210,15 @@ block — builders carry the defaults.
 - Run `--shuffle --repeat=5` after any rewrite — order dependence is cheap to find now and
   expensive to inherit.
 
+### React Three Fiber
+
+- Mock `@react-three/fiber` at the module boundary — the canvas does not render under jsdom.
+  `Canvas` becomes a plain wrapper, `useFrame` an inert double, `useThree` a stub returning
+  `{camera, gl, scene}`.
+- Test 3D logic where it stops being 3D: extract the math into pure functions, or drive the
+  store and assert on it. A test that mounts the scene to assert a position is testing the
+  renderer, not your rule.
+
 ### JUnit 5 / Mockito / AssertJ (Java)
 
 - `@ParameterizedTest` + `@MethodSource`/`@CsvSource` for tables.
