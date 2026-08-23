@@ -54,6 +54,14 @@ constraints — kept, but compacted to a line or two.
   otherwise have done.
 - `--no-simplify` runs everything except the simplifier pass.
 
+## Asking the User
+
+Every question in this skill is written as `AskUserQuestion` options. Use that tool where
+the host offers it, or the host's nearest structured-choice equivalent. Where the host has
+neither, ask the same question in normal chat as a numbered list of 2–5 options —
+recommended first, one short line of description each — and wait for the user to reply
+with a number.
+
 ## Workflow
 
 ### Phase 1: Scope
@@ -221,8 +229,7 @@ who typed the bare command, which means it may block on a prompt.
 If the host cannot prompt interactively at all, do not ask — apply nothing, and report the
 simplifications as suggestions.
 
-When asking, use `AskUserQuestion` if the host provides it; otherwise ask in normal chat as a
-numbered list and wait for the reply:
+Ask per **Asking the User**:
 
 1. `Apply the simplifications` (Recommended) — N refactors, all behavior-preserving
 2. `Report them only` — list them under Suggested refactors, change nothing

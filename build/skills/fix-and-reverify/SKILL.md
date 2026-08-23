@@ -52,6 +52,14 @@ Two failure modes it exists to prevent:
 
 Default is unattended. Nothing waits for a human unless `--interactive` says so.
 
+## Asking the User
+
+Every question in this skill is written as `AskUserQuestion` options. Use that tool where
+the host offers it, or the host's nearest structured-choice equivalent. Where the host has
+neither, ask the same question in normal chat as a numbered list of 2–5 options —
+recommended first, one short line of description each — and wait for the user to reply
+with a number.
+
 ## Phase 0: Where to start
 
 A bare invocation looks at what just happened before it spends a review.
@@ -244,11 +252,8 @@ Never start a round after one that changed nothing.
 routine fixes, it does not ask about the same finding twice, and it never asks permission to run a
 review.
 
-Where the host has a question tool — `AskUserQuestion` on Claude Code — use it: recommended option
-first, every option carrying the reason it might be right, four at most.
-
-Where it does not, fall back to a short numbered list in normal chat, in this shape, and **wait** —
-an unanswered question is not consent:
+Ask per **Asking the User**, four options at most, every option carrying the reason it might be
+right. An unanswered question is not consent — **wait**. The chat form looks like this:
 
 ```
 **Fix the negative-offset truncation in `parseOffset`, or report it?**

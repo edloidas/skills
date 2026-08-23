@@ -60,6 +60,14 @@ the table below would have left alone.
 
 `--fix` is meaningless in reviewer mode — you do not fix a colleague's branch. Say so and ignore it.
 
+## Asking the User
+
+Every question in this skill is written as `AskUserQuestion` options. Use that tool where
+the host offers it, or the host's nearest structured-choice equivalent. Where the host has
+neither, ask the same question in normal chat as a numbered list of 2–5 options —
+recommended first, one short line of description each — and wait for the user to reply
+with a number.
+
 ## Phase 1: Resolve the target and your side
 
 Parse the invocation:
@@ -162,9 +170,8 @@ for it — one inline comment per finding, minors grouped, nothing published wit
 and an attribution, and the verdict set by whether a blocker survived.
 
 **Confirm before anything leaves.** In author mode show the composed replies; in reviewer mode show
-the whole review — every inline comment, the body, the verdict — laid out locally first. Offer post as
-written / edit first / discard, with post as written recommended. Where the host has no structured
-prompt, ask in chat as a short numbered list and wait. `--auto` skips this and posts directly.
+the whole review — every inline comment, the body, the verdict — laid out locally first. Ask per **Asking the User** — post as
+written (recommended) / edit first / discard. `--auto` skips this and posts directly.
 
 Resolve only what `references/answering.md` permits: never a human-rooted thread, never a `discuss`.
 Check `viewerCanUpdate` before attempting.

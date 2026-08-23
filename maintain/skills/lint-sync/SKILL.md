@@ -8,7 +8,6 @@ description: >
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
 allowed-tools: Bash Read Glob Grep WebFetch Write AskUserQuestion
-user-invocable: true
 argument-hint: "[sync, audit, or update]"
 ---
 
@@ -40,6 +39,14 @@ Before fetching docs from the web, check `references/docs.md` for Context7 libra
 - Biome: `/biomejs/website` (5357 snippets)
 - Oxc: `/oxc-project/website` (5057 snippets)
 - Vite+: `/websites/viteplus_dev` (210 snippets)
+
+## Asking the User
+
+Every question in this skill is written as `AskUserQuestion` options. Use that tool where
+the host offers it, or the host's nearest structured-choice equivalent. Where the host has
+neither, ask the same question in normal chat as a numbered list of 2–5 options —
+recommended first, one short line of description each — and wait for the user to reply
+with a number.
 
 ## Workflow
 
@@ -83,8 +90,7 @@ grep -l "from ['\"]vite-plus['\"]" vite.config.ts 2>/dev/null
 
 **Vite+ counts as Oxc** in the table above. When `$VITEPLUS=true`, all Oxc config reads/writes target the `lint` and `fmt` blocks in `vite.config.ts` instead of standalone config files.
 
-When asking target choice, use `AskUserQuestion` when available. Otherwise ask
-in normal chat with this short numbered list and wait for the user's reply:
+Ask the target choice per **Asking the User**:
 
 ```
 Which tool would you like to migrate to?

@@ -19,11 +19,13 @@ Help users draft and update well-structured GitHub issues by:
 - Producing a comprehensive description using the project template
 - Updating existing issues on GitHub
 
-## Interaction Fallback
+## Asking the User
 
-When `AskUserQuestion` is available, use it. Otherwise ask concise questions in
-normal chat. For discrete choices, present 2-5 short numbered options, keep the
-recommended option first, and wait for the user's reply before continuing.
+Every question in this skill is written as `AskUserQuestion` options. Use that tool where
+the host offers it, or the host's nearest structured-choice equivalent. Where the host has
+neither, ask the same question in normal chat as a numbered list of 2–5 options —
+recommended first, one short line of description each — and wait for the user to reply
+with a number.
 
 ## When to Use This Skill
 
@@ -77,9 +79,7 @@ Check if the user's request indicates a preferred format:
 **Auto-detect Default format** if keywords present:
 - "simple issue", "draft issue", "basic issue"
 
-**If not auto-detected**, ask the user which format they want. Use
-`AskUserQuestion` when that tool is available; otherwise ask directly in
-normal chat:
+**If not auto-detected**, ask the user which format they want, per **Asking the User**:
 
 ```
 question: "What level of detail should this issue have?"
@@ -135,9 +135,8 @@ Identify which template sections are relevant based on scope:
 
 ### Step 3: Interactive Questionnaire
 
-Ask clarifying questions to fill in gaps. Use `AskUserQuestion` when it is
-available; otherwise ask concise direct questions in normal chat. Questions
-should be tailored to the issue type and scope.
+Ask clarifying questions to fill in gaps, per **Asking the User**. Tailor them to the
+issue type and scope.
 
 **For Features:**
 - What problem does this solve?
@@ -160,9 +159,7 @@ Keep questions focused and avoid asking about things already clear from the desc
 
 ### Step 3.5: Confirm Label
 
-Based on the type-to-label mapping from Step 2, confirm the label. Use
-`AskUserQuestion` when available; otherwise ask the user directly and present
-the same options in plain text:
+Based on the type-to-label mapping from Step 2, confirm the label, per **Asking the User**:
 
 ```
 question: "Which label best describes this issue?"

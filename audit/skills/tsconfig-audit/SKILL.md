@@ -60,6 +60,14 @@ Two things the compiler will not tell you, which the script handles itself:
   `node_modules`. The script walks the `extends` chain itself to attribute each option to the file
   that really set it.
 
+## Asking the User
+
+Every question in this skill is written as `AskUserQuestion` options. Use that tool where
+the host offers it, or the host's nearest structured-choice equivalent. Where the host has
+neither, ask the same question in normal chat as a numbered list of 2–5 options —
+recommended first, one short line of description each — and wait for the user to reply
+with a number.
+
 ## Workflow
 
 ### Step 1: Find the configs
@@ -156,14 +164,11 @@ the referenced configs and offer to audit each one — do not imply the whole so
 
 ### Step 6: Offer to apply
 
-Ask before writing. Use `AskUserQuestion` with these options, recommended first:
+Ask before writing, per **Asking the User**:
 
 1. **Apply blocking fixes and safe drops** — everything except the keep findings
 2. **Apply blocking fixes only** — the minimum to build on TS7
 3. **Report only** — change nothing
-
-If `AskUserQuestion` is unavailable, present the same choice in chat as a numbered list and wait
-for a reply.
 
 When applying:
 

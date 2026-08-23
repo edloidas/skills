@@ -17,7 +17,6 @@ when_to_use: >
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
 allowed-tools: Read Grep Glob Bash(rg:*) Bash(jq:*) Bash(ls:*) Bash(find:*)
-user-invocable: true
 argument-hint: "[<target-dir>] [--check=<name>]"
 ---
 

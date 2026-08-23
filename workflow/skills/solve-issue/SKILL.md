@@ -35,10 +35,11 @@ fine.
 
 ### Asking the User
 
-Every question below is written as `AskUserQuestion` options. Use that tool where the
-host offers it, or the host's nearest structured-choice equivalent. Where the host has
+Every question in this skill is written as `AskUserQuestion` options. Use that tool where
+the host offers it, or the host's nearest structured-choice equivalent. Where the host has
 neither, ask the same question in normal chat as a numbered list of 2–5 options —
-recommended first, one short line each — and wait for the user to reply with a number.
+recommended first, one short line of description each — and wait for the user to reply
+with a number.
 
 The endgame question in Phase 6 is never skipped. Every other gate defaults to
 proceeding, so a host that cannot prompt still completes the flow.

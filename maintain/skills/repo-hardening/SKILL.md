@@ -12,7 +12,6 @@ description: >
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
 allowed-tools: Bash Read AskUserQuestion
-user-invocable: true
 argument-hint: "[apply|check]"
 ---
 
@@ -281,9 +280,13 @@ End with a compact table: each baseline item → `applied` / `already set` / `sk
 
 ## Asking the User
 
-Before applying (after Step 0's inventory), confirm scope in one round. With
-`AskUserQuestion` where available; otherwise present the same choices as a numbered list
-in chat and wait for a reply:
+Every question in this skill is written as `AskUserQuestion` options. Use that tool where
+the host offers it, or the host's nearest structured-choice equivalent. Where the host has
+neither, ask the same question in normal chat as a numbered list of 2–5 options —
+recommended first, one short line of description each — and wait for the user to reply
+with a number.
+
+Before applying (after Step 0's inventory), confirm scope in one round:
 
 1. **Ruleset strictness** — Solo (admin bypass, 0 approvals; recommended for
    single-maintainer repos) / Team (no bypass, 1+ approvals) / Skip rulesets.
