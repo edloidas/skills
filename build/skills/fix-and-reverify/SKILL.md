@@ -244,10 +244,11 @@ Never start a round after one that changed nothing.
 routine fixes, it does not ask about the same finding twice, and it never asks permission to run a
 review.
 
-Where the host has a question tool, use it: recommended option first, every option carrying the
-reason it might be right, four at most.
+Where the host has a question tool — `AskUserQuestion` on Claude Code — use it: recommended option
+first, every option carrying the reason it might be right, four at most.
 
-Where it does not, ask in chat in this shape and **wait** — an unanswered question is not consent:
+Where it does not, fall back to a short numbered list in normal chat, in this shape, and **wait** —
+an unanswered question is not consent:
 
 ```
 **Fix the negative-offset truncation in `parseOffset`, or report it?**
