@@ -10,14 +10,14 @@
 
 <p align="center">
   <img src="https://img.shields.io/github/v/tag/edloidas/skills?style=flat-square&color=FD3DB5&label=release" alt="Release">
-  <img src="https://img.shields.io/badge/skills-38-FD3DB5?style=flat-square" alt="38 skills">
+  <img src="https://img.shields.io/badge/skills-36-FD3DB5?style=flat-square" alt="36 skills">
   <img src="https://img.shields.io/badge/agents-4-FD3DB5?style=flat-square" alt="4 agents">
   <img src="https://img.shields.io/badge/license-MIT-FD3DB5?style=flat-square" alt="MIT license">
 </p>
 
 ---
 
-38 skills for planning, building, reviewing, auditing, maintaining, and shipping software —
+36 skills for planning, building, reviewing, auditing, maintaining, and shipping software —
 written once and distributed to [Claude Code](https://docs.anthropic.com/en/docs/claude-code),
 [Codex](https://developers.openai.com/codex), [OpenCode](https://opencode.ai), and
 [pi](https://pi.dev), following the [Agent Skills specification](https://agentskills.io/specification).
@@ -27,11 +27,11 @@ it. Nothing runs in the background, nothing is injected into every prompt.
 
 | Group | What it covers | Skills |
 | ----- | -------------- | -----: |
-| [plan](#plan) | Issue drafting, scope analysis, backlog triage, full issue lifecycle | 4 |
+| [plan](#plan) | Issue drafting, scope analysis, backlog triage, full issue lifecycle | 3 |
 | [build](#build) | Conflict resolution, commits, findings fixes | 4 |
-| [review](#review) | Adversarial change review, cleanup, review board, PR feedback, spec extraction | 5 |
+| [review](#review) | Adversarial change review, cleanup, approach boards, PR feedback, spec extraction | 5 |
 | [audit](#audit) | CI, scripts, security, skills, workspace, tsconfig, Three.js, React, tests | 9 |
-| [maintain](#maintain) | Agent config, label/rule/config sync, lint migration, repo hardening, process cleanup | 7 |
+| [maintain](#maintain) | Agent config, label and editor config sync, lint migration, repo hardening, process cleanup | 6 |
 | [ship](#ship) | npm releases | 1 |
 | [assist](#assist) | Explanations, external opinions, design discussion, handoffs, restatement | 5 |
 | [write](#write) | Markdown, READMEs, repository documentation | 1 |
@@ -42,15 +42,15 @@ it. Nothing runs in the background, nothing is injected into every prompt.
 
 | Agent | Install | What you get |
 | ----- | ------- | ------------ |
-| Claude Code | `/plugin marketplace add edloidas/skills` | 10 plugin groups, all 38 skills |
-| Codex | `codex plugin marketplace add edloidas/skills` | 9 wrapper plugins, 34 skills |
-| pi | `pi install git:github.com/edloidas/skills` | 34 skills |
-| OpenCode | `./scripts/skills-packaging.sh install-host opencode` | 34 skills |
-| Other | `npx skills add edloidas/skills --all` | All 38 skills |
+| Claude Code | `/plugin marketplace add edloidas/skills` | 10 plugin groups, every skill |
+| Codex | `codex plugin marketplace add edloidas/skills` | 10 wrapper plugins |
+| pi | `pi install git:github.com/edloidas/skills` | Every portable skill |
+| OpenCode | `./scripts/skills-packaging.sh install-host opencode` | Every portable skill |
+| Other | `npx skills add edloidas/skills --all` | Every skill, any agent it supports |
 
-Counts differ because each skill declares which hosts it supports. Four skills depend on
-Claude-only features — subagent fleets with per-agent model overrides, the Skill tool, Claude's
-own config files — and ship only there. See [How skills reach each agent](#how-skills-reach-each-agent).
+Every skill ships to all four agents except one. `code-to-spec` drives fleets of
+plugin-namespaced subagents and keys its temp files on Claude's session id, so it is Claude Code
+only. See [How skills reach each agent](#how-skills-reach-each-agent).
 
 ### Claude Code
 
@@ -93,9 +93,9 @@ Add the marketplace from GitHub — no `--ref` flag needed:
 codex plugin marketplace add edloidas/skills
 ```
 
-This installs and enables all nine wrapper plugins: `Edloidas Plan`, `Build`, `Review`, `Audit`,
-`Maintain`, `Ship`, `Assist`, `Write`, and `Obsidian`. Codex clones the whole repository, so `git pull`
-updates flow through. Restart Codex if new skills do not appear.
+This installs and enables all ten wrapper plugins: `Edloidas Plan`, `Build`, `Review`, `Audit`,
+`Maintain`, `Ship`, `Assist`, `Write`, `Obsidian`, and `Workflow`. Codex clones the whole
+repository, so `git pull` updates flow through. Restart Codex if new skills do not appear.
 
 Opening this repository in Codex additionally exposes `.agents/skills/` and the repo marketplace at
 `.agents/plugins/marketplace.json` for local use.
@@ -114,7 +114,7 @@ Install the whole collection as a pi package:
 pi install git:github.com/edloidas/skills
 ```
 
-This resolves the 34 pi-compatible skills through the `pi.skills` manifest in `package.json`.
+This resolves the pi-compatible skills through the `pi.skills` manifest in `package.json`.
 
 Add `-l` to install project-locally into `.pi/settings.json` instead of globally. Note that
 `pi list` only reports global packages, so a `-l` install shows up in `.pi/settings.json` rather
@@ -139,7 +139,7 @@ cd skills
 ./scripts/skills-packaging.sh install-host opencode
 ```
 
-That links the 34 OpenCode-compatible skills into `~/.config/opencode/skills`. Pass `--dest <path>`
+That links the OpenCode-compatible skills into `~/.config/opencode/skills`. Pass `--dest <path>`
 to install elsewhere. Re-run after `git pull`; it prunes only links pointing into this repo, so
 unrelated skills in the destination are left alone.
 
@@ -148,7 +148,7 @@ Opening this repository in OpenCode surfaces its generated repo-local set automa
 ### npx skills
 
 The [skills CLI](https://github.com/vercel-labs/skills) installs into any agent it supports and sees
-all 38 skills with no extra flags:
+every skill with no extra flags:
 
 ```bash
 npx skills add edloidas/skills --list                                  # list
@@ -164,7 +164,7 @@ repo's internal release tool is deliberately excluded from the listing.
 | Agent | Command | Expect |
 | ----- | ------- | ------ |
 | Claude Code | `/plugin` | The `edloidas` marketplace and its installed groups |
-| Codex | `codex plugin list` | 9 `@edloidas-skills` plugins, `installed, enabled` |
+| Codex | `codex plugin list` | 10 `@edloidas-skills` plugins, `installed, enabled` |
 | pi | `pi list` | The `edloidas/skills` package |
 | OpenCode | `opencode debug skill` | Your skills in the JSON listing |
 | Any | `npx skills ls` | Installed skills per agent |
@@ -215,7 +215,8 @@ to agree with each other.
 
 ## Available Skills
 
-In the **Agent** column, `All` means Claude Code, Codex, OpenCode, and pi.
+Every skill below runs on Claude Code, Codex, OpenCode, and pi, with one exception noted in
+[Review](#review).
 
 ### Plan
 
@@ -226,26 +227,26 @@ creating it, branching, snapshots, commits, squashing, pushes, PRs, merges. Skil
 orchestrate the pipeline (`solve-issue`) delegate those actions to it instead of
 reimplementing them, so the commit subject format and the squash rules live in one place.
 
-| Skill | Description | Agent |
-| ----- | ----------- | ----- |
-| [issue-writer](./plan/skills/issue-writer/) | Draft and update well-structured GitHub issues | All |
-| [issue-analyze](./plan/skills/issue-analyze/) | Analyze issue scope and produce an implementation task list | All |
-| [issue-flow](./plan/skills/issue-flow/) | Full issue lifecycle: pick, create, branch, commit, push, PR, merge | All |
+| Skill | Description |
+| ----- | ----------- |
+| [issue-writer](./plan/skills/issue-writer/) | Draft and update well-structured GitHub issues |
+| [issue-analyze](./plan/skills/issue-analyze/) | Analyze issue scope and produce an implementation task list |
+| [issue-flow](./plan/skills/issue-flow/) | Full issue lifecycle: pick, create, branch, commit, push, PR, merge |
 
 ### Build
 
 Conflict resolution, commit summaries, quick commits, and findings fixes.
 
-| Skill | Description | Agent |
-| ----- | ----------- | ----- |
-| [resolve-conflicts](./build/skills/resolve-conflicts/) | Semi-automatic merge and rebase conflict resolution | All |
-| [commit](./build/skills/commit/) | Fast staged-or-scoped commit with conventional message | All |
-| [commit-summary](./build/skills/commit-summary/) | Derive a commit message body from the code behind the change | All |
-| [fix-and-reverify](./build/skills/fix-and-reverify/) | Fix review findings in rounds, re-reviewing each fix | All |
+| Skill | Description |
+| ----- | ----------- |
+| [resolve-conflicts](./build/skills/resolve-conflicts/) | Semi-automatic merge and rebase conflict resolution |
+| [commit](./build/skills/commit/) | Fast staged-or-scoped commit with conventional message |
+| [commit-summary](./build/skills/commit-summary/) | Derive a commit message body from the code behind the change |
+| [fix-and-reverify](./build/skills/fix-and-reverify/) | Fix review findings in rounds, re-reviewing each fix |
 
 ### Review
 
-Code review, cleanup, approach boards, and quality improvement skills.
+Change review, cleanup, PR feedback, approach boards, and spec extraction.
 
 `changes-review` attacks a diff — parallel reviewers on different models, each blind to the
 implementer's reasoning, then a verification round that re-attacks the findings before you see
@@ -271,13 +272,17 @@ before anything is ranked. An approach already on the table enters as one candid
 rather than as the subject of an audit. It is the most expensive skill in the collection; spend it on
 decisions that are expensive to reverse.
 
-| Skill | Description | Agent |
-| ----- | ----------- | ----- |
-| [changes-review](./review/skills/changes-review/) | Parallel cold reviewers that hunt bugs and requirement gaps, verify them, and optionally publish as a comment or a full review — finds, never fixes | All |
-| [code-cleanup](./review/skills/code-cleanup/) | Trim AI comment noise, apply project conventions, simplify correct code | All |
-| [consilium](./review/skills/consilium/) | Approach board — generate candidate approaches, attack them comparatively, recommend one | All |
-| [pr-review](./review/skills/pr-review/) | Review someone else's PR, or verify and answer the feedback on yours — replies and resolves | All |
-| [code-to-spec](./review/skills/code-to-spec/) | Extract a behavioral spec from a codebase (1 file up to 500+ files) | Claude |
+| Skill | Description |
+| ----- | ----------- |
+| [changes-review](./review/skills/changes-review/) | Parallel cold reviewers that hunt bugs and requirement gaps, verify them, and optionally publish as a comment or a full review — finds, never fixes |
+| [code-cleanup](./review/skills/code-cleanup/) | Trim AI comment noise, apply project conventions, simplify correct code |
+| [consilium](./review/skills/consilium/) | Approach board — generate candidate approaches, attack them comparatively, recommend one |
+| [pr-review](./review/skills/pr-review/) | Review someone else's PR, or verify and answer the feedback on yours — replies and resolves |
+| [code-to-spec](./review/skills/code-to-spec/) | Extract a behavioral spec from a codebase (1 file up to 500+ files) |
+
+`code-to-spec` is the collection's only Claude Code-only skill. It dispatches six
+plugin-namespaced subagents and keys its intermediate files on Claude's session id, so there is
+nothing to port until that changes.
 
 ### Audit
 
@@ -285,50 +290,50 @@ CI, script, security, skill, workspace, tsconfig, Three.js, React, and test-suit
 Every one of them finds and reports; none of them edits. `react-audit` and `three-audit` double as
 stack lenses for `changes-review`.
 
-| Skill | Description | Agent |
-| ----- | ----------- | ----- |
-| [ci-audit](./audit/skills/ci-audit/) | Audit GitHub Actions for wall clock, spend, and whether the gating actually gates | All |
-| [scripts-audit](./audit/skills/scripts-audit/) | Analyze package.json scripts for naming, composition, and consistency | All |
-| [security-audit](./audit/skills/security-audit/) | Find supply-chain gaps in Actions, release config, repo settings, and package manager — read-only | All |
-| [skill-audit](./audit/skills/skill-audit/) | Gate a skill change on discovery, instructions, context cost, portability, and safety | All |
-| [three-audit](./audit/skills/three-audit/) | Audit Three.js / React Three Fiber code for perf and best-practice issues | All |
-| [react-audit](./audit/skills/react-audit/) | Audit React code for effect misuse, memoization, state architecture, and conventions | All |
-| [tests-audit](./audit/skills/tests-audit/) | Audit a test suite and report keep/tighten/rewrite/delete per test | All |
-| [tsconfig-audit](./audit/skills/tsconfig-audit/) | Audit tsconfig.json against TypeScript 7 and report what to drop, add, and keep | All |
-| [workspace-audit](./audit/skills/workspace-audit/) | Analyze pnpm workspace and monorepo setup | All |
+| Skill | Description |
+| ----- | ----------- |
+| [ci-audit](./audit/skills/ci-audit/) | Audit GitHub Actions for wall clock, spend, and whether the gating actually gates |
+| [scripts-audit](./audit/skills/scripts-audit/) | Analyze package.json scripts for naming, composition, and consistency |
+| [security-audit](./audit/skills/security-audit/) | Find supply-chain gaps in Actions, release config, repo settings, and package manager — read-only |
+| [skill-audit](./audit/skills/skill-audit/) | Gate a skill change on discovery, instructions, context cost, portability, and safety |
+| [three-audit](./audit/skills/three-audit/) | Audit Three.js / React Three Fiber code for perf and best-practice issues |
+| [react-audit](./audit/skills/react-audit/) | Audit React code for effect misuse, memoization, state architecture, and conventions |
+| [tests-audit](./audit/skills/tests-audit/) | Audit a test suite and report keep/tighten/rewrite/delete per test |
+| [tsconfig-audit](./audit/skills/tsconfig-audit/) | Audit tsconfig.json against TypeScript 7 and report what to drop, add, and keep |
+| [workspace-audit](./audit/skills/workspace-audit/) | Analyze pnpm workspace and monorepo setup |
 
 ### Maintain
 
 Agent instruction setup and drift check, label sync, lint migration, editor config sync, repo security hardening, and stale process cleanup.
 
-| Skill | Description | Agent |
-| ----- | ----------- | ----- |
-| [agent-config](./maintain/skills/agent-config/) | Init a repo's agent instruction layer and check it for drift | All |
-| [labels-sync](./maintain/skills/labels-sync/) | Check, apply, or export GitHub repository labels as reusable JSON | All |
-| [editor-config](./maintain/skills/editor-config/) | Init or merge `.zed` / `.vscode` editor configs from a canonical set | All |
-| [lint-sync](./maintain/skills/lint-sync/) | Compare ESLint rules against Biome for overlap | All |
-| [repo-hardening](./maintain/skills/repo-hardening/) | Apply a GitHub security baseline: rulesets, Actions defaults, immutable releases, environments | All |
-| [stale-process-cleanup](./maintain/skills/stale-process-cleanup/) | Find and reap orphaned dev servers, LSP, and MCP processes | All |
+| Skill | Description |
+| ----- | ----------- |
+| [agent-config](./maintain/skills/agent-config/) | Init a repo's agent instruction layer and check it for drift |
+| [labels-sync](./maintain/skills/labels-sync/) | Check, apply, or export GitHub repository labels as reusable JSON |
+| [editor-config](./maintain/skills/editor-config/) | Init or merge `.zed` / `.vscode` editor configs from a canonical set |
+| [lint-sync](./maintain/skills/lint-sync/) | Migrate ESLint and Prettier to Biome or Oxc, or modernize an existing config |
+| [repo-hardening](./maintain/skills/repo-hardening/) | Apply a GitHub security baseline: rulesets, Actions defaults, immutable releases, environments |
+| [stale-process-cleanup](./maintain/skills/stale-process-cleanup/) | Find and reap orphaned dev servers, LSP, and MCP processes |
 
 ### Ship
 
 Release workflows for npm packages.
 
-| Skill | Description | Agent |
-| ----- | ----------- | ----- |
-| [npm-release](./ship/skills/npm-release/) | Guide npm/pnpm package release workflow | All |
+| Skill | Description |
+| ----- | ----------- |
+| [npm-release](./ship/skills/npm-release/) | Guide npm/pnpm package release workflow |
 
 ### Assist
 
-External opinion, assistance, and plain restatement tools.
+Explanations, design discussion, external opinions, handoffs, and plain restatement.
 
-| Skill | Description | Agent |
-| ----- | ----------- | ----- |
-| [explain](./assist/skills/explain/) | Explain how something works by tracing the mechanism, not describing it | All |
-| [discuss](./assist/skills/discuss/) | Talk a design through — investigate, take a position, push back; never writes | All |
-| [handoff](./assist/skills/handoff/) | Compact the session into a handoff — inline text or per-project doc file | All |
-| [outsider](./assist/skills/outsider/) | Quick opinion or review from an agent CLI outside this session | All |
-| [bro](./assist/skills/bro/) | Say the last message again, straight — shorter, plainer, decision last | All |
+| Skill | Description |
+| ----- | ----------- |
+| [explain](./assist/skills/explain/) | Explain how something works by tracing the mechanism, not describing it |
+| [discuss](./assist/skills/discuss/) | Talk a design through — investigate, take a position, push back; never writes |
+| [handoff](./assist/skills/handoff/) | Compact the session into a handoff — inline text or per-project doc file |
+| [outsider](./assist/skills/outsider/) | Quick opinion or review from an agent CLI outside this session |
+| [bro](./assist/skills/bro/) | Say the last message again, straight — shorter, plainer, decision last |
 
 `outsider` shells out to whichever agent CLI is installed and is *not* the one running it — Codex
 from Claude Code, Claude from Codex, and so on. It ships everywhere because the host is excluded at
@@ -338,25 +343,25 @@ selection time rather than by leaving a host out of `compatibility`.
 
 Markdown, README, and repository documentation writing.
 
-| Skill | Description | Agent |
-| ----- | ----------- | ----- |
-| [markdown-writing](./write/skills/markdown-writing/) | Write READMEs, docs, PRs, and issues that lead with the point — GitHub alerts, structure, README skeleton | All |
+| Skill | Description |
+| ----- | ----------- |
+| [markdown-writing](./write/skills/markdown-writing/) | Write READMEs, docs, PRs, and issues that lead with the point — GitHub alerts, structure, README skeleton |
 
 ### Obsidian
 
-Obsidian vault organization and working document management skills.
+Working document management in an Obsidian vault.
 
-| Skill | Description | Agent |
-| ----- | ----------- | ----- |
-| [working-docs](./obsidian/skills/working-docs/) | Organize working documents in Obsidian with two-tier system | All |
+| Skill | Description |
+| ----- | ----------- |
+| [working-docs](./obsidian/skills/working-docs/) | Organize working documents in Obsidian with two-tier system |
 
 ### Workflow
 
 End-to-end workflows that orchestrate multiple skills into a single command.
 
-| Skill | Description | Agent |
-| ----- | ----------- | ----- |
-| [solve-issue](./workflow/skills/solve-issue/) | Full issue workflow: analyze, plan, implement, verify, review, then ship via `issue-flow` | All |
+| Skill | Description |
+| ----- | ----------- |
+| [solve-issue](./workflow/skills/solve-issue/) | Full issue workflow: analyze, plan, implement, verify, review, then ship via `issue-flow` |
 
 ## Skill Structure
 
