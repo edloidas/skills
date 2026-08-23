@@ -1,8 +1,9 @@
 # Where the rules in this skill come from
 
-Two runs of this skill were followed to an outcome — a maintainer's commits in one case, a
-browser-checkable result in the other. Every rule in `SKILL.md` that looks arbitrary is here with the
-observation that produced it. Read this when deciding whether to change one of them.
+Three runs of this skill were followed to an outcome — a maintainer's commits in the first, a
+browser-checkable result in the second, a published comment and the author's response in the third.
+Every rule in `SKILL.md` that looks arbitrary is here with the observation that produced it. Read
+this when deciding whether to change one of them.
 
 ## Run 1 — a platform PR, reviewed against a long requirement
 
@@ -48,6 +49,44 @@ findings, then a re-verification pass.
 - Two probe techniques did the work: register a novel identifier so ambient state cannot mask the
   result, and remove the ambient condition so the real symptom appears.
 
+## Run 3 — a component-library PR, published to the author
+
+A Combobox mobile-keyboard fix: 3 files, ~145 lines, a Preact component library. Two rounds, both
+published as written comments rather than findings lists. Round one raised two findings plus a
+rider; the author force-pushed a fix for all three and each was confirmed fixed on re-review. Round
+two ran three finders, merged to 7 findings, put them through a separate cold triage pass, and
+published 4.
+
+- **The triage pass returned 3 relevant, 3 partial, 1 not relevant.** Three of seven would have
+  damaged the review's credibility if published as found.
+- **The finding rated `critical` was the most wrong one.** It claimed `click` never carries
+  `pointerType` in any browser. Measurement refuted it outright — a real click arrives as a
+  `PointerEvent` with `pointerType` of `touch` or `mouse`. The true residue was narrower and still
+  worth publishing: WebKit only shipped a truthful `pointerType` on `click` in Safari 18.2, so on iOS
+  16 and 17 the fix is a no-op. Same line of code, different claim, different severity.
+- One finding reported the value button focusing the input on tap. That is untouched base code and
+  the issue asks for exactly that behavior. A reviewer blind to the base cannot know this; publishing
+  it would have asked the author to defend their own spec.
+- One finding blamed a story description for asserting viewport clamping the positioning hook does
+  not implement. True, but the missing clamp is pre-existing and only the description is new on the
+  branch. Published unattributed it reads as a regression the author caused.
+- Two of the seven were overturned or narrowed on the attribution axis alone.
+- The Safari finding could not be reproduced on the reviewer's machine at all. It shipped with a
+  console snippet dispatching a plain `MouseEvent` — the event shape those Safari versions deliver —
+  and that is what made it land. Screenshots do not transfer into a PR comment; measured numbers and
+  runnable snippets do.
+- The clipped-submenu finding shipped as *"the 280px submenu spans 295 to 575 on a 320px-wide
+  viewport"* plus a sentence on what you see.
+- Round two withdrew its own earlier suspicion in the published text: *"That one was mine, not the
+  branch's."*
+- Three findings about the same unrelated block of stories published as **one** section with the
+  other two as reasons not to land it.
+- One finding was named as needing a change before ship; the rest were handed over as judgement
+  calls with a suggested fix and no verdict.
+- A "checked and clear" section drew no response beyond the closing sentence, matching run 2.
+- The published comment ran four sections and roughly 900 words for a 145-line diff — the observation
+  behind the per-kind length budget, since nothing in the rules capped it.
+
 ## Which rule each observation justifies
 
 | Rule in `SKILL.md` | Evidence |
@@ -67,3 +106,10 @@ findings, then a re-verification pass.
 | A second cold reviewer buys more than a second intent reviewer | Run 1: two cold reviewers diverged usefully; the second intent reviewer duplicated the first |
 | Reviewers stall on wide diffs; relaunch narrowed | A 23-file, two-repo run where both native reviewers went quiet and needed a narrowed file list and a tool budget |
 | The caller owns rounds and the accepted-findings list | A seven-round session: yields 5 → 7 → 4 → 2 before a round returned nothing, with three findings knowingly accepted in round 4 and re-found afterwards |
+| Publication judges where the report does not | Run 3: 3 of 7 findings would have cost the review its credibility if passed through unjudged |
+| Attribute against the base before publishing | Run 3: two findings overturned or narrowed on attribution alone, both reading as regressions otherwise |
+| No demonstration, no section | Run 3: the highest-rated finding rested on a false premise measurement refuted in one line |
+| A reproduction that survives into a comment | Run 3: the Safari finding was unreproducible on the reviewer's machine and landed on a console snippet |
+| Withdraw the review's own errors in the published text | Run 3: both rounds withdrew explicitly, and the concession is what made the rest credible |
+| Per-kind length budget, four sections maximum | Run 3: four sections and ~900 words for a 145-line diff, with no rule capping it |
+| A clean run is one closing paragraph, never a section list | Runs 2 and 3: the "checked and clear" section drew no response either time |

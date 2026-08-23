@@ -5,13 +5,14 @@ description: >
   each with a single job and no access to the implementer's reasoning: one hunts correctness bugs
   blind to the issue, one hunts requirement gaps against the issue text, one runs outside the
   process entirely. Optionally re-attacks its own findings before reporting, then synthesizes what
-  is left. Returns findings and changes nothing — no tooling, no autofix, no edits, no posting.
+  is left. Returns findings and changes nothing — no tooling, no autofix, no edits. On request it
+  also publishes the review as a comment written to the author, gated on demonstrated evidence.
   Use before committing, when you want a change attacked rather than assessed, or as the find step
   behind a fix pass or a PR review skill. Every phase is configurable by the caller.
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
 allowed-tools: Bash(git:*) Bash(gh:*) Read Glob Grep Task Skill
-argument-hint: "[--base <branch> | --uncommitted | --commit <sha>] [--issue <N>] [--mode <simple|standard|deep>] [--no-external] [--no-lens]"
+argument-hint: "[--base <branch> | --uncommitted | --commit <sha>] [--issue <N>] [--mode <simple|standard|deep>] [--no-external] [--no-lens] [--comment]"
 metadata:
   author: edloidas
 ---
@@ -19,12 +20,13 @@ metadata:
 # Changes Review
 
 Attack a change from several directions at once and report what survives. This skill **finds**;
-it never fixes, never runs tooling, never touches the working tree, and never posts anywhere.
+it never fixes, never runs tooling, and never touches the working tree. It does not post anywhere
+unless the caller asks, and then only through the gate in Phase 8.
 
 It is a primitive. Whoever calls it — a person, a PR workflow, an issue workflow — gets the same
 three stages, find, verify, synthesize, and configures them rather than forking the behavior.
-Anything needing the pull request itself, the project's architecture, a round loop, or a published
-comment belongs to the caller, not here.
+Anything needing the pull request itself, the project's architecture, or a round loop belongs to the
+caller, not here.
 
 ## The premise
 
@@ -50,6 +52,7 @@ convention drift belong to a cleanup pass, and this skill will not report them.
 | Mode | `--mode <simple\|standard\|deep>` | `standard` for `--base`, `simple` for a single commit or an uncommitted diff |
 | External reviewer | `--no-external` | On whenever a third-party CLI is available |
 | Stack lenses | `--no-lens` | On whenever the diff matches a lens (Phase 3) |
+| Publication | `--comment` | Off — report to the caller and stop (Phase 8) |
 
 **Mode is the one dial.** It sets how many reviewers run and how hard the findings get verified,
 because those two scale together — there is no useful run with four reviewers and no verification.
@@ -299,7 +302,8 @@ The last judgment call, and the one the caller cannot make for itself.
    cannot do gets a real fix; the same finding framed around what an internal counter does wrong gets
    a literal one-line patch. Where both framings are available, lead with the consequence.
 5. **Do not rewrite the claim.** Severity and survival are yours to judge; the defect itself is
-   reported in the reviewer's own framing. Do not soften a claim you kept.
+   reported in the reviewer's own framing. Do not soften a claim you kept. This governs the
+   **caller-facing report only** — Phase 8 writes to the author and has the opposite mandate.
 
 ## Phase 7: Critique the synthesis (`deep` mode)
 
@@ -394,8 +398,41 @@ what was checked and found sound — it reads as padding and nobody acts on it.
 
 One report serves every caller. A caller wanting something shorter condenses what it got.
 
-Then stop. Do not fix, do not offer to fix, do not post, and do not start a second round. Round
-policy, publication, and triage belong to the caller.
+Then stop. Do not fix, do not offer to fix, and do not start a second round. Round policy and
+triage belong to the caller. Publish only if the caller asked — Phase 8.
+
+## Phase 8: Publish (on `--comment` only)
+
+Off by default. The report above is the deliverable; this phase turns it into a comment addressed to
+the person who wrote the code. Those are different artifacts with an inverted rule. The report is
+unjudged on purpose; a published comment must be judged, because unjudged output costs its reader
+their time.
+
+Read `references/publishing-a-review.md` before composing. Four steps, in order:
+
+1. **Verify** — already done, in Phase 5. A finding that phase killed is never published, and one it
+   could not demonstrate does not get a section.
+2. **Attribute** — for each survivor, `git blame` and `git diff <base>...HEAD` to establish whether
+   this branch introduced the blamed code. Reclassify it as pre-existing, or narrow the claim to the
+   part that is new. Reviewers are blind to the base, so this is the first point it can happen.
+3. **Compose** — one section per cause, ordered by what the author should act on first, following the
+   composition rules and the length budget in the reference.
+4. **Gate** — refuse any section lacking a demonstration or an attribution, and refuse a fifth
+   section: more than four means clustering failed. Unverified residue gets one flagged sentence in
+   the closing paragraph, never a section.
+5. **Confirm, then post.** Show the composed comment and ask before it goes anywhere. `--comment`
+   authorizes the phase, not the text: this is outward-facing correspondence published under the
+   user's account, and they have to see it first. Offer post as written / edit first / discard, with
+   post as written recommended. Where the host has no structured prompt, ask the same thing in chat
+   as a short numbered list and wait for a reply. A caller running unattended does not get to skip
+   this — it prints the comment and stops.
+
+**The mandate here inverts Phase 6's.** There you do not soften a claim you kept; here you drop,
+narrow and re-attribute before you speak. Both are right for their own audience.
+
+Attribution policy, the length budget, and where to post are all in the reference — it resolves the
+**target** repo's instruction file rather than hardcoding a footer. A clean run still publishes, as
+one short paragraph.
 
 ## Rules
 
@@ -409,6 +446,8 @@ policy, publication, and triage belong to the caller.
 - **Severity needs an actor.** A rating that does not say who can reach the defect is not a rating.
 - **No manufactured findings.** A reviewer returning "No findings" on sound code is correct
   behavior, not a failed run.
+- **Publication judges; the report does not.** Phase 8 is the only place this skill drops, narrows or
+  re-attributes a finding it kept, and the only place it writes anything outward-facing.
 
 ## Error handling
 
@@ -424,3 +463,6 @@ policy, publication, and triage belong to the caller.
 | A reviewer stalls or returns nothing | Relaunch it once with a narrowed file list and a stated tool budget — not the same prompt again. A reviewer that goes quiet on a wide diff is usually still reading it |
 | A native reviewer returns nothing usable | Report the remaining reviewers, name the gap |
 | Every reviewer fails | Say so plainly. Do not substitute your own review — that is the one thing this skill exists to avoid |
+| `--comment` and every finding fails the gate | Publish the clean-run paragraph, and tell the caller which findings were withheld and why |
+| `--comment` but no PR resolves for the branch | Print the composed comment instead of posting, and say no PR was found |
+| `--comment` and the user declines or does not answer | Print the comment, post nothing. A declined publication is a normal outcome, not a failed run |
