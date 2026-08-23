@@ -75,7 +75,12 @@ Whether the body earns its size, and whether the heavy material is deferred.
 
 **Checks:**
 
-- [ ] Body under 500 lines / ~5000 tokens. Take the numbers from the metrics script.
+- [ ] Body within its line budget. The cap is 500 lines / ~5000 tokens; a few skills carry
+      a larger budgeted allowance, listed in `BODY_LINE_BUDGETS` in
+      `.github/scripts/validate-skills.sh` with the reason recorded in `CLAUDE.md`.
+      `validate-skills.sh` already fails the build on a breach, so do not re-litigate a
+      budgeted size here — an allowlisted skill inside its allowance is not a finding.
+      Take the numbers from the metrics script.
 - [ ] Reference material — lookup tables, rule catalogs, prompt templates, mappings — lives
       in `references/`, loaded on demand, not inlined. The metrics script reports the
       largest inline table or code block; a 60-line table in the body is the classic case.

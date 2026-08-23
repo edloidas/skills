@@ -196,7 +196,10 @@ modes for any skill that is not a clean PASS:
 
 - **Skill with only `SKILL.md`** — valid. Bundled directories are optional.
 - **Skill directory in scope but deleted on this branch** — report as removed, do not score.
-- **Body over 500 lines** — a Context Efficiency finding, not a reason to stop reading it.
+- **Body over 500 lines** — a Context Efficiency finding, not a reason to stop reading it,
+  unless the skill carries a budgeted allowance in `BODY_LINE_BUDGETS` in
+  `.github/scripts/validate-skills.sh` and is inside it. That is a sanctioned size, already
+  enforced mechanically; scoring it again would report the same finding forever.
 - **Binary files under `assets/`** — count them, do not read them.
 - **A validator cannot run** — record the reason and say confidence is reduced for whatever
   that validator covers. Do not substitute a guess for its verdict.

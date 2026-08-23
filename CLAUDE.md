@@ -332,12 +332,33 @@ The `description` determines when an agent activates the skill. Be specific and 
 
 ### Body (Markdown)
 
-- Keep under 500 lines / ~5000 tokens
+- Keep under 500 lines / ~5000 tokens. **Enforced** by `.github/scripts/validate-skills.sh`,
+  which fails the build on a breach — see [Body Line Budgets](#body-line-budgets)
 - Include step-by-step instructions, examples, and edge cases
 - Move detailed reference material to `references/` files
 - Use relative paths from the skill root when referencing files (e.g. `references/api-guide.md`)
 - Keep references one directory level deep; avoid nested reference chains
 - Keep individual reference files focused — smaller files mean less context usage
+
+### Body Line Budgets
+
+The 500-line body cap is mechanical, so it lives in `validate-skills.sh` rather than in
+`skill-audit`'s rubric. Three skills carry a larger budgeted allowance in
+`BODY_LINE_BUDGETS`:
+
+| Skill | Allowance | Why |
+| ----- | --------- | --- |
+| `plan/skills/issue-flow` | 1000 | **Sanctioned.** It owns every git and `gh` write in the issue pipeline — base detection, the fork point, the squash rules, the force-push lease. That concentration is the seam that let `solve-issue` and `changes-review` become portable, and splitting it would put the same rules in two files, which this repo treats as the drift mechanism. Its size is the cost of being the single writer. |
+| `workflow/skills/solve-issue` | 540 | Marginally over. Trim on the next substantive edit rather than raising the budget. |
+| `plan/skills/issue-writer` | 530 | Marginally over. Same. |
+
+A budget is a per-skill ceiling, not an exemption — a budgeted skill that grows past its
+allowance still fails, so a deliberate size cannot drift into an accidental one. Adding a
+row is a decision that needs a reason in this table.
+
+`skill-audit` does not re-score a budgeted skill for its size. The validator owns the
+mechanical limit; the rubric still judges whether heavy material is deferred, whether the
+length is proportionate, and whether anything is duplicated into `references/`.
 
 ### Scripts
 
