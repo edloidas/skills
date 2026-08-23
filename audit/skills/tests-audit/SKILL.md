@@ -10,6 +10,7 @@ description: >
   catching bugs.
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
+allowed-tools: Read Grep Glob Bash(grep:*) Bash(rg:*) Bash(fd:*)
 argument-hint: "[files | dir]"
 ---
 
@@ -18,7 +19,8 @@ argument-hint: "[files | dir]"
 Find the tests that don't pin behavior and report what to do with each. **This skill reports;
 it never edits the suite or the code under test.** It does run the suite — order dependence and
 flakiness cannot be found any other way — so route any coverage output to a temp path rather
-than the repo.
+than the repo. The suite command is project-specific, so it is deliberately outside
+`allowed-tools`: the mechanical scan is pre-approved, running the suite is not.
 
 ## Core Principle
 
