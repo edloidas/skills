@@ -11,7 +11,7 @@ description: >
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
 allowed-tools: Bash(git:*) Bash(gh:*) Read Glob Grep Task Skill
-argument-hint: "[--base <branch> | --uncommitted | --commit <sha>] [--issue <N>] [--mode <simple|standard|deep>] [--no-external]"
+argument-hint: "[--base <branch> | --uncommitted | --commit <sha>] [--issue <N>] [--mode <simple|standard|deep>] [--no-external] [--no-lens]"
 metadata:
   author: edloidas
 ---
@@ -49,6 +49,7 @@ convention drift belong to a cleanup pass, and this skill will not report them.
 | Requirement | `--issue <N>` | Auto-detected (Phase 2) |
 | Mode | `--mode <simple\|standard\|deep>` | `standard` for `--base`, `simple` for a single commit or an uncommitted diff |
 | External reviewer | `--no-external` | On whenever a third-party CLI is available |
+| Stack lenses | `--no-lens` | On whenever the diff matches a lens (Phase 3) |
 
 **Mode is the one dial.** It sets how many reviewers run and how hard the findings get verified,
 because those two scale together — there is no useful run with four reviewers and no verification.
@@ -200,6 +201,32 @@ It is the one reviewer with no output contract you control. Map each finding ont
 native reviewers return: claim, location, actor, severity, confidence, defect, cases. Missing severity
 or confidence becomes `moderate` / `low`; a missing actor is resolved in Phase 6, not guessed here.
 
+### Stack lenses (when the diff matches, unless `--no-lens`)
+
+The reviewers above are stack-agnostic on purpose. A lens adds the one thing they cannot carry:
+a catalog of failure modes specific to a library, deep enough that it would drown a general prompt.
+
+Match the resolved file list against this table and dispatch a lens for each row that hits:
+
+| Diff contains | Lens |
+| ------------- | ---- |
+| `.tsx` / `.jsx`, or `.ts` importing `react` | `audit:react-audit` |
+| files importing `three` or `@react-three/*` | `audit:three-audit` |
+
+Invoke the lens skill by name, the same way the external leg goes through `/outsider`, and tell it
+three things: that it is running in **lens mode**, the exact files Phase 1 resolved, and the base ref
+when the scope has one. A lens must not widen its own scope — a lens that audits the whole project
+returns findings this run cannot attribute to the change.
+
+Map what comes back onto the finding contract the native reviewers use. A lens rates its own
+findings by its own catalog, so re-rate them here rather than trusting the labels: a lens finding is
+`minor` unless it names a concrete failure this diff can produce, and anything the lens calls a
+convention violation is `minor` with no exceptions — that is cleanup, and `review:code-cleanup` owns
+it.
+
+Lenses are optional in the same way the external reviewer is. A lens skill that is not installed is a
+skipped leg, never a failed run, and the report says which lenses ran.
+
 ## Phase 4: Consolidate
 
 Reviewers over-report, over-rate, and file one insight three times. Cut that down before spending
@@ -346,6 +373,7 @@ Rules for the shape:
 
 Scope: <files, lines, base> · mode: <simple|standard|deep>
 Reviewers: cold (<model>) · intent (<model>|skipped) · external (<cli>|skipped)
+Lenses: <lens skills that ran, or none matched|skipped>
 Verification: <lenses run, K findings dropped, J re-rated>
 
 <findings, most severe first, then decisions>
@@ -358,6 +386,7 @@ Drop the `· D decisions` clause when there are none. When every reviewer return
 
 Scope: <files, lines, base> · mode: <simple|standard|deep>
 Reviewers: cold (<model>) · intent (<model>|skipped) · external (<cli>|skipped)
+Lenses: <lens skills that ran, or none matched|skipped>
 ```
 
 A clean result is a real result. Do not pad it with observations, and do not add a section listing

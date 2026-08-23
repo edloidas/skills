@@ -135,6 +135,19 @@ Skip checks that produced no finding (don't pad the report). End with a tally:
 `<N> findings: <high> high, <medium> medium, <low> low`, followed by one line
 naming any conditional checks skipped for lack of a signal.
 
+## Lens Mode
+
+`review:changes-review` invokes this skill as a stack lens when the diff touches Three.js or R3F
+files. In that mode:
+
+- The caller supplies the scope. Audit exactly the files it resolved and no more — a whole-scene
+  audit returns findings the run cannot attribute to the change
+- Skip Step 1's project detection; the caller already matched on the imports
+- Return findings in the shape the caller asked for, not the report format above
+- Conditional convention checks map to the caller's lowest severity
+
+Standalone invocation is unaffected and stays the primary path.
+
 ## Checks
 
 Catalog of checks. Each one is defined in `references/checks/<name>.md`.

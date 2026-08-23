@@ -1,6 +1,13 @@
 # useEffect Anti-Patterns
 
-All 14 useEffect anti-patterns from react.dev's "You Might Not Need an Effect" guide, plus common pitfalls from "Synchronizing with Effects".
+The 14 useEffect anti-patterns from react.dev's "You Might Not Need an Effect", plus common
+pitfalls from "Synchronizing with Effects".
+
+**Check the compiler first.** If the project enables the React Compiler — `babel-plugin-react-compiler`
+in the Babel config, `reactCompiler: true` in `next.config`, or the compiler plugin in the Vite/RSbuild
+config — the compiler inserts memoization for you. In that project, skip #4 entirely and do not
+recommend `useMemo`, `useCallback`, or `memo` anywhere. Every other pattern below still applies:
+the compiler memoizes, it does not move work out of effects.
 
 ---
 
@@ -87,6 +94,8 @@ const sorted = useMemo(
 ```
 
 **Note:** Only flag when the computation is genuinely expensive (large arrays, complex transforms). Simple operations don't need memoization.
+
+**Skip this check entirely on a React Compiler project** — the compiler already memoizes, and a hand-written `useMemo` there is noise the compiler has to work around.
 
 ---
 
@@ -236,6 +245,11 @@ useEffect(() => {
 }, []);
 ```
 
+**First check whether it needs a guard at all.** StrictMode's double invocation is a test, not the
+bug. An effect that cleans up after itself — closes the connection it opened, aborts the request it
+started — is already correct under it, and adding a guard hides the real defect. Reach for a guard
+only for genuinely once-per-process work with nothing to clean up.
+
 **Fix:** Use a module-level guard variable or run outside the component.
 
 ```tsx
@@ -339,7 +353,27 @@ useEffect(() => {
 }, [id]);
 ```
 
-**Better:** Use a data-fetching library (TanStack Query, SWR, etc.) or framework-level data loading.
+**Better:** Use a data-fetching library (TanStack Query, SWR), framework-level data loading, or —
+when the component can suspend — `use()` with a promise created outside render:
+
+```tsx
+// Parent creates the promise; the child unwraps it under a Suspense boundary.
+const userPromise = fetchUser(id);
+return (
+  <Suspense fallback={<Spinner />}>
+    <Profile userPromise={userPromise} />
+  </Suspense>
+);
+
+function Profile({ userPromise }) {
+  const user = use(userPromise);
+  return <h1>{user.name}</h1>;
+}
+```
+
+`use()` does not cache. Creating the promise inside the rendering component refetches on every
+render, so it is only a fix when the promise comes from a cache, a loader, or a parent that is
+itself stable.
 
 ---
 
@@ -367,3 +401,88 @@ const value = useSyncExternalStore(
   store.getServerValue, // optional SSR snapshot
 );
 ```
+
+---
+
+## 15. Reactive Values That Should Not Re-Trigger the Effect
+
+**Anti-pattern:** An effect reads a value it needs the latest of but should not re-run for, so the
+value ends up in the dependency array and the effect fires far more than intended — or gets omitted
+and goes stale.
+
+```tsx
+// Wrong — reconnects every time theme changes
+useEffect(() => {
+  const connection = createConnection(roomId);
+  connection.on('connected', () => showNotification('Connected!', theme));
+  connection.connect();
+  return () => connection.disconnect();
+}, [roomId, theme]);
+```
+
+**Fix:** Extract the non-reactive part into an Effect Event. It always sees the latest props and
+state, and it is not a dependency.
+
+```tsx
+const onConnected = useEffectEvent(() => {
+  showNotification('Connected!', theme);
+});
+
+useEffect(() => {
+  const connection = createConnection(roomId);
+  connection.on('connected', () => onConnected());
+  connection.connect();
+  return () => connection.disconnect();
+}, [roomId]);
+```
+
+**Rules:** only call an Effect Event from inside an effect, never pass it to another component or
+hook, and never use it to paper over a dependency that genuinely should re-run the effect.
+
+**Availability:** `useEffectEvent` is stable from React 19.2. On earlier versions the same shape is
+available as `experimental_useEffectEvent`, or hand-rolled with a ref updated in a layout effect —
+check the installed React version before recommending it.
+
+---
+
+## 16. Hand-Rolled Pending and Error State Around a Submit
+
+**Anti-pattern:** A form or action tracks `isSubmitting`, `error`, and the result by hand, usually
+with an effect somewhere in the chain.
+
+```tsx
+// Wrong
+const [isSubmitting, setIsSubmitting] = useState(false);
+const [error, setError] = useState(null);
+
+const handleSubmit = async (formData) => {
+  setIsSubmitting(true);
+  try {
+    await updateName(formData.get('name'));
+  } catch (e) {
+    setError(e);
+  } finally {
+    setIsSubmitting(false);
+  }
+};
+```
+
+**Fix:** `useActionState` owns all three, and `useFormStatus` reads the pending state from a child
+without prop drilling.
+
+```tsx
+const [error, submitAction, isPending] = useActionState(
+  async (previousState, formData) => {
+    const error = await updateName(formData.get('name'));
+    return error ?? null;
+  },
+  null,
+);
+
+return <form action={submitAction}>...</form>;
+```
+
+For a non-form state update that should not block the UI, `useTransition` gives the same `isPending`
+without the manual flag.
+
+**Availability:** React 19+. Do not recommend on React 18.
