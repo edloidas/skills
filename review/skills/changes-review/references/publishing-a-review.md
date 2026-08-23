@@ -230,6 +230,21 @@ A review that found nothing still publishes, in one short paragraph: what was ru
 the tooling result. Never a section list of everything checked — on the calibration run a
 "checked and clear" section drew no response at all beyond the closing sentence.
 
+## When publication cannot finish
+
+Every row ends the same way — print what was composed, post nothing. Publication is the one
+outward-facing thing here, so the safe failure is always silence plus a full local copy.
+
+| Situation | Action |
+| --------- | ------ |
+| Every finding fails the gate | Publish the clean-run paragraph, and tell the caller which findings were withheld and why |
+| No pull request resolves for the branch | Print the composed text, and say no PR was found |
+| The user declines, or does not answer | Print everything. A declined publication is a normal outcome, not a failed run |
+| `--review` on a pull request the user authored | GitHub refuses it. Fall back to the issue-comment shape and say why |
+| A finding's line is outside the diff | Move it to the review body. Never anchor it to a nearby line the API happens to accept |
+| No write access to the target repository | Print everything and say it cannot post. `viewerCanUpdate` answers this before the attempt |
+| The review submits but a comment is rejected | Say which finding did not land and print it. Do not resubmit the whole review |
+
 ## Boundary with `write:markdown-writing`
 
 That skill owns render target, readability, and GitHub Markdown mechanics. This file owns what a
