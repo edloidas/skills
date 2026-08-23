@@ -71,6 +71,14 @@ Trigger phrases: `security audit`, `supply chain`, `ci hardening`, `harden actio
 - CI speed/parallelization → `audit:ci-audit`
 - Dependency CVE scanning → run `gh dependabot alerts` / `pnpm audit` directly
 
+## Asking the User
+
+Every question in this skill is written as `AskUserQuestion` options. Use that tool where
+the host offers it, or the host's nearest structured-choice equivalent. Where the host has
+neither, ask the same question in normal chat as a numbered list of 2–5 options —
+recommended first, one short line of description each — and wait for the user to reply
+with a number.
+
 ## Workflow
 
 ### Step 1: Detect Repo Layout
@@ -180,7 +188,7 @@ downstream work, and a Planned Changes report for the user to read. Do not edit 
 Hosts differ in whether they have a task tracker; where none exists, the Planned Changes
 report *is* the handoff and the options below collapse to option 4.
 
-When `AskUserQuestion` is available, use it. Otherwise present the same options in normal chat as a numbered list and wait for the user's reply:
+Ask, per **Asking the User**:
 
 1. `Emit tasks + planned-changes report` (Recommended) — one task per finding, plus the report below
 2. `Emit tasks flagged for issue filing` — same as 1, with `intended_action: file_issue` metadata

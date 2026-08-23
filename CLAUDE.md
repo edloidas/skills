@@ -186,6 +186,30 @@ The Agent Skills [spec](https://agentskills.io/specification) defines a portable
 
 When a Codex-exposed skill needs bundled-script paths, keep the current `<skill-dir>` prose placeholder and let Claude resolve it contextually. Save `${CLAUDE_SKILL_DIR}` for Claude-only skills.
 
+**This is now enforced, not advised.** `validate-skills.sh` hard-fails a skill declaring
+`Codex`, `OpenCode`, or `Pi` that contains `` !`command` `` injection, a `${CLAUDE_*}`
+substitution, `ToolSearch`, `TodoWrite`, `SlashCommand`, or `subagent_type` — in `SKILL.md`
+or any bundled `.md`. Claude-only skills are exempt, since for them these are the correct
+mechanism. The rule exists because advice did not hold: `build/skills/commit` sat in the
+Codex catalog with its entire context-gathering section written as seven injected commands,
+plus three body lines instructing the agent not to gather the context itself. On Codex,
+OpenCode, and pi the skill had no git state and was told not to look for any.
+
+Detection lives in `CLAUDE_ONLY_PATTERNS` in that script. Note the comment there about
+`(^|[[:space:]])`: BSD grep treats `^` inside a group as a literal, so the anchored
+alternative matches nothing on macOS while passing on CI's GNU grep. Two `-e` patterns are
+the portable form.
+
+One skill is exempt, via `CLAUDE_ONLY_EXEMPT`:
+
+| Skill | Why |
+| ----- | --- |
+| `audit/skills/skill-audit` | Its subject matter *is* these mechanisms — the rubric and the dispatched prompt have to name them to tell an auditor what to look for. The exemption is skill-wide, so a genuine violation inside it would go uncaught; acceptable because it dispatches as intent and has no workflow of its own a host could fail to run. |
+
+Adding a row is a decision that needs a reason in this table. The exemption is not a way
+past a finding — a skill that *uses* one of these mechanisms narrows its `compatibility`
+or states the step as intent instead.
+
 Example frontmatter:
 
 ```yaml
@@ -224,11 +248,35 @@ Skills using `AskUserQuestion` must follow these rules:
 4. Maximum 4 options — "Other" is added automatically by Claude Code
 5. Headers ≤12 characters, labels 1-5 words
 
-For any skill compatible with both Claude Code and Codex that uses `AskUserQuestion`,
-include a local fallback in `SKILL.md`. If `AskUserQuestion` is unavailable, present
-the same decision in normal chat as a short numbered list of 2-5 concise options,
-keep the recommended option first, and wait for the user's reply so they can answer
-with just the option number.
+#### The canonical `Asking the User` section
+
+Any skill declaring a non-Claude host and asking a question carries exactly one section,
+worded **verbatim** as below. It sits immediately before the skill's first procedural
+section — `## Workflow`, `## Phase 0`, `## Execution Steps`, whichever the skill uses —
+at `##`, or `###` where the skill nests its conventions.
+
+```markdown
+## Asking the User
+
+Every question in this skill is written as `AskUserQuestion` options. Use that tool where
+the host offers it, or the host's nearest structured-choice equivalent. Where the host has
+neither, ask the same question in normal chat as a numbered list of 2–5 options —
+recommended first, one short line of description each — and wait for the user to reply
+with a number.
+```
+
+Copy it; do not paraphrase it. Fourteen skills each carried their own wording of this rule
+before it was unified, which made a reader unable to tell a deliberate variation from
+drift. `skill-metrics.mjs` reports whether a skill has the canonical section, ad-hoc
+wording, or none.
+
+**Call sites do not re-explain the fallback.** They say `Ask, per **Asking the User**:`
+followed by the options, and nothing more. A skill may add one extra paragraph under the
+section for its own policy — which gate is never skipped, what happens when the host
+cannot prompt at all — but not a second copy of the mechanics.
+
+A skill whose only mention of `AskUserQuestion` is documentation about the field (as in
+`skill-audit`'s rubric) does not need the section, and neither does a Claude-only skill.
 
 ### Multi-Agent Convention
 
@@ -386,7 +434,7 @@ another:
 
 | Checker | Owns | Failure |
 | ------- | ---- | ------- |
-| `.github/scripts/validate-skills.sh` | Marketplace and plugin manifests, canonical layout, per-skill frontmatter rules, dangling bundled paths | Hard, fails CI |
+| `.github/scripts/validate-skills.sh` | Marketplace and plugin manifests, canonical layout, per-skill frontmatter rules, dangling bundled paths, Claude-only mechanisms in a portable skill | Hard, fails CI |
 | `scripts/validate-codex.sh` | Codex catalog, `compatibility` agreement, `agents/openai.yaml`, host subset rule | Hard, fails CI |
 | `tests/run.sh` | What a bundled script actually returns — exit codes, chosen branch, parsed output, refusals | Hard, fails CI |
 | `skill-audit` | Discovery, instruction quality, context cost, portability, safety | Scored 1-5, PASS / FAIL |

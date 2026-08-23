@@ -130,9 +130,13 @@ Common types: `feat`, `fix`, `docs`, `chore`, `refactor`, `test`, `style`, `ci`
 
 ### Asking the User
 
-Every question in this skill is written as `AskUserQuestion` options. Use that tool where the host offers it, or the host's nearest structured-choice equivalent.
+Every question in this skill is written as `AskUserQuestion` options. Use that tool where
+the host offers it, or the host's nearest structured-choice equivalent. Where the host has
+neither, ask the same question in normal chat as a numbered list of 2–5 options —
+recommended first, one short line of description each — and wait for the user to reply
+with a number.
 
-Where the host has neither, ask the same question in normal chat as a numbered list of 2–5 options — recommended option first, one short line of description each — and wait for the user to reply with a number. Never silently pick for the user at a gate that changes git or GitHub state.
+Never silently pick for the user at a gate that changes git or GitHub state.
 
 ### Skip Interactive Prompts
 

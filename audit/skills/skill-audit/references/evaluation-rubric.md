@@ -117,8 +117,14 @@ cannot run it.
 - [ ] Dispatch is written as intent — what to spawn and what it must return — never as
       mechanism. Naming a tool, an agent type, or a model is a violation, and so are
       per-host "Claude Code path / Codex path" splits and host-hint parentheticals.
-- [ ] `AskUserQuestion` in a skill declaring a non-Claude host has a plain-chat fallback:
-      the same decision as a short numbered list, recommended option first.
+- [ ] `AskUserQuestion` in a skill declaring a non-Claude host carries the repo's canonical
+      `Asking the User` section, **verbatim** — see CLAUDE.md. Ad-hoc wording that says the
+      same thing differently is a finding, not a pass: the section is copied so a reader can
+      tell a deliberate variation from drift. Call sites say `per **Asking the User**` and do
+      not restate the mechanics.
+- [ ] The Claude-only mechanisms `validate-skills.sh` hard-fails — `` !`command` `` injection,
+      `${CLAUDE_*}`, `ToolSearch`, `TodoWrite`, `SlashCommand`, `subagent_type` — are the
+      validator's job, not the rubric's. Cite it rather than re-scoring them.
 - [ ] Legitimate exceptions are not flagged. `allowed-tools` is a declaration, not an
       instruction — a portable skill that dispatches workers *should* declare `Task` /
       `Agent`. Per-host **data** in a table with a documented default is also fine.

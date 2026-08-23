@@ -9,7 +9,6 @@ description: >
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
 allowed-tools: Bash(bash:*) Write(*/outsider-*)
-user-invocable: true
 argument-hint: "[review] [agent], or empty for ask mode"
 metadata:
   author: edloidas
@@ -119,7 +118,7 @@ Pick the scope first:
 | `--commit <sha>` | Review one commit |
 
 Review takes 3–10 minutes. Pass `540` so the script's own timer fires first and can print its
-timeout message, and set the surrounding command timeout to its maximum (600000ms in Claude Code):
+timeout message, and set the surrounding command timeout to the highest value the host allows:
 
 ```bash
 bash <skill-dir>/scripts/run-outsider.sh review --host claude --uncommitted 540

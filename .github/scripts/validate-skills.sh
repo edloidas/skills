@@ -71,6 +71,51 @@ skill_has_codex_compatibility() {
   '
 }
 
+# A skill that names Codex, OpenCode, or Pi has to work there. These mechanisms exist
+# only in Claude Code, so a portable skill that instructs the agent to use one ships a
+# step three of its four declared hosts cannot execute — which is what let the `commit`
+# skill sit in the Codex catalog with its whole context-gathering section unresolvable.
+# Claude-only skills are exempt: for them these are the correct mechanism.
+skill_declares_non_claude_host() {
+  local skill_dir="$1"
+  read_frontmatter "$skill_dir" | awk '
+    /^compatibility:/ {
+      if ($0 ~ /Codex|OpenCode|Pi/) {
+        found = 1
+      }
+    }
+    END {
+      exit(found ? 0 : 1)
+    }
+  '
+}
+
+claude_only_exempt() {
+  local path="$1" row
+  while IFS= read -r row; do
+    [ "$row" = "$path" ] && return 0
+  done <<EOF
+$CLAUDE_ONLY_EXEMPT
+EOF
+  return 1
+}
+
+# `(^|[[:space:]])` is deliberately NOT used here: BSD grep treats `^` inside a group as
+# a literal, so the anchored alternative silently never matches on macOS while passing on
+# CI's GNU grep. Two -e patterns are portable.
+# One skill's subject matter *is* these mechanisms: `skill-audit`'s rubric and dispatched
+# prompt have to name them to tell an auditor what to look for. Exempting the whole skill
+# means a genuine violation inside it would not be caught here — acceptable, because it
+# dispatches as intent and holds no workflow of its own that a host could fail to run.
+# Adding a row is a deliberate decision that needs a reason in CLAUDE.md.
+CLAUDE_ONLY_EXEMPT="audit/skills/skill-audit"
+
+CLAUDE_ONLY_PATTERNS="dynamic-injection|^!\`[^ \`/!][^\`]*\`
+dynamic-injection|[[:space:]]!\`[^ \`/!][^\`]*\`
+Claude-only substitution|[$]{?CLAUDE_(SESSION_ID|SKILL_DIR|PLUGIN_ROOT)
+Claude-only tool|[^A-Za-z](ToolSearch|TodoWrite|SlashCommand)[^A-Za-z]
+Claude-only subagent field|subagent_type"
+
 # Body length is a context cost paid on every activation, so it is enforced here
 # rather than left to skill-audit's rubric — the repo's rule is that anything
 # mechanically checkable belongs in a validator.
@@ -147,6 +192,7 @@ validate_skill_content() {
   local skill_dir="$1"
   local skill_name="$2"
   local declared_name description when_to_use combined ref body_lines body_budget
+  local rule label pattern hit
 
   if [ "$(head -n 1 "$skill_dir/SKILL.md")" != "---" ]; then
     error "Skill '$skill_name': SKILL.md does not open with a YAML frontmatter block"
@@ -192,6 +238,22 @@ validate_skill_content() {
     else
       error "Skill '$skill_name': body is $body_lines lines; its budgeted allowance is $body_budget. Trim it, or raise the budget deliberately"
     fi
+  fi
+
+  if skill_declares_non_claude_host "$skill_dir" && ! claude_only_exempt "$skill_dir"; then
+    while IFS= read -r rule; do
+      [ -n "$rule" ] || continue
+      label="${rule%%|*}"
+      pattern="${rule#*|}"
+      while IFS= read -r hit; do
+        [ -n "$hit" ] || continue
+        error "Skill '$skill_name': $label at $hit — the skill declares a non-Claude host, so this step cannot run there. State it as intent, or narrow compatibility"
+      done <<INNER
+$(find "$skill_dir" -name '*.md' -print0 2>/dev/null | xargs -0 grep -nE -e "$pattern" /dev/null 2>/dev/null | cut -d: -f1,2)
+INNER
+    done <<EOF
+$CLAUDE_ONLY_PATTERNS
+EOF
   fi
 
   # A body that points at references/, scripts/, or assets/ it does not ship sends the

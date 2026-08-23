@@ -22,9 +22,13 @@ Semi-automatic merge and rebase conflict resolution.
 This skill mutates git state and may rewrite branch history. Expose it to Codex
 only as an explicitly invoked skill.
 
-When `AskUserQuestion` is available, use it for confirmations. Otherwise ask in
-normal chat with a short numbered list, keep the recommended option first, and
-wait for the user's reply before continuing.
+## Asking the User
+
+Every question in this skill is written as `AskUserQuestion` options. Use that tool where
+the host offers it, or the host's nearest structured-choice equivalent. Where the host has
+neither, ask the same question in normal chat as a numbered list of 2–5 options —
+recommended first, one short line of description each — and wait for the user to reply
+with a number.
 
 ## Entry Point Detection
 
@@ -99,11 +103,9 @@ After all conflicts resolved and rebase complete:
 
 1. Run verification (see Verification section)
 2. Show final report
-3. Ask whether to force-push `<head>` to remote
-   - Use `AskUserQuestion` when available
-   - Otherwise ask in normal chat and wait for the user's reply:
-     1. `Force push` (Recommended) — update the PR branch after the resolved rebase
-     2. `Skip push` — keep the rebased branch local only
+3. Ask whether to force-push `<head>` to remote, per **Asking the User**:
+   1. `Force push` (Recommended) — update the PR branch after the resolved rebase
+   2. `Skip push` — keep the rebased branch local only
    - Yes → `git push --force-with-lease="<head>:$before" origin <head>`
    - No → skip
 

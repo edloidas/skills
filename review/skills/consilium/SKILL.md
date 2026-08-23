@@ -12,7 +12,6 @@ description: >
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
 allowed-tools: Read Glob Grep Task Skill Write(*/outsider-*)
-user-invocable: true
 argument-hint: "[focus area, or empty]"
 metadata:
   author: edloidas

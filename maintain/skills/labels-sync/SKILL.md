@@ -7,7 +7,6 @@ description: >
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
 allowed-tools: Bash Read AskUserQuestion
-user-invocable: true
 argument-hint: "[apply|check|get]"
 ---
 
@@ -41,6 +40,14 @@ For export flows, the script reads the current repository labels and returns a n
 - `description`
 - `color`
 
+## Asking the User
+
+Every question in this skill is written as `AskUserQuestion` options. Use that tool where
+the host offers it, or the host's nearest structured-choice equivalent. Where the host has
+neither, ask the same question in normal chat as a numbered list of 2–5 options —
+recommended first, one short line of description each — and wait for the user to reply
+with a number.
+
 ## Execution Steps
 
 ### Step 1: Determine Intent
@@ -59,9 +66,7 @@ From the command arguments or conversation context, determine the user's intent:
 - `get`, `export`, `read`, `copy`, `json`
 - Example: `labels-sync get` or "export current labels so I can copy them to another repo"
 
-If intent is unclear or no arguments are provided, use `AskUserQuestion` when
-available. Otherwise ask in normal chat with a short numbered list and wait for
-the user's reply:
+If intent is unclear or no arguments are provided, ask per **Asking the User**:
 
 1. `Check` (Recommended) — Compare the repo labels against the bundled definition
 2. `Get` — Export the repo's current labels as reusable JSON

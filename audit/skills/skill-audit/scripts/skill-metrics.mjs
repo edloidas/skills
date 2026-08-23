@@ -118,11 +118,18 @@ function tokenize(text) {
 // Patterns that pin a skill to one host. Legitimate in a Claude-only skill; a smell in
 // one that declares Codex, OpenCode, or Pi. Per-host *data* is a valid exception, so
 // these are reported with their line for a human call, never auto-failed.
+//
+// The first four are also hard-failed by .github/scripts/validate-skills.sh, which owns
+// the mechanical half: they are not judgement calls, they are steps a declared host
+// cannot execute. They stay here so an audit report explains the same finding the
+// validator rejects, rather than the two disagreeing.
 const HOST_MECHANISM = [
+  [/(^|\s)!`[^ `/!][^`]*`/, 'dynamic injection'],
+  [/\$\{?CLAUDE_(SESSION_ID|SKILL_DIR|PLUGIN_ROOT)/, 'Claude-only substitution'],
+  [/\bToolSearch\b/, 'Claude-only tool'],
   [/subagent_type/, 'subagent_type'],
   [/\bclaude-(opus|sonnet|haiku|fable)[a-z0-9.\-[\]]*/, 'model id'],
   [/\b(Task|Agent|AskUserQuestion|SlashCommand|TodoWrite)\s+tool\b/, 'named Claude tool'],
-  [/\$\{?CLAUDE_(SESSION_ID|SKILL_DIR|PLUGIN_ROOT)/, 'Claude-only substitution'],
   [/~\/\.claude\//, 'Claude-only path'],
   [/\bplugin\b[^\n]*\bagents\//, 'plugin agents/ directory'],
 ];
@@ -242,7 +249,15 @@ const skills = skillDirs.map((dir) => {
 
   const allText = text + referenceText;
   const askUserQuestion = allText.includes('AskUserQuestion');
-  const fallback = /fallback|numbered list|plain chat|normal chat|if .{0,40}unavailable/i.test(allText);
+  // The repo carries one canonical `Asking the User` section, worded identically in every
+  // skill that asks. Detecting that exact shape is what makes the metric useful: the old
+  // keyword sniff passed on fourteen different paraphrases of the same rule.
+  const canonicalAsk =
+    /^#{2,3} Asking the User$/m.test(text) &&
+    /nearest structured-choice equivalent/.test(text) &&
+    /numbered list of 2–5 options/.test(text);
+  const fallback =
+    canonicalAsk || /fallback|numbered list|plain chat|normal chat|if .{0,40}unavailable/i.test(allText);
 
   return {
     path: dir,
@@ -271,6 +286,7 @@ const skills = skillDirs.map((dir) => {
       used: askUserQuestion,
       fallbackRequired: askUserQuestion && nonClaudeHosts.length > 0,
       fallbackMentioned: askUserQuestion && fallback,
+      canonicalSection: askUserQuestion && canonicalAsk,
     },
     codex: {
       compatibilityIncludesCodex: hosts.includes('Codex'),
@@ -311,7 +327,9 @@ const none = '(none)';
 function describeAsk(ask) {
   if (!ask.used) return 'not mentioned';
   if (!ask.fallbackRequired) return 'mentioned (host set needs no plain-chat fallback)';
-  return ask.fallbackMentioned ? 'mentioned, fallback wording present' : 'mentioned, NO fallback wording found';
+  if (ask.canonicalSection) return 'mentioned, canonical `Asking the User` section present';
+  if (ask.fallbackMentioned) return 'mentioned, ad-hoc fallback wording (not the canonical section)';
+  return 'mentioned, NO fallback wording found';
 }
 const out = [];
 for (const s of skills) {

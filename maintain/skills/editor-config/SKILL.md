@@ -9,7 +9,6 @@ description: >
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
 allowed-tools: Bash Read AskUserQuestion
-user-invocable: true
 argument-hint: "[zed] [vscode] [--dry-run]"
 ---
 
@@ -57,11 +56,19 @@ plain JSON.
 The skill prints a per-file plan (`Write`, `Merge`, `Identical`) and asks for
 confirmation before writing.
 
+## Asking the User
+
+Every question in this skill is written as `AskUserQuestion` options. Use that tool where
+the host offers it, or the host's nearest structured-choice equivalent. Where the host has
+neither, ask the same question in normal chat as a numbered list of 2–5 options —
+recommended first, one short line of description each — and wait for the user to reply
+with a number.
+
 ## Workflow
 
 1. **Determine editor selection.**
    - If arguments include `zed` and/or `vscode`, use those.
-   - Otherwise ask via `AskUserQuestion` with `multiSelect: true`:
+   - Otherwise ask per **Asking the User**, accepting more than one pick:
 
      ```
      Question: Which editor configs should I set up?
@@ -71,15 +78,7 @@ confirmation before writing.
        - VSCode            — Apply .vscode/settings.json and .vscode/extensions.json
      ```
 
-     If `AskUserQuestion` is unavailable (Codex / plain chat), ask in normal
-     chat with this short numbered list and wait for the user's reply. Accept
-     one or more numbers comma-separated (e.g. `1,2`).
-
-     ```
-     Which editor configs should I set up? (pick one or more)
-     1. Zed     — apply .zed/settings.json
-     2. VSCode  — apply .vscode/settings.json and .vscode/extensions.json
-     ```
+     In chat, accept one or more numbers comma-separated (e.g. `1,2`).
 
 2. **Run the apply script** for each selection.
 

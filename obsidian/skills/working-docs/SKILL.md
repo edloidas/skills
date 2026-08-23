@@ -20,7 +20,7 @@ Manage working documents in the Obsidian vault for cross-session, cross-project 
 
 **Vault path:** `~/Documents/Obsidian Vault/`
 
-Prefer the `obsidian:obsidian-cli` skill for vault interactions (read, create, search, manage notes). Fall back to direct file tools (Read, Glob, Grep, Edit) at the vault path only if that skill is unavailable.
+Prefer the `obsidian:obsidian-cli` skill for vault interactions (read, create, search, manage notes). Fall back to reading and writing the vault path directly only if that skill is unavailable.
 
 ## When to Use
 

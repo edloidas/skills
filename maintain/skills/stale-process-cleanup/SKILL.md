@@ -9,7 +9,6 @@ description: >
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
 allowed-tools: Bash Read AskUserQuestion
-user-invocable: true
 argument-hint: "[report|apply]"
 ---
 
@@ -52,13 +51,20 @@ dry-run report.
 <skill-dir>/scripts/reap-stale.sh --apply --yes   # kill, no prompt
 ```
 
+## Asking the User
+
+Every question in this skill is written as `AskUserQuestion` options. Use that tool where
+the host offers it, or the host's nearest structured-choice equivalent. Where the host has
+neither, ask the same question in normal chat as a numbered list of 2–5 options —
+recommended first, one short line of description each — and wait for the user to reply
+with a number.
+
 ## Workflow
 
 1. Run the script with no flags and show the user the **ORPHANED** and **LIVE** sections.
 2. If there are orphans and the user wants them gone, confirm before killing anything, then
    run with `--apply --yes`. An explicit "kill them" in the request already counts as
-   confirmation. Otherwise use `AskUserQuestion` when available; where the host cannot prompt
-   interactively, ask in normal chat and wait for the reply:
+   confirmation. Otherwise ask per **Asking the User**:
    1. `Kill orphans` (Recommended) — reap the N orphaned processes listed above
    2. `Keep them` — leave everything running
 3. Never run `--apply` against LIVE entries — surface duplicates and suggest an app restart instead.

@@ -82,7 +82,11 @@ SCALE
    main path. In a skill declaring Codex, OpenCode, or Pi, dispatch must be written as
    intent — what to spawn and what it must return — and naming a tool, an agent type, or a
    model is a violation, as are per-host "Claude Code path / Codex path" splits and
-   host-hint parentheticals. AskUserQuestion needs a plain-chat fallback there.
+   host-hint parentheticals. A skill that asks must carry the repo's canonical
+   `Asking the User` section verbatim (see CLAUDE.md); ad-hoc wording of the same rule is a
+   finding, and call sites must not restate the mechanics. The mechanisms validate-skills.sh
+   hard-fails — !`command` injection, ${CLAUDE_*}, ToolSearch, TodoWrite, SlashCommand,
+   subagent_type — are the validator's job; cite it instead of re-scoring them.
    Three things are NOT violations: `allowed-tools` (a declaration, not an instruction — a
    portable skill that dispatches workers should still declare Task/Agent); the
    AskUserQuestion fallback itself; and per-host *data* presented in a table with a

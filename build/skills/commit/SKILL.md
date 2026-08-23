@@ -7,7 +7,6 @@ description: >
   "only staged", "relevant", or "amend".
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
-user-invocable: true
 argument-hint: "[instructions]"
 allowed-tools: Read Grep Bash(git:*) Agent Skill
 metadata:
@@ -16,8 +15,8 @@ metadata:
 
 # commit
 
-Fast path to commit. Inline context is already gathered below — prefer it over
-extra tool calls. Reason about file safety and scope, then commit.
+Fast path to commit. Gather the state below in one batch, reason about file safety
+and scope, then commit.
 
 ## Arguments
 
@@ -33,42 +32,24 @@ extra tool calls. Reason about file safety and scope, then commit.
 
 ## Current state
 
-Branch: !`git branch --show-current`
+Gather this before anything else, in one batch where the host allows it. Every
+section below reasons off this output — do not re-run these commands later.
 
-Status:
+| Command                     | Used for                                  |
+| --------------------------- | ----------------------------------------- |
+| `git branch --show-current` | issue-number suffix on the title          |
+| `git status --short`        | what is untracked vs. modified vs. staged |
+| `git diff --stat`           | unstaged size and file list               |
+| `git diff --cached --stat`  | staged size and file list                 |
+| `git log --oneline -5`      | recent title style                        |
+| `git log -1 --format='%B'`  | trailer style of the last commit          |
 
-```
-!`git status --short`
-```
+Then read the repo's own commit convention, if it has one:
 
-Unstaged diff (stat):
-
-```
-!`git diff --stat`
-```
-
-Staged diff (stat):
-
-```
-!`git diff --cached --stat`
-```
-
-Last 5 commits:
-
-```
-!`git log --oneline -5`
-```
-
-Last commit message (for trailer style):
-
-```
-!`git log -1 --format='%B'`
-```
-
-CLAUDE.md / AGENTS.md commit conventions (if any):
-
-```
-!`grep -B 1 -A 10 -i "^##.*commit\|commit message\|commit format\|conventional commit" CLAUDE.md AGENTS.md .github/CONTRIBUTING.md 2>/dev/null | head -80 || echo "(none found — use conventional commits)"`
+```bash
+grep -B 1 -A 10 -i "^##.*commit\|commit message\|commit format\|conventional commit" \
+  CLAUDE.md AGENTS.md .github/CONTRIBUTING.md 2>/dev/null | head -80 \
+  || echo "(none found — use conventional commits)"
 ```
 
 ## Staging rules
@@ -92,7 +73,7 @@ Never use `git add .`, `git add -A`, or `git add -f`. Stage with explicit paths.
 
 ## Heavy-diff delegation
 
-The injected `git diff --stat` blocks above show the size. Handle the common
+The `git diff --stat` output from **Current state** shows the size. Handle the common
 case in-thread. Only delegate when the staged OR unstaged diff exceeds
 **~500 changed lines** or **~20 files** AND you need actual diff content
 (not just stats) to decide scope, classify files, or compose the body.
@@ -123,13 +104,14 @@ diff inline, and the main thread already has the conventions context.
    - If `relevant`: from the unstaged diff, pick only files whose changes fit
      the scope described in `$ARGUMENTS` or obvious from the combined diff;
      leave the rest.
-4. Look at the staged diff (`git diff --cached --stat` is already above; read
-   `git diff --cached` only if the message needs detail beyond the stat).
+4. Look at the staged diff (you already have `git diff --cached --stat` from
+   **Current state**; read `git diff --cached` only if the message needs detail
+   beyond the stat).
    If nothing is staged, stop and tell the user.
 5. Compose the commit message:
    - Single-line title, ≤72 chars, `<type>: <description>`.
    - Types: `feat`, `fix`, `docs`, `chore`, `refactor`, `test`, `style`, `ci`.
-   - Follow the project convention from the grep block when present.
+   - Follow the project convention from **Current state** when present.
    - If the current branch is `issue-<N>`, append ` #<N>` to the title.
    - Body: invoke the `commit-summary` skill and use what it returns. It weighs
      the change and either derives a body from the code or returns two to three
@@ -198,7 +180,7 @@ verb, and the sentence after it is the reason, stated as behaviour.
 Design rationale handed over from a comment-cleanup pass answers question 1 — fold
 it into that paragraph rather than appending it as a block.
 
-A project convention from the grep block above overrides all of this. Some repos cap
+A project convention found in **Current state** overrides all of this. Some repos cap
 body width or forbid paragraphs outright.
 
 Nothing is appended after the last paragraph — see the trailer rule in step 5.

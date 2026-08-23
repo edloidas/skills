@@ -15,7 +15,6 @@ when_to_use: >
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
 allowed-tools: Read Edit Glob Grep AskUserQuestion Bash(bash:*) Bash(git status:*) Bash(git diff:*) Bash(jq:*) Bash(ls:*)
-user-invocable: true
 argument-hint: "[init|check|apply]"
 metadata:
   author: edloidas
@@ -37,11 +36,13 @@ It never seeds an ambient rules directory. Code-shaped conventions are applied o
 `code-cleanup` and the `audit/` skills; only the comment block below is cheap enough to live
 in always-loaded instructions.
 
-## Interaction Fallback
+## Asking the User
 
-When `AskUserQuestion` is available, use it for confirmations and ambiguous choices.
-Otherwise present 2-5 short numbered options in normal chat, recommended option first, and
-wait for the user's reply before continuing.
+Every question in this skill is written as `AskUserQuestion` options. Use that tool where
+the host offers it, or the host's nearest structured-choice equivalent. Where the host has
+neither, ask the same question in normal chat as a numbered list of 2–5 options —
+recommended first, one short line of description each — and wait for the user to reply
+with a number.
 
 ## Arguments
 
