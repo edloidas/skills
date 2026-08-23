@@ -1,6 +1,6 @@
 interface:
   display_name: "Discuss"
-  short_description: "Pressure-test and polish an idea without writing code"
-  default_prompt: "Use $discuss to throw ideas around, push back honestly, and sharpen a proposal before implementing it."
+  short_description: "Talk a design through — investigate, take a position, push back"
+  default_prompt: "Discuss this with me before anything gets built. Investigate first if the topic is broad, then give your read and your position, and push back on what will not hold up."
 policy:
-  allow_implicit_invocation: false
+  allow_implicit_invocation: true

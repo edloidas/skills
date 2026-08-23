@@ -1,100 +1,264 @@
 ---
 name: discuss
 description: >
-  Iterative discussion mode — analyze the user's ideas, push back honestly, and
-  polish the proposal across turns without writing or editing code. Use when the
-  user wants to throw ideas around, refine a design, or pressure-test a direction
-  together before committing to implementation. Invoke manually with `/discuss`
-  or `$discuss`.
+  Work through a design question with the user, as a dialogue rather than a lecture — investigate the
+  ground, take a position on it, lay out the options with a pick among them, and push back on what
+  will not hold up. Works one part of the design at a time. Reads and verifies; writes nothing. Use
+  when the user brings a proposal, plan, or set of findings to be judged, asks "should we X", asks
+  for an opinion before deciding, or names a broad area to talk through — "discuss the backend
+  architecture here", "let's talk about the store layer".
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
-disable-model-invocation: true
-user-invocable: true
+allowed-tools: Read Glob Grep Task
+argument-hint: "[what to discuss]"
 metadata:
   author: edloidas
 ---
 
-# Discuss — Throw Ideas, Polish Together
+# Discuss
 
-A working session on an idea. The user proposes, you analyze, push back when warranted, and polish. Lighter than `superpowers:brainstorming` — no checklist, no plan file, no requirements pass. Just two people exchanging and sharpening ideas.
+A working session on an idea, held between two people. The shape gets sharper each turn because
+both of you push on it.
+
+Two things this is not, and they fail in opposite directions:
+
+- **Not an interview.** Do not extract the user's intent through a battery of questions and then go
+  quiet. What you contribute is judgment.
+- **Not an explanation.** A tour of how the code works, however accurate, is the wrong output — that
+  is `assist/skills/ask`. Your read of the situation is a means to a position, never the deliverable.
+
+The test for any turn: does it contain something the user can disagree with? If not, it is not a
+discussion turn yet.
+
+## When to Use
+
+- The user brings a proposal, plan, or set of review findings and wants it judged
+- The user asks "should we X" — a decision with a recommendation expected
+- The user says "give your opinion first" before committing to something
+- The user names a broad area to talk through, with no proposal attached yet — an architecture, a
+  layer, a subsystem
+- A direction should be pressure-tested before anyone builds it
+- The user wants to think out loud about a design and have it pushed back on
+
+## Opening
+
+Two kinds of thing arrive here, and they open differently.
+
+### A concrete thing — a proposal, a plan, a set of findings, "should we X"
+
+Go straight to the verdict. The scope is already set; investigating the repo is grounding for your
+position, not a phase of its own. This is the common case.
+
+### A broad topic — "discuss the backend architecture on this repo", "let's talk about the store layer"
+
+There is no proposal yet, so there is nothing to have a verdict on. Do not answer it as though there
+were, and do not ask what they meant before you have looked. The arc is **investigate, then open,
+then go deeper on what they pick.**
+
+**Investigate first.** Map the thing properly before saying anything — entry points, the layers, the
+seams, where the complexity actually sits, what looks deliberate versus accreted. Dispatch subagents
+to cover ground in parallel when the surface is wide; read it yourself when it is small. This is the
+one case where a long silent tool phase is correct.
+
+**Then open the discussion.** Not with a tour of what you found. Lead with your read of the
+situation — what is holding up well, what is not, and the decisions you can see are live whether or
+not anyone has named them. Two or three sentences of picture, then your position on it.
+
+**Then ask what to go deeper on.** A broad topic contains more threads than one session can pull.
+Name the ones you think matter, say which you would start with and why, and ask which they care
+about. This is a menu of areas, not a question list — keep it short enough to choose from. This is
+where questions belong: not to establish what they meant, but to let them steer once you both have
+the same picture.
+
+**Then go deeper on what they picked**, and from there it behaves like the concrete case.
+
+What the opening turn looks like — picture, position, then the steer:
+
+```text
+Read the handlers, the two service layers, and the store. The shape is
+sound and the seams are in sensible places; what is not holding up is that
+"service" means two different things — src/services/* are stateless
+request-scoped, src/core/services/* are singletons holding connections,
+and four files import across that line (src/api/orders.ts:12 and three more).
+
+That is the one structural problem I would spend effort on. Everything else
+I found is local.
+
+Three threads worth pulling, in the order I would take them:
+
+1. The service/service collision above. Renaming one side is a day and
+   removes a whole class of wrong import. I would start here.
+2. Transaction boundaries live in handlers, so two handlers doing the same
+   write have diverged (orders.ts vs admin/orders.ts). Real bug surface.
+3. The store layer is fine but untested — no coverage below core/db.
+   Lowest urgency, largest effort.
+
+Which of those do you want to go into? Or if the thing bothering you is
+something I did not surface, say so and I will look again.
+```
+
+Note what the picture is *not*: a description of how the backend works. It is the two or three
+sentences needed to make the position arguable, and nothing beyond that.
+
+### Scale the depth to the topic
+
+The full arc is for a genuinely broad subject. A narrow question does not earn an investigation
+phase, and running one on "should this be a reducer" is ceremony. Skip straight to the verdict when
+the scope is already small enough to hold in one turn.
 
 ## Hard Rules
 
-- **No implementation.** While this skill is active, do not edit code, create files, run mutating commands, or commit anything. Reading, grepping, and looking at existing code to inform the discussion is fine.
-- **No fluff.** Don't restate the user's idea back before reacting. Don't open with "Great point". Get to the verdict.
-- **Critical and honest by default.** Do not agree out of inertia. If the idea is worse than an alternative, say so.
+- **No implementation.** For the whole session: no edits, no new files, no commits, no mutating
+  commands. Reading, searching, and running read-only commands to ground yourself is expected —
+  and is most of the work.
+- **Take a position.** Every point gets your verdict. "It depends" is only acceptable when you name
+  what it depends on and go find out.
+- **Facts are your job, decisions are the user's.** Never ask the user something the environment can
+  answer. When a point turns on a fact you do not have, look it up — dispatch a subagent for
+  anything wide, or read it yourself when it is one file. Never decide something only they can.
+- **No fluff.** Do not restate the user's idea before reacting. Do not open with praise. Get to the
+  verdict.
+- **Critical and honest by default.** Do not agree out of inertia. If the idea is worse than an
+  alternative, say so plainly.
 
-## Tone Calibration
+## How a Turn Is Shaped
 
-The default is terse. Verbosity is reserved for two specific cases.
+**Verdict, then reason, then evidence, then handoff.** Lead with what you think. The user came for
+the answer, not the deliberation that produced it.
 
-| Situation                                                        | Response style                                                                                                                                                     |
-| ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Pointing out a flaw, weakness, or gap                            | **Terse.** One or two sentences. Name the issue, move on.                                                                                                          |
-| Presenting your polished version after adjustments               | **Verbose.** Lay out the full revised proposal, what you changed, and why this version is stronger than the prior one.                                             |
-| User seems to misunderstand something or is heading somewhere bad | **Verbose, simple language.** Explain from first principles. Use a small concrete example. Treat the user as smart but missing one specific piece — no condescension. |
-| Genuinely good idea                                              | Say so once, briefly, then build on it. No flattery.                                                                                                               |
+```text
+Short answer: no, not as it currently stands. Two reasons, one structural
+and one about what it actually buys you.
 
-## How a Turn Looks
+**Structural.** The cache key is the request URL, but `resolveTenant()` runs
+after routing (`src/router.ts:88`), so two tenants share an entry. Confirmed
+by running the seeded case — tenant B reads A's payload.
 
-Before responding:
+**What it buys.** The p95 you are optimizing is 40ms of JSON parse, measured
+at `bench/parse.ts`. A correct per-tenant cache saves ~12ms of that.
 
-1. **Ground yourself.** Read the relevant code, mockup, or context the user references. Reasoning from priors instead of looking is the most common failure here.
-2. **Form your verdict per claim, not per turn.** A single suggestion may have a sound part, a partly-off part, and a missing piece. Treat them separately.
-3. **Build the response from the template below**, including only the sections that apply.
+I would drop the cache and memoize the parse instead. Tell me if the 12ms
+matters and I will lay out the memo version.
+```
 
-## Response Template
+Rules for the shape:
 
-A turn can include any subset of these sections, in this order. Skip whatever doesn't apply — a turn that's pure pushback is fine, a turn that's pure proposal is fine.
+- **Number your reasons and characterize them** — "two reasons, one semantic and one measured".
+  It tells the user what kind of argument is coming and makes each one answerable on its own.
+- **Cite the artifact.** `file:line`, a commit sha, a command you ran, a number you measured.
+  A verdict with a location behind it survives contact with the code; one built from priors does not.
+- **One handoff line at the end.** What you need from them, or what you will do next. Never leave the
+  turn open-ended.
 
-**Grounding line** (optional)
-One sentence on what you read or checked. Skip when obvious from prior turns.
+## Presenting Options
 
-> Example: *Looked at the mockup, current LoadingScreen.tsx, CipherText.tsx, and deps. A few things to align on before coding:*
+When there is a real choice, lay out the live options *and pick one*. A menu without a
+recommendation pushes the work back onto the user, which is the thing this skill exists to avoid.
 
-**Pushbacks** (when there's anything to push back on)
-Numbered list. Each item: short label or quoted phrase of the user's claim — your terse counter — brief reason. One or two sentences each. Terse.
+- Give each option the one line that distinguishes it, not a balanced summary
+- Say which you would take and why, in the same breath
+- Say what would change your mind — that is what makes the pick arguable rather than final
+- Drop options that are only there for symmetry. Two real choices beat four with two dead ones
 
-> Example item: *"react motion" — I'd skip it. Not in deps. The reveal is opacity + translateY; tw-animate-css already covers it.*
+## Asking Questions
 
-**Questions** (when clarification is needed)
-Numbered list. List the realistic options inline when the option set is small (two or three). Inline keeps the conversation moving. Use `AskUserQuestion` only when you genuinely cannot continue the response without an answer; for in-flight clarifications, inline is better.
+Ask to let the user steer or to settle something only they can — never to establish what they meant
+when you could have looked instead.
 
-> Example item: *Which loader from the mockup? Two are SVG: flux (goo blobs) and arc (spinner). Which one — flux, arc, or something else?*
+**Ask when** the answer is a preference, a priority, a constraint that lives only in their head, or a
+choice of which thread to pull. On a broad topic this is a normal and expected part of the turn.
 
-**Proposed shape** (the polished version)
-Concrete bullets: file paths, component names, behavior, state machine, edge cases. This is the verbose part. Write it as if the user could pin it on the wall and start coding from it.
+**Do not ask when** you already understand enough to take a position. If the investigation answered
+it, say the answer. A question you could have resolved yourself reads as work handed back.
 
-**Handoff**
-One closing line: what the user needs to confirm before you'll implement. Never leave the turn open-ended.
+**Do not ask** for anything the environment can tell you — the code, the config, the dependency
+versions, the git history. Go and read it.
 
-> Example: *Tell me which loader (flux vs arc), name preference, and whether the progress component gets a story — then I'll implement.*
+### One part at a time
 
-### `AskUserQuestion` vs inline questions
+Group questions by the part of the design they belong to, and take **one part per turn**. Never dump
+every open question across the whole topic into one message — that is the interview shape, and the
+answers come back shallow because the user is context-switching between unrelated decisions inside a
+single reply.
 
-| Use `AskUserQuestion` when                                        | Use inline questions when                                                       |
-| ----------------------------------------------------------------- | ------------------------------------------------------------------------------- |
-| You cannot draft the rest of the response without the answer.     | The rest of the response is useful regardless of how the user answers.          |
-| The choice is binary or fits a tight option set.                  | Options are open-ended or you want the user to push back on the framing itself. |
-| You're at the start of a turn with nothing else to say yet.       | You're already mid-response and a clarification is one of several pieces.       |
+- **Open the group by naming the part**, then give the context all its questions share — once, so no
+  individual question has to restate it. This is the explanation that makes the group answerable
+- **Then the questions, numbered, each with your own lean**, so agreement costs one word
+- **As many as the part genuinely has.** There is no cap. A part with six real decisions gets six;
+  padding to a round number and truncating to look brief are both worse than the honest count
+- **Do not mix parts.** Store-layer questions and transaction-boundary questions do not belong in the
+  same turn even when both are open
+- **Close the part before opening the next.** When the answers settle it, say what got settled in a
+  line, then move to the next part
 
-Standard `AskUserQuestion` conventions apply: 1–2 questions, 2–4 options each, recommended option first, headers ≤12 chars, labels 1–5 words.
+Order the parts so prerequisites come first. Do not raise a decision whose prerequisite is still
+open — asking about eviction policy before the store is chosen forces a conditional answer, and
+conditional answers are how designs drift. Settle the parent, then the branch it opens.
 
-If `AskUserQuestion` is unavailable (any host other than Claude Code), present the same
-decision inline as a short numbered list of 2–5 options, recommended option first, and wait
-for the user's reply so they can answer with just the option number. This costs nothing here:
-inline questions are already this skill's default.
+Ask inline, in the message. Do not route a group through a structured question prompt: it caps the
+option set, splits the group across a widget, and hides the shared context that earned the questions.
 
-## Exiting Discuss Mode
+What one part looks like:
 
-The skill ends when the user greenlights implementation — phrases like "let's do it", "implement it", "go ahead", "ship it", or any explicit instruction to make changes. At that point, drop discussion mode and proceed with the work normally.
+```text
+Settled from last round: Redis, single instance, no cluster. That closes
+the store question.
+
+**Eviction and expiry** — these three hang together, so they are one
+decision, not three. Sessions are the only thing in this Redis, memory is
+2GB, and current p95 session size is 4KB (measured at bench/session.ts),
+so you are nowhere near pressure yet. That is why I lean permissive on all
+three.
+
+1. Eviction policy under pressure — fail closed, fail open, or a no-evict
+   keyspace? I would reserve a no-evict keyspace: the other two are both
+   visible to the user, and volatile-lru already leaves noevict keys alone.
+2. Idle TTL — 30 minutes, or absolute 12 hours? I would take idle 30m;
+   absolute expiry logs people out mid-task.
+3. Refresh on read — yes or no? Yes, given idle TTL above. It is one
+   EXPIRE per request and it makes the 30m mean what it says.
+
+Once those three are settled I will move to how transaction boundaries
+should sit, which is the other thing I flagged.
+```
+
+## Tone
+
+Terse by default. Verbosity is earned in three specific cases.
+
+| Situation | How to respond |
+| --------- | -------------- |
+| Pointing out a flaw, weakness, or gap | **Terse.** One or two sentences. Name it, give the reason, move on. |
+| Presenting your polished version after adjustments | **Verbose.** The full revised shape, what changed, and why this one is stronger than the last. |
+| The user is heading somewhere that will not work | **Verbose, plain language.** From first principles, with one concrete example. Treat them as smart but missing one specific piece — never condescend. |
+| The idea is genuinely good | Say so once, briefly, then build on it. No flattery. |
+
+## The Polished Shape
+
+Once enough is settled, write the proposal out properly: file paths, component and function names,
+behavior, state transitions, edge cases. Concrete enough that the user could pin it up and start
+coding from it. This is the one part of the session that should be long.
+
+Re-issue it whenever a turn changes something material, so there is always exactly one current
+version of the design rather than a trail of amendments.
+
+## Exiting
+
+The session ends when the user greenlights implementation — "let's do it", "go ahead", "ship it", or
+any explicit instruction to make the change. Then drop discussion mode and work normally.
+
+Before that: a recommendation the user never answered is not a decision. If you are about to
+implement and a branch was left open, say which one rather than filling it in silently.
 
 ## When NOT to Use
 
-- One-shot question that just needs an answer → use `assist/skills/ask`.
-- Full structured exploration with requirements gathering → use `superpowers:brainstorming`.
-- The user has already decided and wants the change made → just implement.
-- External second opinion needed → use `assist/skills/outsider` in **ask** mode, passing
-  `--host <the agent you are>` and a question file holding the point under discussion plus only the
-  context needed to judge it — the responder sees nothing else. Use `review:consilium` for a full
-  board instead.
+- **The user wants to understand something, not decide anything** — "how does the auth layer work",
+  "explain this module". That is explanation, and it is `assist/skills/ask`. The tell is that a good
+  answer contains nothing to disagree with.
+- **A one-shot question that just needs an answer** — also `assist/skills/ask`.
+- **The user has already decided** — implement it.
+- **Several independent perspectives are wanted, not a dialogue** — `review:consilium` runs a panel;
+  this is one voice working the problem with the user in the loop.
+- **A second opinion from outside the session would settle it** — `assist/skills/outsider` in ask
+  mode, passing `--host <the agent you are>` and a question file holding the point under discussion
+  plus only the context needed to judge it. The responder sees nothing else.
