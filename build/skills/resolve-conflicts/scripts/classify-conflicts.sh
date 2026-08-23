@@ -20,7 +20,12 @@
 #   UD path/to/file2.ts
 #   UU path/to/file3.ts
 #
-# Exit codes: 0=conflicts found, 1=not git repo, 2=no conflicts
+# Paths are printed verbatim and relative to the REPOSITORY ROOT, so each one can
+# be passed to git as a single argument from the root of the work tree. A path
+# containing a literal newline is the one case this format cannot represent.
+#
+# Exit codes: 0=conflicts found, 1=not git repo, 2=no conflicts,
+#             3=a conflicted path contains a newline and cannot be reported
 
 set -e
 
@@ -39,7 +44,38 @@ fi
 #   DD = both deleted
 #   AU = added by us, unmerged by theirs
 #   UA = added by theirs, unmerged by us
-CONFLICT_LINES=$(git status --short | grep -E '^(UU|UD|DU|AU|UA|AA|DD) ' || true)
+# `--porcelain -z`, not `--short`, for two reasons:
+#
+# 1. `-z` prints paths verbatim. Without it git shell-quotes any path with a space
+#    or a non-ASCII byte ("dir name/a file.txt", "caf\303\251.txt"), and those
+#    quotes and octal escapes end up in the report — where SKILL.md feeds them
+#    into `git checkout --theirs <file>`, which then looks for a filename that
+#    really does start with a double quote.
+# 2. `--porcelain` is the documented stable format and ignores user config.
+#    `--short` honors `status.relativePaths`, so its paths are relative to the
+#    caller's cwd. `--porcelain` paths are always relative to the repository root,
+#    which is the only anchor a caller can rely on. Callers must run the
+#    resolution commands from the root — see SKILL.md.
+#
+# A path containing a literal newline cannot survive line-oriented output, and the
+# failure is not a clean omission: "bad\nname.txt" splits into "UU bad" and
+# "name.txt", the first of which still matches the code pattern. The report would
+# then name a path that does not exist while quietly losing the one that does — a
+# fabricated entry in a machine-read report, which is worse than no report. So
+# detect it and refuse. NUL records are the true entry count; if converting them
+# to lines yields more lines than there were records, some path carried a newline.
+Z_RECORDS=$(git status --porcelain -z | tr -dc '\0' | wc -c | tr -d ' ')
+Z_LINES=$(git status --porcelain -z | tr '\0' '\n' | grep -c '' | tr -d ' ')
+
+if [[ "$Z_RECORDS" != "$Z_LINES" ]]; then
+    echo "ERROR: a path in this work tree contains a newline" >&2
+    echo "       The report is line-oriented and cannot represent it without" >&2
+    echo "       fabricating a path. Rename the file and re-run:" >&2
+    echo "         git status --porcelain -z | tr '\0' '\n'" >&2
+    exit 3
+fi
+
+CONFLICT_LINES=$(git status --porcelain -z | tr '\0' '\n' | grep -E '^(UU|UD|DU|AU|UA|AA|DD) ' || true)
 
 if [[ -z "$CONFLICT_LINES" ]]; then
     echo "ERROR: No conflicts found" >&2

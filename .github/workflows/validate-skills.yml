@@ -26,3 +26,15 @@ jobs:
 
       - name: Validate per-host discovery
         run: bash .github/scripts/validate-discovery.sh
+
+  # Executes the bundled shell scripts and asserts what they return. Separate
+  # from `validate`, which only reads them: a script can satisfy every
+  # structural rule and still answer the wrong question.
+  test-scripts:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run bundled-script tests
+        run: bash tests/run.sh

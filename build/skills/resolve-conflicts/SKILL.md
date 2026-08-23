@@ -77,10 +77,14 @@ Link: <url>
 ```bash
 git fetch origin <base>
 git fetch origin <head>
+before=$(git rev-parse "origin/<head>")
 git checkout <head>
 git reset --hard origin/<head>
 git rebase origin/<base>
 ```
+
+Keep `$before` for Step 5. It is the remote tip this rebase started from, and the only
+value a force-push may safely lease against.
 
 If rebase produces conflicts → proceed to Resolution Pipeline.
 If rebase completes cleanly → show "No conflicts after rebase" and stop.
@@ -100,8 +104,15 @@ After all conflicts resolved and rebase complete:
    - Otherwise ask in normal chat and wait for the user's reply:
      1. `Force push` (Recommended) — update the PR branch after the resolved rebase
      2. `Skip push` — keep the rebased branch local only
-   - Yes → `git push --force-with-lease origin <head>`
+   - Yes → `git push --force-with-lease="<head>:$before" origin <head>`
    - No → skip
+
+A bare `git push --force-with-lease` leases against the remote-tracking ref, which any
+`git fetch` refreshes. Resolution loops for as long as the conflicts take, so anything
+fetching in between would turn the lease into a no-op and let the push discard a commit
+someone else added to the PR branch. `$before`, captured in Step 3, is the value the
+rebase was actually built on. If the push is rejected, the remote moved: re-run from
+Step 3 rather than escalating to `--force`.
 
 If unresolved conflicts remain:
 1. Show final report with remaining files
@@ -131,7 +142,11 @@ Same as Local Mode but:
 
 ### Phase 1: Classify
 
-1. Run `scripts/classify-conflicts.sh` from the skill directory
+1. `cd "$(git rev-parse --show-toplevel)"`, then run `scripts/classify-conflicts.sh`.
+   Its paths are relative to the repository root, so every resolution command below
+   has to run from there too. Exit 3 means a conflicted path contains a newline, which
+   a line-oriented report cannot represent — surface the message and stop; do not
+   resolve a partial list.
 2. Parse the output — extract counts and file lists per status code
 3. If there are UU files, classify them by difficulty:
    - Read `references/conflict-analyzer-prompt.md` and dispatch a read-only
@@ -148,13 +163,18 @@ Resolve groups that need no LLM analysis:
 
 | Group | Command |
 |-------|---------|
-| DU | `git rm <file>` for each file |
-| UD | `git rm <file>` for each file |
-| DD | `git rm <file>` for each file |
-| AA | `git checkout --theirs <file> && git add <file>` — but if the classifier treated it as UU (both have meaningful content), treat as UU |
-| AU | `git checkout --theirs <file> && git add <file>` |
-| UA | `git checkout --theirs <file> && git add <file>` |
-| UU trivial | `git checkout --theirs <file> && git add <file>` |
+| DU | `git rm "<file>"` for each file |
+| UD | `git rm "<file>"` for each file |
+| DD | `git rm "<file>"` for each file |
+| AA | `git checkout --theirs "<file>" && git add "<file>"` — but if the classifier treated it as UU (both have meaningful content), treat as UU |
+| AU | `git checkout --theirs "<file>" && git add "<file>"` |
+| UA | `git checkout --theirs "<file>" && git add "<file>"` |
+| UU trivial | `git checkout --theirs "<file>" && git add "<file>"` |
+
+`classify-conflicts.sh` prints each path verbatim — unquoted and unescaped, so a name
+with a space or a non-ASCII character arrives intact. Two consequences: always quote it
+when passing it back to git, because the report does not escape it for you; and run from
+the repository root, because the paths are relative to it.
 
 Batch all trivial UU files into one resolver subagent for parallel execution.
 
@@ -180,7 +200,7 @@ Attempt to resolve all remaining UU files (simple and complex).
 2. For each conflict block, understand what "ours" changed and what "theirs" changed
 3. Decide how to combine both changes (or pick one side if they're truly incompatible)
 4. Write the resolved file (no conflict markers remaining)
-5. `git add <file>`
+5. `git add "<file>"`
 
 **If a resolver subagent cannot resolve a file:** Leave the conflict markers in
 place. Do not `git add` it. The file will appear in the final report as

@@ -71,6 +71,10 @@ Internal, repo-only skills stay out of the published set by living under `tools/
 symlink into `.claude/skills/` — Claude Code follows the symlink, while `npx skills`
 skips it. `tools/skills-release` is the one current example.
 
+Behavioral tests for bundled scripts live in a repo-root `tests/` tree that mirrors the skill
+paths, deliberately outside every skill and every distribution tree — see
+[Script Tests](#script-tests).
+
 **Plugin groups:**
 - `plan/` — Issue drafting, analysis, and the full issue lifecycle (3 skills)
 - `build/` — Conflict resolution, commit summaries, quick commits, and findings fixes (4 skills)
@@ -349,23 +353,75 @@ The `description` determines when an agent activates the skill. Be specific and 
 4. Add `scripts/`, `references/`, or `assets/` directories as needed
 5. Update the appropriate "Available Skills" table in `README.md`
 6. Run `bash .github/scripts/validate-skills.sh` to verify marketplace, manifests, and skill layout
-7. Run `skill-audit` and clear it before committing — see below
+7. If the skill bundles a shell script, add its tests under `tests/<group>/<skill>/` and run `bash tests/run.sh`
+8. Run `skill-audit` and clear it before committing — see below
 
 ## Skill Changes Are Gated
 
 Any change that creates, edits, moves, renames, or deletes a skill directory clears
-`audit/skills/skill-audit` before it is committed. The three checkers own different halves
-and none substitutes for another:
+`audit/skills/skill-audit` before it is committed. Any change to a bundled shell script also
+clears `bash tests/run.sh`. The four checkers own different halves and none substitutes for
+another:
 
 | Checker | Owns | Failure |
 | ------- | ---- | ------- |
 | `.github/scripts/validate-skills.sh` | Marketplace and plugin manifests, canonical layout, per-skill frontmatter rules, dangling bundled paths | Hard, fails CI |
 | `scripts/validate-codex.sh` | Codex catalog, `compatibility` agreement, `agents/openai.yaml`, host subset rule | Hard, fails CI |
+| `tests/run.sh` | What a bundled script actually returns — exit codes, chosen branch, parsed output, refusals | Hard, fails CI |
 | `skill-audit` | Discovery, instruction quality, context cost, portability, safety | Scored 1-5, PASS / FAIL |
 
 `skill-audit` never edits anything and never regenerates the packaging layer — a stale
 generated tree is one of its findings. Anything mechanically checkable belongs in one of the
-two scripts, not in the rubric; add new mechanical rules there and let the skill cite them.
+two validators, not in the rubric; add new mechanical rules there and let the skill cite them.
+
+Reading a script cannot replace running it. `detect-base.sh` shipped a wrong answer while
+`skill-audit` scored `issue-flow` 4.7/5 with no category below 4 — the prose was correct and
+the script did not do what the prose said. That is what `tests/run.sh` is for.
+
+## Script Tests
+
+`tests/` holds behavioral tests for the shell scripts this repo bundles. Plain bash, no
+install step, no new dependency:
+
+```bash
+bash tests/run.sh                    # everything
+bash tests/run.sh detect-base        # only files whose path matches
+```
+
+**Tests live at the repo root, never inside a skill.** A `tests/` directory under
+`<group>/skills/<name>/` would be symlinked into every generated host tree and ship inside
+the installed plugin. `tests/<group>/<skill>/<script>.test.sh` mirrors the skill path
+instead, so the distribution layer never sees them.
+
+A test file sources `tests/lib/assert.sh` and `tests/lib/fixture.sh`, defines `test_*`
+functions, and ends with `run_tests`. Each case runs in its own subshell in its own sandbox
+directory, with `HOME` and `TMPDIR` pointed inside it. `fixture.sh` builds throwaway git
+repos with a local bare "remote" and replaces `PATH` with a sandbox pair — a stub directory
+plus symlinks to a fixed list of core tools — which is what makes "the tool is not
+installed" testable at all. Nothing reaches the network, real `$HOME`, or a real remote.
+
+Two conventions matter:
+
+- **Target bash 3.2**, the shell stock macOS ships. No associative arrays, no `mapfile`,
+  no `${var,,}`, no `[[ -v ]]`. Under `set -u`, `"${arr[@]}"` and `${arr[0]}` on an empty
+  array are unbound-variable errors on every bash before 4.4 — but `${#arr[@]}` is not,
+  which is why it is the guard the bundled scripts use. Where an expansion cannot be
+  guarded by a preceding `${#arr[@]}` check, use `${arr[@]+"${arr[@]}"}`.
+- **The suite needs `timeout` or `gtimeout`** on PATH, since one of the scripts it tests
+  requires it. Stock macOS has neither.
+- **A known defect gets two cases**: one asserting the correct behavior, marked `skip` with
+  the reason and the fix, and one pinning what the script does today. The skip keeps the
+  finding visible in the report; the pin makes a fix trip the suite instead of passing
+  silently.
+
+Scripts whose whole body is a `gh` call are deliberately untested — the stub would assert
+the stub. Cover logic, refusals, and parsing.
+
+**Known gap: the suite only runs on Linux.** CI runs it on `ubuntu-latest`, so the bash 3.2
+and BSD-userland targets above are a convention, not a verified one. Adding `macos-latest`
+to the `test-scripts` matrix and invoking `/bin/bash tests/run.sh` explicitly (Homebrew's
+bash 5 comes first on the runner's PATH) would test both axes for free on a public repo.
+Expect the first run to surface harness portability fixes rather than script defects.
 
 ## Plugin Manifests (`.claude-plugin/`)
 

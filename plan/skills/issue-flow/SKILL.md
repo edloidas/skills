@@ -626,12 +626,18 @@ git push -u origin issue-<number>
 
 ### Rebase if needed
 
-If push fails because the remote has diverged, or if the user asks to rebase:
+If push fails because the remote has diverged, or if the user asks to rebase — capture the
+remote tip **first**, per [Leasing a force-push](#leasing-a-force-push):
 
 ```bash
+before=$(git rev-parse "origin/issue-<number>" 2>/dev/null || true)
 git fetch origin <base>
 git rebase origin/<base>
-git push --force-with-lease
+if [ -n "$before" ]; then
+  git push --force-with-lease="issue-<number>:$before"
+else
+  git push -u origin issue-<number>
+fi
 ```
 
 ### Amend
@@ -639,13 +645,53 @@ git push --force-with-lease
 If the user asks to amend the last commit:
 
 ```bash
+before=$(git rev-parse "origin/issue-<number>" 2>/dev/null || true)
 git commit --amend -m "<subject>" -m "<body>"
-git push --force-with-lease
+if [ -n "$before" ]; then
+  git push --force-with-lease="issue-<number>:$before"
+else
+  git push -u origin issue-<number>
+fi
 ```
 
 Always pass the message. A bare `git commit --amend` opens `$EDITOR`, which hangs a
 non-interactive shell. Use `--no-edit` only when the existing message is being kept
 verbatim and nothing new needs to land in it.
+
+### Leasing a force-push
+
+Every force-push in this pipeline pins the SHA it expects the remote to be at, captured
+**before** anything fetches:
+
+```bash
+before=$(git rev-parse "origin/issue-<number>" 2>/dev/null || true)
+# ... rebase, amend, or consolidate ...
+git push --force-with-lease="issue-<number>:$before"
+```
+
+`rev-parse` is guarded because the branch may not be on the remote yet, and a bare
+`git rev-parse origin/issue-<number>` exits 128 with `unknown revision` — which under
+`set -e` aborts the step instead of pushing. An empty `$before` means there is nothing to
+lease against, so that case is a plain `git push -u origin issue-<number>`.
+
+A bare `git push --force-with-lease` leases against `refs/remotes/origin/issue-<number>`.
+Any fetch that refreshes that ref makes the lease describe where the remote is *now*
+rather than where it was when you started — at which point it permits exactly the
+overwrite it exists to prevent. `detect-base.sh` runs a bare `git fetch origin`, which
+refreshes every branch, inside Step 3 → Consolidate; and nothing stops an unrelated fetch
+landing between the rewrite and the push. Reading the SHA before any of that is what makes
+the lease mean anything.
+
+`--force-if-includes` (git 2.30+) is not a substitute here. `git help push` is explicit
+that when it is combined with `--force-with-lease=<refname>:<expect>` it is a **no-op** —
+so alongside the pinned form above it does literally nothing. It is the right tool for the
+*valueless* `--force-with-lease`, since it consults the local reflog rather than the
+remote-tracking ref; but it needs git 2.30+, it fails oddly after a `gc` or in a fresh
+clone where the reflog is thin, and it would diverge from the pinned idiom used
+everywhere else in this file. Pin the SHA instead.
+
+If the push is rejected, the remote moved: fetch, rebase onto the new tip, and re-run
+rather than escalating to `--force`.
 
 Print the Step 4 report.
 
@@ -657,17 +703,13 @@ Run `detect-base.sh` to determine the PR base.
 
 Apply **Step 3 → Consolidate** as-is. It owns the fork point, the count, the squash rules, and the one gate that may leave several commits — including the case where the single commit on the branch is a `wip:` snapshot, which must not reach a PR title. Do not restate any of those rules here; a second copy is how the two drift.
 
-The only thing this step adds is that the branch is already on the remote, so the rewrite has to be force-pushed. Capture the remote tip **before** consolidating and lease against it explicitly:
+The only thing this step adds is that the branch is already on the remote, so the rewrite has to be force-pushed. Capture the remote tip **before** consolidating and lease against it explicitly, per [Leasing a force-push](#leasing-a-force-push):
 
 ```bash
 before=$(git rev-parse "origin/issue-<number>")
 # ... apply Step 3 -> Consolidate ...
 git push --force-with-lease="issue-<number>:$before"
 ```
-
-A bare `git push --force-with-lease` leases against the remote-tracking ref, which any `git fetch` silently refreshes — and `detect-base.sh` fetches inside Consolidate. That turns the lease into a no-op and lets the push overwrite a commit someone else added to the branch. Pinning the expected SHA taken before the fetch is what makes the lease mean anything.
-
-If the push is rejected, the remote moved: fetch, rebase onto the new tip, and re-run rather than escalating to `--force`.
 
 This must happen before PR body generation, since consolidating changes the commit log.
 

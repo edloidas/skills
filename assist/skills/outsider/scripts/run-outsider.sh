@@ -18,6 +18,18 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TMP_ROOT="${TMPDIR:-/tmp}"
+
+# GNU coreutils `timeout` is not on stock macOS; with Homebrew coreutils it is
+# `gtimeout`. Resolve it once. Unlike run-react-doctor.sh, which falls back to an
+# unbounded run, a missing timeout here is a skip: this script drives interactive
+# agent CLIs, and a hung `codex exec` would hang the caller's whole turn. The
+# caller continues either way, so skipping loudly costs an opinion, not a session.
+TIMEOUT_BIN=""
+if command -v timeout &>/dev/null; then
+  TIMEOUT_BIN="timeout"
+elif command -v gtimeout &>/dev/null; then
+  TIMEOUT_BIN="gtimeout"
+fi
 KNOWN_AGENTS="codex claude opencode pi"
 DEFAULT_ORDER="codex claude opencode pi"
 
@@ -194,9 +206,17 @@ check_preamble() {
 
 run_agent() {
   local agent="$1" timeout_s="$2" raw rc=0
+  # Reported before the agent name, so the message never reads as the agent's
+  # fault — which is exactly how a bare exit 127 from a missing `timeout` read.
+  if [[ -z "$TIMEOUT_BIN" ]]; then
+    echo "Cannot run $agent: neither 'timeout' nor 'gtimeout' is on PATH."
+    echo "Both ship with GNU coreutils — on macOS, 'brew install coreutils'."
+    echo "Running an agent CLI unbounded could hang this turn, so this is a skip."
+    return 0
+  fi
   raw="$TMP_ROOT/outsider-$agent-$$.raw"
   echo "[outsider] agent: $agent${SELECTED_MODEL:+ (model: $SELECTED_MODEL)}"
-  timeout "${timeout_s}s" "${CMD[@]}" >"$raw" 2>/dev/null || rc=$?
+  "$TIMEOUT_BIN" "${timeout_s}s" "${CMD[@]}" >"$raw" 2>/dev/null || rc=$?
   local src=""
   if [[ -n "$OUT_FILE" && -s "$OUT_FILE" ]]; then src="$OUT_FILE"
   elif [[ -s "$raw" ]]; then src="$raw"; fi
@@ -268,6 +288,9 @@ if [[ "$MODE" == "list" ]]; then
   done
   echo
   echo "host: ${HOST:-unknown}   order: $AGENTS_ORDER"
+  if [[ -z "$TIMEOUT_BIN" ]]; then
+    echo "timeout: MISSING — no agent can run until 'timeout' or 'gtimeout' is on PATH"
+  fi
   if select_agent "$HOST" "$AGENT_ARG"; then
     echo "would select: $SELECTED_AGENT"
   else
