@@ -44,6 +44,15 @@ allowlist, banned packages).
 For dependency CVE scanning specifically, use `gh dependabot alerts`, `npm audit`, or
 `pnpm audit` directly — this skill does not duplicate that.
 
+**Boundary with `audit:ci-audit`.** Both read `.github/workflows/`, split by consequence. This skill
+owns the security surface: action pinning, `permissions:`, `persist-credentials`,
+`pull_request_target`, OIDC, third-party action sources, and cache **poisoning** or cross-branch
+scope. `ci-audit` owns performance, spend, and gating correctness — the job graph, cache **hit
+rate**, matrix design, `timeout-minutes`, artifact retention, and `concurrency`. Action pinning is
+graded here and only here, so the same line of YAML never gets two severities. When `ci-audit` finds
+a required check name that no workflow produces, it hands the observation over, because reconciling
+rulesets against triggers needs the `gh api` calls only this skill makes.
+
 ## When to Use
 
 Use when the user asks to:

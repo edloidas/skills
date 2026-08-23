@@ -1,331 +1,178 @@
 ---
 name: ci-audit
-description: Analyze GitHub Actions workflows for parallelization, caching, and optimization
+description: >
+  Audit GitHub Actions workflows for the things that cost wall clock, cost money, or let a pipeline
+  pass without checking anything. Builds the job graph, then runs a catalog covering gating
+  correctness (matrix jobs whose failures read as passing, gates that cannot fail), the critical path
+  (serialized independent work, expensive jobs on every event, duplicated setup, double runs),
+  caching effectiveness (key derivation, restore-keys, redundant auto-caches), and spend (missing
+  timeouts, artifact retention, concurrency groups, cancel-in-progress on irreversible releases).
+  Reads and reports only; never edits a workflow. Use when the user asks to audit or review CI, speed
+  up a pipeline, cut Actions minutes, parallelize jobs, fix caching, or work out why a check is not
+  blocking what it should.
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
-allowed-tools: Bash(fd:*) Read Glob Grep
+allowed-tools: Bash(yq:*) Bash(gh:*) Bash(ls:*) Read Glob Grep
 ---
 
-# CI/CD Audit (GitHub Actions)
+# CI Audit (GitHub Actions)
 
-## Purpose
+Audit the workflows in `.github/workflows/` for wall clock, spend, and whether the gating actually
+gates. This skill **reads and reports**; it never edits a workflow.
 
-Analyze GitHub Actions workflows to:
-- Identify parallelization opportunities
-- Optimize caching strategies
-- Reduce CI run time
-- Improve workflow efficiency
+Scoped to GitHub Actions deliberately. The checks below are about Actions' own semantics — skipped
+results counting as passing, matrix legs in check names, `concurrency` groups, artifact retention —
+and none of it transfers to another CI system. On a repository with no `.github/workflows/`, say so
+and stop rather than guessing at a Jenkinsfile or a `.gitlab-ci.yml`.
 
-## When to Use This Skill
+## What this owns, and what it does not
 
-Use when the user asks to:
-- "Audit my CI/CD"
-- "Optimize GitHub Actions"
-- "Speed up CI"
-- "Review workflow performance"
-- "Parallelize CI jobs"
+`security-audit` has its own GitHub Actions auditor and the two overlap on the same files. The split
+is by **consequence**, and it is stated in both skills:
 
-Trigger phrases: "ci audit", "github actions", "workflow optimize", "ci performance"
+| This skill | `security-audit` |
+| ---------- | ---------------- |
+| Performance, spend, and gating correctness | The security surface |
+| Cache **hit rate** — key derivation, fallbacks | Cache **poisoning** and cross-branch scope |
+| Whether a required check can fail the run | Whether a workflow can be made to run attacker code |
+| Job graph, matrix design, artifact flow | `permissions:`, `persist-credentials`, `pull_request_target`, OIDC |
+| — | Action pinning: SHA vs tag vs branch, with severities |
 
-## Workflow
+Two consequences worth stating plainly. **Do not report action pinning** — it looks like a
+maintenance finding and is a supply-chain one, `security-audit` grades it, and duplicating it here
+produces two different severities for one line of YAML. And when a required check name matches no
+workflow, report the observation and hand it over: reconciling rulesets against triggers needs the
+`gh api` calls that skill already makes.
 
-### Step 1: Find Workflow Files
+## When to use
+
+- "Audit my CI", "review the workflows", "why is CI slow"
+- "Cut our Actions minutes", "parallelize the pipeline"
+- "Fix caching in CI", "the cache never hits"
+- "Why did that merge when the tests failed" — gating correctness, family A
+
+Trigger phrases: `ci audit`, `github actions`, `workflow performance`, `actions minutes`, `ci slow`,
+`parallelize ci`, `ci caching`, `required check`.
+
+## Phase 1: Inventory
+
+Glob `.github/workflows/*.yml` and `.github/workflows/*.yaml`. An empty result — the directory is
+missing, or holds no YAML — means print `No GitHub Actions workflows found.` and stop.
+
+Use globbing rather than shelling out. `fd` is not guaranteed present, and it exits non-zero with
+`Search path is not a directory` when `.github/workflows/` is absent, so a bare `fd` returns an error
+where the stop condition expects an empty result. Where a shell is preferred anyway, guard it:
 
 ```bash
-fd -t f '\.ya?ml$' .github/workflows/
+[ -d .github/workflows ] && ls .github/workflows/*.y*ml 2>/dev/null
 ```
 
-Common workflow files:
-- `ci.yml` - Main CI pipeline
-- `release.yml` - Release/publish workflow
-- `deploy.yml` - Deployment workflow
-- `pr.yml` - Pull request checks
+For each workflow, extract the shape before reading any step. The job graph is what most findings are
+about, and it is not legible by reading top to bottom:
 
-### Step 2: Analyze Job Structure
-
-Look for sequential jobs that could run in parallel.
-
-**Problem: Sequential steps in one job**
-```yaml
-jobs:
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-      - run: npm install
-      - run: npm run typecheck    # Independent
-      - run: npm run lint         # Independent
-      - run: npm run format:check # Independent
-      - run: npm run build        # Depends on above
-      - run: npm run test         # Depends on build
+```bash
+yq -r '.jobs | to_entries | map(.key + " <- " + ((.value.needs // []) | tostring)) | .[]' <file>
+yq -r '[.on | keys | join(",")] | join("")' <file>
+yq -r '.concurrency // "none"' <file>
 ```
 
-**Solution: Parallel jobs**
-```yaml
-jobs:
-  typecheck:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          cache: 'npm'
-      - run: npm ci
-      - run: npm run typecheck
+Record per workflow: triggers, the `concurrency` block, the `needs` graph, which jobs carry a
+`strategy.matrix`, which have `timeout-minutes`, and which upload or download artifacts.
 
-  lint:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          cache: 'npm'
-      - run: npm ci
-      - run: npm run lint
+Then state the **critical path** — the longest chain through the graph — because that is the number
+any parallelization finding has to move. Splitting a job that is not on it changes nothing.
 
-  format:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          cache: 'npm'
-      - run: npm ci
-      - run: npm run format:check
+Where the run history is available, get real numbers rather than guessing which job is slow:
 
-  build:
-    needs: [typecheck, lint, format]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          cache: 'npm'
-      - run: npm ci
-      - run: npm run build
-      - run: npm run test
+```bash
+gh run list --workflow <file> --limit 20 --json databaseId,conclusion,createdAt,updatedAt
+gh run view <id> --json jobs --jq '.jobs[] | "\(.name) \(.startedAt) \(.completedAt) \(.conclusion)"'
 ```
 
-**Time savings:** Independent jobs run simultaneously instead of sequentially.
+Say whether timings are measured or estimated. An estimated saving stated as a measured one is the
+fastest way to lose an audit's credibility.
 
-**Note on unified check commands:** If your toolchain provides a combined command (e.g., Vite+'s `vp check` handles lint, format, and typecheck together), parallel job splitting adds overhead without benefit. Check whether the toolchain already parallelizes internally before splitting jobs.
+## Phase 2: Run the catalog
 
-### Step 3: Check Caching Configuration
+Read `references/checks.md` and work the four families. Each check there carries what to look for,
+the cost when it is wrong, and the shape that fixes it.
 
-#### Vite+ (voidzero-dev/setup-vp)
-```yaml
-# One action handles node, pnpm, and caching
-- uses: voidzero-dev/setup-vp@v1
-  with:
-    node-version: 24
-    cache: true
+| Family | Covers |
+| ------ | ------ |
+| **A. Gating correctness** | Matrix jobs with no stable fan-in gate, jobs that cannot fail the run, gates on noisy signals, required names nothing produces |
+| **B. Critical path** | Serialized independent steps, no cheap head gate, expensive jobs on every event, setup repeated instead of artifacts consumed, push and pull-request double runs |
+| **C. Caching** | Keys not derived from the lockfile, missing `restore-keys`, redundant or broken auto-caches, caching what is cheaper to rebuild |
+| **D. Spend and hygiene** | Missing `timeout-minutes`, default artifact retention, diagnostics uploaded unconditionally, no `concurrency` group, `cancel-in-progress` on irreversible work, needless full history, fixed sleeps |
+
+**Family A first.** A pipeline that is fast and gates nothing is worse than a slow one, and these
+findings fail green — nobody notices them from the run list.
+
+Two rules on severity:
+
+- **Rate by consequence, not by how odd the YAML looks.** A missing `timeout-minutes` on a job that
+  reliably finishes in 40 seconds is a low finding; the same gap on a job that can hang on a dev
+  server is the one that burns six hours.
+- **A finding needs the number it moves.** "Split these jobs" is not a finding. "These three steps
+  are independent and sit on the critical path; splitting them removes ~90s from every run" is.
+  Where the number cannot be established, say it is an estimate.
+
+Recognise what is already right. A workflow doing the non-obvious things well — a fan-in gate with
+`if: always()`, `cancel-in-progress: false` on the release, an unprivileged job producing the
+artifact a privileged one consumes — should be told so, in one line each. It is how the report earns
+the right to be believed about the rest.
+
+## Phase 3: Report
+
 ```
+## CI audit: <N> workflows, <J> jobs · critical path <T> (measured|estimated)
 
-#### Node.js/pnpm Caching
-```yaml
-# Good: Using setup-node cache
-- uses: actions/setup-node@v4
-  with:
-    node-version-file: '.node-version'
-    cache: 'pnpm'
+### Gating correctness
+<finding: what is wrong, what it lets through, the shape that fixes it>
 
-# pnpm requires action-setup first
-- uses: pnpm/action-setup@v4
-- uses: actions/setup-node@v4
-  with:
-    cache: 'pnpm'
-```
-
-#### Custom Caching
-```yaml
-# Cache node_modules (if not using setup-node cache)
-- uses: actions/cache@v4
-  with:
-    path: node_modules
-    key: ${{ runner.os }}-node-${{ hashFiles('**/pnpm-lock.yaml') }}
-    restore-keys: |
-      ${{ runner.os }}-node-
-
-# Turbo cache (for monorepos)
-- uses: actions/cache@v4
-  with:
-    path: .turbo
-    key: ${{ runner.os }}-turbo-${{ github.sha }}
-    restore-keys: |
-      ${{ runner.os }}-turbo-
-```
-
-#### Build Artifact Caching
-```yaml
-# Cache build outputs between jobs
-- uses: actions/upload-artifact@v4
-  with:
-    name: build
-    path: dist/
-    retention-days: 30  # Default is 90 days; set explicitly to control storage
-
-# In dependent job
-- uses: actions/download-artifact@v4
-  with:
-    name: build
-    path: dist/
-```
-
-### Step 4: Check Concurrency Settings
-
-```yaml
-# Good: Scoped to workflow name, handles PR head branches correctly
-concurrency:
-  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
-  cancel-in-progress: true
-
-# For deployment (don't cancel in-progress deploys)
-concurrency:
-  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
-  cancel-in-progress: false
-```
-
-Using `github.workflow` in the group prevents different workflows from accidentally sharing a concurrency slot. `github.head_ref || github.ref` correctly uses the PR branch name on pull_request events and falls back to the ref on push events.
-
-### Step 5: Check Conditional Execution
-
-#### Path Filters
-```yaml
-on:
-  push:
-    branches: [main]
-    paths:
-      - 'src/**'
-      - 'package.json'
-      - '.github/workflows/ci.yml'
-  pull_request:
-    branches: [main]
-    paths:
-      - 'src/**'
-```
-
-#### Job Conditions
-```yaml
-jobs:
-  deploy:
-    if: github.ref == 'refs/heads/main'
-    # ...
-
-  release:
-    if: startsWith(github.ref, 'refs/tags/v')
-    # ...
-```
-
-### Step 6: Check Matrix Builds
-
-For testing across multiple versions:
-```yaml
-jobs:
-  test:
-    strategy:
-      matrix:
-        node: [18, 20, 22]
-        os: [ubuntu-latest, macos-latest]
-      fail-fast: false
-    runs-on: ${{ matrix.os }}
-    steps:
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ matrix.node }}
-```
-
-### Step 7: Check Runner Selection
-
-| Runner | Use Case |
-|--------|----------|
-| `ubuntu-latest` | Most Node.js projects |
-| `macos-latest` | iOS/macOS builds |
-| `windows-latest` | Windows-specific tests |
-| Self-hosted | Special requirements |
-
-**Note:** `ubuntu-latest` is fastest and cheapest.
-
-### Step 8: Check Workflow Triggers
-
-```yaml
-# Good: Specific triggers
-on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
-
-# Avoid: Too broad
-on: [push, pull_request]  # Runs twice on PR
-```
-
-### Step 9: Check for Optimizations
-
-#### Shallow Clone vs Full History
-```yaml
-# Default: shallow clone (fast, sufficient for most CI)
-- uses: actions/checkout@v4
-
-# Full history: required for release/tag workflows (changelog generation, git describe, gh release --generate-notes)
-- uses: actions/checkout@v4
-  with:
-    fetch-depth: 0
-```
-
-#### Install Optimization
-```yaml
-# npm
-- run: npm ci  # Faster than npm install
-
-# pnpm
-- run: pnpm install --frozen-lockfile
-
-# yarn
-- run: yarn --frozen-lockfile
-```
-
-#### Monorepo Working Directory
-```yaml
-# Set once per job instead of repeating working-directory on every step
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: packages/web
-    steps:
-      - uses: actions/checkout@v4
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm build
-```
-
-### Step 10: Generate Report
-
-```markdown
-## CI Audit Report
-
-### Parallelization
-- [ ] Jobs run sequentially that could be parallel
-- [ ] Estimated savings: ~30s per run
+### Critical path
+<finding, with the time it moves>
 
 ### Caching
-- [x] Node modules cached via setup-node
-- [ ] Missing Turbo cache for monorepo
+<finding>
 
-### Efficiency
-- [x] Concurrency with cancel-in-progress
-- [ ] No path filters (runs on all changes)
+### Spend and hygiene
+<finding>
 
-### Recommendations
-1. Split CI into parallel jobs (typecheck, lint, format)
-2. Add path filters to skip irrelevant runs
-3. Use artifact caching for build outputs
+### Already right
+- <one line per non-obvious thing the workflows get right>
+
+### Handed to security-audit
+- <required-check reconciliation, or anything touching the security surface>
 ```
 
-See `references/ci-template.yaml` for an optimized pnpm workflow with parallel jobs, path filters, and concurrency control.
-See `references/ci-template-vp.yaml` for a Vite+ (`voidzero-dev/setup-vp`) variant.
+Drop any section with no findings. Do not pad a clean result — a workflow set with nothing wrong is a
+real outcome, and `Already right` carries it.
 
-## Keywords
+`references/ci-template.yaml` is an optimized pnpm workflow with parallel jobs, path filters and
+concurrency control; `references/ci-template-vp.yaml` is the Vite+ (`voidzero-dev/setup-vp`) variant.
+Offer them when a repository is starting from nothing, not as a target to converge every pipeline on.
 
-github actions, ci, cd, workflow, parallelization, caching, optimization, jobs, pipeline
+## Rules
+
+- **Read and report. Never edit a workflow.** Findings are for the maintainer to apply.
+- **Gating correctness before speed.** A faster pipeline that checks less is a regression.
+- **No finding without a consequence.** Name what it costs or what it lets through.
+- **Measured or estimated, always stated.** Never present an estimate as a measurement.
+- **Stay off the security surface.** Pinning, `permissions:`, and trigger safety belong to
+  `security-audit`. Report the boundary crossing, not the verdict.
+- **Do not recommend splitting a unified check command** without establishing that the toolchain does
+  not already parallelize internally.
+
+## Error handling
+
+| Situation | Action |
+| --------- | ------ |
+| No `.github/workflows/` | Print `No GitHub Actions workflows found.` and stop |
+| `.github/workflows/` exists but holds no YAML | Same message. A directory with only a README is not a pipeline |
+| Workflows exist but only `workflow_dispatch` | Audit them, and say nothing runs automatically |
+| A workflow fails to parse | Report the parse error as the first finding and audit the rest |
+| `yq` unavailable | Read the YAML directly, and say the job graph was derived by reading |
+| `gh` unavailable or no run history | Audit statically, and mark every timing an estimate |
+| A reusable workflow (`uses:` at job level) | Audit the caller's graph; say the callee was not read unless it is in this repository |
+| A composite action in the repository | Read it — its steps are on the critical path too |
+| Only one job, doing everything | Still audit families A, C and D. A single job is not automatically wrong |

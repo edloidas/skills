@@ -1,5 +1,6 @@
 interface:
   display_name: "CI Audit"
-  short_description: "Audit GitHub Actions for speed and reliability"
+  short_description: "Audit GitHub Actions for wall clock, spend, and whether the gating actually gates"
+  default_prompt: "Use $ci-audit on this repository's GitHub Actions workflows. Build the job graph, run the check catalog, and report findings. Change nothing."
 policy:
   allow_implicit_invocation: true
