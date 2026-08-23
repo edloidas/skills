@@ -74,7 +74,7 @@ skips it. `tools/skills-release` is the one current example.
 **Plugin groups:**
 - `plan/` — Issue drafting, analysis, and the full issue lifecycle (3 skills)
 - `build/` — Conflict resolution, commit summaries, quick commits, and findings fixes (4 skills)
-- `review/` — Adversarial change review, cleanup, critical review board, PR feedback triage, and spec extraction (5 skills)
+- `review/` — Adversarial change review, cleanup, approach boards, PR feedback triage, and spec extraction (5 skills)
 - `audit/` — CI, script, security, skill, workspace, tsconfig, Three.js, React, and test-suite auditing (9 skills)
 - `maintain/` — Agent instruction layer setup and drift check, label sync, lint migration, editor config sync, repo security hardening, and stale process cleanup (6 skills)
 - `ship/` — Release workflows for npm packages (1 skill)
@@ -393,12 +393,20 @@ Only add `Codex` to a skill's `compatibility` frontmatter after reviewing that t
 actually Codex-safe. In this repo, Codex-compatible skills must also be exposed through
 `scripts/codex/catalog.json`.
 
-Two skills are `compatibility: Claude Code`, each locked by what it actually does. They
-should stay Claude-only unless their workflow changes:
+One skill is `compatibility: Claude Code`, locked by what it actually does. It should stay
+Claude-only unless its workflow changes:
 
-- `review/skills/consilium` and `review/skills/code-to-spec` — dispatch fleets of
-  plugin-namespaced subagents via `subagent_type` and key temp files on
-  `${CLAUDE_SESSION_ID}`.
+- `review/skills/code-to-spec` — dispatches fleets of plugin-namespaced subagents via
+  `subagent_type` and keys temp files on `${CLAUDE_SESSION_ID}`.
+
+`review/skills/consilium` was Claude-only for the same reasons and is now portable. It stopped
+being a review skill: it is an approach board that takes a problem or a decision, generates
+candidate approaches from independent seats, and ranks them. Making it portable was mostly
+subtraction — dispatch is stated as intent, model choice as intent and depth as a budget rather
+than a turn count, its outside seat runs through `outsider` instead of a private `codex exec`
+wrapper, and the temp files that forced `${CLAUDE_SESSION_ID}` are gone entirely because the
+candidate set travels in the dispatched prompt and `outsider` owns the one file that still hits
+disk.
 
 `plan/skills/issue-flow` and `workflow/skills/solve-issue` were Claude-only for the same
 reason `changes-review` was: they named the mechanism. Both now state delegation as intent

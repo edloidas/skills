@@ -1,146 +1,154 @@
 # Synthesis Guide
 
-Instructions for combining and evaluating findings from consilium reviewers. Core reviewers (Seneca, Codex) always run. Optional reviewers (Scrutator, Novator, Librarius, Censor) run on-demand based on review content.
+How to turn a board's output into a ranked candidate set and a recommendation. Read this after
+verification, with the surviving objections in hand.
 
-## Handling Optional Subagent Absence
+The board produced material; the ranking is yours. No seat saw the whole picture, and you have context
+none of them had.
 
-Not all 6 reviewers run every time — this is normal, not a failure. When synthesizing:
-- Only reference reviewers that actually ran
-- Adjust agreement thresholds proportionally: "majority of reviewers that ran" replaces fixed counts like "3+"
-  - For 2 reviewers (core only): both must agree to upgrade severity
-  - For 3 reviewers: 2 of 3
-  - For 4+: standard majority (>50%)
-- If only core reviewers ran, severity calibration relies on evidence strength rather than cross-reviewer agreement
-- Do not speculate about what absent reviewers might have found
+## Step 1: Apply the Verdicts
 
-## Step 1: Deduplication
+- `refuted` — the objection is gone. Keep it for the Dismissed section with the lens that killed it.
+- `narrowed` — keep only the part the lens says survives, at the severity it justified.
+- `demoted` — only `escapability` returns this. The objection becomes a **design note** on its
+  candidate, carrying the specific adjustment that answers it. It does not rank, which is why the
+  adjustment is mandatory: a demoted objection is only safe to set aside if someone can act on it. A
+  `demoted` verdict with no stated adjustment is not a demotion — treat it as `confirmed`.
+- `confirmed` — stands, at whatever severity the lenses justified. Take the `bite` lens's severity over
+  a critic's: that is the actor-aware one.
 
-Merge findings that describe the same underlying issue. When merging:
-- Use the clearest description from any reviewer
-- Note all reviewers who flagged it (e.g., "Flagged by: Seneca, Codex")
-- Keep the strongest evidence from each
-- Use the highest severity assigned by any reviewer
+Where lenses disagree, the one that read something in the repository outranks the one that reasoned.
+Where both reasoned, take the more sceptical verdict — the board's failure mode is plausible objections
+nobody could demonstrate.
 
-## Step 2: Contradiction Resolution
+## Step 2: Separate Cross-Cutting From Discriminating
 
-When reviewers disagree:
-- **Factual disagreements** (e.g., "API exists" vs "API doesn't exist"): side with the reviewer who provides verifiable evidence (URLs, docs). If both provide evidence, flag for user.
-- **Severity disagreements**: use the higher severity if majority of reviewers that ran agree; otherwise use the middle value.
-- **Scope disagreements** (e.g., "this is a problem" vs "this is out of scope"): you have the broader conversation context — use it to determine whether the finding is relevant.
+An objection that hits every candidate equally says something about the **problem**, not about the
+choice. It cannot rank anything. Move it into the framing section of the report and rank the candidates
+without it.
 
-## Step 3: Severity Calibration
+If most surviving objections are cross-cutting, that is the headline: the frame is the problem, not the
+candidate set. Say so before anything else.
 
-Adjust severities based on cross-reviewer agreement:
-- **Upgrade to Critical**: a Warning flagged by majority of reviewers that ran independently
-- **Maintain severity**: finding from 1-2 reviewers with strong evidence
-- **Downgrade**: finding from 1 reviewer with weak or speculative evidence
+## Step 3: Rank
 
-## Step 4: False Positive Filter
+For each candidate: what it buys, what it costs, what it forecloses, what it takes to leave, plus its
+surviving objections and its design notes.
 
-Dismiss findings that:
-- Misunderstand the scope or constraints of the proposal (you know the full context, reviewers may not)
-- Flag intentional design decisions that were already discussed and accepted
-- Apply generic advice that doesn't fit this specific situation
-- Reference code or APIs that don't exist in this project
+Then rank them on the frame's own success criteria. Rules:
 
-When dismissing, briefly note why (e.g., "Dismissed: intentional trade-off discussed in conversation").
+- **A `Blocking` objection rules a candidate out** — unless `escapability` demoted it, in which case
+  rank the candidate **as adjusted** and name the adjustment in its write-up. This is the only way a
+  candidate survives a `Blocking` objection, so never apply it silently.
+- **Re-rate by bearer before ranking.** Severity is a function of bearer and condition, never of how
+  bad the mechanism sounds. Take the `bite` lens's bearer over a critic's — that is the one that
+  checked. An objection borne by the `implementer` alone outranks nothing borne by an `end user` or an
+  `external consumer`, whatever its stated severity.
+- **Count `Material` objections, do not sum them.** Three shallow objections do not outweigh one that
+  reaches an end user. Severity is about bearer and condition, and the ranking follows that too.
+- **Reversibility breaks ties.** Two candidates close on merit rank by exit cost: the cheaper one to
+  leave wins, because the board is deciding under uncertainty.
+- **Never rank the approach that was already on the table above what its own objections justify.** It
+  entered as a candidate. Being first is not a merit.
 
-## Step 5: Evidence Requirement
+## Step 4: Choose, and Say What Would Change It
 
-Every finding in the final report must have:
-- **What**: clear description of the issue
-- **Where**: specific location (quote, section, file, line)
-- **Why**: which principle or fact makes this a problem
-- **Who**: which reviewer(s) flagged it
+State the recommendation in one sentence and justify it against the success criteria in three.
 
-Findings missing any of these are incomplete — either fill in the gaps from your broader context or drop them.
+Then name **what would change the answer**: the specific fact, constraint, or scale change that would
+make a different candidate win. A recommendation with no such statement is an assertion, not a
+decision — the reader needs to know which way the call is close.
 
-## Step 6: Integrating Scrutator Findings
+## Step 5: Override Honestly
 
-When Scrutator ran:
-- The **State Table** is reference material — do not include it verbatim in the report
-- **Transition Matrix Gaps** become standard findings with the gap as evidence
-- **Deduplicate with Seneca**: if both flag the same state issue, prefer Scrutator's wording (it has more state-specific detail)
-- **Severity conflicts with Seneca**: if Seneca and Scrutator disagree on severity for the same issue, use Scrutator's severity (its analysis is more systematic) but note both perspectives
-- Significant state coverage gaps go in the optional `### State Coverage Gaps` section of the report
+You may:
 
-## Step 7: Integrating Novator Findings
+- Dismiss what is wrong or does not apply, saying which and why
+- Demote what is technically right but practically insignificant here
+- Promote what matches a concern you already had — and say that is what happened
+- Overrule the ranking with context no seat had, stating the context explicitly
 
-When Novator ran:
-- **Premise Check**: if it raises concerns, include them in the report preamble (before Critical findings)
-- **Alternatives with "Stronger" verdict**: map to Warning or Critical severity findings
-- **Alternatives with "Comparable" verdict**: map to Note severity
-- **Alternatives with "Weaker" verdict**: mention only if they contain genuinely insightful trade-off analysis
-- **Lock-in Risks**: map directly to standard severity findings
-- **Seneca Assumptions overlap**: if Seneca's Assumptions section identifies concerns that Novator's Premise Check also raises, merge them in the report preamble
-- Strong alternatives go in the optional `### Alternatives Considered` section of the report
+You may not silently drop a surviving objection or quietly reframe a candidate. Every override is
+stated with its reasoning.
 
-## Step 8: Autonomous Decision Threshold
+## Step 6: Report What the Run Actually Was
 
-**Decide autonomously** (do not ask the user):
-- Dismissing false positives
-- Resolving severity disagreements
-- Merging duplicate findings
-- Dropping findings with insufficient evidence
+The reader must be able to discount the report correctly. Say in the header:
 
-**Flag for user attention** (present but don't block on):
-- Genuine trade-off decisions where both sides have merit
-- Findings that would require significant plan changes
-- Critical-severity findings from majority of reviewers that ran
+- Which seats ran, and which were skipped or failed
+- **Which agent answered as Peregrinus**, by name. A candidate from an unidentifiable board member is
+  not interpretable. If the leg was unavailable, say how many generators actually ran.
+- Whether the run got **model diversity** (each seat on a different model) or **role diversity only**
+- Whether the seats were isolated, or run sequentially on a host without concurrent dispatch
 
-## Output Format
-
-Present the synthesized report grouped by severity:
+## Report Format
 
 ```markdown
-## Consilium Review
+## Consilium
 
-**Reviewers**: Seneca, Codex + [optional subagents that ran]
-**Findings**: N total (X critical, Y warnings, Z notes)
-**Dismissed**: N false positives
+**Decision**: <one sentence — what is being chosen>
+**Board**: Novator, Peregrinus (<agent that answered>), Seneca[, + optional seats] — <N> generators,
+<N> critics[, verification: <lenses that ran>]
+**Candidates**: N — <one-word labels>
+**Recommendation**: <candidate> — <one clause>
+**Diversity**: model | role only[, sequential — seats were not isolated]
 
-<optional: Novator premise concerns as a brief paragraph here, if any>
+### The Decision
 
-### Critical
+<Two or three sentences restating what is being chosen and under what constraints. Then the
+cross-cutting objections: what every candidate shares, and what it means for the frame. If a shared
+assumption is load-bearing and unverified, this is where it goes and it goes first. Peregrinus's
+observations about the problem as stated belong here too — an outside reading that differs from the
+inside one is a fact about the frame, not about any candidate.>
 
-1. **Finding title**
-   - Issue: description
-   - Evidence: quote or reference
-   - Flagged by: reviewer names
-   - Impact: consequence
+### Candidates
 
-### Warnings
+#### <N>. <Name>  <— recommended, where applicable>
 
-(same format)
+<Two or three sentences: what it is and how it works.>
 
-### Notes
+- **Buys**: <the specific advantage>
+- **Costs**: <effort, complexity, operational burden>
+- **Forecloses**: <what gets hard afterwards>
+- **Exit**: cheap | moderate | expensive — <what leaving takes>
+- **Objections**: <severity — one line each, with the condition and the bearer named>
+- **Design notes**: <each demoted objection with the specific adjustment that answers it. Where an
+  adjustment is what keeps a `Blocking` objection from ruling this candidate out, say so here.>
 
-(same format)
+### Recommendation
 
-### Alternatives Considered
+<One sentence naming the choice, three justifying it against the success criteria. Name the strongest
+objection against it and say why it does not change the answer.>
 
-(optional — include only when Novator found Stronger or notable Comparable alternatives)
+**What would change this**: <the specific fact, constraint, or scale change that makes another
+candidate win — and which one>
 
-1. **Decision**: what the proposal chose
-   - Alternative: the proposed different approach
-   - Verdict: Stronger|Comparable
-   - Trade-offs: key differences
+### Preferences
 
-### State Coverage Gaps
-
-(optional — include only when Scrutator found significant gaps)
-
-1. **Gap title**
-   - States involved: which states from Scrutator's analysis
-   - Issue: what is missing
-   - Impact: consequence
+<Objections with no condition or no bearer, one line each, attributed. Present because a reader may
+share the preference — but they did not rank anything.>
 
 ### Dismissed
 
-(brief list with reasons)
+<Refuted objections, one line each, with the lens that killed them.>
 ```
 
-If a reviewer failed or timed out, note it at the top:
-```
-**Note**: <Reviewer> did not complete — findings may be incomplete.
-```
+## Degradation
+
+- **A seat failed** — say so in the header and continue. Do not speculate about what it would have
+  found.
+- **Peregrinus unavailable** — say how many generators actually ran: two with Librarius selected, and
+  **one** without it, which is the common case. Note that the run has no cold framing — every candidate
+  came from inside this conversation's context — and that a single-generator board cannot demonstrate
+  the design space was explored.
+- **One critic ran** — say so. With only Seneca, nothing assessed reach or cost, and the ranking rests
+  on framing alone.
+- **All critics failed** — present the candidate set with its trade-offs and state plainly that nothing
+  attacked it. Do not present a recommendation as though it survived scrutiny.
+- **Only one candidate survived** — report it as a decision with no live alternative, list what was
+  ruled out and by what, and say plainly that the board did not find a real choice.
+- **Every candidate carries a `Blocking` objection** — do not pick a least-bad candidate. Report that
+  the frame may be wrong, lead with the cross-cutting objections, and say what a better frame would
+  have to account for.
+- **Nothing survived verification** — a valid outcome. Rank on trade-offs alone and say the board found
+  nothing disqualifying, which is information about the decision's difficulty.

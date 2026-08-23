@@ -1,376 +1,349 @@
 ---
 name: consilium
 description: >
-  Critical review board for plans, proposals, and research findings. Deploys up to 6 reviewers
-  (2 core + 4 on-demand) including Seneca, Codex, Scrutator, Novator, Librarius, and Censor.
-  The orchestrator selects which optional subagents to launch based on review content.
-  Use when the user asks to "think hard", "ultrathink", perform critical review, validate a plan,
-  or before committing to a complex technical decision. Also triggers on large-scope tasks and
-  PRD reviews. Also operates in brainstorm mode for problem exploration — generates and critiques
-  solution approaches. Autonomous — runs without user interaction, presents combined findings.
+  Approach board for a problem or a decision. Dispatches independent seats — some that generate
+  candidate approaches, including one agent outside this process entirely, and some that attack the
+  assembled candidate set comparatively — then verifies the surviving objections and reports a
+  ranked recommendation with its trade-offs. Use when the question is what to build or how to frame the
+  problem, not whether a diff is correct: "how should we approach this", "what are the options",
+  "is this the right way", "think hard about this", "stress-test this plan", "what if we did it
+  differently". An approach already on the table enters the board as one candidate among several.
+  Autonomous — runs without user interaction and changes nothing.
 license: MIT
-compatibility: Claude Code
-allowed-tools: Read Write(*/consilium-*) Edit(*/consilium-*) Glob Grep Task Bash(bash:*) Bash(cat:*/consilium-*) Bash(codex:*)
+compatibility: Claude Code, Codex, OpenCode, Pi
+allowed-tools: Read Glob Grep Task Skill Write(*/outsider-*)
 user-invocable: true
-argument-hint: "[focus area, brainstorm, or empty]"
+argument-hint: "[focus area, or empty]"
 metadata:
   author: edloidas
 ---
 
-# Consilium — Critical Review Board
+# Consilium — Approach Board
 
 ## Purpose
 
-Deploy up to 6 reviewers (2 core + up to 4 on-demand) to stress-test a plan, proposal, or research finding from different angles. Core reviewers (Seneca, Codex) always run. The orchestrator selects which optional reviewers to launch based on the review content. Findings are synthesized into a severity-grouped report with evidence-backed findings.
+Examine a problem, or an approach someone already picked, from several angles and several scopes at
+once. The board answers four questions: **what are we actually deciding**, **what approaches exist**,
+**what does the one on the table foreclose**, and **what would a different framing buy**.
 
-This is autonomous — run all steps without user interaction. Present the final synthesized report when done.
+It is not a review skill. Defects appear here only as *evidence that an approach is wrong* — a bug
+that is fixable inside a candidate is not this board's output. A diff goes to `changes-review`.
+
+Autonomous: run every step without asking the user, and present the report when done. Consilium
+reads and reasons; it never modifies the thing it examines.
 
 ## When to Use
 
-**Explicit triggers:**
-- User says "think hard", "ultrathink", "critical review", "stress-test this", "validate this plan"
-- User asks to review a PRD, architecture proposal, or technical decision
-- `/consilium` invocation
-
-**Brainstorm triggers:**
-- User asks "how should we...", "what's the best approach for...", "explore options for..."
-- Problem statement without a proposed solution
-- `/consilium brainstorm` invocation
-
-**Auto-invocation criteria:**
-- Before committing to a complex multi-system architectural decision
-- When a plan has high blast radius (affects many files, services, or users)
-- When the user seems uncertain about a technical approach
-
-**Focus areas** (optional `$ARGUMENTS`):
-
-| Focus | Subagents | Use case |
-|-------|-----------|----------|
-| _(default)_ | Seneca + Codex + auto-selected | Orchestrator decides which optional reviewers to add |
-| `all` | All 6 | Full board review |
-| `logic` | Seneca + Codex + Scrutator | Deep state and logic analysis |
-| `libraries` | Seneca + Codex + Librarius | Dependency and API verification |
-| `practices` | Seneca + Codex + Censor | Best practices audit |
-| `alternatives` | Seneca + Codex + Novator | Design space exploration |
-| `deep` | Seneca + Codex + Scrutator + Novator | Both new specialized reviewers |
-| `brainstorm` | Novator (Phase 1 lead) → Seneca + Codex + auto-selected (Phase 2) | Two-phase: generate approaches then critique them |
-
-## Subagent Roles
-
-### Core (always run)
-
-| Reviewer | Role | Type | Model | Max Turns |
-|----------|------|------|-------|-----------|
-| Seneca | Critical logic analyst — contradictions, assumptions, edge cases | Task (`general-purpose`) | `opus` | 8 |
-| Codex | Independent reviewer — no conversation context, fresh perspective | Bash script (`codex exec`) | codex default | N/A |
-
-### Optional (on-demand)
-
-| Reviewer | Role | Type | Model | Max Turns |
-|----------|------|------|-------|-----------|
-| Scrutator | Exhaustive state/logic analyzer — all states, transitions, race conditions | Task (`general-purpose`) | `opus` | 14 |
-| Novator | Devil's advocate — alternative approaches, design space exploration | Task (`general-purpose`) | `opus` | 10 |
-| Librarius | Library/API verification — versions, signatures, deprecations | Task (`general-purpose`) | `sonnet` | 10 |
-| Censor | Best practices reviewer — anti-patterns, SOLID, security | Task (`general-purpose`) | `sonnet` | 8 |
-
-## Workflow
-
-### Step 1: Identify Review Target
-
-Determine what to review from the conversation:
-- A plan file (e.g., written to `/tmp/plan.md` or discussed in conversation)
-- The most recent proposal or architectural decision
-- Research findings or a PRD
-
-Extract the content into a single text block. If the target is unclear, use the last substantive proposal from the conversation.
-
-### Step 1.5: Detect Mode
-
-Determine whether to run in **review mode** or **brainstorm mode**:
-
-1. If `$ARGUMENTS` is `brainstorm` → **brainstorm mode**
-2. If `$ARGUMENTS` is any other focus keyword from the table → **review mode**
-3. If `$ARGUMENTS` is empty → **auto-detect**:
-   - Brainstorm signals: interrogative framing ("how should we...", "what's the best way to..."), no concrete proposal structure, exploratory language ("explore", "options", "approaches")
-   - Default to **review mode** when uncertain
-
-State detected mode and one-line reasoning before proceeding.
-
-If brainstorm mode → skip to **Brainstorm Workflow** section below. Otherwise continue with Step 2.
-
-### Step 2: Prepare Context
-
-1. Resolve the temp directory (run once, reuse for all files in this session):
-   ```bash
-   bash "<skill-dir>/scripts/resolve-tmp.sh"
-   ```
-   Use the output as `<TMP>` in all subsequent file paths.
-2. Use the **Write tool** to save the review content to `<TMP>/consilium-${CLAUDE_SESSION_ID}-context.md` with a header:
-   ```
-   # Consilium Review Context
-   # Source: <what this is — plan, proposal, research>
-   # Timestamp: <ISO 8601>
-
-   <content>
-   ```
-   Do NOT use Bash heredoc (`cat >`) — the Write tool avoids shell quote-parsing issues.
-3. This file is used by the Codex script and as the source for Task prompts.
-
-### Step 2.5: Select Optional Subagents
-
-If a focus area is specified, use the focus area table above to determine which subagents to launch. Otherwise, scan the review content and select optional subagents using this decision table:
-
-| Subagent | Launch when | Skip when |
-|----------|------------|-----------|
-| **Scrutator** | State machines, async flows, concurrent ops, retry/recovery, multi-step workflows, loading/error/success states, event handlers | Pure data transforms, static config, docs-only, simple CRUD |
-| **Novator** | Major architecture decisions, new system design, high blast radius, irreversible choices, "X vs Y" discussions | Bug fixes, minor refactors, well-established patterns, incremental changes |
-| **Librarius** | Specific library names, version numbers, API calls, dependency changes, migration guides | No external deps, pure algorithm/logic, internal-only code |
-| **Censor** | New abstractions, class hierarchies, design patterns, security-sensitive code, public API design | Bug fixes with minimal structural change, config changes, one-off scripts |
-
-State your selections and one-line reasoning for each decision (include/skip) before proceeding.
-
-Minimum: 2 (core only). Maximum: 6 (all). Typical: 3–4.
-
-### Step 3: Load Prompts and Launch Reviewers
-
-Read the prompt templates from `references/` for all selected reviewers:
-- `<skill-dir>/references/seneca-prompt.md` (always)
-- `<skill-dir>/references/scrutator-prompt.md` (if selected)
-- `<skill-dir>/references/novator-prompt.md` (if selected)
-- `<skill-dir>/references/librarius-prompt.md` (if selected)
-- `<skill-dir>/references/censor-prompt.md` (if selected)
-
-For each Task-based reviewer, replace `{{CONTEXT}}` in the prompt template with the actual review content.
-
-Launch **all applicable reviewers in a single message** (parallel execution):
-
-**Codex** (core) — via Bash:
-```
-bash <skill-dir>/scripts/run-codex.sh <TMP>/consilium-${CLAUDE_SESSION_ID}-context.md <TMP>/consilium-${CLAUDE_SESSION_ID}-codex.txt
-```
-Run in background so it doesn't block the other subagents.
-
-**Seneca** (core) — via Task:
-- `subagent_type`: `general-purpose`
-- `model`: `opus`
-- `max_turns`: 8
-- `prompt`: contents of seneca-prompt.md with `{{CONTEXT}}` replaced
-
-**Scrutator** (if selected) — via Task:
-- `subagent_type`: `general-purpose`
-- `model`: `opus`
-- `max_turns`: 14
-- `prompt`: contents of scrutator-prompt.md with `{{CONTEXT}}` replaced
-
-**Novator** (if selected) — via Task:
-- `subagent_type`: `general-purpose`
-- `model`: `opus`
-- `max_turns`: 10
-- `prompt`: contents of novator-prompt.md with `{{CONTEXT}}` replaced
-
-**Librarius** (if selected) — via Task:
-- `subagent_type`: `general-purpose`
-- `model`: `sonnet`
-- `max_turns`: 10
-- `prompt`: contents of librarius-prompt.md with `{{CONTEXT}}` replaced
-- This reviewer uses WebSearch and Context7 tools to verify claims
-
-**Censor** (if selected) — via Task:
-- `subagent_type`: `general-purpose`
-- `model`: `sonnet`
-- `max_turns`: 8
-- `prompt`: contents of censor-prompt.md with `{{CONTEXT}}` replaced
-
-### Step 4: Collect Results
-
-1. Read Codex output via Bash: `cat <TMP>/consilium-${CLAUDE_SESSION_ID}-codex.txt`
-2. Parse Task results from the subagent responses
-3. If any reviewer failed or timed out, note it — do not block on it
-
-### Step 5: Synthesize Report
-
-Read `<skill-dir>/references/synthesis-guide.md` and follow it exactly:
-
-1. **Deduplicate** — merge identical findings across reviewers
-2. **Resolve contradictions** — use your broader conversation context
-3. **Calibrate severity** — upgrade multi-reviewer findings, downgrade weak ones
-4. **Filter false positives** — dismiss findings that misunderstand scope or context
-5. **Verify evidence** — every finding needs what/where/why/who
-6. **Integrate Scrutator** — state table as reference, transition gaps as findings (when Scrutator ran)
-7. **Integrate Novator** — map verdicts to severities, premise check to preamble (when Novator ran)
-8. **Apply autonomous threshold** — decide what to resolve vs flag for user
-
-Note: Novator's output uses a different format (sections instead of numbered findings). The synthesis guide has specific instructions for mapping its output to the standard report format.
-
-### Step 6: Autonomous Review
-
-Before presenting the report, critically evaluate each finding against your broader context:
-- You may dismiss findings that are wrong or irrelevant
-- You may downgrade findings that are technically correct but practically insignificant
-- You should upgrade findings that align with concerns you already had
-- Note your reasoning for any overrides
-
-## Output Format
-
-Present the final report using the format from `references/synthesis-guide.md`:
-
-```markdown
-## Consilium Review
-
-**Reviewers**: Seneca, Codex + [optional subagents that ran]
-**Findings**: N total (X critical, Y warnings, Z notes)
-**Dismissed**: N false positives
-
-### Critical
-
-1. **Finding title**
-   - Issue: description
-   - Evidence: quote or reference
-   - Flagged by: reviewer names
-   - Impact: consequence
-
-### Warnings
-
-(same format)
-
-### Notes
-
-(same format)
-
-### Alternatives Considered
-
-(optional — when Novator found strong alternatives)
-
-### State Coverage Gaps
-
-(optional — when Scrutator found significant gaps)
-
-### Dismissed
-
-(brief list with reasons, if any)
-```
-
-## Brainstorm Workflow
-
-When brainstorm mode is detected, follow these steps instead of the standard review workflow (Steps 2–7).
-
-### Step B1: Prepare Brainstorm Context
-
-Use the **Write tool** to save the problem description to `<TMP>/consilium-${CLAUDE_SESSION_ID}-context.md`:
-```
-# Consilium Brainstorm Context
-# Problem: <one-line summary>
-# Timestamp: <ISO 8601>
-
-<problem description extracted from conversation>
-```
-Do NOT use Bash heredoc (`cat >`) — the Write tool avoids shell quote-parsing issues.
-
-### Step B2: Phase 1 — Novator as Solution Architect
-
-1. Read `<skill-dir>/references/novator-brainstorm-prompt.md`
-2. Replace `{{CONTEXT}}` with the problem description
-3. Launch a single Task:
-   - `subagent_type`: `general-purpose`
-   - `model`: `opus`
-   - `max_turns`: 12
-   - `prompt`: the prepared novator brainstorm prompt
-4. **Wait for completion** — this is a blocking step. Phase 2 depends on Novator's output.
-
-### Step B3: Prepare Phase 2 Context
-
-Use the **Write tool** to save Phase 2 context to `<TMP>/consilium-${CLAUDE_SESSION_ID}-phase2-context.md`:
-```
-# Consilium Brainstorm — Phase 2 Critique Context
-# Original Problem: <one-line summary>
-# Timestamp: <ISO 8601>
-
-## Original Problem
-<problem description>
-
-## Novator's Proposed Approaches
-<Novator's full Phase 1 output>
-```
-Do NOT use Bash heredoc (`cat >`) — the Write tool avoids shell quote-parsing issues.
-
-Select Phase 2 reviewers using the existing decision table (Step 2.5). Apply it against **both** the original problem description and Novator's output — use the original problem for domain signals (what the problem involves), and Novator's output for structural signals (whether approaches involve state machines, library choices, etc.). This prevents selection from depending solely on Novator's word choices. Novator is excluded from Phase 2. State your selections and one-line reasoning.
-
-### Step B4: Phase 2 — Critique Novator's Proposals
-
-Launch all Phase 2 reviewers in a single message (parallel execution):
-
-**Codex** (core) — via Bash:
-```
-bash <skill-dir>/scripts/run-codex.sh <TMP>/consilium-${CLAUDE_SESSION_ID}-phase2-context.md <TMP>/consilium-${CLAUDE_SESSION_ID}-codex.txt
-```
-Run in background.
-
-**Seneca** (core) — via Task:
-- `subagent_type`: `general-purpose`
-- `model`: `opus`
-- `max_turns`: 8
-- `prompt`: **seneca-brainstorm-prompt.md** with `{{CONTEXT}}` replaced by Phase 2 context
-
-**Scrutator** (if selected) — via Task:
-- `subagent_type`: `general-purpose`
-- `model`: `opus`
-- `max_turns`: 14
-- `prompt`: scrutator-prompt.md with `{{CONTEXT}}` replaced by Phase 2 context
-
-**Censor** (if selected) — via Task:
-- `subagent_type`: `general-purpose`
-- `model`: `sonnet`
-- `max_turns`: 8
-- `prompt`: censor-prompt.md with `{{CONTEXT}}` replaced by Phase 2 context
-
-**Librarius** (if selected) — via Task:
-- `subagent_type`: `general-purpose`
-- `model`: `sonnet`
-- `max_turns`: 10
-- `prompt`: librarius-prompt.md with `{{CONTEXT}}` replaced by Phase 2 context
-
-Seneca uses its brainstorm-specific prompt (`seneca-brainstorm-prompt.md`) to evaluate approaches comparatively. All other reviewers use their standard prompts — the Phase 2 context file frames Novator's proposals as "the proposal to review."
-
-### Step B5: Synthesize Brainstorm Report
-
-1. Read Codex output via Bash: `cat <TMP>/consilium-${CLAUDE_SESSION_ID}-codex.txt`
-2. Parse Task results from Phase 2 subagent responses
-3. Read `<skill-dir>/references/brainstorm-synthesis-guide.md` and follow it exactly
-
-### Step B5.5: Autonomous Review
-
-Before presenting the brainstorm report, critically evaluate each finding and the recommendation against your broader conversation context:
-- You may dismiss Phase 2 findings that are wrong or irrelevant
-- You may adjust the recommendation if your broader context warrants it
-- You should flag findings that align with concerns you already had
-- Note your reasoning for any overrides
+- "how should we approach X", "what are the options", "what's the best way to", "explore approaches"
+- "is this the right approach", "stress-test this plan", "think hard", "ultrathink"
+- Before committing to a decision that is expensive to reverse — a data model, a public contract, a
+  dependency, an architectural direction
+- `/consilium`, `/consilium <focus>`
+
+**Not this skill:**
+
+| You have | Reach for |
+| -------- | --------- |
+| A diff, and you want it attacked for bugs and requirement gaps | `review:changes-review` |
+| Comment noise, naming, convention drift in changed code | `review:code-cleanup` |
+| One quick outside opinion, no board and no synthesis | `assist:outsider` |
+| A back-and-forth about a design, not a verdict | `assist:discuss` |
+
+**Cost.** This is the most expensive skill in the collection. Auto-selection keeps the board itself
+at four or five seats, and verification adds **three more dispatches** on the largest payload of the
+run — so a typical run is seven or eight agents and a full board is nine. On a board of four or fewer
+seats, run the `bite` lens alone: with one critic there is nothing to corroborate, and `bite` is the
+lens that changes outcomes. Spend this skill on decisions that are expensive to reverse, not on
+questions one seat could answer.
+
+## Focus Areas (optional `$ARGUMENTS`)
+
+| Focus | Board | Use case |
+| ----- | ----- | -------- |
+| _(default)_ | Core + auto-selected | Let the board select its own optional seats |
+| `all` | All six | Every angle, highest cost |
+| `prior-art` | Core + Librarius | Likely already solved somewhere |
+| `scope` | Core + Scrutator | Blast radius and what the choice forecloses |
+| `cost` | Core + Censor | Suspect overbuilding, or a simpler option skipped |
+| `wide` | Core + Scrutator + Censor | Big decision, no prior-art question |
+
+## The Seats
+
+Three generate, three critique. The generators never see each other's output; the critics see the
+assembled candidate set and nothing about who produced which candidate.
+
+### Core (always)
+
+| Seat | Job | Phase |
+| ---- | --- | ----- |
+| **Novator** | Proposes fundamentally different candidate approaches, each concrete enough to start | Diverge |
+| **Peregrinus** | An agent outside this process, with none of this conversation's context — frames the problem cold | Diverge |
+| **Seneca** | Attacks the framing and the load-bearing assumptions; checks the candidates are genuinely distinct | Converge |
+
+### Optional (auto-selected)
+
+| Seat | Job | Launch when | Skip when |
+| ---- | --- | ----------- | --------- |
+| **Librarius** | Prior art — has this been solved, what do comparable systems and libraries already do | The problem sounds general, names a library or ecosystem, or looks like a well-trodden shape | Genuinely internal, domain-specific, or no external surface |
+| **Scrutator** | Scope and blast radius — what each candidate touches, forecloses, and locks in; second-order effects | Wide reach, migrations, public contracts, data models, irreversible choices | Local, cheap to undo, contained in one module |
+| **Censor** | Proportionality — cost to build and operate against the size of the problem; is a simpler candidate being skipped | New abstractions, multi-part machinery, anything that smells larger than the problem | Already minimal, or the cost is the point |
+
+**Selection happens twice, because the evidence arrives twice.** Librarius is a generator, and its
+trigger is a property of the frame, so decide it in Phase 1. Scrutator and Censor judge candidates
+that do not exist until Phase 3 — deciding them from the frame is guessing, so decide them in Phase 3
+against the assembled set. State each include/skip decision with a one-line reason at the point you
+make it.
+
+**A board whose only critic is Seneca is a defective board.** Seneca attacks the framing; nobody is
+then looking at reach or at cost. If the assembled set contains any candidate that touches a contract
+outside this codebase, reshapes stored data, or is expensive to leave, Scrutator runs. If any
+candidate is materially larger than another that survives, Censor runs. Reaching Phase 4 with one
+critic is allowed only when the candidates are genuinely small and cheap to undo, and the report must
+say the board had one critic.
+
+Minimum 3 (core only). Maximum 6. Typical 4–5 seats, plus verification.
+
+## Choosing Models and Depth
+
+Stated as intent, since the roster changes and each host names its own models:
+
+- Give each seat the **most capable model the host offers**. If that is the model running this skill,
+  take the next tier down — a seat on the orchestrator's own model shares whatever the orchestrator
+  already believes about this problem.
+- Where the host lets you pick a model per seat, **give each a different one**. Same-model seats
+  differ only by sampling; same-role seats only by phrasing. Where it does not, run the default and
+  say so in the report: role diversity survives that, model diversity does not.
+- Give each seat a **depth budget** rather than a turn count: *shallow* for Censor, *standard* for
+  Seneca and Librarius, *exhaustive* for Novator and Scrutator. A host with a turn or step limit maps
+  these onto it; a host without one just needs the seat to stop when its own output contract is met.
+
+The report says which kind of diversity the run actually got.
+
+## Phase 1: Frame
+
+No agents yet. Establish, in the orchestrator's own words:
+
+1. **The decision** — one sentence naming what is actually being chosen. Not the symptom, the choice.
+2. **Candidate A**, if an approach is already on the table. A finished plan is not the subject of an
+   audit here; it enters the board as one candidate, ranked against the others on the same terms.
+3. **Constraints** — what genuinely limits the solution space: existing architecture, compatibility,
+   effort available, things that must keep working.
+4. **Non-goals** — what is out of scope, so seats do not solve a larger problem than the one asked.
+
+Where a constraint is a claim about the existing system, **check it in the repo** rather than
+asserting it. A frame built on a constraint that is not actually true wastes every seat on the board,
+and this is the only phase where it is cheap to catch.
+
+If the decision cannot be stated in one sentence, say so and stop — the board cannot rank candidates
+against a question nobody has written down.
+
+Announce the frame in a few lines. Every seat receives this identical frame; nothing else about the
+conversation reaches them.
+
+## Phase 2: Diverge
+
+**Dispatch all generators at once so they run concurrently.** They must not see each other's output.
+Do not hint at which candidate you favour, and do not pass the conversation's reasoning about it.
+
+The two native seats read their prompt from `references/` with `{{FRAME}}` replaced by the Phase 1
+frame. Dispatch a subagent per seat that returns candidates in the shape its prompt specifies; on a
+host with no subagent facility, run the same prompt inline.
+
+- **Novator** — `references/novator-prompt.md`
+- **Librarius** (if selected) — `references/librarius-prompt.md`. This seat needs web search or a
+  documentation lookup facility; without one it reports what it could not verify rather than guessing.
+
+**Peregrinus** runs through the collection's external-agent skill, `/outsider`, in **ask** mode.
+Invoke it by name rather than reproducing its procedure here — it owns temp-file resolution, run ids,
+and the rule that the question is written with a file-write tool and never a shell heredoc. Follow its
+ask-mode steps, and pass it four things:
+
+- `--host <the agent you are>`, so it does not select the host and answer its own question
+- `--preamble <skill-dir>/references/peregrinus-prompt.md` — this skill's seat brief, which replaces
+  outsider's default prompt entirely. It is a preamble, not a template: it carries no `{{FRAME}}`
+  placeholder because the frame is appended after it as the question
+- the Phase 1 frame, and nothing else, as the question
+- a timeout of `540`, with the surrounding command timeout set to its maximum. This seat produces
+  three sections and up to three fully specified candidates; outsider's 300s ask-mode default is not
+  enough for that, and a timeout here costs the whole leg
+
+**Check the preamble path resolved before you dispatch.** Consilium is reachable through several
+generated symlink trees, so `<skill-dir>` has to be the directory this `SKILL.md` was actually loaded
+from. Outsider refuses to run with an unresolvable `--preamble` and says so — if you see that message,
+fix the path rather than dropping the seat, because the alternative is a seat that answers with no
+brief at all.
+
+Peregrinus is the one seat with no output contract you control, and the one that saw nothing but the
+frame. **Name the agent that actually answered** — `outsider` prints it on the first line; a candidate
+from a board member you cannot identify is not interpretable. Map its Section 2 onto the candidate
+shape the others use, and carry its Section 3 — what looks off about the problem as stated — into
+Phase 5 as cross-cutting material. That section is the most valuable thing a cold seat produces and it
+is not a candidate, so nothing else in the flow would pick it up.
+
+The leg is droppable: with no external agent CLI installed, or with `outsider` itself not installed,
+the run continues without it. Say so in the report, and say how many generators actually ran — with
+Librarius unselected that is **one**, and a single-generator board cannot show the design space was
+explored. Prefer selecting Librarius in that case even if its trigger is weak.
+
+## Phase 3: Assemble the Candidate Set
+
+Before the critics run, merge the generators' output into one numbered set. This is the orchestrator's
+job and it is not clerical:
+
+1. **Include candidate A** from the frame, described on the same terms as the rest.
+2. **Merge near-duplicates.** Two candidates that differ only in naming or file layout are one
+   candidate. Keep the clearer description and note both origins.
+3. **Kill the non-candidates.** "Use something better" is not a candidate. Anything not concrete
+   enough to start on is dropped, and the drop is reported.
+4. **Strip attribution, by rewriting rather than by omitting.** Critics must not know which seat
+   proposed what, or which one was already on the table — that is the bias the board exists to
+   remove. Deleting seat names is not enough: prior-art candidates announce themselves ("adopt
+   `<library>`"), and an existing plan reads in the house voice. Restate every candidate in one
+   common voice at the same level of detail, and order them so the pre-existing approach is not
+   first. You will still know which is which; the critics must not.
+
+Announce the set as one line per candidate.
+
+## Phase 4: Converge
+
+**Dispatch all critics at once.** Each receives the frame and the full assembled candidate set, and
+attacks it **comparatively** — this board ranks candidates, so an objection that hits every candidate
+equally changes nothing about the ranking and must be labelled cross-cutting.
+
+Prompts, with `{{FRAME}}` and `{{CANDIDATES}}` replaced:
+
+- **Seneca** — `references/seneca-prompt.md`
+- **Scrutator** (if selected) — `references/scrutator-prompt.md`
+- **Censor** (if selected) — `references/censor-prompt.md`
+
+On a host with no subagents, run each prompt in turn and never show one critic another's output. Say
+in the report that they were not isolated — a sequential run leaks earlier objections into later ones.
+
+### The Objection Contract
+
+Every objection names four things, or it is not an objection:
+
+- **Candidate** — which one it hits, or `cross-cutting`
+- **Condition** — the circumstance under which it actually bites
+- **Bearer** — who pays, named from this closed list and no other: `end user`, `operator`,
+  `external consumer`, `implementer`, `maintainer`. Dedupe and ranking both key on this field, so
+  free-text bearers make both unstable
+- **Severity** — `Blocking` (rules the candidate out; cannot work, or the cost is unrecoverable),
+  `Material` (candidate survives, trade-off gets worse), `Minor` (worth knowing, does not move the
+  ranking)
+
+An objection missing **both** a condition and a bearer is a **preference**: reported in its own
+section, ranking nothing. Missing **one** of the two is an incomplete objection, not a preference —
+supply the missing half if the candidate text supports it, and drop it if it does not.
+
+`Blocking` requires a named bearer. A `Blocking` objection without one becomes `Material`, because an
+unrecoverable cost nobody bears is not a reason to rule a candidate out.
+
+## Phase 5: Consolidate and Verify
+
+Critics over-report, over-rate, and file one insight three times. Cut that down first, then verify —
+a board of six with nothing between an opinion and the report is six unchecked opinions.
+
+**Consolidate:**
+
+1. **Kill non-objections.** No named condition and no named bearer is a preference, not an objection
+   — move it. An objection whose evidence quotes nothing from the frame or the candidate is an
+   impression; drop it.
+2. **Kill unproven halves.** An objection pairing a demonstrated claim with one nobody could
+   demonstrate ships as the demonstrated claim alone. The weakest claim sets the credibility of the
+   whole objection.
+3. **Dedupe.** Two critics hitting the same candidate with the same objection is **one** objection at
+   the higher severity. Independent corroboration is a strong signal — say so, and never let it look
+   like two problems.
+4. **Cluster.** If one change to a candidate answers several objections, report the root and nest the
+   rest beneath it.
+5. **Separate cross-cutting from discriminating.** Cross-cutting objections belong in the framing
+   section — they say something about the problem, not about the choice. Peregrinus's Section 3
+   observations join them here.
+6. **Keep what you killed.** Pass the drops from steps 1 and 2 into verification marked `dropped`.
+   Verification rules on them too, and a confirmed drop is worth more than an assumed one — the
+   lenses sometimes find the stated reason for dropping was wrong.
+
+**Verify:** dispatch the lenses from `references/verification-prompt.md`, all at once, one per lens.
+Replace `{{LENS}}` with the lens name, `{{FRAME}}` with the Phase 1 frame, `{{CANDIDATES}}` with the
+assembled set, and `{{OBJECTIONS}}` with the consolidated objections plus the drops — a lens told to
+quote the candidate and judge against the frame's constraints needs all three in its prompt. Every
+lens defaults to refuting what it cannot demonstrate, and each rules only within its own verdict
+vocabulary.
+
+| Lens | Question |
+| ---- | -------- |
+| `premise` | Is this objection about what the candidate actually proposes, or an invented version of it? Quote the candidate. |
+| `bite` | Under what condition does it bite, and who pays? No condition and no bearer means it is a preference. |
+| `escapability` | Can the candidate absorb this cheaply? An objection with a cheap fix is a design note, not a reason to rule a candidate out. |
+
+**Merge rule.** An objection dies when `premise` shows it attacks something the candidate does not
+propose, or when `bite` can establish neither a reachable condition nor an exposed bearer. Those two
+lenses are the only ones that refute.
+
+`escapability` never kills an objection. It demotes one to a **design note** on its candidate, along
+with the specific adjustment that answers it. A design note does not rank, which means escapability
+is the one lens that can keep a `Blocking` objection from ruling a candidate out — so it must state
+the adjustment, and the report must carry it. An adjusted candidate is ranked as adjusted, and the
+adjustment is named.
+
+**Verification is not a downgrade pass.** An objection that arrives reasoned and leaves demonstrated
+should come out *sharper*. A verify phase whose ratings only ever fall is miscalibrated. Verify the
+reasoned ones hardest, and anything a critic rated confidently without evidence.
+
+## Phase 6: Synthesize
+
+Read `references/synthesis-guide.md` and follow it. It covers ranking the candidates, choosing the
+recommendation, when to override the board, and the report format.
+
+Before presenting, judge the board against your own broader context: dismiss what is wrong or
+irrelevant, demote what is correct but insignificant, promote what matches a concern you already had,
+and note the reasoning for any override. You have context no seat had — use it, and say when you did.
 
 ## Edge Cases
 
-- **Codex not installed**: script writes skip message to output file — proceed with remaining reviewers
-- **Codex timeout (600s default)**: script writes timeout message — proceed with remaining reviewers. Pass custom timeout as third argument to the script.
-- **Subagent failure**: note in report header, continue with available results
-- **Empty context**: if no review target can be identified, tell the user and stop
-- **No findings**: if all reviewers return "No findings", report that — it's a valid outcome
-- **Focus area specified**: launch only the reviewers for that focus, adjust report header
-- **No optional subagents selected**: core-only review is valid — report still follows standard format
-- **Scrutator finds no state**: if review content has no meaningful state, Scrutator returns early — this is fine
-- **Novator finds no decisions to challenge**: Novator returns early — this is fine
-- **Brainstorm with existing proposal**: if `brainstorm` is explicit but content is a finished plan, warn user but proceed — treat the plan as problem space
-- **Novator fails in Phase 1**: cannot continue brainstorm — report failure, suggest re-running or falling back to review mode
-- **All Phase 2 fail**: present Novator's raw output with a note that critic validation was incomplete
-- **Single generator**: Novator is the sole Phase 1 generator. If it misses an approach, Phase 2 critics cannot introduce fundamentally new alternatives. This is a known v1 limitation — re-run with different framing if the approaches feel narrow.
-- **Auto-detection ambiguity**: default to review mode when uncertain
+- **No external agent installed** — Peregrinus is skipped, the report says so. Never retry.
+- **`outsider` itself not installed** — a different failure with the same symptom, and a real one:
+  consilium ships in the review bundle while `outsider` ships in the assist bundle, so a host with
+  only one of them installed has a core seat that cannot exist. Say which is missing, name the other
+  bundle, and run the board without that seat.
+- **Peregrinus times out** — note it and move on. If it timed out at 300s, the timeout was not passed.
+- **Peregrinus ran unbriefed** — if its answer has none of the sections its prompt asks for, the
+  preamble did not reach it. Discard the output rather than mapping it; an unbriefed answer looks like
+  a candidate and is not one.
+- **A seat fails** — note it in the report header and continue with what returned.
+- **Only one candidate survives Phase 3** — valid, and worth saying plainly: report it as a decision
+  with no live alternative, and say what was rejected and why.
+- **All candidates carry a Blocking objection** — the honest report. Say the frame may be wrong and
+  hand back the cross-cutting objections rather than picking a least-bad candidate.
+- **The problem cannot be stated as a decision** — stop and say so. Do not invent a decision.
+- **No objections survive verification** — a valid outcome. Report the ranking on trade-offs alone
+  and say the board found nothing disqualifying.
+- **A finished plan with no open question** — it becomes candidate A and the board still generates
+  alternatives. If it wins, that is the useful answer.
+- **A diff was passed instead of a decision** — say what this skill is for, point at
+  `changes-review`, and stop.
+- **Every candidate came from one generator** — say so in the header. A single-generator run cannot
+  show the design space was explored. Prefer selecting Librarius to avoid it, and re-run with a
+  different frame if the candidates still feel narrow.
+- **Only one critic ran** — allowed only for small, cheap-to-undo candidates, and the report says the
+  board had one critic. Otherwise select Scrutator or Censor in Phase 3 and dispatch it.
 
 ## Rules
 
-- **Parallel execution**: always launch core + selected optional reviewers in a single message
-- **Autonomous**: do not ask the user questions during the review — resolve ambiguity yourself
-- **Evidence required**: no finding survives without specific evidence
-- **Temp files**: session-scoped files in `<TMP>/consilium-${CLAUDE_SESSION_ID}-*` are left for OS cleanup — do not delete manually
-- **No modifications**: this is review only — never modify the reviewed content
-- **Honest synthesis**: disagree with reviewers when your broader conversation context warrants it
+- **Concurrent dispatch**: all generators at once, then all critics at once. Never serialize what can
+  run in parallel, and never let one seat see another's output within a phase.
+- **Autonomous**: do not ask the user questions mid-run — resolve ambiguity yourself and say how.
+- **Every objection carries a condition and a bearer**, the bearer drawn from the closed list. One
+  missing both is a preference and ranks nothing; one missing either is incomplete and is completed or
+  dropped.
+- **No modifications**: this board reads and reasons. It never edits the thing it examines.
+- **Name the agent that answered** for Peregrinus, and say which kind of diversity the run got.
+- **Honest synthesis**: disagree with the board when your broader context warrants it, and say so.
 
 ## Keywords
 
-consilium, critical review, stress-test, validate plan, think hard, ultrathink, review board, second opinion, devil's advocate, sanity check, PRD review, architecture review, brainstorm, how to, explore approaches, solution design, what's the best way
+consilium, approach board, how should we, what are the options, best way to, explore approaches,
+solution design, design space, alternatives, trade-offs, think hard, ultrathink, stress-test this
+plan, is this the right approach, what if we did it differently, architecture decision, PRD review,
+second opinion, devil's advocate, prior art, blast radius, lock-in

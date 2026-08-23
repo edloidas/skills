@@ -245,7 +245,7 @@ Conflict resolution, commit summaries, quick commits, and findings fixes.
 
 ### Review
 
-Code review, cleanup, critical review board, and quality improvement skills.
+Code review, cleanup, approach boards, and quality improvement skills.
 
 `changes-review` attacks a diff — parallel reviewers on different models, each blind to the
 implementer's reasoning, then a verification round that re-attacks the findings before you see
@@ -255,11 +255,18 @@ When the diff touches a stack one of the audit skills knows deeply, `changes-rev
 a lens — `react-audit` for React files, `three-audit` for Three.js and R3F — so a general reviewer
 does not have to carry a stack-specific failure catalog. Both stay directly invocable on their own.
 
+`consilium` is not a review skill. It takes a problem or a decision, not a diff: three seats generate
+candidate approaches — one of them an agent outside this process, with none of the conversation's
+context — and three attack the candidate set comparatively, then the surviving objections are verified
+before anything is ranked. An approach already on the table enters as one candidate among several
+rather than as the subject of an audit. It is the most expensive skill in the collection; spend it on
+decisions that are expensive to reverse.
+
 | Skill | Description | Agent |
 | ----- | ----------- | ----- |
 | [changes-review](./review/skills/changes-review/) | Parallel cold reviewers that hunt bugs and requirement gaps, then verify them — finds, never fixes | All |
 | [code-cleanup](./review/skills/code-cleanup/) | Trim AI comment noise, apply project conventions, simplify correct code | All |
-| [consilium](./review/skills/consilium/) | Critical review board — up to 6 reviewers (2 core + 4 on-demand) | Claude |
+| [consilium](./review/skills/consilium/) | Approach board — generate candidate approaches, attack them comparatively, recommend one | All |
 | [pr-feedback](./review/skills/pr-feedback/) | Analyze PR review comments — triage into fix/skip with reasoning | All |
 | [code-to-spec](./review/skills/code-to-spec/) | Extract a behavioral spec from a codebase (1 file up to 500+ files) | Claude |
 
