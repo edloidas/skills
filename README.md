@@ -219,14 +219,18 @@ In the **Agent** column, `All` means Claude Code, Codex, OpenCode, and pi.
 
 ### Plan
 
-Issue drafting, analysis, triage, and full issue lifecycle skills.
+Issue drafting, analysis, and the full issue lifecycle.
+
+`issue-flow` owns every git and GitHub write in the pipeline — picking the next issue,
+creating it, branching, snapshots, commits, squashing, pushes, PRs, merges. Skills that
+orchestrate the pipeline (`solve-issue`) delegate those actions to it instead of
+reimplementing them, so the commit subject format and the squash rules live in one place.
 
 | Skill | Description | Agent |
 | ----- | ----------- | ----- |
 | [issue-writer](./plan/skills/issue-writer/) | Draft and update well-structured GitHub issues | All |
 | [issue-analyze](./plan/skills/issue-analyze/) | Analyze issue scope and produce an implementation task list | All |
-| [next-issue](./plan/skills/next-issue/) | Find the most relevant next GitHub issue to work on | All |
-| [issue-flow](./plan/skills/issue-flow/) | Full issue lifecycle: create, branch, commit, push, PR, merge | Claude |
+| [issue-flow](./plan/skills/issue-flow/) | Full issue lifecycle: pick, create, branch, commit, push, PR, merge | All |
 
 ### Build
 
@@ -336,7 +340,7 @@ End-to-end workflows that orchestrate multiple skills into a single command.
 
 | Skill | Description | Agent |
 | ----- | ----------- | ----- |
-| [solve-issue](./workflow/skills/solve-issue/) | Full issue workflow: analyze, branch, plan, implement, verify, commit, push/PR/merge | Claude |
+| [solve-issue](./workflow/skills/solve-issue/) | Full issue workflow: analyze, plan, implement, verify, review, then ship via `issue-flow` | All |
 
 ## Skill Structure
 

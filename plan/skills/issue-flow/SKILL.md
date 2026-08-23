@@ -1,13 +1,15 @@
 ---
 name: issue-flow
 description: >
-  Full GitHub issue lifecycle: create issue, branch, commit, push, PR, merge.
-  Handles project board integration, base branch detection (main/master/epic-*),
-  and compact step reports. Use when asked to create issues, start work on issues,
-  create PRs, push changes, or merge PRs. Supports entering at any step.
+  Full GitHub issue lifecycle: pick an issue, create issue, branch, commit,
+  squash, push, PR, merge. Owns every git and gh write in the pipeline. Handles
+  project board integration, base branch detection (main/master/epic-*), and
+  compact step reports. Use when asked which issue to work on next, or to create
+  issues, start work on issues, commit, create PRs, push changes, or merge PRs.
+  Supports entering at any step.
 license: MIT
-compatibility: Claude Code
-allowed-tools: Bash(gh:*) Bash(git:*) Bash(bash:*) Bash(mktemp:*) Read Write Glob Grep AskUserQuestion
+compatibility: Claude Code, Codex, OpenCode, Pi
+allowed-tools: Bash(gh:*) Bash(git:*) Bash(bash:*) Bash(mktemp:*) Read Write Glob Grep Skill AskUserQuestion
 argument-hint: "[issue-number or description]"
 metadata:
   author: edloidas
@@ -15,7 +17,9 @@ metadata:
 
 # Issue Flow
 
-Manages the full GitHub issue lifecycle: issue → branch → commits → PR → merge → close. Supports entering at any step and advancing forward. Reads the target repo's CLAUDE.md for project-specific conventions.
+Manages the full GitHub issue lifecycle: select → issue → branch → commits → PR → merge → close. Supports entering at any step and advancing forward. Reads the target repo's CLAUDE.md for project-specific conventions.
+
+This skill owns **every git and `gh` write** in the issue pipeline — branch creation, snapshots, commits, squashing, pushes, PRs, merges — plus issue selection. Skills that orchestrate the pipeline (`solve-issue`) delegate those actions here rather than reimplementing them, so the commit subject format and the squash rules exist in exactly one place.
 
 ## Bundled Scripts
 
@@ -69,6 +73,8 @@ Determine entry step from user intent, check prerequisites, then proceed forward
 
 | User intent                          | Entry step | Prerequisite             |
 | ------------------------------------ | ---------- | ------------------------ |
+| "what's next", "pick an issue", "which issue" | Step 0 | gh authenticated       |
+| Work intent with no issue number given | Step 0  | gh authenticated         |
 | No arguments / empty invocation      | Step 1     | Staged or changed files  |
 | "create issue", "new issue"          | Step 1     | gh authenticated         |
 | "create issue linked to #N", "create sub-issue of #N" | Step 1 + Project Inheritance | Parent #N exists |
@@ -76,6 +82,7 @@ Determine entry step from user intent, check prerequisites, then proceed forward
 | "X blocks #N", "block #N with #M", "unblock #N" | Blocked-by | Both issues exist |
 | "start work on #N", "branch for #N"  | Step 2     | Issue exists             |
 | "commit", "commit changes"           | Step 3     | On issue-* branch        |
+| "snapshot", "wip snapshot"           | Step 3 snapshot | Dirty tree        |
 | "push", "push changes"               | Step 4     | Commits ahead of remote  |
 | "create PR", "open PR"               | Step 5     | Branch pushed            |
 | "merge", "merge PR"                  | Step 6     | PR exists                |
@@ -101,9 +108,15 @@ Read the target repo's CLAUDE.md for project-specific formatting. Use these defa
 
 Common types: `feat`, `fix`, `docs`, `chore`, `refactor`, `test`, `style`, `ci`
 
+### Asking the User
+
+Every question in this skill is written as `AskUserQuestion` options. Use that tool where the host offers it, or the host's nearest structured-choice equivalent.
+
+Where the host has neither, ask the same question in normal chat as a numbered list of 2–5 options — recommended option first, one short line of description each — and wait for the user to reply with a number. Never silently pick for the user at a gate that changes git or GitHub state.
+
 ### Skip Interactive Prompts
 
-When the user explicitly provides values for labels, assignee, project, or other options in their request, use those values directly — do NOT ask via `AskUserQuestion` to confirm what was already stated. Only ask about fields the user left unspecified.
+When the user explicitly provides values for labels, assignee, project, or other options in their request, use those values directly — do NOT ask to confirm what was already stated. Only ask about fields the user left unspecified.
 
 ### Assignment Defaults
 
@@ -134,6 +147,33 @@ bash "<skill-dir>/scripts/repo-ownership.sh"
 In every case the fallback is the current user: if the user skips the question, the prompt cannot be shown, or `repo-ownership.sh` fails, assign `@me` rather than nothing.
 
 An explicit instruction always wins — "assign to @octocat", "leave it unassigned", or a reviewer/assignee rule in the target repo's CLAUDE.md overrides everything above, in personal repos too.
+
+## Step 0: Select Issue
+
+Use when no issue number was given and the intent is to work on something — "what's
+next", "pick an issue", or a bare work intent with nothing to work on named.
+
+Validate the environment and resolve the repo first:
+
+```bash
+bash "<skill-dir>/scripts/check-env.sh"
+gh repo view --json nameWithOwner --jq '.nameWithOwner'
+gh api user --jq .login
+```
+
+If `gh repo view` fails, stop: `Not inside a GitHub repository.`
+
+Then run the ranking pipeline in `references/issue-selection.md`. It reads local git
+state, plan files, open PRs, and the backlog, ranks candidates into six tiers, and
+presents up to four picks via `AskUserQuestion`. Every command it runs is a read — Step
+0 never writes.
+
+On selection it hands off to the `issue-analyze` skill for the full implementation
+analysis. Continue to Step 2 with the selected number when the flow is meant to keep
+going; stop after the analysis when the user only asked what to work on next.
+
+If the user picks `None`, stop — do not fall through to Step 1 and create an issue
+nobody asked for.
 
 ## Step 1: Create Issue
 
@@ -244,7 +284,7 @@ Assign via `--milestone "<title>"` in the `gh issue create` command.
 
 ### Create
 
-Use the `<TMPDIR>` from the parallel setup batch. Use the **Write tool** to save the issue body to `<TMPDIR>/body.md`, then create the issue with `--body-file`:
+Use the `<TMPDIR>` from the parallel setup batch. Write the issue body to `<TMPDIR>/body.md` with the host's file-write tool, then create the issue with `--body-file`:
 
 ```bash
 gh issue create --title "<title>" --body-file <TMPDIR>/body.md --label "<label>" --assignee "<assignee>" [--milestone "<name>"]
@@ -254,7 +294,7 @@ When creating multiple issues, use unique filenames per issue: `<TMPDIR>/<slug>-
 
 **Important:** Replace `<TMPDIR>` with the literal absolute path in all commands (e.g. `--body-file /var/folders/.../issue-flow-AbCdEf/body.md`). Do NOT set `TMPDIR=` as an env var prefix on commands — that changes the command pattern and triggers permission prompts.
 
-Do NOT use `--body "$(cat <<'EOF'...)"` — the `$()` command substitution triggers a Claude Code safety prompt every time.
+Do NOT use `--body "$(cat <<'EOF'...)"` — the `$()` command substitution makes the command unmatchable against any pre-approval rule, so hosts that gate shell commands re-prompt every time.
 
 Print the Step 1 report (see `references/report-format.md`).
 
@@ -400,26 +440,101 @@ Print the Step 2 report.
 
 ## Step 3: Commit
 
+**This step owns the commit subject format, the commit body, and the squash rules for
+the whole pipeline.** Nothing else defines them — callers delegate here.
+
 ### Subject
 
-Use `<Issue Title> #<number>` as the commit subject. The issue title is already in conventional commit format from Step 1.
+Use `<Issue Title> #<number>` as the commit subject. The issue title is already in conventional commit format from Step 1 or from the `issue-analyze` skill.
 
 If there is no linked issue (e.g., entered at Step 3 directly), use the repo's CLAUDE.md commit format or fall back to `<type>: <description>`.
 
+No `wip:` subject may survive into the final history.
+
 ### Body
 
-Invoke `/commit-summary` via the Skill tool to generate the commit body. If `/commit-summary` is not available, generate inline: past-tense summary, one line per logical change, 2-6 lines, backticks for code references.
+Invoke the `commit-summary` skill to generate the commit body. If the host cannot invoke another skill, or `commit-summary` is not installed, generate the body inline: past-tense summary, one line per logical change, 2-6 lines, backticks for code references.
+
+When the caller supplies design rationale pulled out of source comments (the `code-cleanup` skill produces this), append it to the body — that text is the reason the comment pass could delete it.
+
+### Consolidate
+
+The branch must end this step at **exactly one commit**, and this section owns the only gate that can decide otherwise.
+
+#### Resolve the fork point
+
+Count and reset must use the **same** ref, and it must be an ancestor of `HEAD`. Resolve it once:
+
+```bash
+base=$(bash "<skill-dir>/scripts/detect-base.sh" 2>/dev/null | tail -n1)
+baseref=$(git rev-parse --verify --quiet "origin/$base" || git rev-parse --verify --quiet "$base")
+fork=$(git merge-base "$baseref" HEAD)
+git log "$fork"..HEAD --oneline
+```
+
+**Never reset to `origin/<base>`, and never to a branch name.** `origin/<base>` moves whenever anything fetches, and `detect-base.sh` fetches on its own. Reset to it and the new commit's parent is *newer* than the point the branch was cut from, so the commit silently reverts every upstream change made since — and Step 5 force-pushes that, and Step 6 merges it. `$fork` is an ancestor of `HEAD` by construction, so it cannot have that effect.
+
+#### Choose the action
+
+| Commits ahead of `$fork` | Action |
+| ------------------------ | ------ |
+| **0** | Nothing to unwind — go to **Execute**. |
+| **1**, subject already canonical | Keep the commit. If the tree is dirty (a caller's comment trim or cruft deletion usually leaves it that way), stage the remaining edits and rewrite the message from **Subject** and **Body**: `git commit --amend -m "<subject>" -m "<body>"`. Do **not** use `--amend --no-edit` — it keeps the old message and discards the body this step just generated, including any rationale the caller passed in. |
+| **1**, a `wip:` snapshot | `git reset --soft "$fork"`, then **Execute**. |
+| **2+**, one shared subject, or any `wip:` among them | `git reset --soft "$fork"`, then **Execute** — one commit with the combined changes. |
+| **2+**, genuinely different subjects | Ask before rewriting deliberate history: option 1 `Squash into one commit` `(Recommended)`, option 2 `Keep as-is`. Squash → `git reset --soft "$fork"`, then **Execute**. Keep → skip **Execute** and report the commits as they stand; this is the one outcome that leaves more than one commit. |
+
+A caller that asked for a single commit (`"commit #<N>"` from an orchestrating skill) has already answered that question — squash without prompting.
+
+#### Check the index before committing
+
+`git reset --soft` leaves **the entire difference between `$fork` and your tree staged** — every file from every commit it unwound, including anything a `wip:` snapshot swept in. Naming files in **Execute** *adds* to that index; it does not narrow it. So after any reset, read the index and remove what must not ship:
+
+```bash
+git diff --cached --name-only
+git restore --staged <path>      # per file that does not belong in the commit
+```
+
+Deleting the file from disk is not enough once it is staged — unstage it. Untracked files are the one thing the reset does not capture; they stay untracked unless something adds them.
 
 ### Execute
 
-Stage relevant files (prefer specific files over `git add -A`), then commit:
+Stage what belongs in the commit, then commit:
 
 ```bash
 git add <files>
 git commit -m "<subject>" -m "<body>"
 ```
 
+Two different states reach this point, and the staging rule differs:
+
+- **No reset happened** (the `0` row). The index starts empty, so `git add <files>` fully determines the commit. Prefer naming files over `git add -A` — here it genuinely is the check that keeps scratch files out.
+- **A reset happened.** The index already holds everything Consolidate unwound. Naming files cannot narrow it, so Consolidate's index check is what keeps scratch out; `git add` here is only for files that were never committed.
+
+Finish with `git status --short` showing nothing you meant to commit. Untracked files you deliberately left out may still be listed — that is expected, and Step 3 has no authority to delete them.
+
 Print the Step 3 report.
+
+### Snapshot Mode
+
+Entered on intent "snapshot" — a caller needs the working tree frozen into a commit
+without finishing the work. Used to give reviewers a stable diff, or to checkpoint
+during a long implementation.
+
+```bash
+git status --short          # confirm nothing scratch is about to be staged
+git add -A && git commit -m "wip: snapshot"
+```
+
+Snapshot mode skips the Subject, Body, and Consolidate sections entirely:
+
+- The subject is content-free. A snapshot message describing the work leaks the
+  implementer's reasoning into a place reviewers can read.
+- No `commit-summary` call — there is no body.
+- No report. Print one line: `Snapshot: <short-sha>`.
+
+Snapshots are not final commits. A later Step 3 run squashes them away via
+**Consolidate**.
 
 ## Step 4: Push
 
@@ -456,15 +571,21 @@ Run `detect-base.sh` to determine the PR base.
 
 ### Pre-PR: Squash Commits
 
-Check commit history: `git log <base>..HEAD --oneline`.
+Apply **Step 3 → Consolidate** as-is. It owns the fork point, the count, the squash rules, and the one gate that may leave several commits — including the case where the single commit on the branch is a `wip:` snapshot, which must not reach a PR title. Do not restate any of those rules here; a second copy is how the two drift.
 
-- **Single commit**: No action needed.
-- **Multiple commits, same subject**: Squash silently — `git reset --soft <base>` → `git commit` with merged body → `git push --force-with-lease`.
-- **Multiple commits, different subjects**: `AskUserQuestion` with options:
-  1. "Squash all into one commit" — after squash: `git reset --soft <base>` → `git commit` with user message → `git push --force-with-lease`
-  2. "Keep as-is" (Recommended)
+The only thing this step adds is that the branch is already on the remote, so the rewrite has to be force-pushed. Capture the remote tip **before** consolidating and lease against it explicitly:
 
-This must happen before PR body generation since squashing changes the commit log.
+```bash
+before=$(git rev-parse "origin/issue-<number>")
+# ... apply Step 3 -> Consolidate ...
+git push --force-with-lease="issue-<number>:$before"
+```
+
+A bare `git push --force-with-lease` leases against the remote-tracking ref, which any `git fetch` silently refreshes — and `detect-base.sh` fetches inside Consolidate. That turns the lease into a no-op and lets the push overwrite a commit someone else added to the branch. Pinning the expected SHA taken before the fetch is what makes the lease mean anything.
+
+If the push is rejected, the remote moved: fetch, rebase onto the new tip, and re-run rather than escalating to `--force`.
+
+This must happen before PR body generation, since consolidating changes the commit log.
 
 ### Title and Body
 
@@ -522,7 +643,7 @@ There is no branch of this step that produces zero assignees. If a reviewer prom
 
 ### Create
 
-Use the **Write tool** to save the PR body to `<TMPDIR>/pr-body.md`, then create the PR with `--body-file`. Replace `<TMPDIR>` with the literal absolute path — do NOT use `TMPDIR=` as an env var prefix.
+Write the PR body to `<TMPDIR>/pr-body.md` with the host's file-write tool, then create the PR with `--body-file`. Replace `<TMPDIR>` with the literal absolute path — do NOT use `TMPDIR=` as an env var prefix.
 
 With a reviewer (pass `--assignee` once per assignee):
 
@@ -536,7 +657,7 @@ Without a reviewer (or self-review):
 gh pr create --title "<title>" --body-file <TMPDIR>/pr-body.md --base <base> --assignee @me
 ```
 
-Do NOT use `--body "$(cat <<'EOF'...)"` — the `$()` command substitution triggers a Claude Code safety prompt every time.
+Do NOT use `--body "$(cat <<'EOF'...)"` — the `$()` command substitution makes the command unmatchable against any pre-approval rule, so hosts that gate shell commands re-prompt every time.
 
 Update project status to "Review":
 
@@ -668,10 +789,11 @@ Print the Step 6 merged report.
 - **CI checks failing**: Report failed checks, do not attempt merge.
 - **No CLAUDE.md**: Use the default conventions listed above.
 - **No remote**: Stop at push step, tell user to add a remote.
+- **Host cannot show structured choices**: Fall back to a numbered list in chat per **### Asking the User**. Do not skip the question.
 
 ## Integration
 
-- For commit message body → invoke `/commit-summary` via Skill tool; fall back to inline if unavailable
+- For commit message body → invoke the `commit-summary` skill; fall back to inline if the host cannot chain skills
 - For project token setup → see `references/project-integration.md`
 - For report templates → see `references/report-format.md`
 - For sub-issues and blocked-by relationships → see `references/github-relationships.md`

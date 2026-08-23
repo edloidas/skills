@@ -21,9 +21,9 @@
       "group": "plan",
       "name": "edloidas-plan",
       "displayName": "Edloidas Plan",
-      "description": "A Codex-safe planning bundle for issue drafting, scope analysis, and backlog triage.",
-      "shortDescription": "Issue drafting, scope analysis, and backlog triage.",
-      "longDescription": "Install the planning bundle from edloidas/skills for drafting GitHub issues, analyzing issue scope, and triaging the backlog from Codex.",
+      "description": "A Codex-safe planning bundle for issue drafting, scope analysis, backlog triage, and the full issue lifecycle.",
+      "shortDescription": "Issue drafting, scope analysis, triage, and lifecycle.",
+      "longDescription": "Install the planning bundle from edloidas/skills for drafting GitHub issues, analyzing issue scope, picking what to work on next, and driving the branch-commit-PR-merge lifecycle from Codex.",
       "category": "Coding",
       "websiteURL": "https://github.com/edloidas/skills",
       "keywords": [
@@ -32,12 +32,13 @@
         "plan",
         "issues",
         "github",
-        "triage"
+        "triage",
+        "lifecycle"
       ],
       "skills": [
         "plan/skills/issue-writer",
         "plan/skills/issue-analyze",
-        "plan/skills/next-issue"
+        "plan/skills/issue-flow"
       ]
     },
     {
@@ -237,6 +238,27 @@
       ],
       "skills": [
         "obsidian/skills/working-docs"
+      ]
+    },
+    {
+      "group": "workflow",
+      "name": "edloidas-workflow",
+      "displayName": "Edloidas Workflow",
+      "description": "A Codex-safe end-to-end workflow bundle that takes a GitHub issue from analysis to merged.",
+      "shortDescription": "End-to-end issue workflow in one command.",
+      "longDescription": "Install the workflow bundle from edloidas/skills to take a GitHub issue end to end from Codex \u2014 analyze, plan, implement, verify, adversarially review, clean up, commit, and ship.",
+      "category": "Coding",
+      "websiteURL": "https://github.com/edloidas/skills",
+      "keywords": [
+        "skills",
+        "codex",
+        "workflow",
+        "issues",
+        "github",
+        "automation"
+      ],
+      "skills": [
+        "workflow/skills/solve-issue"
       ]
     }
   ]
