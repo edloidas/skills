@@ -1,11 +1,10 @@
 ---
 name: bro
 description: >
-  Say the last message again, straight. Reworks the previous answer — or the
-  connected thread of answers — into something short, structured, and skimmable:
-  bottom line first, only what matters, concrete next steps. Use when the user
-  runs /bro, or asks to say that again simply, cut the fluff, or explain it like
-  they have no time.
+  Say the last message again, straight. Reworks the previous answer — or the connected thread of
+  answers — into something shorter and easier to act on: the bottom line first, only what matters,
+  and anything you have to decide at the end. Use when the user runs /bro, or asks to say that again
+  simply, cut the fluff, or put it in plain words.
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
 disable-model-invocation: true
@@ -16,55 +15,52 @@ metadata:
 
 # Bro
 
-Say the last thing again, but straight.
+Say the last thing again, straight. A rewrite, not a second attempt.
 
-## What to rework
+Rework the last assistant message, or the last few when they are one continuous thread — a plan, a
+diagnosis, a set of options. `$ARGUMENTS` narrows it, as in `/bro just the fix`.
 
-The last assistant message. If the last few messages are one continuous thread —
-a plan, a diagnosis, a set of options — cover the whole thread as one piece.
+**No tools** — everything needed is in the conversation. **No new work** — do not investigate,
+revisit the conclusion, or fix anything. **No preamble** — the output is the rework. **Shorter than
+the original**, always; if it is not, cut more. Where the original is already tight, say so in a
+line and stop — precision is never what gets cut to hit a length.
 
-`$ARGUMENTS`, when present, narrows it: `/bro just the fix`.
+## Language
 
-## Hard rules
-
-- **No tools.** Do not read files, run commands, search, or verify anything. It
-  is all already in the conversation.
-- **No new work.** Do not investigate further, revisit the conclusion, or fix
-  anything. This is a rewrite, not a second attempt.
-- **No preamble.** Never open with "here's a simpler version". The output *is*
-  the rework.
-- **Shorter than the original.** Always. If it is not, cut more.
+Open with the sentence the reader would keep if they kept only one. Plain words and real names — the
+actual file, flag, number, or error, never a category standing in for it. Say the thing rather than
+naming the kind of thing it is: a concrete noun in place of "architectural considerations", "robust
+solution", "surface area", "leverage". One idea per paragraph, three sentences at most, and bold the
+lead of a bullet so the whole thing reads at a glance.
 
 ## Shape
 
-1. **Bottom line** — one sentence, first on the screen. What happened, or what
-   is true now.
-2. **What matters** — two to five bullets. One fact each, bolded lead, plain
-   words.
-3. **Next** — numbered steps, each one a thing to actually do. Drop this section
-   entirely when there is nothing to do; never invent filler steps.
+Bottom line first, anything to decide last, and between them whatever the content actually has.
+Include a part only when there is something to put in it.
 
-## Keep
+| The original had | The rework has |
+| --- | --- |
+| A result, a diagnosis, a state of the world | One sentence on what is true now |
+| Several facts that each stand alone | One short bullet per fact |
+| One thing going on | Prose. Two bullets is not a list |
+| Steps that happen in order | A numbered list, each step a thing to actually do |
+| Something genuinely hard | Two plain sentences and one concrete example, then move on |
+| A next step you would take | One line at the end naming it |
+| A choice only the user can make | The decision block, last |
 
-- Decisions, each with its one-line reason
-- Numbers, filenames, commands, versions, error codes
-- Anything that blocks, costs, or breaks if ignored
-- Open questions that need an answer
+## The Decision Block
 
-## Cut
+Anything the user has to decide goes at the end, never buried mid-answer and never mixed in with the
+facts. One numbered question per decision, each carrying your own lean so agreeing costs one word.
+Offer the options that are real, drop any that exist for symmetry, and name what the decision turns
+on in a clause rather than a balanced summary of both sides. Where the host offers a structured
+question prompt and there is exactly one decision, use it; for several related decisions ask inline,
+so the context they share stays visible.
 
-- Process narration — "I checked X, then Y, then Z"
-- Alternatives already rejected
-- Caveats that do not change what the user does
-- Hedges, apologies, restated context
-- Anything already visible in the output or diff above
+## Keep And Cut
 
-## Explaining
+Keep decisions already made with their one-line reason, numbers, filenames, commands, versions,
+error codes, anything that blocks or breaks if ignored, and questions still open.
 
-Adding new text is fine when something is genuinely hard. Two sentences in plain
-words plus one concrete example, then move on. Never a tutorial.
-
-## Formatting
-
-Bold the lead of every bullet so the whole thing reads at a glance. Backticks
-for code, paths, and flags. A paragraph longer than three sentences is a bug.
+Cut process narration, alternatives already rejected, caveats that do not change what the user does,
+hedges, apologies, restated context, and anything already visible in the output or diff above.

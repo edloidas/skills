@@ -1,6 +1,6 @@
 interface:
   display_name: "Bro"
-  short_description: "Say the last message again, straight — short, structured, skimmable"
-  default_prompt: "Use $bro to rework the last answer into a bottom line, a few bullets of what matters, and concrete next steps."
+  short_description: "Say the last message again, straight — shorter, plainer, decision last"
+  default_prompt: "Use $bro to rework the last answer: bottom line first, only what matters, and anything I have to decide at the end."
 policy:
   allow_implicit_invocation: false
