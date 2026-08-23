@@ -1,5 +1,6 @@
 interface:
   display_name: "React Audit"
-  short_description: "Review React code for effects misuse, conventions, and patterns"
+  short_description: "Find React problems linters miss — effects, memoization, state, size"
+  default_prompt: "Audit the React files I changed for effect misuse, memoization problems, state architecture, and convention violations. Report findings, change nothing."
 policy:
   allow_implicit_invocation: true

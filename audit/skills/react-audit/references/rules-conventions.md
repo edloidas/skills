@@ -19,7 +19,9 @@ Button.displayName = BUTTON_NAME;
 
 **Variants:**
 - `memo()` — set `displayName` on the memoized result
-- `forwardRef()` — set `displayName` on the forwarded ref result
+- `forwardRef()` — set `displayName` on the forwarded ref result. On React 19 `forwardRef` is
+  deprecated and `ref` is a plain prop, so treat this variant as legacy: check it where it exists,
+  do not ask for it in new code.
 
 **Check:** For each exported `const Foo = (` or `export const Foo = React.memo(`, verify `Foo.displayName` exists in the same file.
 
@@ -81,7 +83,10 @@ Inside component functions, variables must follow this order:
 
 ## ComponentPropsWithoutRef over ComponentProps
 
-When extending native HTML element props, use `ComponentPropsWithoutRef<'element'>` (or `ComponentPropsWithRef` when forwarding refs). Never use bare `ComponentProps`.
+When extending native HTML element props, use `ComponentPropsWithoutRef<'element'>`, or
+`ComponentPropsWithRef<'element'>` when the component accepts a `ref` — which on React 19 means any
+component that takes `ref` as an ordinary prop, not just one wrapped in `forwardRef`. Never use bare
+`ComponentProps`.
 
 **Check:** Grep for `ComponentProps<` without `Without` or `With` qualifier.
 

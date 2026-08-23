@@ -247,6 +247,9 @@ Code review, cleanup, critical review board, and quality improvement skills.
 implementer's reasoning, then a verification round that re-attacks the findings before you see
 them. It finds; it never fixes and never posts. Every phase is configurable, so `pr-feedback` and
 `solve-issue` drive the same primitive. Conventions and comment noise are `code-cleanup`'s job.
+When the diff touches a stack one of the audit skills knows deeply, `changes-review` also loads it as
+a lens — `react-audit` for React files, `three-audit` for Three.js and R3F — so a general reviewer
+does not have to carry a stack-specific failure catalog. Both stay directly invocable on their own.
 
 | Skill | Description | Agent |
 | ----- | ----------- | ----- |
@@ -259,6 +262,8 @@ them. It finds; it never fixes and never posts. Every phase is configurable, so 
 ### Audit
 
 CI, script, security, skill, workspace, tsconfig, Three.js, React, and test-suite auditing skills.
+Every one of them finds and reports; none of them edits. `react-audit` and `three-audit` double as
+stack lenses for `changes-review`.
 
 | Skill | Description | Agent |
 | ----- | ----------- | ----- |
@@ -267,7 +272,7 @@ CI, script, security, skill, workspace, tsconfig, Three.js, React, and test-suit
 | [security-audit](./audit/skills/security-audit/) | Audit GitHub Actions, release config, and repo settings for supply chain | All |
 | [skill-audit](./audit/skills/skill-audit/) | Gate a skill change on discovery, instructions, context cost, portability, and safety | All |
 | [three-audit](./audit/skills/three-audit/) | Audit Three.js / React Three Fiber code for perf and best-practice issues | All |
-| [react-audit](./audit/skills/react-audit/) | Audit React code for effects misuse, conventions, and patterns | All |
+| [react-audit](./audit/skills/react-audit/) | Audit React code for effect misuse, memoization, state architecture, and conventions | All |
 | [tests-audit](./audit/skills/tests-audit/) | Audit a test suite and report keep/tighten/rewrite/delete per test | All |
 | [tsconfig-audit](./audit/skills/tsconfig-audit/) | Audit tsconfig.json against TypeScript 7 and report what to drop, add, and keep | All |
 | [workspace-audit](./audit/skills/workspace-audit/) | Analyze pnpm workspace and monorepo setup | All |
