@@ -62,7 +62,10 @@ SCALE
    | 1 | Contradictory or effectively absent. |
 
 3. CONTEXT EFFICIENCY — does the body earn its size, and is heavy material deferred?
-   Body under 500 lines / ~5000 tokens. Reference material — lookup tables, rule catalogs,
+   Body within its line budget — 500 lines / ~5000 tokens, except for the few skills with a
+   larger budgeted allowance in BODY_LINE_BUDGETS in .github/scripts/validate-skills.sh.
+   That validator fails the build on a breach, so a budgeted skill inside its allowance is
+   not a finding here. Reference material — lookup tables, rule catalogs,
    prompt templates, mappings — belongs in references/, loaded on demand, not inlined; the
    measurements give the largest inline table or code block. No nested reference chains, no
    content duplicated between SKILL.md and a reference. Length should be proportionate: a

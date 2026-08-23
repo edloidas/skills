@@ -71,6 +71,39 @@ skill_has_codex_compatibility() {
   '
 }
 
+# Body length is a context cost paid on every activation, so it is enforced here
+# rather than left to skill-audit's rubric — the repo's rule is that anything
+# mechanically checkable belongs in a validator.
+#
+# The cap is 500 lines, per CLAUDE.md. A skill that genuinely needs more gets an
+# explicit ceiling below rather than a blanket exemption, so it cannot keep growing
+# unnoticed. Adding a row is a deliberate decision that needs a reason in CLAUDE.md.
+BODY_LINE_CAP=500
+BODY_LINE_BUDGETS="plan/skills/issue-flow=1000
+workflow/skills/solve-issue=540
+plan/skills/issue-writer=530"
+
+# Lines after the closing frontmatter delimiter.
+body_line_count() {
+  awk 'BEGIN { delimiter_count = 0 }
+    $0 == "---" { delimiter_count++; next }
+    delimiter_count >= 2 { print }
+  ' "$1/SKILL.md" | wc -l | tr -d ' '
+}
+
+# The ceiling for one skill: its budgeted allowance, or the default cap.
+body_line_budget() {
+  local path="$1" row
+  while IFS= read -r row; do
+    case "$row" in
+      "$path="*) printf '%s' "${row#*=}"; return ;;
+    esac
+  done <<EOF
+$BODY_LINE_BUDGETS
+EOF
+  printf '%s' "$BODY_LINE_CAP"
+}
+
 # Reads a single frontmatter scalar, joining YAML folded/literal continuation lines
 # into one space-separated string so length caps can be measured on the real value.
 frontmatter_scalar() {
@@ -113,7 +146,7 @@ frontmatter_scalar() {
 validate_skill_content() {
   local skill_dir="$1"
   local skill_name="$2"
-  local declared_name description when_to_use combined ref
+  local declared_name description when_to_use combined ref body_lines body_budget
 
   if [ "$(head -n 1 "$skill_dir/SKILL.md")" != "---" ]; then
     error "Skill '$skill_name': SKILL.md does not open with a YAML frontmatter block"
@@ -148,6 +181,16 @@ validate_skill_content() {
     combined="$description $when_to_use"
     if [ "${#combined}" -gt 1536 ]; then
       error "Skill '$skill_name': description + when_to_use is ${#combined} chars; the discovery entry is truncated past 1536"
+    fi
+  fi
+
+  body_lines=$(body_line_count "$skill_dir")
+  body_budget=$(body_line_budget "$skill_dir")
+  if [ "$body_lines" -gt "$body_budget" ]; then
+    if [ "$body_budget" = "$BODY_LINE_CAP" ]; then
+      error "Skill '$skill_name': body is $body_lines lines; the cap is $BODY_LINE_CAP. Move reference material into references/, or add a budgeted allowance in validate-skills.sh with a reason in CLAUDE.md"
+    else
+      error "Skill '$skill_name': body is $body_lines lines; its budgeted allowance is $body_budget. Trim it, or raise the budget deliberately"
     fi
   fi
 
