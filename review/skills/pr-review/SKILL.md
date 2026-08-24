@@ -133,6 +133,12 @@ Scope: every bot claim and anything heading for `fix` or `reject`. `--full` adds
 unresolved, human claims included. Loose recommendations and other reviewers' summaries are reported
 as context and never verified.
 
+**A claim about observable output cannot be read.** Layout, rendering, wire format, exit code,
+timing, log content, a golden result — invoke `live-probe` with the claim and quote the artifact it
+returns. Where the host cannot chain skills, follow the same method inline. A claim of that kind that
+could not be observed is `discuss`, never `reject` — contradicting someone in writing on reasoning
+alone is how this skill does its only real damage.
+
 ## Phase 5: Verdict
 
 Six, replacing the old `fix` / `skip` pair:
@@ -142,11 +148,13 @@ Six, replacing the old `fix` / `skip` pair:
 | `fix` | Real, and the change is yours to make |
 | `reject` | The premise or the conclusion is false. The reply carries the evidence |
 | `already-addressed` | Handled elsewhere. `isOutdated` is the hint |
-| `discuss` | Correct, but the call belongs to a person — scope, architecture, product |
+| `discuss` | Correct, but the call belongs to a person — scope, architecture, product. Also a claim about output that could not be observed |
 | `defer` | Real, and deliberately not now |
 | `ack` | Praise or an FYI. Nothing to answer |
 
 `discuss` triggers on **authority, not difficulty**. A hard fix you are confident about is a `fix`.
+It has one other trigger: **unverifiability**. A claim about observable output that no probe could
+settle is `discuss` with the reason, never `reject` — the premise may hold and nobody checked.
 
 ## Phase 6: Fix (`--fix` only)
 
@@ -155,6 +163,10 @@ Without `--fix` nothing is edited; a `fix` verdict is reported and its thread le
 With it: one thread's finding at a time, then the project's own checks — whatever `package.json`,
 `Makefile` or CI actually runs. A fix whose checks fail is reverted, not worked around, and its
 verdict drops to `discuss` with the failure quoted. Never claim a fix that has not gone green.
+
+Green checks are not evidence a behavioral symptom is gone. Where the finding was settled by
+observation, re-observe it the same way after the fix — same rung, same artifact — before the verdict
+becomes `fix`.
 
 ## Phase 7: Speak
 

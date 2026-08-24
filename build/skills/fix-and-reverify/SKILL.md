@@ -28,9 +28,10 @@ round reviews the fix. Not the whole change again — the fix.
 That is what makes rounds affordable rather than exponential. Round 1 attacks a branch; round 3
 attacks eleven lines. The scope shrinks every round, and so does the cost.
 
-This skill **fixes and verifies**. Finding is `/changes-review`'s job and this skill calls it —
-that is the only skill it invokes, and the only one it names. Everything downstream of the loop
-(committing, squashing, pushing, publishing) belongs to whoever called it.
+This skill **fixes and verifies**. Finding is `/changes-review`'s job and this skill calls it; the
+only other skill it invokes is `live-probe`, to re-observe a behavioral finding after a fix. Both
+call sites say what to do when the skill is missing. Everything downstream of the loop (committing,
+squashing, pushing, publishing) belongs to whoever called it.
 
 Two failure modes it exists to prevent:
 
@@ -203,8 +204,23 @@ everything the change touches. A review round spent on code that does not compil
    reported-not-fixed with the failing output and move on. **Never fix around a failing check** —
    that trades one known defect for an unknown one.
 
+**Green checks are not evidence the symptom is gone.** They prove the fix did not break anything the
+project already tests, which is a different claim. Where a finding was about observable output —
+layout, rendering, wire format, exit code, timing, log content, a golden result — re-observe it the
+way it was demonstrated: invoke `live-probe` with the original claim, same rung, and compare the
+artifact against the one that established the finding. Where the host cannot chain skills, follow the
+same method inline. Three outcomes:
+
+- **The symptom is gone** → `fixed`.
+- **The symptom reproduces** → the fix did not work, and the green checks prove they do not cover
+  it. Treat it as a red check: correct the cause and re-observe, and on a second reproduction
+  revert the fix and record it as `reverted` with the artifact. Never widen a test to cover a
+  symptom the fix failed to remove.
+- **Nothing could be observed** → `held`, not `fixed`. The absence is named in the report.
+
 A repo with no checks at all: say so in the report and do not manufacture a test suite to fill the
-gap. That is scope expansion wearing a safety vest.
+gap. That is scope expansion wearing a safety vest. The same holds when nothing in the project can
+be run and observed — the finding stays `held` with the absence named.
 
 ## Phase 5: Carry the ledger
 
@@ -216,10 +232,10 @@ Every finding ends each round in exactly one state:
 | State | Meaning | Next round |
 | ----- | ------- | ---------- |
 | `fixed` | Patched, checks green | Expect it gone. If it comes back, the fix did not work — that is a live finding, not a duplicate |
-| `held` | Low confidence, unsettled | Re-checked (below) |
+| `held` | Unsettled — a low-confidence finding, or a fix whose symptom could not be re-observed | Re-checked (below) |
 | `reported` | Cleared the gate but escalated, or minor and carried | Not re-fixed, not re-reported. Recognized and skipped |
 | `dismissed` | Re-checked and still could not be demonstrated | Never raised again |
-| `reverted` | The fix broke a check twice | Reported with the output |
+| `reverted` | The fix broke a check twice, or failed to remove the symptom twice | Reported with the output |
 
 ### Re-checking held findings
 
@@ -339,6 +355,7 @@ round the stop rules already ended.
 | --------- | ------ |
 | The review skill is unavailable | With findings in context, fix them and report that no round could be verified. With none, stop |
 | No findings in context and the review returns none | Print `Nothing to fix.` and stop |
+| `live-probe` unavailable, or nothing runnable | Re-observe inline per Phase 4; failing that, `held` with the absence named |
 | Tree holds work unrelated to the review scope | Name those files before the first snapshot, then continue |
 | Snapshot fails — no repository, detached head, hooks reject it | Continue with `--no-snapshot` semantics and say so |
 | Checks red before any fix | Record the baseline, judge fixes against new failures only |

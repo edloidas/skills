@@ -10,14 +10,14 @@
 
 <p align="center">
   <img src="https://img.shields.io/github/v/tag/edloidas/skills?style=flat-square&color=FD3DB5&label=release" alt="Release">
-  <img src="https://img.shields.io/badge/skills-36-FD3DB5?style=flat-square" alt="36 skills">
+  <img src="https://img.shields.io/badge/skills-37-FD3DB5?style=flat-square" alt="37 skills">
   <img src="https://img.shields.io/badge/agents-4-FD3DB5?style=flat-square" alt="4 agents">
   <img src="https://img.shields.io/badge/license-MIT-FD3DB5?style=flat-square" alt="MIT license">
 </p>
 
 ---
 
-36 skills for planning, building, reviewing, auditing, maintaining, and shipping software —
+37 skills for planning, building, reviewing, auditing, maintaining, and shipping software —
 written once and distributed to [Claude Code](https://docs.anthropic.com/en/docs/claude-code),
 [Codex](https://developers.openai.com/codex), [OpenCode](https://opencode.ai), and
 [pi](https://pi.dev), following the [Agent Skills specification](https://agentskills.io/specification).
@@ -28,7 +28,7 @@ it. Nothing runs in the background, nothing is injected into every prompt.
 | Group | What it covers | Skills |
 | ----- | -------------- | -----: |
 | [plan](#plan) | Issue drafting, scope analysis, backlog triage, full issue lifecycle | 3 |
-| [build](#build) | Conflict resolution, commits, findings fixes | 4 |
+| [build](#build) | Conflict resolution, commits, findings fixes, live probes | 5 |
 | [review](#review) | Adversarial change review, cleanup, approach boards, PR feedback, spec extraction | 5 |
 | [audit](#audit) | CI, scripts, security, skills, workspace, tsconfig, Three.js, React, tests | 9 |
 | [maintain](#maintain) | Agent config, label and editor config sync, lint migration, repo hardening, process cleanup | 6 |
@@ -235,7 +235,7 @@ reimplementing them, so the commit subject format and the squash rules live in o
 
 ### Build
 
-Conflict resolution, commit summaries, quick commits, and findings fixes.
+Conflict resolution, commit summaries, quick commits, findings fixes, and live behavioral probes.
 
 | Skill | Description |
 | ----- | ----------- |
@@ -243,6 +243,7 @@ Conflict resolution, commit summaries, quick commits, and findings fixes.
 | [commit](./build/skills/commit/) | Fast staged-or-scoped commit with conventional message |
 | [commit-summary](./build/skills/commit-summary/) | Derive a commit message body from the code behind the change |
 | [fix-and-reverify](./build/skills/fix-and-reverify/) | Fix review findings in rounds, re-reviewing each fix |
+| [live-probe](./build/skills/live-probe/) | Settle a claim about observable behavior by running it once |
 
 ### Review
 

@@ -45,9 +45,9 @@
       "group": "build",
       "name": "edloidas-build",
       "displayName": "Edloidas Build",
-      "description": "A Codex-safe build bundle for merge-conflict resolution, commit creation, and findings triage.",
-      "shortDescription": "Conflict resolution, commits, and findings triage.",
-      "longDescription": "Install the build bundle from edloidas/skills for semi-automatic merge-conflict resolution, conventional commits, commit message summaries, and working through review findings from Codex.",
+      "description": "A Codex-safe build bundle for merge-conflict resolution, commit creation, findings triage, and live behavioral probes.",
+      "shortDescription": "Conflict resolution, commits, findings triage, probes.",
+      "longDescription": "Install the build bundle from edloidas/skills for semi-automatic merge-conflict resolution, conventional commits, commit message summaries, working through review findings, and settling behavioral claims by running the project from Codex.",
       "category": "Coding",
       "websiteURL": "https://github.com/edloidas/skills",
       "keywords": [
@@ -57,13 +57,15 @@
         "git",
         "conflicts",
         "commits",
-        "findings"
+        "findings",
+        "probes"
       ],
       "skills": [
         "build/skills/commit-summary",
         "build/skills/resolve-conflicts",
         "build/skills/commit",
-        "build/skills/fix-and-reverify"
+        "build/skills/fix-and-reverify",
+        "build/skills/live-probe"
       ]
     },
     {
@@ -249,7 +251,7 @@
       "displayName": "Edloidas Workflow",
       "description": "A Codex-safe end-to-end workflow bundle that takes a GitHub issue from analysis to merged.",
       "shortDescription": "End-to-end issue workflow in one command.",
-      "longDescription": "Install the workflow bundle from edloidas/skills to take a GitHub issue end to end from Codex — analyze, plan, implement, verify, adversarially review, clean up, commit, and ship.",
+      "longDescription": "Install the workflow bundle from edloidas/skills to take a GitHub issue end to end from Codex \u2014 analyze, plan, implement, verify, adversarially review, clean up, commit, and ship.",
       "category": "Coding",
       "websiteURL": "https://github.com/edloidas/skills",
       "keywords": [

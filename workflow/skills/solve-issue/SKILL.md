@@ -2,7 +2,7 @@
 name: solve-issue
 description: >
   End-to-end GitHub issue workflow: analyze the issue, plan and implement, verify with
-  available tests/build/lint (and optionally Playwright + Storybook), simplify, attack the
+  available tests/build/lint and an optional live observation, simplify, attack the
   change with parallel adversarial reviewers and fix what they find, trim comments and
   artifacts, then choose a push / PR / merge endgame. Every git and GitHub action is delegated
   to `issue-flow`.
@@ -48,16 +48,17 @@ proceeding, so a host that cannot prompt still completes the flow.
 ### Delegating to Other Skills
 
 This skill is an orchestrator: it invokes `issue-flow`, `issue-analyze`,
-`changes-review`, `code-cleanup`, and `commit-summary` rather than reimplementing them.
+`changes-review`, `live-probe`, `code-cleanup`, and `commit-summary` rather than
+reimplementing them.
 "Invoke `<name>`" means hand control to that skill however the host chains skills.
 
 **`issue-flow` and `issue-analyze` are hard prerequisites.** Every git and GitHub
 action in the flow lives in `issue-flow`, and the scope analysis it works from comes from
 `issue-analyze`; a host that cannot invoke another skill cannot run this one. Stop with
 `solve-issue needs to invoke issue-flow and issue-analyze; this host cannot chain
-skills.` rather than reimplementing the lifecycle inline. The other three —
-`changes-review`, `code-cleanup`, `commit-summary` — are graceful: each call site says
-what to do when that skill is missing.
+skills.` rather than reimplementing the lifecycle inline. The other four —
+`changes-review`, `live-probe`, `code-cleanup`, `commit-summary` — are graceful: each call
+site says what to do when that skill is missing.
 
 ### Tracking Progress
 
@@ -74,7 +75,7 @@ visible per item — never a single opaque "implementing" step.
 | 1     | Analyze via `issue-analyze`       | No                                      |
 | 2     | Plan + create branch              | Only if plan is genuinely uncertain     |
 | 3     | Implement                         | Only on hard blockers                   |
-| 4     | Verify (tests, build, lint, PW)   | Only to opt into Playwright             |
+| 4     | Verify (checks + optional probe)  | Only to opt into a live observation     |
 | 4.4   | Subtle simplification pass        | No                                      |
 | 4.5   | Advisor round(s) + apply fixes    | No                                      |
 | 5     | Comment cleanup + commit          | No                                      |
@@ -252,18 +253,30 @@ with the `Fork:` SHA from Phase 2:
   build (if present) + unit tests
 - **Only docs, config, CI, or plain text** → lint only (or nothing if lint is
   not configured)
-- **Storybook `*.stories.*` or component-level UI changes** → type-check +
-  `storybook build` if that script exists
+- **Component or presentation-layer changes** → type-check, plus whatever
+  script builds the component harness if the repo defines one
 
-### Playwright + Storybook (opt-in)
+### Observe it running (opt-in)
 
-If the change is UI-facing **and** the repo has both Playwright and
-Storybook, ask via `AskUserQuestion`:
+Checks prove the change compiles and that nothing already covered broke.
+They do not prove a claim about **observable output** — layout, rendering,
+wire format, exit code, timing, log content, a golden result. Where the issue
+asked for a change of that kind, ask, per **Asking the User**:
 
-- **Option 1** — header `Skip PW`, label `Skip Playwright` `(Recommended)` — `Unit tests and build are enough for this scope.`
-- **Option 2** — header `Run PW`, label `Run Playwright` — `Start Storybook and run Playwright against the affected stories.`
+- **Option 1** — header `Skip probe`, label `Skip observation` `(Recommended)` — `Checks cover this scope.`
+- **Option 2** — header `Observe`, label `Run and observe` — `Run it the way this project declares and read the result.`
 
-Starting Storybook is slow, so default to skipping unless the user opts in.
+On opt-in, invoke `live-probe` with the behavior the issue asked for. It takes
+the project's declared way to run and observe from the agent instruction layer
+first — `CLAUDE.md`, `AGENTS.md`, rules files, which is where a preferred
+harness or browser driver is named — then the repo's declared commands, and
+reports `unverified` rather than inventing one. Expect **one** such tool to
+exist, not a matched pair — a repo with a component harness often has no browser
+driver, and the reverse is as common. Where the host cannot chain skills, follow
+the same method inline.
+
+Starting things is slow and the artifact it leaves has to be cleaned up, so the
+default is to skip.
 
 ### On failure
 
@@ -422,7 +435,8 @@ Delete anything that should not ship with the commit:
   instructions file. Only files this run created; never a config directory.
 - Temp files under `tmp/` or `.tmp/` at the repo root that were created
   during this run
-- Screenshot artifacts under `.playwright-mcp/` if they were throwaway
+- Captured probe artifacts — screenshots, traces, dumps — wherever the
+  instruction layer puts them, if they were throwaway
 
 Use `git status --short` to sanity-check that no untracked scratch files are
 about to be staged, and that every intended deletion shows up.
@@ -461,7 +475,7 @@ Print a compact summary in this exact shape (omit rows that don't apply):
 - type-check: ok
 - unit tests: ok (N passed)
 - build: ok
-- Playwright: skipped (not UI) | passed (N stories) | not configured
+- observation: skipped (not behavioral) | reproduced | refuted | unverified (<reason>)
 
 **Advisors** (N round(s))
 - cold (<model>) · intent (<model>) · external (<cli>|skipped)
@@ -525,6 +539,7 @@ force-push, re-check, and report the resolved state.
 | Working tree dirty before Phase 2        | Stop: `Uncommitted changes on base branch — resolve first.`     |
 | Verification keeps failing               | Stop after 2 fix attempts in Phase 3/4, hand back to user       |
 | `changes-review` unavailable             | Note it in the summary, skip Phase 4.5, continue to Phase 5     |
+| Nothing in the project can be run        | Report the observation `unverified` with the absence named       |
 | Advisor fixes break verification twice   | Revert those fixes, list them as Notes, continue to Phase 5     |
 | Simplification breaks a check            | Revert it — behavior-preserving means the check should not move |
 | User picks `Stop` on any AskUserQuestion | Exit cleanly, leave local state as-is                           |

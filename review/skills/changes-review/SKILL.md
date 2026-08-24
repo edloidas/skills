@@ -275,13 +275,21 @@ lens.
 
 | Lens | Question | May do |
 | ---- | -------- | ------ |
-| `mechanism` | Does the code actually do this? | Read the repo, compile, run probes |
+| `mechanism` | Does the code actually do this? | Read the repo, compile, run probes, observe output |
 | `reachability` | Who triggers it, and does the consequence follow? | Read the repo; receives the caller's system facts |
 | `spec` | Is the quoted requirement real, and did this diff cause it? | Read the requirement and `git log` |
 
 Every lens is told to **default to refuting** when it cannot demonstrate a claim. Pass the claims
 you killed in Phase 4 as well, marked as dropped — a verifier confirming a drop is cheap, and it
 sometimes corrects the reason.
+
+The `mechanism` lens carries the **read-vs-run** rule: reading settles claims about code structure,
+only running settles claims about observable output — layout, rendering, wire format, exit code,
+timing, log content, a golden result. A verdict on one of those reached by reading is not a verdict.
+The lens takes the cheapest observation that answers the claim and stops at one hypothesis; it is a
+verifier, not a debugger. A finding of that kind that could not be observed is refuted like any
+other, and its `Reason` names what was missing — no declared runner, the tool absent, the build
+broken. That absence is a fact about the repo worth carrying into the report.
 
 One extra job for the `mechanism` lens whenever the change ships its own test, story, or fixture:
 **check that the artifact exercises the path it claims to guard.** A fixture that quietly supplies

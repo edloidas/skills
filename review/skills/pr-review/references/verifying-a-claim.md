@@ -60,8 +60,31 @@ source, with a link where one exists.
   legitimate default and defeats the whole claim.
 - **A ` ```suggestion ` block.** Never apply one unread. They are frequently syntactically valid and
   semantically wrong, and applying one blind converts a bot's guess into your commit.
+- **"This renders wrong / breaks the layout / is off by a pixel."** Reading cannot answer this.
+  Probe it, or say it is unverified — see the next section.
 - **Anything about a version boundary.** "Fixed in 18.2" needs the version the project resolves to.
   A claim that is true for the latest release and false for the pinned one is a false claim here.
+
+## Some claims cannot be read at all
+
+Everything above settles a claim by **reading** — the resolved artifact, every writer of a field,
+the supertype's default. That works because those claims are about code structure, and structure is
+what source shows.
+
+A claim about **observable output** is not. Layout, rendering, wire format, exit code, timing, log
+content, a golden or snapshot result — none of these leave a trace in the diff that reading can
+check. "The overflow is fixed" cannot be refuted from source, and it cannot be confirmed from source
+either. A `reject` posted against such a claim on reasoning alone is the worst thing this skill can
+produce: a public contradiction with nothing behind it.
+
+For those, invoke `live-probe` with the claim. It finds the project's declared way to run and
+observe, takes the cheapest observation that answers the claim, and returns a verdict with the
+artifact it read. Quote that artifact in the reply — it is the evidence. Where the host cannot chain
+skills, follow the same method inline: the instruction layer and the repo's declared commands first,
+never an invented command, one hypothesis, and `unverified` when nothing runnable exists.
+
+`unverified` is a real outcome and it changes the verdict. A claim about output that could not be
+observed does not become `reject`; it becomes `discuss`, with the reason it could not be settled.
 
 ## Treat the premise and the conclusion separately
 
