@@ -6,12 +6,25 @@ on:
       - master
   pull_request:
 
+# Nothing here writes. The repo-level default is already `read`, but stating it
+# per workflow means a later change to that default cannot silently widen this
+# token, and it is what an audit of this repo expects to find.
+permissions:
+  contents: read
+
+# Every run but the last on a ref is redundant. Safe to cancel in flight because
+# no job in this workflow mutates anything outside its own runner.
+concurrency:
+  group: validate-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   validate:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Validate Claude marketplace and source plugins
         run: bash .github/scripts/validate-skills.sh
@@ -31,10 +44,28 @@ jobs:
   # from `validate`, which only reads them: a script can satisfy every
   # structural rule and still answer the wrong question.
   test-scripts:
-    runs-on: ubuntu-latest
+    # The scripts target bash 3.2 and a BSD userland — the shell and tools stock
+    # macOS ships. Running only on Linux made that target a convention rather
+    # than a verified constraint, so a bash-4-ism would land green.
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
+      # `tests/lib/fixture.sh` links `timeout`/`gtimeout` into the sandbox PATH
+      # only when one is already installed, and stock macOS ships neither. Without
+      # this the suite drops the tool silently rather than failing loudly.
+      - name: Install coreutils for gtimeout
+        if: runner.os == 'macOS'
+        run: brew install coreutils
+
+      # Explicit interpreter, not `bash`: Homebrew's bash 5 comes first on the
+      # macOS runner's PATH, so plain `bash` would skip the 3.2 target entirely
+      # and this leg would duplicate the Linux one.
       - name: Run bundled-script tests
-        run: bash tests/run.sh
+        run: /bin/bash tests/run.sh

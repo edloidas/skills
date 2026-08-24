@@ -415,8 +415,62 @@ EOF
   fi
 done
 
+# ------------------------------------------------------ README count drift ----
+# The README states the skill and plugin counts in several hand-maintained places.
+# Every one of them was wrong at v5.0.0: 38 skills against a real 36, 9 wrapper
+# plugins against 10, and a group table summing to 38 while its own rows said 3
+# and 6. The correct values are already computed above, so assert them rather
+# than trusting a person to remember a number in five places.
+#
+# This checks counts only. Whether a skill has a table row at all is a different
+# question, and one a person reading the diff will notice; a wrong number is not.
+validate_readme_counts() {
+  local readme="README.md"
+
+  if [ ! -f "$readme" ]; then
+    error "README.md not found; the count assertions cannot run"
+    return
+  fi
+
+  # Three independent statements of the same total: the shields.io badge, the
+  # opening sentence, and the sum of the group table's own per-group column.
+  local badge intro group_sum
+  badge=$(sed -n 's/.*badge\/skills-\([0-9][0-9]*\)-.*/\1/p' "$readme" | head -n 1)
+  intro=$(sed -n 's/^\([0-9][0-9]*\) skills for .*/\1/p' "$readme" | head -n 1)
+  group_sum=$(awk -F'|' '/^\| \[[a-z]+\]\(#/ { gsub(/[^0-9]/, "", $4); sum += $4 } END { print sum + 0 }' "$readme")
+
+  local pair where value
+  for pair in "badge:$badge" "opening sentence:$intro" "group table:$group_sum"; do
+    where=${pair%%:*}
+    value=${pair#*:}
+    if [ -z "$value" ]; then
+      error "README: could not read a skill count from the $where"
+    elif [ "$value" != "$total_skills" ]; then
+      error "README: $where says $value skills, but the repo has $total_skills"
+    fi
+  done
+
+  # Plugin count, stated once per install/verify surface. Each phrase is matched
+  # with its number so a stale one is named rather than merely missed. No
+  # `(^|[[:space:]])` anchor group here: BSD grep treats `^` inside a group as a
+  # literal, so that alternative silently matches nothing on macOS.
+  local phrase found
+  for phrase in "plugin groups" "wrapper plugins" '`@edloidas-skills` plugins'; do
+    found=$(grep -o -E "[0-9][0-9]* $phrase" "$readme" | awk '{print $1}' | sort -u | tr '\n' ' ' || true)
+    found=${found% }
+    if [ -z "$found" ]; then
+      error "README: no '<count> $phrase' statement found; the plugin count is unasserted"
+    elif [ "$found" != "$plugin_count" ]; then
+      error "README: '$phrase' is stated as '$found', but the repo has $plugin_count plugins"
+    fi
+  done
+}
+
+validate_readme_counts
+
 if [ "$errors" -eq 1 ]; then
   exit 1
 fi
 
 echo "Claude marketplace valid. $total_skills skills across $plugin_count plugins ($total_codex_compatible_skills marked Codex-compatible)."
+echo "README counts agree: $total_skills skills, $plugin_count plugins."
