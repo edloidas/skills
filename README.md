@@ -5,7 +5,7 @@
 <h1 align="center">Skills</h1>
 
 <p align="center">
-  <em>One collection of agent skills. Four coding agents. One install command each.</em>
+  <em>One collection of agent skills. Any coding agent. One command.</em>
 </p>
 
 <p align="center">
@@ -40,13 +40,36 @@ it. Nothing runs in the background, nothing is injected into every prompt.
 
 ## Installation
 
+Any agent, one command — the [skills CLI](https://github.com/vercel-labs/skills) installs into every
+agent it detects:
+
+```bash
+npx skills add edloidas/skills --all
+```
+
+`--all` is shorthand for every skill, every agent, no prompts. Narrow it however you like:
+
+```bash
+npx skills add edloidas/skills -l                               # list, install nothing
+npx skills add edloidas/skills --all -g                         # every skill, user-level
+npx skills add edloidas/skills -s changes-review,explain -y     # only these skills
+npx skills add edloidas/skills -s changes-review -a claude-code  # one skill, one agent
+```
+
+Installs are project-level by default: skills land in `./.agents/skills/`, each supported agent gets
+a symlink beside it, and `skills-lock.json` records the set. `-g` installs user-level instead, for
+every project. The CLI has no notion of per-host compatibility, so it installs everything regardless
+of target. This repo's internal release tool is deliberately excluded from the listing.
+
+Each host also has a native install, which buys plugin grouping, namespaced skill names, and updates
+through the host itself:
+
 | Agent | Install | What you get |
 | ----- | ------- | ------------ |
 | Claude Code | `/plugin marketplace add edloidas/skills` | 10 plugin groups, every skill |
 | Codex | `codex plugin marketplace add edloidas/skills` | 10 wrapper plugins |
 | pi | `pi install git:github.com/edloidas/skills` | Every portable skill |
 | OpenCode | `./scripts/skills-packaging.sh install-host opencode` | Every portable skill |
-| Other | `npx skills add edloidas/skills --all` | Every skill, any agent it supports |
 
 Every skill ships to all four agents except one. `code-to-spec` drives fleets of
 plugin-namespaced subagents and keys its temp files on Claude's session id, so it is Claude Code
@@ -54,29 +77,60 @@ only. See [How skills reach each agent](#how-skills-reach-each-agent).
 
 ### Claude Code
 
-Add the marketplace and install the plugin groups you need:
+Plugin ids are `<group>@edloidas` — the plugin first, the marketplace second. Add the marketplace,
+then install the groups you need:
 
 ```
 /plugin marketplace add edloidas/skills
-/plugin install edloidas@plan
-/plugin install edloidas@build
-/plugin install edloidas@review
-/plugin install edloidas@audit
-/plugin install edloidas@maintain
-/plugin install edloidas@ship
-/plugin install edloidas@assist
-/plugin install edloidas@write
-/plugin install edloidas@obsidian
-/plugin install edloidas@workflow
+/plugin install plan@edloidas
+/plugin install build@edloidas
+/plugin install review@edloidas
+/plugin install audit@edloidas
+/plugin install maintain@edloidas
+/plugin install ship@edloidas
+/plugin install assist@edloidas
+/plugin install write@edloidas
+/plugin install obsidian@edloidas
+/plugin install workflow@edloidas
 ```
 
-Install all groups for the full set, or pick only the groups relevant to your workflow.
+There is no marketplace-wide install, so the full set is either those ten lines or one shell loop:
+
+```bash
+claude plugin marketplace add edloidas/skills
+for group in plan build review audit maintain ship assist write obsidian workflow; do
+  claude plugin install "$group@edloidas"
+done
+```
 
 | Scope | Command | Use case |
 | ----- | ------- | -------- |
-| User (default) | `/plugin install edloidas@review` | Personal — all projects |
-| Project | `/plugin install edloidas@review --scope project` | Team — shared via Git |
-| Local | `/plugin install edloidas@review --scope local` | Project — gitignored |
+| User (default) | `/plugin install review@edloidas` | Personal — all projects |
+| Project | `/plugin install review@edloidas --scope project` | Team — shared via Git |
+| Local | `/plugin install review@edloidas --scope local` | Project — gitignored |
+
+To hand a team the whole set through Git instead, commit the marketplace and the groups to
+`.claude/settings.json`:
+
+```json
+{
+  "extraKnownMarketplaces": {
+    "edloidas": { "source": { "source": "github", "repo": "edloidas/skills" } }
+  },
+  "enabledPlugins": {
+    "plan@edloidas": true,
+    "build@edloidas": true,
+    "review@edloidas": true,
+    "audit@edloidas": true,
+    "maintain@edloidas": true,
+    "ship@edloidas": true,
+    "assist@edloidas": true,
+    "write@edloidas": true,
+    "obsidian@edloidas": true,
+    "workflow@edloidas": true
+  }
+}
+```
 
 To load a group for a single session without installing it:
 
@@ -145,20 +199,6 @@ unrelated skills in the destination are left alone.
 
 Opening this repository in OpenCode surfaces its generated repo-local set automatically.
 
-### npx skills
-
-The [skills CLI](https://github.com/vercel-labs/skills) installs into any agent it supports and sees
-every skill with no extra flags:
-
-```bash
-npx skills add edloidas/skills --list                                  # list
-npx skills add edloidas/skills --all                                   # install everything
-npx skills add edloidas/skills --skill changes-review -a claude-code   # install one
-```
-
-It has no notion of per-host compatibility, so it installs everything regardless of target. This
-repo's internal release tool is deliberately excluded from the listing.
-
 ## Verify your install
 
 | Agent | Command | Expect |
@@ -176,7 +216,7 @@ trusting `opencode debug skill` after an install.
 
 | Agent | Command |
 | ----- | ------- |
-| Claude Code | `/plugin uninstall edloidas@<group>`, then `/plugin marketplace remove edloidas` |
+| Claude Code | `/plugin uninstall <group>@edloidas`, then `/plugin marketplace remove edloidas` |
 | Codex | `codex plugin marketplace remove edloidas-skills` |
 | pi | `pi remove git:github.com/edloidas/skills` |
 | OpenCode | `rm ~/.config/opencode/skills/<skill>`, or remove the whole directory |
