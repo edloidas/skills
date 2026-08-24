@@ -509,11 +509,15 @@ Two conventions matter:
 Scripts whose whole body is a `gh` call are deliberately untested — the stub would assert
 the stub. Cover logic, refusals, and parsing.
 
-**Known gap: the suite only runs on Linux.** CI runs it on `ubuntu-latest`, so the bash 3.2
-and BSD-userland targets above are a convention, not a verified one. Adding `macos-latest`
-to the `test-scripts` matrix and invoking `/bin/bash tests/run.sh` explicitly (Homebrew's
-bash 5 comes first on the runner's PATH) would test both axes for free on a public repo.
-Expect the first run to surface harness portability fixes rather than script defects.
+**The suite runs on both axes.** The `test-scripts` job is a matrix over `ubuntu-latest`
+and `macos-latest`, so the bash 3.2 and BSD-userland targets above are verified rather
+than merely conventional. Two details make the macOS leg real: it invokes
+`/bin/bash tests/run.sh` explicitly, because Homebrew's bash 5 comes first on the
+runner's PATH and plain `bash` would just duplicate the Linux leg; and it installs
+`coreutils` first, because `CORE_TOOLS` links `timeout`/`gtimeout` only when one is
+already present and stock macOS ships neither — without it the suite drops the tool
+silently instead of failing. `fail-fast` is off so a failure on one OS still reports
+the other.
 
 ## Plugin Manifests (`.claude-plugin/`)
 

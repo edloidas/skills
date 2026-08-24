@@ -93,7 +93,7 @@ Add the marketplace from GitHub — no `--ref` flag needed:
 codex plugin marketplace add edloidas/skills
 ```
 
-This installs and enables all ten wrapper plugins: `Edloidas Plan`, `Build`, `Review`, `Audit`,
+This installs and enables all 10 wrapper plugins: `Edloidas Plan`, `Build`, `Review`, `Audit`,
 `Maintain`, `Ship`, `Assist`, `Write`, `Obsidian`, and `Workflow`. Codex clones the whole
 repository, so `git pull` updates flow through. Restart Codex if new skills do not appear.
 

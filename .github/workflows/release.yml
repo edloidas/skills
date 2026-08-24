@@ -8,12 +8,20 @@ on:
 permissions:
   contents: write
 
+# One run per tag. `cancel-in-progress` is deliberately false: this job creates a
+# GitHub Release, and cancelling that halfway leaves a tag with no release rather
+# than a clean retry.
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   release:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
 

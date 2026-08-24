@@ -1,0 +1,23 @@
+version: 2
+
+updates:
+  # `github-actions` is the only ecosystem this repo has. `package.json` exists as
+  # the pi manifest and a version anchor — it is `private: true`, ships no
+  # dependencies, and is never published — so there is no npm surface to watch.
+  #
+  # This entry is what should have bumped `actions/checkout` before a deprecation
+  # notice did it for us.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    # One PR for all action bumps rather than one per action: the workflows are
+    # small and the updates are almost always mechanical.
+    groups:
+      actions:
+        patterns:
+          - "*"
+    commit-message:
+      prefix: ci
+    labels:
+      - improvement
