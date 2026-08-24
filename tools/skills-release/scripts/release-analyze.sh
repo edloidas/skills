@@ -87,6 +87,34 @@ BREAKING_SUFFIX=$(git log "$LAST_TAG"..HEAD --format="%s" | grep -c -E "^[a-z]+(
 BREAKING_BODY=$(git log "$LAST_TAG"..HEAD --format="%b" | grep -c -E "^BREAKING CHANGE:" || true)
 BREAKING_COUNT=$((BREAKING_SUFFIX + BREAKING_BODY))
 
+# A skill that existed at the last tag and does not exist now is a breaking change
+# for anyone who installed it, whatever the commit subject called it.
+#
+# This exists because v5.0.0 deleted 17 skills and renamed 2 across plugin groups,
+# and every one of those commits was a `refactor:` or a `chore:`. Nobody wrote
+# `!:` or a BREAKING CHANGE trailer, so the counters above reported Breaking: 0
+# and this script recommended MINOR for the most breaking release the repo has had.
+# Commit subjects are a claim about intent; the tree is the fact.
+#
+# Comparing path sets rather than parsing `--diff-filter=R` catches deletions and
+# renames with one rule: a rename removes the old path, which is exactly the thing
+# that breaks a user's `/slash` command.
+skill_paths_at() {
+  git ls-tree -r --name-only "$1" 2>/dev/null |
+    grep -E '^[a-z][a-z-]*/skills/[a-z0-9-]+/SKILL\.md$' || true
+}
+
+REMOVED_SKILLS=$(comm -23 \
+  <(skill_paths_at "$LAST_TAG" | sort) \
+  <(skill_paths_at HEAD | sort) |
+  sed -E 's#^([a-z-]+)/skills/([a-z0-9-]+)/SKILL\.md$#\2 (\1)#')
+
+if [[ -n "$REMOVED_SKILLS" ]]; then
+  REMOVED_SKILL_COUNT=$(printf '%s\n' "$REMOVED_SKILLS" | grep -c .)
+else
+  REMOVED_SKILL_COUNT=0
+fi
+
 # Count unclassified commits
 CLASSIFIED=$((FEAT_COUNT + FIX_COUNT + REFACTOR_COUNT + DOCS_COUNT + CHORE_COUNT + STYLE_COUNT + CI_COUNT + TEST_COUNT))
 OTHER_COUNT=$((COMMIT_COUNT - CLASSIFIED))
@@ -102,7 +130,19 @@ echo "CI:           $CI_COUNT"
 echo "Tests:        $TEST_COUNT"
 echo "Other:        $OTHER_COUNT"
 echo "Breaking:     $BREAKING_COUNT"
+echo "Skills gone:  $REMOVED_SKILL_COUNT"
 echo ""
+
+# Listed, not just counted: these names are what the release notes have to map for
+# a user upgrading, and reconstructing them by hand after the fact is the slow way.
+if [[ $REMOVED_SKILL_COUNT -gt 0 ]]; then
+  echo "=== Skills Removed or Renamed Since $LAST_TAG ==="
+  printf '%s\n' "$REMOVED_SKILLS"
+  echo ""
+  echo "Each is a breaking change for anyone who installed it. Map old -> new in the"
+  echo "release notes; a rename is invisible to a user whose slash command stopped working."
+  echo ""
+fi
 
 # Show file change stats
 echo "=== File Changes ==="
@@ -113,6 +153,8 @@ echo ""
 echo "=== Recommendation ==="
 if [[ $BREAKING_COUNT -gt 0 ]]; then
   echo "MAJOR bump (breaking changes detected)"
+elif [[ $REMOVED_SKILL_COUNT -gt 0 ]]; then
+  echo "MAJOR bump ($REMOVED_SKILL_COUNT skill(s) removed or renamed since $LAST_TAG)"
 elif [[ $FEAT_COUNT -gt 0 ]]; then
   echo "MINOR bump (new features added)"
 elif [[ $FIX_COUNT -gt 0 ]] || [[ $REFACTOR_COUNT -gt 0 ]]; then
