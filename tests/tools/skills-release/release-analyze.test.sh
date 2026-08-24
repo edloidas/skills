@@ -248,4 +248,103 @@ test_unreachable_version_tags_are_refused_not_called_a_first_release() {
   assert_not_contains "$STDOUT" "first release" "output"
 }
 
+# ------------------------------------------------- removed-skill detection ----
+# The conventional-commit counters above only see a breaking change when someone
+# writes `!:` or a BREAKING CHANGE trailer. v5.0.0 deleted 17 skills and renamed 2
+# under `refactor:` and `chore:` subjects, so the script reported Breaking: 0 and
+# recommended MINOR. These cases pin the tree-based rule that replaces that trust.
+
+# Adds a skill at the canonical path so the removal rule has something to lose.
+add_skill() {
+  local group="$1" name="$2"
+  mkdir -p "$group/skills/$name"
+  printf -- '---\nname: %s\ndescription: Test skill.\n---\n\nBody.\n' "$name" \
+    > "$group/skills/$name/SKILL.md"
+  git add "$group/skills/$name/SKILL.md"
+  git commit --quiet -m "feat: add $name"
+}
+
+removed_section() {
+  printf '%s\n' "$STDOUT" | sed -n '/^=== Skills Removed or Renamed Since /,/^$/p'
+}
+
+test_a_deleted_skill_forces_major_despite_a_refactor_subject() {
+  skills_repo
+  add_skill review adversarial-review
+  git tag -a v4.5.2 -m "Release v4.5.2"
+  git rm --quiet -r review/skills/adversarial-review
+  git commit --quiet -m "refactor: merge adversarial-review into changes-review"
+  analyze
+  assert_eq 0 "$STATUS" "exit status"
+  assert_eq 0 "$(summary_of Breaking)" "conventional breaking count"
+  assert_eq 1 "$(summary_of 'Skills gone')" "removed skill count"
+  assert_contains "$(recommendation)" "MAJOR bump" "recommendation"
+  assert_contains "$(removed_section)" "adversarial-review (review)" "removed list"
+}
+
+# A rename is the case a user notices as "my slash command vanished", and it is the
+# one `--diff-filter=D` alone would miss.
+test_a_skill_renamed_across_groups_counts_as_removed() {
+  skills_repo
+  add_skill review test-quality
+  git tag -a v4.5.2 -m "Release v4.5.2"
+  mkdir -p audit/skills/tests-audit
+  git mv review/skills/test-quality/SKILL.md audit/skills/tests-audit/SKILL.md
+  git commit --quiet -m "chore: relocate misfiled skills"
+  analyze
+  assert_eq 1 "$(summary_of 'Skills gone')" "removed skill count"
+  assert_contains "$(recommendation)" "MAJOR bump" "recommendation"
+  assert_contains "$(removed_section)" "test-quality (review)" "removed list"
+}
+
+test_removed_skills_outrank_a_feature() {
+  skills_repo
+  add_skill assist ask
+  git tag -a v4.5.2 -m "Release v4.5.2"
+  add_skill assist explain
+  git rm --quiet -r assist/skills/ask
+  git commit --quiet -m "refactor: replace the ask skill with explain"
+  analyze
+  assert_eq 1 "$(summary_of 'Skills gone')" "removed skill count"
+  assert_contains "$(recommendation)" "MAJOR bump" "recommendation"
+}
+
+# Adding skills is not breaking, and must not be reported as such — a rule that
+# fires on every release is a rule nobody reads.
+test_added_skills_alone_do_not_force_major() {
+  skills_repo
+  add_skill assist explain
+  git tag -a v4.5.2 -m "Release v4.5.2"
+  add_skill audit tsconfig-audit
+  analyze
+  assert_eq 0 "$(summary_of 'Skills gone')" "removed skill count"
+  assert_contains "$(recommendation)" "MINOR bump" "recommendation"
+  assert_not_contains "$STDOUT" "Skills Removed or Renamed" "no removal section"
+}
+
+test_an_edited_skill_is_not_a_removal() {
+  skills_repo
+  add_skill review changes-review
+  git tag -a v4.5.2 -m "Release v4.5.2"
+  commit "refactor: rework changes-review" review/skills/changes-review/SKILL.md
+  analyze
+  assert_eq 0 "$(summary_of 'Skills gone')" "removed skill count"
+  assert_contains "$(recommendation)" "PATCH bump" "recommendation"
+}
+
+# Files that merely live near a skill must not be mistaken for one, or a deleted
+# reference file would advertise itself as a breaking change.
+test_deleting_a_bundled_reference_is_not_a_removed_skill() {
+  skills_repo
+  add_skill review changes-review
+  mkdir -p review/skills/changes-review/references
+  commit "docs: add a reference" review/skills/changes-review/references/lenses.md
+  git tag -a v4.5.2 -m "Release v4.5.2"
+  git rm --quiet review/skills/changes-review/references/lenses.md
+  git commit --quiet -m "refactor: fold the lens reference into the body"
+  analyze
+  assert_eq 0 "$(summary_of 'Skills gone')" "removed skill count"
+  assert_contains "$(recommendation)" "PATCH bump" "recommendation"
+}
+
 run_tests

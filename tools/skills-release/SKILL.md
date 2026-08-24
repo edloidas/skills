@@ -86,6 +86,7 @@ This will:
 - List all commits since that tag
 - Count commits by conventional type using anchored regex
 - Detect breaking changes (`type!:` suffix or `BREAKING CHANGE` in body)
+- Detect skills removed or renamed since the last tag, and list them by name
 - Show file change statistics
 - Print a version bump recommendation
 
@@ -93,9 +94,20 @@ This will:
 
 | Bump      | When                                                           |
 | --------- | -------------------------------------------------------------- |
-| **Major** | Breaking changes — `type!:` prefix or `BREAKING CHANGE` body  |
+| **Major** | `type!:` prefix, `BREAKING CHANGE` body, **or** any skill removed or renamed since the last tag |
 | **Minor** | New features — any `feat:` commits                             |
 | **Patch** | Everything else — `fix:`, `docs:`, `refactor:`, `chore:`, etc. |
+
+The removal rule does not rely on the commit subject. v5.0.0 deleted 17 skills and
+renamed 2 across plugin groups under `refactor:` and `chore:` subjects, so the marker
+counters reported `Breaking: 0` and the script recommended MINOR for the most breaking
+release this repo has had. A skill present at the last tag and absent at HEAD breaks
+whoever installed it, whatever the subject line called it.
+
+When the script prints a **Skills Removed or Renamed** section, map old to new in the
+release notes before publishing. A rename is invisible to a user whose slash command
+stopped working, and reconstructing the mapping after the tag is published is the slow
+way to do it.
 
 ### Step 3: Confirm Version with User
 
