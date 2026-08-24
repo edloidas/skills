@@ -115,8 +115,34 @@ publication was a GitHub review rather than an issue comment. Run 2's 14 merged 
   against the change, only the other half of it."*
 - One handed the decision over outright: *"this second one is arguably the embedder's problem rather
   than the library's, so I will leave the call with you."*
-- The target repo prescribes a `<sub>*Drafted with AI assistance*</sub>` footer and it was applied —
-  the case that proves the footer cannot be hardcoded, since this repository forbids that exact line.
+- An AI attribution footer was applied because the target repo prescribed one. Reading the four runs
+  back, no reader ever engaged with it and the operator eventually asked for it gone everywhere — the
+  case that retired repo-local footer resolution rather than the case that justified it.
+
+## Run 5 — run 3's pull request, third pass, approved
+
+The combobox pull request from run 3, re-reviewed after the author addressed two rounds of
+`CHANGES_REQUESTED`. Every prior finding verified as fixed and nothing blocking survived, so the
+verdict was `APPROVE`. The first draft was rejected by the operator, and each rejection is a rule.
+
+- **The gate showed a summary, not the text.** The draft described the review — two inline comments,
+  what each was about, the body's shape — and asked to post. The operator asked three times to see
+  the actual words. Approving a description of correspondence is not approving the correspondence.
+- **The question was asked through `AskUserQuestion`.** "It just hurts" — the modal fired before the
+  report it interrupted had been read, so the reader was choosing before they had the basis to
+  choose. One question, in prose, at the end.
+- **The verdict was a header at the top.** It scrolled away above the evidence. Moved to the last
+  line, where the reader looks for it.
+- **The approval carried two inline comments and a WebKit measurement table.** Both notes were real
+  and neither was blocking; anchored to an approved diff they asked the author to reopen settled
+  code. Withheld, reported to the operator as their own block, and the review shrank to four
+  paragraphs — which is what an approval is.
+- **The verification record was in the review.** Engines, a 60-case story matrix, `pnpm check`
+  clean. The operator's note was that the author sees CI and does not need the method: *"this is
+  okay to write it as a report for me, but keep it out of review."*
+- The one technical paragraph that survived into the body was kept because the change turned on it —
+  WebKit reporting a touch-generated click as `pointerType: "mouse"` is why the author's approach was
+  right. Not how it was measured; why it matters.
 
 ## Which rule each observation justifies
 
@@ -150,4 +176,10 @@ publication was a GitHub review rather than an issue comment. Run 2's 14 merged 
 | Standing names the method, not the effort | Run 4: "reading computed styles rather than class names" is why the rest was believable |
 | Say what was deliberately excluded | Run 4: the run started on an earlier commit, and the reverted selector was called out as out of scope |
 | Never anchor a finding to a convenient nearby line | Run 4: eight comments across six files, each on its own finding's line |
-| The attribution footer cannot be hardcoded | Run 4: the target repo prescribes the exact footer this repository forbids |
+| Never an AI attribution footer | Run 4 applied one on repo-local policy; it earned no response, and the policy is retired |
+| The gate shows the text verbatim, never a summary | Run 5: the operator asked three times to see the actual words before approving |
+| One question, in prose, at the end | Run 5: the `AskUserQuestion` modal fired before the report it interrupted had been read |
+| The verdict goes last | Run 5: as a top header it scrolled away above the evidence justifying it |
+| `APPROVE` carries no inline comments | Run 5: two non-blocking notes anchored to an approved diff asked the author to reopen settled code |
+| Method and measurement stay out of an approval | Run 5: *"okay to write it as a report for me, but keep it out of review"* |
+| Non-blocking suggestions are withheld and reported | Run 5: withholding both shrank the approval to four paragraphs |

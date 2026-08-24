@@ -291,6 +291,16 @@ cannot prompt at all — but not a second copy of the mechanics.
 A skill whose only mention of `AskUserQuestion` is documentation about the field (as in
 `skill-audit`'s rubric) does not need the section, and neither does a Claude-only skill.
 
+**A skill may deliberately refuse structured-choice prompting**, and then it carries its own
+`Asking the User` section saying so instead of the canonical one. `review/skills/pr-review`
+and `review/skills/changes-review` do: they publish outward-facing correspondence, and the
+gate that approves it has to be answerable *after* reading the text it is about, which a
+modal firing mid-report is not. Both ask one question in prose as the last line, so
+`AskUserQuestion` is absent from `allowed-tools` and appears in the body only as the thing
+being refused. `skill-metrics.mjs` reports these as `mentioned, NO fallback wording found`,
+because its heuristic cannot tell a refusal from an omission — that flag is expected on
+those two, and the fix is never to re-add the canonical section.
+
 ### Multi-Agent Convention
 
 Skills for different agents (Claude Code, Codex, etc.) live in the same group directories — no nesting by agent. Agent compatibility is declared via the `compatibility` frontmatter field.

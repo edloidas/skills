@@ -108,12 +108,16 @@ section with the other two as reasons not to land it.
 
 ## Where to post, and under whose name
 
-**Show the comment and get an answer before posting.** This is the one outward-facing thing the
+**Show the text and get an answer before posting.** This is the one outward-facing thing the
 skill does, published under the user's account to another person, and the text was generated rather
-than written by them. `--comment` authorizes the phase; it does not authorize the words. Offer post
-as written (recommended) / edit first / discard, and fall back to the same question as a short
-numbered list in chat where the host has no structured prompt. Print and stop rather than posting
-when nobody is there to answer.
+than written by them. `--comment` authorizes the phase; it does not authorize the words.
+
+Show it **verbatim and complete** — every word that would be posted, quoted in the message itself.
+A summary of the comment, a description of what it covers, or a count of findings and a claim about
+their content are all the wrong artifact: the reader is approving words, so words are what they
+have to see. Then ask, once, in prose, as the last line of the message. Not a structured-choice
+prompt — a modal fires before the reader has finished the report it interrupts, which is the wrong
+order for the only decision here. Print and stop rather than posting when nobody is there to answer.
 
 Post as an **issue comment**, not a review: GitHub refuses a review on your own PR, and the common
 case is a branch you opened.
@@ -122,11 +126,12 @@ case is a branch you opened.
 gh pr comment <N> --body-file <file>
 ```
 
-Attribution policy is repo-local and genuinely contradictory across repos — `enonic/npm-enonic-ui`
-prescribes a `<sub>*Drafted with AI assistance*</sub>` footer and this repository's `CLAUDE.md`
-forbids exactly that line. Neither can be hardcoded. Resolve `CLAUDE.md` / `AGENTS.md` in the
-**target** repo and follow what it says. Where it says nothing, add one short sentence noting the
-review was automated and may contain errors.
+**No AI attribution footer, ever.** Not a `<sub>` line, not a session link, not a sentence noting
+the review was automated. This used to resolve from the target repository's instruction file, which
+kept the mechanism alive in a reference and let it come back; there is nothing to resolve now. The
+review earns trust by naming its method and quoting what it observed, and a footer declaring who
+typed it adds nothing a reader wanted. Where a target repo's instruction file prescribes one, it is
+overridden here — say so if it comes up rather than silently complying.
 
 Voice is not free of the author. Both calibration rounds read as first-person prose from the account
 that posted them. The rules above are all about **substance** — demonstration, attribution,
@@ -170,6 +175,32 @@ only what the whole review can say:
 `COMMENT` is the honest verdict for a review that found real things, none of them blocking. Do not
 reach for `REQUEST_CHANGES` to signal effort, and do not `APPROVE` around an open question — the
 middle option exists for exactly that.
+
+### `APPROVE` has its own shape
+
+An approval is not a `REQUEST_CHANGES` with the findings deleted. It publishes **one body and no
+inline comments** — the `comments` array is empty, and nothing carries a line anchor, a `file:line`
+quote, a reproduction snippet, or a measured table. Everything above about anchoring, grouping
+minors, and the body being a map rather than a summary applies to reviews that ask for something;
+an approval asks for nothing, so there is nowhere for a reader to be sent.
+
+Write it as a conclusion, and keep it to roughly:
+
+- one sentence that it was verified against the issue and approved
+- two or three sentences on what holds up, in behavioural terms — what a user can now do
+- at most one technical observation, where the change turned on something worth the author's time
+- a plain close
+
+**What was run stays out of it.** The engines, the story matrix, the probe names, the clean tooling
+result — the author sees CI, and the method is what earned *your* confidence, not something they
+need to audit. It belongs in the report to the operator. A verification narrative inside an
+approval reads as the reviewer asking for credit.
+
+**Non-blocking suggestions do not ride along.** Withhold them, hand them to the operator as their
+own block, and offer a follow-up issue. Anchoring a suggestion to an approved pull request asks the
+author to reopen code nobody needs to revisit, and it makes the verdict ambiguous — an approval
+carrying two asks is a `COMMENT` wearing the wrong label. If a suggestion genuinely should gate the
+merge, it was never non-blocking and the verdict is wrong.
 
 Check `viewerCanUpdate` before composing something you cannot submit. Build the payload as JSON and
 submit once, so the comments and the verdict land together rather than as a trickle of notifications:
@@ -226,9 +257,10 @@ inline comment on the line it belongs to.
 
 ## A clean run
 
-A review that found nothing still publishes, in one short paragraph: what was run, what held up, and
-the tooling result. Never a section list of everything checked — on the calibration run a
-"checked and clear" section drew no response at all beyond the closing sentence.
+A review that found nothing still publishes, in one short paragraph: what held up, in the terms the
+issue used. Never a section list of everything checked — on the calibration run a "checked and
+clear" section drew no response at all beyond the closing sentence, and in review shape this is the
+`APPROVE` body, which per the section above carries no method narrative and no inline comments.
 
 ## When publication cannot finish
 

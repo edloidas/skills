@@ -453,17 +453,18 @@ budget, the anchoring mechanics and the verdict mapping. Five steps, in order:
 4. **Gate** — refuse any section lacking a demonstration or an attribution, and refuse a fifth
    section: more than four means clustering failed. Unverified residue gets one flagged sentence in
    the closing paragraph, never a section.
-5. **Confirm, then post.** Show the composed text — in review shape every inline comment, the body,
-   and the verdict — and ask before any of it goes anywhere. The flag authorizes the phase, not the
-   words: this is outward-facing correspondence published under the user's account, and an approving
-   verdict is the one output that cannot be walked back gracefully. Offer post as written / edit
-   first / discard, with post as written recommended. Where the host has no structured prompt, ask
-   the same thing in chat as a short numbered list and wait for a reply. A caller running unattended
-   does not get to skip this — it prints everything and stops.
+5. **Confirm, then post.** Show the composed text **verbatim and complete** — in review shape every
+   inline comment and the body, quoted in full, never summarized or described — and ask before any of
+   it goes anywhere. The flag authorizes the phase, not the words: this is outward-facing
+   correspondence published under the user's account, and an approving verdict is the one output that
+   cannot be walked back gracefully. Ask once, in prose, as the last line of the message, with the
+   verdict after it — not through a structured-choice prompt, which interrupts the report the reader
+   needs in order to answer. A caller running unattended does not get to skip this — it prints
+   everything and stops.
 
-The attribution footer resolves from the **target** repo's instruction file rather than being
-hardcoded. A clean run still publishes: one short paragraph, and in review shape an approving
-verdict.
+**Never an AI attribution footer**, whatever the target repo's instruction file says. A clean run
+still publishes: one short paragraph, and in review shape an `APPROVE` with an empty `comments`
+array — no line anchors and no method narrative, per the reference.
 
 ## Rules
 
