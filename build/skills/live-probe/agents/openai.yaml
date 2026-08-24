@@ -1,0 +1,6 @@
+interface:
+  display_name: "Live Probe"
+  short_description: "Settle a behavioral claim by running it once and reading the result"
+  default_prompt: "Use $live-probe to settle this claim about observable output: find the project's declared way to run and observe, take the cheapest observation that answers it, and report the verdict with the artifact."
+policy:
+  allow_implicit_invocation: false

@@ -1,7 +1,7 @@
 {
   "name": "edloidas-build",
   "version": "5.0.0",
-  "description": "A Codex-safe build bundle for merge-conflict resolution, commit creation, and findings triage.",
+  "description": "A Codex-safe build bundle for merge-conflict resolution, commit creation, findings triage, and live behavioral probes.",
   "author": {
     "name": "Mikita Taukachou",
     "url": "https://edloidas.io"
@@ -16,13 +16,14 @@
     "git",
     "conflicts",
     "commits",
-    "findings"
+    "findings",
+    "probes"
   ],
   "skills": "./skills/",
   "interface": {
     "displayName": "Edloidas Build",
-    "shortDescription": "Conflict resolution, commits, and findings triage.",
-    "longDescription": "Install the build bundle from edloidas/skills for semi-automatic merge-conflict resolution, conventional commits, commit message summaries, and working through review findings from Codex.",
+    "shortDescription": "Conflict resolution, commits, findings triage, probes.",
+    "longDescription": "Install the build bundle from edloidas/skills for semi-automatic merge-conflict resolution, conventional commits, commit message summaries, working through review findings, and settling behavioral claims by running the project from Codex.",
     "developerName": "Mikita Taukachou",
     "category": "Coding",
     "websiteURL": "https://github.com/edloidas/skills",

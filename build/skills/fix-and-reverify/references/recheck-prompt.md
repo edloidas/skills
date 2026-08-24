@@ -1,7 +1,8 @@
 # Fix and Reverify — Re-check
 
-A previous review round raised the finding below and rated its own confidence **low**. Nobody has
-settled it. That is your entire job: settle it.
+The finding below is **unsettled**. Either a previous round raised it and rated its own confidence
+low, or a fix was applied and its symptom could not be re-observed afterwards. Either way nobody
+knows whether it is true. That is your entire job: settle it.
 
 You are not asked whether the finding is worth fixing, whether it is severe, or how it should be
 fixed. Only whether it is **true**.
@@ -24,8 +25,17 @@ rating in the first place; repeating that produces another low rating and wastes
   seeded cache, the default config, the top-level registration — and see whether the symptom
   appears. It usually takes one line, and it is the whole difference between "this could fail" and
   "here it is failing".
+- **Where the claim is about observable output, reading cannot settle it at all.** Layout,
+  rendering, wire format, exit code, timing, log content, a golden or snapshot result: none of these
+  leave a trace in the source. Find the way to run it from the agent instruction layer (`CLAUDE.md`,
+  `AGENTS.md`, rules files) first, then the repo's declared commands — manifest scripts, `Makefile`,
+  task runner, CI workflow — and never invent one. Read computed values, not markup. Inspect a
+  snapshot; never accept it. Nothing runnable at all means `low`, with the absence named.
 - Name who reaches it. A defect no caller, input, or configuration can arrive at is not a defect,
   however correct the mechanism reading is.
+- **One hypothesis.** You get one observation of this finding. If it comes back ambiguous the answer
+  is `low` — chasing a second theory turns a re-check into a debugging session on someone else's
+  budget.
 
 **Default to refuting.** If you cannot demonstrate the failure, the answer is `low` again — not
 `medium` out of politeness to the reviewer who filed it. A finding nobody can demonstrate after two

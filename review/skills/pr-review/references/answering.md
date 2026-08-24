@@ -74,6 +74,10 @@ a finding a bot produced.
 to a person because it is about scope, architecture, or product. A hard fix you are confident about is
 still a `fix`.
 
+Its second trigger is **unverifiability**: a claim about observable output that no probe could settle.
+The reply says what could not be observed and why, and asks the author to confirm. Rejecting an
+unobserved claim asserts something you did not check, in public, under your own name.
+
 `defer` always appears in the report even though its thread is closed. A deferral nobody can see is
 backlog that does not exist yet.
 

@@ -21,14 +21,35 @@ anyway — another verifier holds that ground.
 
 Does the code actually do what the finding says it does?
 
-Read the code around it. Where the project makes it possible, **compile it, run it, write a small
-probe, or execute the failing case**. Read a dependency's resolved artifact rather than recalling
-its defaults from memory. A finding you reproduced is the strongest verdict available here — say
-when you reproduced one and how.
+Read the code around it. Read a dependency's resolved artifact rather than recalling its defaults
+from memory. A finding you reproduced is the strongest verdict available here — say when you
+reproduced one and how.
+
+**Reading settles claims about code structure. Only running settles claims about observable
+output.** A missing writer, an unreachable branch, a wrong default: read them. Layout, rendering,
+wire format, exit code, timing, log content, a golden or snapshot result: those leave no trace in
+the source, so a verdict on them reached by reading is not a verdict. Take the cheapest observation
+that answers the claim and stop there:
+
+1. The existing check that covers the touched path — one test, one golden, one snapshot.
+2. A throwaway probe that executes the exact case, deleted after.
+3. The built artifact queried directly — start it, hit the one endpoint or invoke the one command,
+   read the output.
+4. Rendered and compared — a component harness, a headless browser, an image or golden diff.
+
+Find the way to run it from the agent instruction layer (`CLAUDE.md`, `AGENTS.md`, rules files)
+first, then the repo's declared commands — manifest scripts, `Makefile`, task runner, CI workflow.
+Never invent a command the repo does not define. Expect one such tool to exist, not a matched pair.
+At rung 4 read computed values, not markup: a class name is the input to rendering, not its result.
+A snapshot is inspected, never accepted.
+
+**One hypothesis.** If the first observation does not settle the claim, refute it and say the
+observation was ambiguous. Do not start an investigation — you are one lens on one finding, and a
+verifier that debugs stops verifying. Where nothing runnable exists, say that plainly and refute.
 
 Two techniques when ambient state gets in the way: probe with an identifier that cannot already
 exist, so nothing masks the result; and remove whatever is propping the happy path up, so the real
-symptom appears.
+symptom appears — then put it back.
 
 **When the change ships its own test, story, or fixture, check that the artifact exercises the path
 it claims to guard.** A fixture that supplies the missing precondition converts an open question
