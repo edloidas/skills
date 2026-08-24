@@ -1,6 +1,6 @@
 {
   "name": "build",
-  "version": "5.1.0",
+  "version": "5.1.1",
   "description": "Conflict resolution, commit summaries, quick commits, and findings fixes",
   "author": {
     "name": "Mikita Taukachou",
