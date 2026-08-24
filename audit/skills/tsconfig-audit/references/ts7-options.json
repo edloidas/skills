@@ -319,7 +319,6 @@
     "checkers": "X_4_unless_singleThreaded_is_passed",
     "target": "ScriptTargetLatestStandard",
     "allowJs": "X_false_unless_checkJs_is_set",
-    "rootDir": "Computed_from_the_list_of_input_files",
     "noImplicitAny": "X_true_unless_strict_is_false",
     "strictNullChecks": "X_true_unless_strict_is_false",
     "strictFunctionTypes": "X_true_unless_strict_is_false",
