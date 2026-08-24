@@ -11,7 +11,7 @@ when_to_use: >
   Copilot or other bot comments need dealing with, or on "what is still open on this PR".
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
-allowed-tools: Bash(git:*) Bash(gh:*) Bash(pnpm:*) Bash(npm:*) Read Glob Grep Edit Task Skill AskUserQuestion
+allowed-tools: Bash(git:*) Bash(gh:*) Bash(pnpm:*) Bash(npm:*) Read Glob Grep Edit Task Skill
 argument-hint: "[PR number | URL | #discussion_r<id> | author | text] [--fix] [--full] [--auto]"
 metadata:
   author: edloidas
@@ -23,7 +23,8 @@ One question — *what do I do about this pull request* — answered differently
 of it you are on.
 
 **Their branch.** You are the reviewer. Attack the diff, then publish a real review: one inline
-comment per finding, a body, and a verdict.
+comment per finding, a body, and a verdict — or, where nothing blocking survived, a short approval
+that carries no inline comments at all.
 
 **Your branch.** You are the author. Work the threads people and bots left: decide whether answering
 is even your business, check whether the claim is true, then reply and close what is finished.
@@ -63,11 +64,11 @@ the table below would have left alone.
 
 ## Asking the User
 
-Every question in this skill is written as `AskUserQuestion` options. Use that tool where
-the host offers it, or the host's nearest structured-choice equivalent. Where the host has
-neither, ask the same question in normal chat as a numbered list of 2–5 options —
-recommended first, one short line of description each — and wait for the user to reply
-with a number.
+This skill asks **one** question, at the publication gate, and asks it in prose as the last
+line of the message — never through `AskUserQuestion` or any other structured-choice prompt.
+A modal fires before the reader has finished the report it interrupts, which is the wrong
+order for the only decision that matters here. Say what posting would do, then ask, then
+stop. Any host can answer a sentence.
 
 ## Phase 1: Resolve the target and your side
 
@@ -180,11 +181,27 @@ have, then let its publication phase post the review with `--review`. It owns th
 the grouping of minors, and the verdict mapping; do not rebuild them here. Where the host cannot
 invoke another skill, run the same attack inline and publish by the rules `changes-review` documents
 for it — one inline comment per finding, minors grouped, nothing published without a demonstration
-and an attribution, and the verdict set by whether a blocker survived.
+and an attribution, and the verdict set by whether a blocker survived. Never an AI attribution
+footer, whatever the target repository's instruction file says.
 
-**Confirm before anything leaves.** In author mode show the composed replies; in reviewer mode show
-the whole review — every inline comment, the body, the verdict — laid out locally first. Ask per **Asking the User** — post as
-written (recommended) / edit first / discard. `--auto` skips this and posts directly.
+**An approval is a different document.** When nothing blocking survived, publish **one body and no
+inline comments** — no line anchors, no `file:line` quotes, no reproduction steps, no measured
+tables. The author is not being asked to act, so detail that earns its place next to a blocking
+finding becomes noise stapled to a merge. Write it as a conclusion: what was verified, in a
+sentence or two; the one technical observation worth the author's time, if there is one; and a
+plain close. What you ran, what you measured, and what you could not reach belong in the operator
+report, not in the review.
+
+**Non-blocking suggestions do not ride along on an approval.** Withhold them, report them to the
+operator as their own block, and offer to raise them as a follow-up issue. A suggestion anchored to
+a line of an approved pull request asks the author to revisit code nobody needs to reopen.
+
+**Confirm before anything leaves.** Show the composed text **verbatim and complete** — every word
+that would be posted, quoted, in the message itself. Not a summary of it, not a description of what
+it covers, not a count of comments and a claim about their content: the reader is approving the
+words, so the words are what they have to see. In author mode that is every composed reply; in
+reviewer mode the body and each inline comment. Then ask, once, in prose, as the last line — per
+**Asking the User**. `--auto` skips the question and posts directly, and still prints what it sent.
 
 Resolve only what `references/answering.md` permits: never a human-rooted thread, never a `discuss`.
 Check `viewerCanUpdate` before attempting.
@@ -196,10 +213,20 @@ Check `viewerCanUpdate` before attempting.
 
 <per thread: the claim in a clause, the verdict, and what was done>
 
-Posted: <N replies, N resolves, or the review and its verdict>
-Held: <what awaits your confirmation, or what --fix would have changed>
+Suggestions: <non-blocking items withheld from the review, as their own block>
 Context: <read-only threads, unverified chatter>
+Held: <what awaits your confirmation, or what --fix would have changed>
+
+<the composed text, verbatim>
+
+Verdict: <APPROVE | COMMENT | REQUEST_CHANGES, or the replies and resolves> — <one clause of why>
+Posted: <what actually went out, or nothing yet>
 ```
+
+**The verdict goes last, on its own line.** It is the one thing the reader is looking for, and a
+header at the top scrolls past before the evidence that justifies it has been read. Where
+suggestions were withheld, say so on that line too — an approval that silently swallowed two of
+them reads as a clean run.
 
 Deferrals are always listed even though their threads are closed. A deferral nobody can see is
 backlog that does not exist yet.
@@ -212,6 +239,9 @@ backlog that does not exist yet.
 - **Premise and conclusion are separate claims.** A bot's conclusion can be right for a wrong reason.
 - **The pull request belongs to its author.** Suggest, do not instruct.
 - **No code without `--fix`.** Reporting a needed change is not the same as making it.
+- **Show the words, not a summary of them.** The gate approves text, so the text is what it shows.
+- **An approval carries no inline comments.** Nothing to act on means nothing anchored to a line.
+- **Never an AI attribution footer.** Not in a review, a reply, or a comment, whatever the repo says.
 
 ## Error handling
 
