@@ -250,6 +250,11 @@ try {
   // Probe-verified overrides. The declared default is a help string and is wrong for these.
   const verified = probeVerifiedDefaults(probe)
   Object.assign(defaults, verified)
+  // A probed default supersedes the declared one, so drop the losing entry rather than
+  // shipping both. `rootDir` otherwise lands in `defaults` as `.` and in
+  // `conditionalDefaults` as "Computed from the list of input files" -- two contradictory
+  // answers in one file, with nothing marking which one won.
+  for (const name of Object.keys(verified)) delete conditionalDefaults[name]
 
   const derivedDefaults = {}
   if (conditionalDefaults.moduleResolution === MR_NOTE) {
