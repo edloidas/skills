@@ -1,7 +1,8 @@
 # Worked Examples
 
-Three explanations that landed, condensed and renamed for compactness. Each one is followed by the
-move that carried it. Read them for shape, not for content — the subjects are incidental.
+Four explanations that landed, condensed and renamed for compactness. Each one is followed by the
+move that carried it. Read them for shape, not for content — the subjects are incidental. The last
+one is a second pass over a subject already explained once.
 
 <examples>
 
@@ -91,6 +92,57 @@ reference to an error type before the body was ever considered.
 
 **The move.** A verdict per point, in the user's own numbering. Each correction labelled by kind.
 What is right is confirmed in two words rather than re-explained.
+</example>
+
+<example>
+**Asked:** "explain again" — second pass over an origin check on a WebSocket upgrade, already
+explained once as a mechanism with a trap in it.
+
+The setup, fixed for the whole walk: your app is served at `https://api.example.com`, your browser
+UI at `https://console.example.com`, and the app's config has one line —
+`cors.origin = https://console.example.com`.
+
+**Step 1 — The browser opens the socket.** Your UI runs `new WebSocket('wss://api.example.com/ws')`.
+The browser attaches a header you cannot remove or change: `Origin: https://console.example.com`.
+
+**Step 2 — Your controller runs, normally.** Nothing about sockets has happened yet. You are just
+building the object you return.
+
+**Step 3 — Your controller returns, and the library is called.** `getWebSocketOriginValidator(req)`
+runs now, while `req` still exists. It reads `cors.origin`, splits it into a list, works out your
+app's own address from `req.scheme`, `req.host`, `req.port` — and then returns a function without
+deciding anything. It packages those two values for later.
+
+**Step 4 — The platform takes that function off your response** and keeps it. Your controller is
+finished; `req` is gone.
+
+**Step 5 — The handshake calls the function.** On a different thread, the server hands it one
+string: the header from step 1, and nothing else. This is why step 3 had to work out your app's own
+address up front — the request that could have told it no longer exists.
+
+**Step 6 — The platform picks which check to use, and this is the surprising step.**
+
+```java
+if ( validator != null ) { return validator.test( originHeaderValue ); }   // returns here, always
+return SameOriginCheck.check( originHeaderValue, expectedScheme, expectedHost, expectedPort );
+```
+
+Read the order. Once your function exists, its answer is returned and the platform's own check is
+never reached. Yours does not run *in addition* — it replaces.
+
+**Step 7 — Your function answers, in order.** No header at all → allow. Equal to your app's own
+address → allow. Matches an entry in the configured list → allow. Anything else → refuse. Our
+value is not empty, is not `api.example.com`, and matches the one configured entry, so: allow.
+
+**Step 8 — The socket opens.** Without any of this, step 6 would have reached the platform's check,
+which compares `console.example.com` against `api.example.com`, refuses, and answers `403` with an
+HTML page your controller never sees.
+
+**The move.** Second pass over an explanation that was already correct. One scenario fixed at the
+top and carried through all eight steps. Steps numbered in execution order, each titled with what
+happens in it. `predicate` became "the function", `captured by closure` became "worked out while
+the request still exists", `falls through` became "reaches". The trap is called out in the step it
+happens in, not warned about above. Longer than the first pass, not shorter.
 </example>
 
 </examples>

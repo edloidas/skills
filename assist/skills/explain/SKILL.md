@@ -6,8 +6,8 @@ description: >
   own account of something is correct.
 when_to_use: >
   When the user asks how or why something works, wants a walkthrough or a step-by-step, says
-  an earlier answer did not land ("explain again", "simpler", "I still don't get it"), or asks
-  whether what they wrote about it is right.
+  an earlier answer did not land ("explain again", "simpler", "I still don't get it"), asks
+  again on a subject already explained, or asks whether what they wrote about it is right.
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
 allowed-tools: Read Glob Grep Bash Task
@@ -53,6 +53,19 @@ one sentence.
 That is an arc, not a template. Skip any part the subject does not have, and let a one-line
 question have a one-line answer.
 
+## A Term Is Not An Explanation
+
+Naming a mechanism is not showing it, and one word that compresses three is a summary the reader
+has to unpack alone. Before using a term, expand it silently. If the plain words come out more
+specific than the term, they were the explanation and the term was hiding it.
+
+"Fails closed" is one word for "when the check throws, the request is blocked rather than allowed".
+The second is longer, complete, and needs nothing looked up. Prefer it. Compressing to a single
+word is only free when expanding it would tell the reader nothing they cannot already see.
+
+Keep the vocabulary that names what the reader is looking at — `extends`, `declaration`, an
+identifier from the file, a header on the wire. Those are the subject, not shorthand for it.
+
 ## Pick The Move The Content Calls For
 
 Each move fires on its own trigger. Where none applies, write prose.
@@ -65,22 +78,71 @@ Each move fires on its own trigger. Where none applies, write prose.
 | An expression is dense | Follow it with one plain sentence restating it |
 | One exact token carries the bug | Annotate that token inline, inside the code block |
 | A fix | The declaration before and the declaration after, and nothing else from the diff |
+| Control crosses several components, threads, or processes | Number the steps in execution order — see **Go Linear** |
 | The answer has genuinely separate parts | Give each a header written as a claim or a question, not a noun |
 | Several things across several dimensions | A table |
 
-## When The First Explanation Did Not Land
+## The Second Pass
 
-"Explain again", "simpler", "I still don't get it" means the move was wrong, not that the length
-was wrong. The same explanation sent shorter fails the same way, and a longer one with more
-evidence fails harder.
+Invoking this skill again on the same subject *is* the signal, with or without a complaint. So are
+"explain again", "simpler", and "I still don't get it". None of them mean the answer was too long.
+The same explanation sent shorter fails the same way, and a second pass is often *longer* than the
+first, because plain words take more of them than jargon does.
 
-Change the move:
+Three things change, and they compose.
+
+### Change the move
 
 - Describing becomes tracing — walk the substitution instead of characterizing it.
 - The general case becomes one concrete instance, with real values in it.
 - Prose becomes a run — show the thing happening.
 - A finding becomes a mechanism. Evidence, severity, and a recommendation answer "what should I do
   about this", which is a different question from "how does this work".
+
+### Strip the jargon
+
+Round one may use the vocabulary of the subject. Round two may not use anything the reader would
+have to already know.
+
+Keep the terms that name what is on the screen — `extends`, `declaration`, the identifiers, the
+header names, the config keys. Replace every term standing in for a mechanism instead of showing
+it, and replace the English doing the same job: "falls through", "inherited rather than
+introduced", "errs towards", "surfaces", "propagates".
+
+The replacement is what the term means *on this subject*, in plain words. Expect it to be longer:
+
+| Instead of | Say |
+| --- | --- |
+| predicate | the function, or "the check" |
+| revokes / revocation | takes away access |
+| falls through to the matcher | reaches the list check |
+| opaque origin | what a sandboxed iframe or a `file://` page sends |
+| fails closed | errs towards blocking |
+| captured by closure | worked out while the controller was still running |
+| mutation-checked | each branch was deleted in turn to confirm a specific test starts failing |
+| RFC 6454 normalised | the port is left off when it is the scheme's default — 443 for https, 80 for http |
+| inherited rather than introduced | the HTTP side already behaves the same way, so this change is not what introduced it |
+
+The right column is not a dictionary. Each one is what that term meant on one subject, worked out
+from the code in front of you — which is the work the term was avoiding.
+
+### Go linear
+
+Round two is a walk, not an essay. Show the machine running: you press the pedal, that opens the
+fuel valve, that fills the cylinder, that fires.
+
+- Fix one scenario at the top and carry it unchanged to the end — real host names, real config,
+  real values. Never switch examples mid-walk.
+- Number the steps in the order execution reaches them, one thing per step. Title each step with
+  what happens in it, not what it is about.
+- Introduce nothing before the step where it matters, and refer back to nothing that has not
+  happened yet.
+- Where a step is the surprising one, say so inside that step rather than warning about it earlier.
+- End on the observable outcome the reader started from, and say what would have happened instead
+  without the mechanism just walked.
+
+Structure is what carries the second pass, so a step that only restates the previous one is a step
+to delete, not to keep for symmetry.
 
 ## Checking The User's Account
 
@@ -109,8 +171,9 @@ works" claims a completeness you have not earned.
 
 ## Worked Examples
 
-`references/worked-examples.md` holds three explanations that landed, each annotated with the move
-that carried it. Read it when the subject is substantial and the right shape is not obvious.
+`references/worked-examples.md` holds four explanations that landed, each annotated with the move
+that carried it — including one second pass over a subject already explained once. Read it when the
+subject is substantial and the right shape is not obvious.
 
 ## Related
 
