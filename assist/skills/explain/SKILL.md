@@ -33,7 +33,9 @@ Earlier turns are where errors accumulate.
 Where the real value can be produced rather than reasoned about, produce it — run the command,
 print the resolved type, compile the case, log the payload. An explanation built on a captured
 value is correct for the reader's actual situation. One built on recall is a guess with confident
-grammar.
+grammar. Where the artifact cannot be read or run at all, explain from what you can see and mark
+every unverified step as unverified — recall is still the fallback, but it is never presented as a
+captured value.
 
 Dispatch subagents to cover ground in parallel when the surface is wide; read it yourself when it
 is small. Where the host has no subagent facility, do the same reading inline.
