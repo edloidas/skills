@@ -4,7 +4,7 @@ A collection of Claude Code and other agents skills following the [Agent Skills 
 
 **Never commit or push changes unless explicitly asked.** Never commit directly to the main branch unless explicitly asked.
 
-**No AI footers:** Do not add "Drafted with AI assistance", Claude Code session links, `<sub>` attribution lines, or anything similar to commit messages, issue bodies, or PR bodies. No `Co-Authored-By` trailer crediting an assistant either, and an existing one in git history is not licence to repeat it. Add attribution only when this file, the user's own instructions, or the user's prompt asks for it.
+**No AI footers:** Do not add "Drafted with AI assistance", Claude Code session links, `<sub>` attribution lines, a trailing `---` rule, or anything similar to commit messages, issue bodies, or PR bodies — including PRs created from the web. No `Co-Authored-By` trailer crediting an assistant either, and an existing one in git history is not licence to repeat it. Add attribution only when this file, the user's own instructions, or the user's prompt asks for it.
 
 ## Canonical Repo Instructions
 
@@ -702,22 +702,16 @@ pi installs straight from git. Do not run `npm publish`, `npm version`, or add d
 
 ## Git & GitHub
 
-Conventional commits: `feat`, `fix`, `docs`, `chore`, `refactor`, `test`, `style`, `ci`.
+Conventional commit style: `feat`, `fix`, `docs`, `chore`, `refactor`, `test`, `style`, `ci`.
 
-When working on an issue, create a new branch named `issue-<number>`.
-
-### Commits
-
-- **With issue:** `<Issue Title> #<number>` — e.g. `feat: add ask skill #12`
-- **Without issue:** `<type>: <description>`
-- **One commit per feature.** Do all work first, then produce a single clean commit. No intermediate commits.
-
-### Pull Requests
-
-- **Title:** `<type>: <description> #<number>`
-- **Body:** concise what/why, no emojis, one blank line between sections.
-- One `Closes #<number>` per line. GitHub links only the first reference after a keyword, so `Closes #1 #23 #456` closes #1 and silently leaves the rest open.
-- Never append a generated footer, `---` rule, session link, `<sub>` attribution, or promotional line, including on PRs created from the web.
+- **Branch**: `issue-<number>` when working on an issue.
+- **Commit / issue / PR title**: `<Issue Title> #<number>`, e.g. `feat: add ask skill #12`. Without
+  an issue, `<type>: <description>`.
+- **One commit per feature.** Do all work first, then produce a single clean commit. No
+  intermediate commits.
+- **PR body**: concise what and why, one blank line between sections. One `Closes #<number>` per
+  line, last — after the body text. GitHub links only the first reference after a keyword, so
+  `Closes #1 #23 #456` closes #1 and silently leaves the rest open.
 
 ## License
 
