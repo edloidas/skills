@@ -23,7 +23,9 @@ fd -g "*Test.java" | wc -l
 
 Grep-able smells, mapped to the catalog (`anti-patterns.md`). Findings here are *leads* — a
 hit still needs the per-test pass to confirm; e.g. `toHaveBeenCalledWith` at a real boundary
-is legitimate.
+is legitimate. A suite with no test doubles silences every mock-keyed line below (1.1, 2.1,
+2.2) — that is not evidence of health, it just moves the whole tautology question onto 1.2
+and the per-test gate.
 
 ```bash
 # Weak asserts (catalog 1.3)
@@ -32,6 +34,9 @@ grep -rn "assertNotNull\|assertTrue(true" --include="*Test.java"
 
 # Tautology leads (1.1): expected value near a mock return in the same file
 grep -rln "mockReturnValue\|mockResolvedValue" --include="*.test.*"   # then inspect
+
+# Implementation mirror (1.2): computed or SUT-derived expectations — inspect each hit
+rg -n "expected\s*=\s*.*(Math\.|[-+*/%]|\w+\()" --glob "*.test.*"
 
 # Change detectors (2.1)
 grep -rn "toHaveBeenCalledTimes\|toHaveBeenCalled()" --include="*.test.*"
@@ -79,9 +84,14 @@ than reading.
 
 ```bash
 <test command>                              # baseline: green? how long for how many tests?
-<test command> --shuffle --repeat=5         # vitest; jest: --randomize, JUnit: random order
+<test command> --shuffle --repeat=5         # randomize order and repeat — flags differ, below
 <test command> --coverage                   # then open the report — read lines, not the %
 ```
+
+Order-and-repeat flags by runner: vitest `--shuffle --repeat=N`, jest `--randomize`, bun
+`--randomize --seed=N --rerun-each=N`, JUnit random order via its `testclass.order.default`
+property. A wrong flag aborts the run, and the audit then skips its only evidence-backed
+step — check `--help` before reporting this one as not applicable.
 
 | Observation | What it licenses you to say |
 | --- | --- |

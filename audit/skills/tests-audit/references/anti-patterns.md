@@ -43,7 +43,8 @@ implementation, so the test and the bug always agree. A wrong formula passes; on
 divergence* between two copies fails.
 
 **Detect:** arithmetic or transformation logic in the Assert/Arrange that mirrors the SUT.
-Any computed `expected` deserves suspicion.
+Any computed `expected` deserves suspicion — including one produced by calling the SUT itself
+or importing its constants, which is the purest form: the two sides cannot disagree at all.
 
 **Fix:** hand-compute the constant (`expect(total(999, 10)).toBe(899)`), choosing inputs
 where the rule's edge shows (rounding, boundary).
@@ -170,6 +171,11 @@ output.
 **Fix:** exercise the real producer — run the actual build/packaging command into a temp dir
 and inspect its untouched output. If that's too slow for the unit suite, move it to a
 build-verification job rather than faking it locally; a slow truth beats a fast lie.
+
+**Not this:** *drift tests* comparing two independently maintained sources — a generated file
+against its origin, docs against exports, a lockfile against a manifest. The detection grep
+fires on them because they read a config or a package manifest, but Arrange writes nothing
+that Assert reads: two authors do, and the test exists precisely because they diverge.
 
 ### 1.10 Error test that can pass without an error
 
