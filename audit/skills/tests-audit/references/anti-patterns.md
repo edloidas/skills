@@ -68,6 +68,12 @@ the target it stops measuring protection.
 `toMatchObject` is acceptable for partial shapes but knowingly ignores extra properties —
 prefer `toEqual` when the whole shape is the contract.
 
+**Not this:** *smoke tests where the Act is the assertion* — every emitted module loads on the
+declared engine, the container wires up, the migration runs, the schema parses. Failure throws,
+so the trailing `assertNotNull` is decoration on a real contract rather than the contract
+itself. The grep fires on them; credit them instead, provided the name says what loads and the
+test is not standing in for an unwritten assertion about what the thing then does.
+
 ### 1.4 Snapshot rubber-stamp
 
 **Mechanism:** a large snapshot has no oracle — nobody decided what correct looks like, so
@@ -200,26 +206,119 @@ When the assertion needs the error's payload (code, position, fields), use a hel
 fails if nothing threw and returns the typed error. Most repos already have one — find it
 (and check whether the repo's own rules already mandate it) before writing another.
 
-### 1.11 One-sided property oracle
+### 1.11 One-sided oracle
 
 ```ts
 fc.assert(fc.property(fc.double(), x => Number.isInteger(floor(x)) && floor(x) <= x));
+expect(description.length).toBeLessThan(CAP + 32);   // an empty string passes too
 ```
 
 **Mechanism:** property tests swap specific expectations for invariants, so a weak invariant
 constrains almost nothing across an enormous input space while reading as the most rigorous
 test in the file. The example above is satisfied by returning a large negative constant;
-`abs(x) >= 0` is satisfied by `() => 0`.
+`abs(x) >= 0` is satisfied by `() => 0`. The same hole opens in ordinary example tests, where
+no framework flags it: a bound near a cap is satisfied by producing nothing at all, and
+`length > 0` by a single element. Truncation, padding, batching and read limits attract it.
 
-**Detect:** a single-sided comparison, a type check, or a range check as the whole property.
-The test: name the dumbest implementation that satisfies it — constant, identity, "return
-the first argument". If one exists, the property is decorative.
+**Detect:** a single-sided comparison, a type check, or a range check as the whole property —
+or, in an example test, as the assertion on a size, count, length or duration. The test: name
+the dumbest implementation that satisfies it — constant, identity, empty, "return the first
+argument". If one exists, the oracle is decorative.
 
 **Fix:** make the oracle two-sided (`floor(x) <= x && x < floor(x) + 1`) or metamorphic — a
 relation only the correct answer satisfies: round-trip (`parse(print(x)) === x`), agreement
 with a slow reference implementation, invariance under reordering, consistency with an exact
-example at chosen points. When exact example tests already pin the rule harder, delete the
-property rather than pad it.
+example at chosen points. In an example test the two-sided form is usually just the exact
+value — `assertEquals(259, description.length())` over `< 300`. When exact example tests
+already pin the rule harder, delete the property rather than pad it.
+
+### 1.12 A double that can't happen
+
+```java
+// only Jwk.getPublicKey() raises this; JwkProvider.get() never does
+when( jwkProvider.get( kid ) ).thenThrow( new InvalidPublicKeyException( ... ) );
+```
+```ts
+vi.mocked(fetch).mockRejectedValue(new Error('500'));   // a 500 RESOLVES, with ok: false
+```
+
+**Mechanism:** the double produces something the real dependency cannot at that call site, so
+the test runs a scenario production never reaches. The SUT's branch for the real behavior
+never executes, and where a module classifies failures by *which* call threw, the stubbed
+throw lands in a different handler entirely — so a mutation of the branch under test survives.
+Unlike 2.2, this is a Group 1 defect with a mock count of one, at a legitimate boundary.
+
+**Detect:** for every stubbed throw or return, check the real method's declared exceptions and
+result shape *at that call site* — two adjacent calls where only one can raise what is being
+stubbed is the classic. A branch whose mutation survives a test that names it.
+
+**Fix:** stub where the real library throws from. Where the dependency's behavior is not in its
+signature, read it (source, bytecode, a probe) and record what you found in a comment: a
+version bump can invalidate it.
+
+### 1.13 Proof by downstream failure
+
+```java
+// named "...accepts a matching audience..."
+when( algorithmProvider.getAlgorithm( "RS256" ) ).thenThrow( ... );   // a later step
+assertEquals( "Unable to setup algorithm", result.get( "message" ) ); // ...asserts THAT failure
+```
+```ts
+// named "accepts a valid session"
+vi.mocked(loadProfile).mockRejectedValue(new Error('db down'));
+expect(res.status).toBe(500);
+```
+
+**Mechanism:** the test proves the rule it names by forcing an unrelated explosion downstream
+of it and asserting the wreckage. Reaching the next stage is a proxy for the promised outcome
+— 1.8's claim/measurement split one level down, and unreachable through 1.8's detection, which
+greps names for `complex|perf|security`. Three costs: it passes for a reason unrelated to its
+name, its failure diff points at the wrong subsystem, and the outcome it claims to pin
+(`valid: true`, the payload) stays unpinned suite-wide. A weaker form needs no sabotage at
+all: when several branches converge on one observable — five rejection causes all answering
+401 — asserting the collapsed value pins that *something* failed, not which rule fired, and
+swapping two branches keeps it green.
+
+**Detect:** a stub that throws in a test whose name promises success; an assertion naming a
+stage the test is not about; more branches in the SUT than distinct expected values across the
+tests naming them. Gate question 3 in its second form: name a *different* real branch that
+produces the same assert.
+
+**Fix:** assert the upstream rule's own outcome — sign a real token and assert `valid: true`.
+Where several causes share a status, assert the discriminator too (message, error code, typed
+error); where the branches are contractually indistinguishable, say so and don't split them.
+
+**Not this:** a *sentinel stub* — a deliberately unused throw on a later collaborator, left in
+place so that reordering the SUT's checks makes it fire and changes the outcome the test
+already asserts (401 "wrong audience" becomes 500 "algorithm"). The inversion is the point:
+the manufactured break is a tripwire, never the assertion, and it pins the ordering contract
+that a `verifyNoInteractions` would have pinned as choreography (2.1). It needs a comment
+saying it is meant to be unused; under a runner that rejects unused stubs, also the exemption
+(`lenient()` for Mockito strict stubs). Vitest and jest enforce nothing here, so there the
+comment is the whole safeguard.
+
+### 1.14 Assert through an idiom the consumer never uses
+
+```ts
+expect(payload.createdAt.getTime()).toBe(t);   // passes; the consumer receives a JSON string
+```
+```java
+assertEquals( "EUR", order.currency );   // passes; @JsonIgnore drops it from what the client gets
+```
+
+**Mechanism:** the value crosses a boundary that changes its shape, and the assert reads it
+through a friendlier access path than the real consumer does — so a value that is broken
+downstream looks correct here. A proxy or host object answers `obj.foo` while `in`,
+`Object.keys` and `JSON.stringify` see nothing; a class instance loses members through
+`structuredClone`; a struct compares equal in-process but drops fields through its
+serialization tags. No double has to be involved, which is why 1.12 and 2.2 both miss it.
+
+**Detect:** at every boundary crossing (serialization, ORM row, FFI, proxy, hydration, IPC),
+compare the assert's access idiom against the consumer's. Suspect any assert that reaches the
+value through a method the wire format cannot carry.
+
+**Fix:** assert through the consumer's own idiom, or cross the real boundary the consumer
+crosses and assert on the far side.
 
 ---
 
@@ -241,7 +340,12 @@ documented rule behind them ("retries exactly once" is documented; "calls save t
 incidental).
 
 **Fix:** assert the observable outcome (return value, state change, outgoing message at the
-boundary). Keep an interaction assert only where the outgoing call *is* the contract.
+boundary). Keep an interaction assert only where the outgoing call *is* the contract. A log
+line is one such outgoing message, and only where observability itself is the promise — an
+operator can see why this failed, no secret and no attacker-controlled newline ever reaches
+the line — never as a proxy for the behavior. Check it is *delivered* where it must be
+observed: a line below the deployment's configured level, or a body the framework rewrites,
+is not.
 
 ### 2.2 Over-mocking owned code
 
@@ -394,7 +498,8 @@ count taken as broad protection when the marginal test protects nothing new.
 
 **Detect:** for each test ask what it would be the *only* one to catch. No unique answer →
 redundant. Look for one fixture, seed, or helper threading through tests named after
-different features.
+different features. The mechanical form of the same question: break that one path and count
+how many tests go red.
 
 **Fix:** keep the test that pins the mechanism directly, plus the feature tests that add a
 contract of their own; drop the rest **opportunistically** when next touching that area.

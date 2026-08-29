@@ -57,7 +57,9 @@ Every test must pass all five. Any "no" is a Tighten, Rewrite, or Delete verdict
 3. **Falsifiable** — would it fail for a realistic bug? Flip a `<` to `<=`, break the formula,
    swap an argument. Sharpest form: name the dumbest implementation that still passes — if a
    constant, the identity function, or the test's own Arrange step satisfies the assert, it
-   constrains nothing.
+   constrains nothing. Second form, for a test that already looks precise: name a *different*
+   real branch of the SUT that produces the same assert. If one exists, the test pins the
+   outcome but not the rule.
 4. **Diagnostic** — does the name plus the failure diff identify the broken rule without a
    debugger?
 5. **Deterministic** — same result every run, in any order: no real time, no real network,
@@ -68,7 +70,11 @@ Every test must pass all five. Any "no" is a Tighten, Rewrite, or Delete verdict
 The most-violated rule in real suites, so it gets its own section:
 
 - **Double only unmanaged boundaries**: network, clock, filesystem, randomness, other
-  processes/services. Use real collaborators for everything you own.
+  processes/services. Use real collaborators for everything you own — often free, since the
+  case under test may short-circuit before it reaches the boundary at all.
+- **A double must be able to happen**: it may only throw what the real dependency throws at
+  that call site, and return what it can really return. An impossible stub runs a scenario
+  production never reaches (1.12).
 - **Prefer hand-rolled fakes** (in-memory repo) over interaction mocks — fakes verify state,
   mocks verify your assumptions about choreography.
 - **Interaction asserts** (`toHaveBeenCalledWith`, Mockito `verify`) are legitimate only when
@@ -122,10 +128,14 @@ this skill.
 | Smell | Verdict → fix |
 | --- | --- |
 | Mock returns X, assert X comes back | Delete, or Rewrite against the translation the module performs |
+| Stub throws/returns what the real dependency can't at that call site | Rewrite against the dependency's actual contract — read its source if the signature won't say |
+| Assert reads the result through a friendlier idiom than the consumer uses | Rewrite: assert through the consumer's idiom, or cross the real boundary |
+| Test named for success proves it by sabotaging a *later* step | Rewrite to assert the named rule's own outcome |
+| One status/variant shared by N branches, asserted alone | Tighten: assert the discriminator, or admit the branch isn't pinned |
 | Name/CI claims a property (complexity, perf, security) the assert can't measure | Rewrite to what it does pin + rename, or Delete the claim |
 | Arrange — or a grep of the SUT's own source — establishes what the Assert checks | Rewrite around the real producer: run it, inspect the artifact |
 | All assertions live inside `catch` | Tighten: `toThrow` / a helper that fails when nothing throws |
-| Property a constant or identity function would satisfy | Tighten to two-sided/metamorphic, or Delete |
+| Property — or a size/length/count assert — a constant, empty or identity would satisfy | Tighten to the exact value, two-sided, or metamorphic; else Delete |
 | N feature tests all re-proving one mechanism | Not a finding — suite-level observation only |
 | Expected value computed with SUT's formula | Tighten: replace with hand-computed constant |
 | `toBeDefined` / `assertNotNull` / `not.toThrow` as the only assert | Tighten: assert the precise value or shape |

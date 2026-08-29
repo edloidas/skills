@@ -95,6 +95,9 @@ Policy (the SKILL.md version, applied):
 - Mock **only unmanaged boundaries**: network, clock, fs, randomness, other processes.
 - Real collaborators for owned code. If wiring real collaborators is painful, that's design
   feedback (see §6), not a license to mock.
+- **Stub only what the real dependency can do** at that call site — the exceptions it declares,
+  the shapes it returns. Check before stubbing a throw; where the signature won't say, read the
+  source and leave a one-line note of what you found (1.12).
 - Prefer **fakes** (in-memory implementations verified by state) over interaction mocks.
 - Interaction asserts only when the outgoing call **is** the contract; call counts only when
   the count is a documented rule.

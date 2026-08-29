@@ -72,8 +72,14 @@ grep -rn "package\.json\|readFileSync(.*scripts\|toContain('chmod" --include="*.
 fd -e test.ts -e test.tsx -e spec.ts | grep -Ei "complex|perf|benchmark|memory|scalab|secur"
 rg -n "performance|complexity|O\(n" .github/workflows/ 2>/dev/null   # claims one level up
 
-# Property oracles (1.11): read each property, name the dumbest passing implementation
+# One-sided oracles (1.11): properties, and plain bounds a do-nothing implementation passes
 grep -rn "fc\.assert\|fc\.property\|@Property\|forAll(" --include="*.test.*"
+grep -rnE "toBeLessThan|toBeGreaterThan|\.length > 0" --include="*.test.*" \
+  | grep -Ei "length|size|count|duration|bytes"   # unfiltered this fires on every timing assert
+grep -rn "assertTrue(.*\.\(length\|size\)() *[<>]" --include="*Test.java"
+
+# Unfaithful doubles (1.12): every stubbed throw, checked against the real method's contract
+grep -rn "mockRejectedValue\|thenThrow" --include="*.test.*" --include="*Test.java"
 ```
 
 ## 2b. Dynamic checks
@@ -118,6 +124,11 @@ Two resolution rules before the shortcuts:
 Shortcuts that usually settle a verdict fast:
 
 - Expected value traceable to a mock return in the same test → 1.1, **Rewrite or Delete**.
+- Stubbed exception the real method cannot raise at that call site → 1.12, **Rewrite**. This
+  one needs the dependency's own source or docs open; the test reads fine without them.
+- Test name promises success, Arrange stubs a later step to throw → 1.13, **Rewrite**.
+- Assert reads a value that crossed a serialization/ORM/FFI boundary through an idiom the
+  consumer does not use → 1.14, **Rewrite**.
 - Only assertion is existence/no-throw → 1.3, **Tighten**.
 - Interaction assert on an owned collaborator → 2.1, **Rewrite**.
 - Name is a method name or ticket → 3.1, **Tighten** (rename) — then re-check question 1:
@@ -212,6 +223,9 @@ duplication."
   structural diff
 - Coverage threshold is correctly capped: the uncovered lines are defensive branches;
   raising it would manufacture theater
+- One-line notes on assertions that would otherwise look loose, naming what would pass
+  without them ("exact, not an upper bound: 'at most the cap' also passes if nothing was
+  read") — gate question 3, written into the test
 
 ### Path to fixing
 1. Remove the false guarantees (1.8, 1.9) — highest value, smallest diff
@@ -252,10 +266,12 @@ Verification, in order:
 ```
 
 Then **mutation spot-check** every Rewrite: break the SUT rule the test claims to pin (flip
-a boundary, change a constant, invert a condition), run, confirm red, revert. A rewritten
-test that can't go red just relocated the theater. For broader checks on critical modules,
-suggest mutation tooling (Stryker for TS/JS, PIT for Java) — but the manual spot-check is
-mandatory either way.
+a boundary, change a constant, invert a condition, reorder two checks), run, confirm *exactly
+the test that claims to pin it* goes red, revert. A rewritten test that can't go red just
+relocated the theater; a mutation that reddens some other test instead means one of the two
+is misnamed, and one that reddens many is 3.6 measured rather than guessed. For broader
+checks on critical modules, suggest mutation tooling (Stryker for TS/JS, PIT for Java) — but
+the manual spot-check is mandatory either way.
 
 Report what changed grouped by verdict, with before/after test counts and any bugs the
 tightened asserts exposed.
