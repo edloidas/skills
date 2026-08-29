@@ -154,7 +154,7 @@ throw RuntimeException("Failed to list exports: ${e.message}", e)
 
 // right — Best-effort path: explicitly non-critical
 catch (_: IOException) {
-    // ? Metadata is non-critical; export itself already succeeded
+    // Metadata is non-critical; export itself already succeeded
 }
 ```
 

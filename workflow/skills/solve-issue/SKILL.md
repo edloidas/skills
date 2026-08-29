@@ -421,10 +421,11 @@ answers why the code is built the way it is, which is the first thing the body h
 to establish. Pass it along under Commit below; `issue-flow` folds it into that
 paragraph rather than tacking it on at the end.
 
-If `code-cleanup` is not installed, do the comment pass inline: delete comments
-that narrate what the code already says, keep non-obvious gotchas at one to two
-lines, and leave documentation comments and `HACK`/`FIXME`/`TODO` markers
-alone.
+If `code-cleanup` is not installed, do the comment pass inline, and be
+aggressive: delete comments that narrate what the code already says, that repeat
+what a nearby comment already carries, or that point at an issue or PR instead of
+stating the fact. Keep non-obvious gotchas at one to two lines. Leave
+documentation comments and `HACK`/`FIXME`/`TODO` markers alone.
 
 ### Remove cruft
 

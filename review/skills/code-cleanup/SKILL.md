@@ -1,13 +1,16 @@
 ---
 name: code-cleanup
 description: >
-  Post-implementation cleanup of correct code. Removes comments that restate the code or
-  narrate how it works, moves design rationale to the commit message, compacts genuine
-  gotchas, renames unclear symbols so a comment is not needed, checks the code against the
-  project's conventions, and simplifies what is more complicated than it needs to be. Gentle
-  on docs. Auto-applies and reports.
+  Post-implementation cleanup of correct code. Prunes comments aggressively: deletes what
+  restates the code, files design rationale to the commit message and wider context to the PR
+  or an issue, collapses one mechanism explained in three places, strips issue and PR
+  references that make a file unreadable on its own, compacts genuine gotchas, renames unclear
+  symbols so a comment is not needed, checks the code against the project's conventions, and
+  simplifies what is more complicated than it needs to be. Tightens docs without gutting them.
+  Auto-applies and reports.
 when_to_use: >
-  After implementing, before committing, or on "clean up the comments", "tidy this code",
+  After implementing, before committing, or on "clean up the comments", "trim the comments",
+  "prune them aggressively", "we don't need that many comments", "tidy this code",
   "apply the conventions", "simplify this".
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
@@ -17,33 +20,43 @@ argument-hint: "[files | commit-ref] [--dry-run] [--comments-only] [--no-simplif
 
 # Code Cleanup
 
-Post-implementation cleanup of code that is already correct. Strips comment noise an AI tends to
-add, applies the project's conventions, and simplifies what is needlessly complicated.
+Post-implementation cleanup of code that is already correct. Prunes the comment noise an AI tends
+to add, applies the project's conventions, and simplifies what is needlessly complicated.
 
 **Correctness is not this skill's job.** It does not hunt for bugs, and it must not "fix" behavior
 it thinks is wrong — that is `/changes-review`. Everything here preserves behavior.
 
 ## Core Principle
 
-**A comment should explain only what the code cannot.** Three things the code already covers, so a
-comment must not:
+**A comment stays only if the code cannot carry it and no other artifact can either.** The default
+for every comment in scope is *delete*. One survives by earning its line, not by being defensible.
 
-- **What the code does** — readable from the code itself. Delete.
-- **The design story / why it was built this way** — that is the commit message's job, not the
-  source's. Move it out, hand it to the commit.
-- **A missing name** — if a comment exists because a variable or function is unclearly named, rename
-  the symbol instead.
+**Ask where the sentence belongs before asking whether it is true.** A comment competes with the
+code itself and with three other artifacts, and it loses to all four:
 
-What remains worth keeping: genuinely non-obvious behavior, timing gotchas, hacks, and external
-constraints — kept, but compacted to a line or two.
+| What the sentence says | Where it belongs |
+| --- | --- |
+| What the code does | The code. Delete the comment. |
+| Why it is built this way — the decision, the alternative rejected, the history | The commit message |
+| What changed and what a reviewer should look at | The PR body |
+| Work still owed, or context that outlives this change | An issue |
+| What a reader of *this file* would get wrong without it | Here. Keep it, at one or two lines. |
 
-## When to Use
+Only the last row survives contact with the source. The rows above it are usually real content
+filed in the wrong place — surface the text in the report under the destination it belongs to, then
+take it out of the code.
 
-- After completing a feature implementation, before committing
-- When asked to "clean up comments", "trim the comments", "remove excessive AI comments", or
-  "the comments are over-explaining"
-- When asked to apply project conventions or simplify an implementation
-- Called by other skills as a final cleanup step
+Two further removals are not about placement:
+
+- **A missing name.** A comment that exists because a symbol is vaguely named is a rename, not a
+  comment.
+- **A fact already stated nearby.** Once one comment carries a mechanism, a second comment on
+  another part of that mechanism is duplication — see Phase 2.5.
+
+**Be aggressive, and know what aggression means here.** It means deleting what does not earn its
+place. It does not mean shortening to save space: a surviving comment must still read well and
+still be correct, and a compaction that drops a fact or leaves a half-sentence is a worse outcome
+than the verbose original it replaced.
 
 ## Read Intent First
 
@@ -136,34 +149,72 @@ that have not said otherwise — not a house style to write into someone else's 
 
 ### Phase 2: Classify Each Comment
 
-Run every in-scope comment through this table. The first three classes are the AI-noise the skill
-exists to remove.
+Run every in-scope comment through this table. The first five classes are the AI-noise the skill
+exists to remove; a comment that matches none of them still has to earn its line under the Core
+Principle before it stays.
 
 | Class | What it looks like | Action |
 | --- | --- | --- |
 | **Restates the code** | One-liner narration (`// increment counter`) **or** a multi-line block describing how the mechanism works, step by step, that a reader gets from the code itself | **Remove** |
-| **Design rationale / history** | "We do it this way because…", "Captured here because by the time X runs…", the story of the decision aimed at a PR reader | **Remove from code; surface the text for the commit message** |
+| **Design rationale / history** | "We do it this way because…", "Captured here because by the time X runs…", "chose this over Y", the story of the decision aimed at a PR reader | **Remove from code; surface the text for the commit message** |
+| **Wider context** | Describes the change rather than the file: what a reviewer should check, what the surrounding refactor is for, what is deliberately out of scope | **Remove from code; surface it for the PR body** |
+| **Duplicate** | Restates a mechanism a nearby comment already carries, from a second angle | **Remove — keep the one authoritative statement** (Phase 2.5) |
+| **External-context reference** | `// see #123`, `// added for PR #45`, `// per the linked issue`, `// fixes JIRA-88`, `// see STAGE3.md` | **Strip the reference.** If the fact matters, state it inline so the file reads on its own; if it does not, delete the comment. Keep a link only where the context is genuinely unreachable otherwise — an upstream bug tracker for a workaround, a spec section, an RFC |
 | **Non-obvious behavior / gotcha / hack** | Timing dependency, surprising side effect, workaround for an external bug, a constraint you cannot infer from the code | **Keep — compact to 1–2 lines, drop the narration** |
 | **Comment compensating for a bad name** | The comment exists mainly to explain what a vague symbol means | **Rename the symbol** (see Phase 3); delete the comment. Under `--comments-only`, leave both and report the rename as a suggestion |
-| **Documentation (JSDoc / docstring / public API)** | API-level doc humans rely on | **Gentle:** correct inaccuracies, tighten wording for human readability, never gut |
+| **Documentation (JSDoc / docstring / public API)** | API-level doc humans rely on | **Gentle, not exempt:** correct inaccuracies and tighten — cut prose that re-spells the signature or the parameter names. Never gut what a caller cannot get from the type: what it does, what it throws, what it returns |
 | **AI implementation artifacts** | `// TODO: implement` on done code, `// Claude:`/`// AI:`, `// Add your code here`, leftover `console.log('DEBUG…')`, commented-out alternatives with AI reasoning | **Remove** |
 | **Misleading / stale** | Describes behavior the code no longer has, wrong names, outdated references | **Fix if obvious, else flag** |
-| **Markers** | `HACK` `FIXME` `XXX` `BUG` `@ts-expect-error` `eslint-disable` `// region`, license headers, and the prefix convention some repos use — `// !` warning, `// *` section divider, `// ?` open question, `// TODO:` | **Preserve** (flag `FIXME`/`HACK` for review, don't delete). A `// *` divider is structure, not restatement; a `// ?` is an open question, not design rationale |
+| **Markers** | `HACK` `FIXME` `XXX` `BUG` `TODO` `@ts-expect-error` `eslint-disable` `// region`, license headers | **Preserve** (flag `FIXME`/`HACK`/`TODO` for review, don't delete) |
 
 **The test for the top two classes:** read the code *without* the comment. If you still understand
 what it does, the comment was restating — remove it. If what you lose is *why a decision was made*
 rather than *what the code does*, that belongs in the commit message, not the source.
 
+**Prefix markers — `// !` warning, `// ?` open question, `// *` divider — belong to the human,
+never to you.** Never author one; the user places them by hand. What to do with one that already
+exists turns on whose line it is:
+
+- **In pre-existing code** — preserve the prefix. The comment text is still judged like any other,
+  but the marker is not yours to remove.
+- **On a line this change added** — drop the prefix and judge the bare comment on its merits.
+  Exception: keep and match it where the project genuinely uses the convention — `CLAUDE.md`,
+  `AGENTS.md`, or a rules file documents it, or the surrounding untouched code is visibly written
+  that way.
+
+A `// TODO:` left on work this change just finished is an AI implementation artifact, and goes.
+One the project or the user placed is a marker, and stays.
+
 **Test files:** a step-label comment that just narrates the next call (`// focus the field`) is
 restatement — remove it. Keep one only where it conveys intent the calls don't (e.g. "most recent,
 not stale"). The test name and assertions should carry the rest.
+
+### Phase 2.5: Read the survivors together
+
+Phase 2 judges one comment at a time, which is exactly how three individually defensible comments
+end up telling one story between them. Before applying anything, read the surviving set as a whole.
+
+- **One mechanism, one home.** Where two or three comments each explain a part of the same
+  mechanism, keep the explanation *once* — on the thing all of them exist to serve, usually the
+  field or the declaration rather than any of the functions touching it — and delete the others.
+  The remaining one may grow a line to absorb what was real in them.
+- **Contradiction.** The same rule stated in opposite directions in two places means at least one
+  is stale. Resolve it against the code; never keep both.
+- **Density is a signal, not a quota.** Count added comment lines against added code lines. Past
+  roughly a fifth, look again — not to hit a number, but because in practice that ratio has meant
+  duplication rather than thoroughness. Report both counts either way.
+
+This phase exists because wording-level trimming cannot reach the problem it solves. A pass that
+shortens three comments and leaves all three still leaves the reader three places to look and three
+places to update, and it is the failure this skill is most often called back to fix.
 
 ### Phase 3: Apply
 
 **Auto-apply.** Edit directly — uncommitted changes are the review surface, and `git diff` shows
 exactly what changed. With `--dry-run`, produce the Phase 4 report and stop without editing.
 
-**Order:** remove restatement → pull rationale out (collect for the report) → compact gotchas →
+**Order:** remove restatement → pull rationale and wider context out (collect for the report by
+destination) → strip external references → de-duplicate per Phase 2.5 → compact gotchas →
 rename-to-kill → docs polish → AI artifacts & dead code → quick wins → conventions → flag the
 rest. The simplifier runs after all of it, in Phase 3.5.
 
@@ -247,9 +298,12 @@ the renames and convention fixes it would otherwise have applied.
 ## Cleanup: [N files, M comments touched]
 
 Scope: uncommitted changes (4 files)
+Comment lines: 64 → 28  ·  added code lines: 201
 
 ### Removed
 - [count] restated / how-it-works comments
+- [count] duplicate explanations, folded into the one that stays
+- [count] external references (issue / PR / doc numbers) stripped
 - [count] AI artifacts
 - [count] dead commented code
 
@@ -270,9 +324,17 @@ Scope: uncommitted changes (4 files)
 - `parse.ts:44` nested conditional → guard clause
 - `index.ts:8` removed a wrapper that only forwarded to `format()`
 
-### Suggested for commit message
+### Belongs in the commit message
 > The seed is captured at the toggle's pointer-down because the click blurs the
 > field before the open handler runs. Clearing context on close is the plugin's job.
+
+### Belongs in the PR body
+- The change is scoped to the `Map` branch of the converter; the surrounding conversion path
+  is deliberately untouched.
+
+### Belongs in an issue
+- `parse.ts` still handles the legacy `v1` envelope and nothing in this change needs it —
+  worth an issue, not a comment.
 
 ### Quick wins
 - `util.ts:3` removed an import orphaned by a comment deletion
@@ -289,11 +351,16 @@ rules imply.
 - `file.ts:88` comment claims X but code does Y
 ```
 
-The **Suggested for commit message** section is the home for the design-rationale text removed from
-the code. It is an *input* to the commit body, not a block to be pasted at the end of one: it answers
-why the code is built the way it is, which is the first thing a body has to establish, so the commit
-writer folds it into that opening paragraph. Write it as prose that can carry that weight — the
-reason, not a label for it.
+The three **Belongs in** sections carry the text taken out of the source, filed where it should have
+gone. They are *inputs* to those artifacts, not blocks to be pasted at the end of one.
+
+**Commit message** is the important one: it answers why the code is built the way it is, which is
+the first thing a body has to establish, so the commit writer folds it into that opening paragraph.
+Write it as prose that can carry that weight — the reason, not a label for it.
+
+**PR body** and **an issue** are handed to whoever writes them. This skill files nothing itself: it
+opens no issue and edits no PR. Omit a section that has nothing in it rather than printing an empty
+heading.
 
 ## Examples
 
@@ -325,7 +392,7 @@ export function openOperatorWithSeed(): void { ... }
 // Focused field is pushed as context only while the dialog is open;
 // while closed it is remembered as a seed for the next open.
 ```
-Report → **Suggested for commit message:** "Seed captured at pointer-down because the click blurs
+Report → **Belongs in the commit message:** "Seed captured at pointer-down because the click blurs
 the field before the open handler runs; clearing on close is the plugin's job."
 
 ### Gotcha → keep, compacted
@@ -354,27 +421,44 @@ let activeDataContext: string | null = null;
 let focusedDataContext: string | null = null;
 ```
 
-### Useful transformation comment → keep, with the concrete example
+### Useful transformation → keep, carried by the concrete example
 
 ```typescript
-// Before
-// Strip the leading dot from the absolute data path
-// (e.g. ".itemSet[1].field" -> "itemSet[1].field").
-
+// Before: "Strip the leading dot from the absolute data path (e.g. …)."
 // After
 // Drop the leading dot: ".itemSet[1].field" -> "itemSet[1].field".
 ```
 
-### Documentation → gentle (correct & tighten, don't gut)
+### One mechanism in three places → one home
+
+Each of these is defensible alone, which is why a per-comment pass keeps all three. Together they
+are one story told in fragments, and the reader has three places to look and three to update.
+
+```typescript
+// Before — three adjacent declarations, three angles on the same mechanism
+// Set when a modifier rebuilds its own output, so the target's render is dead work.
+suppressRender: boolean;
+// A modifier rebuilds from `expression` plus its own `renderDice`, so rendering
+// the target first produces a string nobody reads.
+function createDiscardedRenderContext() { ... }
+// Every pool render routes through here, including the suppressed ones, which is
+// why the guard lives at the call site rather than in each wrapper.
+function renderedPool() { ... }
+
+// After — the whole mechanism sits once, on the field both functions serve
+// Set when a modifier rebuilds its own output; the target's render is then dead work.
+// Every pool render routes through `renderedPool`, including suppressed ones.
+suppressRender: boolean;
+```
+
+### External reference → self-contained, or gone
 
 ```typescript
 // Before
-/** Process */
-function processPayment(amount: number, currency: string): PaymentResult { ... }
+// Workaround for the case described in #412.
 
-// After
-/** Charges `amount` via the configured gateway. Throws PaymentError if the gateway is down. */
-function processPayment(amount: number, currency: string): PaymentResult { ... }
+// After — the fact is in the file; the issue number bought the reader nothing
+// Chrome reports a zero-height box until the font loads, so measure after `ready`.
 ```
 
 ## Common Mistakes
@@ -387,6 +471,11 @@ function processPayment(amount: number, currency: string): PaymentResult { ... }
   tighten, never gut.
 - **Renaming exported symbols with outside callers.** That's a refactor, not a rename-to-kill —
   flag it, don't apply it.
+- **Trimming a duplicate's wording instead of deleting it.** Three shorter comments still telling
+  one story is the same defect, one round later. Phase 2.5 is not optional.
+- **Keeping a comment because it is true.** True is not the bar — being unobtainable from the code,
+  and belonging in this file rather than the commit, the PR, or an issue, is.
+- **Authoring a `// !` warning, a `// ?` or a `// *` prefix.** Those are the user's to place.
 - **Touching unrelated comments.** Stay within the changed code; surgical.
 - **Drifting into correctness.** A simplification that changes behavior is a bug you introduced,
   not a cleanup. If the code looks wrong rather than untidy, say so in the report and leave it —

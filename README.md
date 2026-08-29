@@ -316,7 +316,7 @@ decisions that are expensive to reverse.
 | Skill | Description |
 | ----- | ----------- |
 | [changes-review](./review/skills/changes-review/) | Parallel cold reviewers that hunt bugs and requirement gaps, verify them, and optionally publish as a comment or a full review — finds, never fixes |
-| [code-cleanup](./review/skills/code-cleanup/) | Trim AI comment noise, apply project conventions, simplify correct code |
+| [code-cleanup](./review/skills/code-cleanup/) | Prune comments aggressively, apply project conventions, simplify correct code |
 | [consilium](./review/skills/consilium/) | Approach board — generate candidate approaches, attack them comparatively, recommend one |
 | [pr-review](./review/skills/pr-review/) | Review someone else's PR, or verify and answer the feedback on yours — replies and resolves |
 | [code-to-spec](./review/skills/code-to-spec/) | Extract a behavioral spec from a codebase (1 file up to 500+ files) |
