@@ -1,6 +1,6 @@
 {
   "name": "review",
-  "version": "5.2.1",
+  "version": "5.3.0",
   "description": "Adversarial review, cleanup, critical review board, PR feedback triage, and spec extraction",
   "author": {
     "name": "Mikita Taukachou",

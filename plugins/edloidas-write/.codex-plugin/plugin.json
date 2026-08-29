@@ -1,6 +1,6 @@
 {
   "name": "edloidas-write",
-  "version": "5.2.1",
+  "version": "5.3.0",
   "description": "A Codex-safe writing bundle for Markdown, READMEs, PR bodies, and issue comments.",
   "author": {
     "name": "Mikita Taukachou",

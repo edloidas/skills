@@ -1,6 +1,6 @@
 {
   "name": "edloidas-ship",
-  "version": "5.2.1",
+  "version": "5.3.0",
   "description": "A Codex-safe shipping bundle for npm package releases.",
   "author": {
     "name": "Mikita Taukachou",
