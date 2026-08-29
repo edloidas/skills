@@ -151,6 +151,10 @@ const skills = skillDirs.map((dir) => {
   const text = readFileSync(join(abs, 'SKILL.md'), 'utf8');
   const { fields, body, bodyOffset } = parseFrontmatter(text);
   const lines = body.split(/\r?\n/);
+  // A body ending in a newline splits to a trailing empty element, which is not a line.
+  // Counting it put every skill one line above what validate-skills.sh reports, and that
+  // script owns the cap — a measurement that disagrees with the gate is worse than none.
+  if (lines.length > 0 && lines[lines.length - 1] === '') lines.pop();
 
   const description = fields.description ?? '';
   const whenToUse = fields.when_to_use ?? '';
