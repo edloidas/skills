@@ -402,7 +402,7 @@ End-to-end workflows that orchestrate multiple skills into a single command.
 
 | Skill | Description |
 | ----- | ----------- |
-| [solve-issue](./workflow/skills/solve-issue/) | Full issue workflow: analyze, plan, implement, verify, review, then ship via `issue-flow` |
+| [solve-issue](./workflow/skills/solve-issue/) | Full issue workflow: analyze, plan, implement, verify, audit tests, review, ship via `issue-flow`, then answer the PR's automated reviewers |
 
 ## Skill Structure
 

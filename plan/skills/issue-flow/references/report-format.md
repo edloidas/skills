@@ -53,6 +53,16 @@ If rebased:
 Rebased onto origin/<base> | Force-pushed issue-<number>
 ```
 
+If amended:
+
+```
+### [4] Pushed (amended)
+Amended <short-sha> <subject> | Force-pushed issue-<number>
+```
+
+Both force-push variants name themselves, because the remote branch was rewritten and a
+report that reads like an ordinary push hides that.
+
 ### Step 5: PR Created
 
 ```

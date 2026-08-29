@@ -105,6 +105,7 @@ Determine entry step from user intent, check prerequisites, then proceed forward
 | "commit", "commit changes"           | Step 3     | On issue-* branch        |
 | "snapshot", "wip snapshot"           | Step 3 snapshot | Dirty tree        |
 | "push", "push changes"               | Step 4     | Commits ahead of remote  |
+| "amend", "amend and push"            | Step 4 → Amend | One commit on issue-* branch |
 | "create PR", "open PR"               | Step 5     | Branch pushed            |
 | "merge", "merge PR"                  | Step 6     | PR exists                |
 
@@ -647,7 +648,21 @@ fi
 
 ### Amend
 
-If the user asks to amend the last commit:
+If the user asks to amend the last commit — including when another skill enters here to
+fold post-review fixes back into a commit that is already pushed.
+
+Read the index first. This path rewrites published history and force-pushes it, so a
+stray staged file is not a bad commit that can be followed by a better one:
+
+```bash
+git diff --cached --name-only
+```
+
+Remove anything that must not ship, exactly as Step 3 requires before an ordinary commit.
+
+Then check the branch really is at one commit — `git log --oneline <base>..HEAD`. Amending
+only rewrites the tip, so a branch carrying `wip:` snapshots needs Step 3 → Consolidate
+first; amending it would push the snapshots along with the fix.
 
 ```bash
 before=$(git rev-parse "origin/issue-<number>" 2>/dev/null || true)
@@ -661,7 +676,10 @@ fi
 
 Always pass the message. A bare `git commit --amend` opens `$EDITOR`, which hangs a
 non-interactive shell. Use `--no-edit` only when the existing message is being kept
-verbatim and nothing new needs to land in it.
+verbatim and nothing new needs to land in it — which is the case when the amend only
+folds in fixes and the subject and body still describe them.
+
+Print the `Pushed (amended)` report.
 
 ### Leasing a force-push
 

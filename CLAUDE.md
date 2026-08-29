@@ -420,7 +420,7 @@ The 500-line body cap is mechanical, so it lives in `validate-skills.sh` rather 
 | Skill | Allowance | Why |
 | ----- | --------- | --- |
 | `plan/skills/issue-flow` | 1000 | **Sanctioned.** It owns every git and `gh` write in the issue pipeline — base detection, the fork point, the squash rules, the force-push lease. That concentration is the seam that let `solve-issue` and `changes-review` become portable, and splitting it would put the same rules in two files, which this repo treats as the drift mechanism. Its size is the cost of being the single writer. |
-| `workflow/skills/solve-issue` | 540 | Marginally over at 520. Trim on the next substantive edit rather than raising the budget. |
+| `workflow/skills/solve-issue` | 540 | Marginally over at 535, after the tests-audit and review-feedback phases were added and the plan template, verification set, and report format moved into `references/`. Trim on the next substantive edit rather than raising the budget. |
 
 A budget is a per-skill ceiling, not an exemption — a budgeted skill that grows past its
 allowance still fails, so a deliberate size cannot drift into an accidental one. Adding a
