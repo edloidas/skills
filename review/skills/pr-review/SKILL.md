@@ -54,7 +54,7 @@ confirmations and was caught only because the fix would not compile.
 | ------- | ---- | ------- |
 | Apply code changes | `--fix` | Off — verify, check, report |
 | Verification breadth | `--full` | Bot claims, plus anything heading for `fix` or `reject` |
-| Unattended | `--auto` | Off — previews and confirmations are shown |
+| Unattended | `--auto` | Off — previews and confirmations are shown. Never covers a human-rooted thread |
 
 **Explicit instructions in the invocation override the default posture in both directions.** "Just
 triage this" stays read-only however the postures resolve; "answer Anna" acts on a human thread that
@@ -201,7 +201,18 @@ that would be posted, quoted, in the message itself. Not a summary of it, not a 
 it covers, not a count of comments and a claim about their content: the reader is approving the
 words, so the words are what they have to see. In author mode that is every composed reply; in
 reviewer mode the body and each inline comment. Then ask, once, in prose, as the last line — per
-**Asking the User**. `--auto` skips the question and posts directly, and still prints what it sent.
+**Asking the User**. `--auto` skips the question for bot-rooted threads and posts those directly,
+and still prints what it sent.
+
+**`--auto` covers bot-rooted threads only.** It skips the gate where Phase 3 standing already reads
+*Act* — a thread a bot rooted, with no human in it. Any other thread is composed and **held unsent**
+whatever the flag says: one a human rooted, and the mixed case the standing table calls *bot-rooted,
+last comment by another human*. Its draft goes in the report for a person to send. A bot has
+no standing to be offended and its claim was verified before the reply; a human thread involves
+someone whose own words are being answered, and nobody has read the answer. Without this scope
+`--auto` would post a `reject` on a colleague's comment that no one approved, which the standing
+table's "confirm before posting" exists to prevent — and a global flag silently overriding a
+per-thread posture is a contract nobody can reason about.
 
 Resolve only what `references/answering.md` permits: never a human-rooted thread, never a `discuss`.
 Check `viewerCanUpdate` before attempting.
@@ -215,7 +226,8 @@ Check `viewerCanUpdate` before attempting.
 
 Suggestions: <non-blocking items withheld from the review, as their own block>
 Context: <read-only threads, unverified chatter>
-Held: <what awaits your confirmation, or what --fix would have changed>
+Held: <what awaits your confirmation, what --fix would have changed, and any human-rooted
+      draft --auto composed but may not post>
 
 <the composed text, verbatim>
 
@@ -236,6 +248,7 @@ backlog that does not exist yet.
 - **Verify, then speak.** No verdict that was not executed. No fix claimed without a green check.
 - **Standing before verdict.** Whether you may answer is decided before what the answer is.
 - **Never resolve a human's thread.** Closing someone's thread is theirs to do.
+- **`--auto` never posts a human-rooted or mixed thread.** Its draft is held for a person.
 - **Premise and conclusion are separate claims.** A bot's conclusion can be right for a wrong reason.
 - **The pull request belongs to its author.** Suggest, do not instruct.
 - **No code without `--fix`.** Reporting a needed change is not the same as making it.

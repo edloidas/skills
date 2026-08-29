@@ -42,10 +42,16 @@ Phase 7 appends to the summary above rather than reprinting it:
 
 ```text
 **Review feedback** (N round(s))
-- <bot or human> — reported | timed out after <budget>
+- <bot or human> — reported | timed out after <budget> | still pending (not waited on)
 - N threads — N fixed, N rejected, N discuss, N deferred
 - <one line per thread acted on>
+- Shipped after the summary above: <files and one line each, or `nothing`>
+- Held unsent: <human thread, and the draft reply composed for it>
 ```
+
+The **Shipped after the summary** line is not optional when it is non-empty. Phase 6
+printed a summary of the commit, and any fix applied here changes what merges — a merge
+whose content the user never saw described is the thing that line exists to prevent.
 
 A reviewer that timed out is still listed. So is a thread `pr-review` left open because
 its verdict was `discuss` — a decision waiting on a person is the one thing in this

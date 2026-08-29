@@ -4,9 +4,10 @@
 
 ## Scope
 
-Audit only the test files `git diff --name-only <fork>..HEAD` shows as added or
-modified. A suite-wide audit on an issue the user called simple returns a backlog
-nobody asked for, and every item in it is out of scope for the commit being built.
+Audit only the test files the branch added or modified, taken from the working tree by
+the rule Phase 2 → Create branch states. A suite-wide audit on an issue the user called
+simple returns a backlog nobody asked for, and every item in it is out of scope for the
+commit being built.
 
 ## Which verdicts to apply
 

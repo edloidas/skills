@@ -14,12 +14,20 @@ Those two fields answer the whole question, because GitHub **moves** a reviewer 
 them: a bot sits in `reviewRequests` while its review is pending, and the request
 disappears the moment it reports, at which point it appears in `latestReviews`.
 
+**Only half of that is observed.** The reported half was checked against real pull
+requests — `reviewRequests` empty, Copilot present in `latestReviews`. A bot actually
+sitting in `reviewRequests` while it works has *not* been seen; that half is inferred
+from the shape of the other. The whole `no / no` row rests on it, which is why the merge
+path treats that row as unknown rather than as an answer. If a bot ever turns up in
+`latestReviews` on a pull request where it never appeared as requested, the inference is
+disproved: say so in the report and stop trusting this table.
+
 | `reviewRequests` has a bot | `latestReviews` has a bot | Meaning | Wait |
 | --- | --- | --- | --- |
 | yes | no | Requested, still working | Yes |
 | yes | yes | Reported, then re-requested by a new push | Yes |
 | no | yes | Already reported | **None** — go straight to `pr-review` |
-| no | no | Nobody is coming | **None** — close the endgame |
+| no | no | Nobody is coming, *or* a pending bot this table cannot see | **None** on `PR only`; on `PR + merge` see below |
 
 A reviewer counts as a bot when its `__typename` is `Bot`, when its login ends in
 `[bot]`, or when it is `copilot-pull-request-reviewer` — Copilot's login, which carries
@@ -33,9 +41,10 @@ are worked in the same pass as the bots'.
 
 GitHub adds an automatic review request within seconds of the pull request opening, not
 instantly, so a single query at creation time can read `no / no` before the request lands.
-Re-run the query **once, about 20 seconds later**. Two consecutive `no / no` readings mean
-nobody is coming: print `No automated reviewers` and close the endgame with no further
-waiting.
+Re-run the query **once, about 20 seconds later**. The confirm is not an optimisation to
+drop: without it a request landing three seconds late prints as `No automated reviewers`,
+which is a wrong report, not a saved wait. Twenty seconds is itself a guess at how fast
+the request lands — another reason the merge path does not treat `no / no` as final.
 
 That confirm is also the entire allowance for review apps that comment without ever
 being requested. They are invisible until they speak, so there is nothing to poll for.
@@ -45,16 +54,28 @@ being requested. They are invisible until they speak, so there is nothing to pol
 `.github/` for app config, and do not scan the repository's other pull requests to learn
 what usually comments.
 
-## The budget
+## The budget — `PR + merge` only
 
-Ten minutes from the pull request opening, polled about every 30 seconds. **Exit the
-moment every pending bot has moved into `latestReviews`** — the budget is a ceiling, not
-a duration, and most reports land inside a minute.
+`PR only` never polls. Nothing downstream consumes the answer there, so a bot still
+pending is reported as pending and the flow stops. Detection and its confirm still run:
+a review that has *already* landed is worked, and that is the highest-value thing one
+free query can buy.
 
-A timeout is a result, not a failure. Say which bot did not report and continue. Never
-extend the budget because a review "should" be coming, and never read silence as
-approval: on `PR only` the silence is simply reported; on `PR + merge` the merge proceeds
-because the user authorized it, and the report says the bot never answered.
+On `PR + merge`: ten minutes from the pull request opening, polled about every 30
+seconds. **Exit the moment no bot is left in `reviewRequests`** — not when one has
+appeared in `latestReviews`. The two differ on the row that matters most: a bot that
+reported and was then re-requested by a push is in *both* lists, so an exit keyed on
+`latestReviews` is satisfied before the wait starts and round 2 never waits at all.
+
+A `no / no` reading here is **unknown**, not nobody. Keep polling until the CI wait
+resolves — which costs nothing, per the overlap below — and never merge with a bot
+unresolved. A timeout is not a resolution: report which bot never answered and leave the
+pull request open rather than merging through it.
+
+Never extend the budget because a review "should" be coming, and never read silence as
+approval. Silence is reported on `PR only` and blocks the merge on `PR + merge` — an
+incomplete review is not permission to proceed, which is the whole reason this phase
+sits before the merge.
 
 ## Overlap the wait on the merge path
 

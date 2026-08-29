@@ -24,8 +24,8 @@ JavaScript project.
 
 ## Scope-aware selection
 
-Use the changed file set from `git diff --name-only <fork>..HEAD`, with the `Fork:` SHA
-recorded in Phase 2:
+Use the changed file set from the working tree, taken with the `Fork:` SHA recorded in
+Phase 2 by the rule that phase states — never the `<fork>..HEAD` range.
 
 | Changed | Run |
 | ------- | --- |

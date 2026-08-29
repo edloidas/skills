@@ -98,15 +98,12 @@ If empty, ask via `AskUserQuestion`:
 - **Option 1** — header `Next issue`, label `Let issue-flow pick` `(Recommended)` — `Rank the backlog and recommend the most relevant open issue.`
 - **Option 2** — header `Manual`, label `Stop and ask` — `Exit so you can re-run with an explicit issue number.`
 
-- Option 1 → invoke `issue-flow` with intent `"pick an issue"`. That runs its
-  Step 0, which ranks the backlog, lets the user choose, and chains into
-  `issue-analyze` on the selection — so continue from Phase 2 with the number and
-  the analysis it returns.
-
-  Two of its outcomes are not a selection: the user picks `None`, or the branch it
-  short-circuited on carries no issue number. Both end the run — stop, and say which
-  one happened. Do not continue to Phase 2 without a scope analysis and a resolved
-  issue title; Phase 5 commits under that title.
+- Option 1 → invoke `issue-flow` with intent `"pick an issue"`. Its Step 0 ranks
+  the backlog, lets the user choose, and chains into `issue-analyze` on the
+  selection — continue from Phase 2 with the number and the analysis it returns.
+  Two outcomes are not a selection: the user picks `None`, or the branch it
+  short-circuited on carries no issue number. Both end the run — stop and say which.
+  Phase 5 commits under the issue title, so never continue without one.
 - Option 2 → print `Re-run with an issue number, e.g. /solve-issue 42.` and
   stop.
 
@@ -144,27 +141,10 @@ Progress** — one entry per Changes item.
 
 ### When to pause for approval
 
-Default: proceed to Phase 3 immediately after printing the plan. Do **not**
-ask for approval on simple issues — the printed plan is the checkpoint, and
-the user can interrupt if they disagree.
-
-Pause and ask via `AskUserQuestion` only if **any** of these fire:
-
-- Multiple valid implementation approaches exist where picking one is a real
-  judgment call (new API shape, data model, public-facing contract change)
-- The issue text is ambiguous about what "done" means
-- Implementation would clearly touch files outside what the issue title
-  implies
-- Changes list grew beyond ~10 items during planning
-- The analyzer surfaced a dependency that is unresolved
-
-When one of the above fires, ask one focused question:
-
-- **Option 1** — header `<≤12 chars>`, label `<proposed plan name>` `(Recommended)` — `<one-line reason>`
-- **Option 2** — header `<≤12 chars>`, label `<alternative>` — `<one-line reason>`
-- **Option 3** — header `Stop`, label `Exit without implementing` — `Leave the branch unstarted.`
-
-Wait for the reply before continuing.
+Default: proceed to Phase 3 immediately after printing the plan. The printed plan is the
+checkpoint, and the user can interrupt if they disagree — do **not** ask for approval on a
+simple issue. `references/plan-format.md` lists the five conditions that override that
+default and the shape of the one question to ask when any of them fires.
 
 ### Create branch
 
@@ -179,6 +159,13 @@ Record the `Fork:` SHA from its Step 2 report — later phases diff against it t
 scope verification and pass it to the reviewers. Use `Fork:`, not `Base:`:
 `Base:` is a branch *name*, and an epic branch that exists only on the remote
 fails in `git diff <name>..HEAD` with `unknown revision`. A SHA always resolves.
+
+**Every phase that scopes by the fork reads the working tree, never
+`<fork>..HEAD`.** Snapshots are optional until Phase 4.6, so on a run that never
+took one `HEAD` still *is* the fork and that range is empty while the changes sit
+unstaged — which would silently scope a phase to nothing. The form is
+`git diff --name-only <fork>` plus `git ls-files --others --exclude-standard`,
+and it is stated here once so no phase or reference has to restate it.
 
 Do not detect the base yourself; `issue-flow` owns base detection, and its
 `detect-base.sh` handles the `epic-*` cases a naive `origin/HEAD` lookup gets
@@ -218,17 +205,14 @@ asked for a change of that kind, ask, per **Asking the User**:
 - **Option 1** — header `Skip probe`, label `Skip observation` `(Recommended)` — `Checks cover this scope.`
 - **Option 2** — header `Observe`, label `Run and observe` — `Run it the way this project declares and read the result.`
 
-On opt-in, invoke `live-probe` with the behavior the issue asked for. It takes
-the project's declared way to run and observe from the agent instruction layer
-first — `CLAUDE.md`, `AGENTS.md`, rules files, which is where a preferred
-harness or browser driver is named — then the repo's declared commands, and
-reports `unverified` rather than inventing one. Expect **one** such tool to
-exist, not a matched pair — a repo with a component harness often has no browser
-driver, and the reverse is as common. Where the host cannot chain skills, follow
-the same method inline.
+On opt-in, invoke `live-probe` with the behavior the issue asked for. It reads
+the project's declared way to run and observe from the instruction layer first
+(`CLAUDE.md`, `AGENTS.md`, rules files), then the repo's declared commands, and
+reports `unverified` rather than inventing one. Expect **one** such tool, not a
+matched pair. Where the host cannot chain skills, follow the same method inline.
 
-Starting things is slow and the artifact it leaves has to be cleaned up, so the
-default is to skip.
+Starting things is slow and leaves an artifact to clean up, so the default is to
+skip.
 
 ### On failure
 
@@ -259,22 +243,27 @@ Apply only when **all** hold:
 
 Anything heavier — splitting functions, reshaping control flow, extracting
 utilities, renaming exported symbols — is **not applied**. Record it for the
-Phase 6 summary and move on. A refactor that is merely nice is out of scope
-for an issue the user called simple.
+Phase 6 summary and move on: a refactor that is merely nice is out of scope for
+an issue the user called simple.
 
-Re-run the Phase 4 checks the simplifications could plausibly break. If
-anything fails, revert the simplification rather than fixing around it — it
-was supposed to be behavior-preserving, and a failing check is proof it was
-not.
+Re-run the Phase 4 checks the simplifications could plausibly break. Revert
+anything that fails rather than fixing around it — behavior-preserving was the
+bar, and a failing check is proof it was not met.
 
 ## Phase 4.5: Tests Audit
 
-Skip this phase entirely when `git diff --name-only <fork>..HEAD`, scoped with the
-`Fork:` SHA recorded in Phase 2, touches no test file.
+Take the changed test files from the working tree, per **Phase 2 → Create branch**.
+Skip this phase only when that set carries no test file.
 
-Otherwise invoke `tests-audit`, scoped to the test files this branch added or changed.
-It runs **before** the advisor round for the reason Phase 4.4 does: a test rewritten
-after review ships unreviewed.
+Otherwise dispatch a subagent to run `tests-audit` over those files, and give it the code
+under test and nothing else — not the Phase 2 plan, not what you were trying to do, not
+why you wrote the tests that way. Its gate asks which promise each test pins and what
+dumbest implementation still passes it, so it needs the source; your justification is the
+one thing that would let a weak test through. Where the host has no subagent facility,
+run it inline under the same restriction. It runs **before** the advisor round for the
+reason Phase 4.4 does: a test rewritten after review ships unreviewed, and it earns its
+place beside those reviewers by running the suite — order dependence and flakiness are
+invisible to anyone only reading the diff.
 
 `tests-audit` reports and never edits, so applying its verdicts is this phase's job.
 `references/tests-audit-pass.md` has which verdicts to apply against a test this branch
@@ -443,8 +432,8 @@ whole phase is built to prevent, and Phase 4.6 requires the reviewer's own wordi
 Then ask via `AskUserQuestion`:
 
 - **question**: "What's next for this commit?"
-- **Option 1** — header `PR + merge`, label `Push, PR, auto-merge` `(Recommended)` — `Push, open a PR, answer the automated reviewers, merge when green.`
-- **Option 2** — header `PR only`, label `Push and open PR` — `Push, open a PR, answer the automated reviewers, stop before merge.`
+- **Option 1** — header `PR + merge`, label `Push, PR, auto-merge` `(Recommended)` — `Push, open a PR, answer the automated reviewers, merge once no reviewer is left unresolved.`
+- **Option 2** — header `PR only`, label `Push and open PR` — `Push, open a PR, answer any review already in, stop before merge.`
 - **Option 3** — header `Push only`, label `Push the branch` — `Push the branch. No PR.`
 - **Option 4** — header `Nothing`, label `Leave it local` — `Keep the commit local. No push.`
 
@@ -476,50 +465,51 @@ Neither path is finished at Step 5 either. Both continue into Phase 7.
 
 ## Phase 7: Review Feedback
 
-Runs on both PR endgames, `PR only` included — a review that lands after everyone walked
-away is a review nobody reads. Skipped for `Push only` and `Nothing`.
+Runs on both PR endgames. Skipped for `Push only` and `Nothing`.
 
-**Detect first; wait only for something actually pending.** One read of the pull
-request's requested reviewers and its latest reviews says whether a bot is still working,
-has already reported, or was never coming — GitHub moves a reviewer out of the first list
-the moment it reports. Nothing pending means **no wait at all**.
-`references/review-feedback.md` has the query, the truth table, the single ~20s confirm
-for a request that lands a beat after the pull request opens, the ten-minute ceiling for
-a bot that really is working, and why checks are the wrong place to look.
+**Detect, then decide whether waiting buys anything.** One read of the pull request's
+requested reviewers and its latest reviews, plus a single ~20s confirm, separates "still
+working" from "already reported" from "nobody is coming". The confirm is not optional: a
+request landing three seconds late otherwise prints as `No automated reviewers`, which is
+a wrong report rather than a saved wait. A review already in is worked on either endgame.
+Only `PR + merge` ever polls — on `PR only` nothing downstream consumes the answer, so a
+pending bot is reported as pending and the flow stops.
 
-On `PR + merge`, **do not idle before Step 6** — poll while CI is running, then invoke
-Step 6 once the poll has resolved. Its own CI wait returns almost immediately by then, so
-the cost is `max(bot, CI)` rather than the sum, and on a pipeline of any real length the
-bot window is free.
+**On the merge path `no / no` means unknown, not nobody.** That a pending bot sits in the
+requested list is inferred, not observed, so keep polling until the CI wait resolves —
+free, since it overlaps CI — and never merge with a bot unresolved. A bot that appears in
+the latest reviews having never appeared as requested disproves the table: say so in the
+report and stop trusting it. `references/review-feedback.md` has the query, the table,
+the budget, and why checks are the wrong place to look.
 
-Once a bot has reported, or a human has left comments, invoke `pr-review <N> --fix`. It
-owns this entire step: author-side standing, verifying each claim's premise separately
-from its conclusion, the six verdicts, the reply, and the resolve. Do not re-triage its
-findings here and do not restate its rules. Pass `--auto` **only** where Phase 6 chose
-`PR + merge` — that choice already authorized shipping unattended. On every other path
-let its own publication gate show the composed replies and ask.
+Then invoke `pr-review <N> --fix`, which owns the step: author-side standing, verifying
+each claim's premise separately from its conclusion, the six verdicts, the reply, the
+resolve. Do not re-triage its findings or restate its rules. On `PR + merge` add `--auto`
+— which posts unattended on bot-rooted threads only, holding any human thread as an
+unsent draft — plus the instruction to publish nothing until the fixes are pushed, since
+a reply naming a landed fix is false the moment it posts otherwise and its thread is then
+resolved on a claim that never became true. The order is fix, check, push, publish.
 
-Code that `pr-review --fix` applied is uncommitted work sitting on top of the squashed
-commit. It runs the project's own checks per fix, so re-run only the wider Phase 4 set
-once over the final tree. Then invoke `issue-flow` with intent `"amend and push
-#<N>"`, keeping the commit message verbatim, so its Step 4 amend folds the fixes into
-the single commit and force-pushes with a lease. One commit per issue
-survives the feedback round.
+Code that `--fix` applied is uncommitted work on the squashed commit. It runs the
+project's checks per fix, so re-run only the wider Phase 4 set once over the final tree,
+then invoke `issue-flow` with intent `"amend and push #<N>"`, keeping the message
+verbatim. Skip the amend when nothing changed: an all-`reject` round would force-push an
+identical tree, re-trigger CI and the reviewers, and buy a second round for nothing.
 
 Amending re-triggers a repository configured to request review automatically, so run the
-same detection again after the push — a repository that does not re-request reads as
-nothing pending and costs no second wait. Run this phase at most **twice**, matching
-Phase 4.6. What is still open after the second round goes in the report, not a third
-loop.
+detection again after the push and let it decide. Run this phase at most **twice**.
 
 ### Report and close
 
-Append the **Review feedback** block `references/report-format.md` specifies, then close
-the endgame:
+Append the **Review feedback** block `references/report-format.md` specifies — including
+what the fixes changed, because the merge ships code the Phase 6 summary did not describe
+— then close the endgame:
 
-- **PR + merge** — invoke `issue-flow` with intent `"merge #<N>"` for its Step 6, only
-  once the threads are answered. Merging ahead of the reviewers is what this phase exists
-  to prevent.
+- **PR + merge** — invoke `issue-flow` with intent `"merge #<N>"`, once no reviewer is
+  left unresolved. That is this phase's half of the gate; Step 6 supplies the other half
+  by waiting on CI. A bot that timed out counts as unresolved: report it and leave the
+  pull request open rather than merging through it. A human thread held for a person does **not** block
+  the merge — it can never be resolved, so waiting on it has no achievable meaning.
 - **PR only** — print the open-thread state and stop.
 
 If `pr-review` is not installed, list the open threads with their authors and claims and
@@ -538,8 +528,9 @@ someone else's claim, and an unverified rejection posted in public cannot be tak
 | Verification keeps failing               | Stop after 2 fix attempts in Phase 3/4, hand back to user       |
 | `changes-review` unavailable             | Note it in the summary, skip Phase 4.6, continue to Phase 5     |
 | `tests-audit` unavailable                | Run its gate inline per `references/tests-audit-pass.md`        |
-| No bot pending and none has reported     | No wait — say `No automated reviewers`, close the endgame        |
-| A pending bot never reports in budget    | Say which timed out, close the endgame anyway                   |
+| No bot pending and none has reported     | `PR only`: say `No automated reviewers`, stop. `PR + merge`: unknown — poll while CI runs |
+| A pending bot never reports in budget    | Say which timed out; leave the PR open, do not merge through it |
+| A bot reported having never been requested | The detection table is disproved — say so and stop trusting it |
 | `pr-review` unavailable                  | List the open threads and stop; never hand-roll a reply         |
 | Nothing in the project can be run        | Report the observation `unverified` with the absence named       |
 | Advisor fixes break verification twice   | Revert those fixes, list them as Notes, continue to Phase 5     |

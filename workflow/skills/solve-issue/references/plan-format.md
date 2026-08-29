@@ -31,3 +31,21 @@ Rules for the body:
 - Out of scope is mandatory. If nothing is out of scope, say so explicitly — it forces
   you to have thought about it.
 - Risks names the alternative you rejected. `None` is valid when the choice was forced.
+
+## When to pause for approval
+
+Phase 2 proceeds without asking by default. Pause and ask, per the skill's **Asking the
+User** convention, only if **any** of these fire:
+
+- Multiple valid implementation approaches exist where picking one is a real judgment call
+  (new API shape, data model, public-facing contract change)
+- The issue text is ambiguous about what "done" means
+- Implementation would clearly touch files outside what the issue title implies
+- The Changes list grew beyond ~10 items during planning
+- The analyzer surfaced a dependency that is unresolved
+
+Then ask one focused question and wait for the reply:
+
+- **Option 1** — header `<=12 chars>`, label `<proposed plan name>` `(Recommended)` — `<one-line reason>`
+- **Option 2** — header `<=12 chars>`, label `<alternative>` — `<one-line reason>`
+- **Option 3** — header `Stop`, label `Exit without implementing` — `Leave the branch unstarted.`
