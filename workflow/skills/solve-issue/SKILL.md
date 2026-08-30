@@ -255,12 +255,15 @@ bar, and a failing check is proof it was not met.
 Take the changed test files from the working tree, per **Phase 2 → Create branch**.
 Skip this phase only when that set carries no test file.
 
-Otherwise dispatch a subagent to run `tests-audit` over those files, and give it the code
-under test and nothing else — not the Phase 2 plan, not what you were trying to do, not
-why you wrote the tests that way. Its gate asks which promise each test pins and what
-dumbest implementation still passes it, so it needs the source; your justification is the
-one thing that would let a weak test through. Where the host has no subagent facility,
-run it inline under the same restriction. It runs **before** the advisor round for the
+Otherwise dispatch a plain subagent and have it invoke `tests-audit` over those files —
+`tests-audit` is a skill, not an agent type, so the subagent is a general worker that
+loads the skill; asking the host for an agent named after the skill fails. The subagent
+exists only for the isolation. Its brief is the changed test paths and the code under test
+and nothing else — not the Phase 2 plan, not what you were trying to do, not why you wrote
+the tests that way. Its gate asks which promise each test pins and what dumbest
+implementation still passes it, so it needs the source; your justification is the one thing
+that would let a weak test through. Where the host has no subagent facility, run it inline
+under the same restriction. It runs **before** the advisor round for the
 reason Phase 4.4 does: a test rewritten after review ships unreviewed, and it earns its
 place beside those reviewers by running the suite — order dependence and flakiness are
 invisible to anyone only reading the diff.
