@@ -1,0 +1,6 @@
+interface:
+  display_name: "Doubt"
+  short_description: "Verify a set of claims with independent seats and one verdict each"
+  default_prompt: "Use $doubt to verify the claims currently on the table: dispatch seats that are blind to the reasoning behind them and return one verdict per claim. Change nothing."
+policy:
+  allow_implicit_invocation: true

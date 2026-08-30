@@ -1,7 +1,7 @@
 {
   "name": "review",
   "version": "5.3.0",
-  "description": "Adversarial review, cleanup, critical review board, PR feedback triage, and spec extraction",
+  "description": "Adversarial review, cleanup, claim verification, approach boards, PR feedback triage, and spec extraction",
   "author": {
     "name": "Mikita Taukachou",
     "url": "https://edloidas.io"
@@ -14,6 +14,8 @@
     "review",
     "cleanup",
     "feedback",
-    "spec"
+    "spec",
+    "claims",
+    "verification"
   ]
 }

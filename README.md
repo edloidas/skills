@@ -10,14 +10,14 @@
 
 <p align="center">
   <img src="https://img.shields.io/github/v/tag/edloidas/skills?style=flat-square&color=FD3DB5&label=release" alt="Release">
-  <img src="https://img.shields.io/badge/skills-37-FD3DB5?style=flat-square" alt="37 skills">
+  <img src="https://img.shields.io/badge/skills-38-FD3DB5?style=flat-square" alt="38 skills">
   <img src="https://img.shields.io/badge/agents-4-FD3DB5?style=flat-square" alt="4 agents">
   <img src="https://img.shields.io/badge/license-MIT-FD3DB5?style=flat-square" alt="MIT license">
 </p>
 
 ---
 
-37 skills for planning, building, reviewing, auditing, maintaining, and shipping software —
+38 skills for planning, building, reviewing, auditing, maintaining, and shipping software —
 written once and distributed to [Claude Code](https://docs.anthropic.com/en/docs/claude-code),
 [Codex](https://developers.openai.com/codex), [OpenCode](https://opencode.ai), and
 [pi](https://pi.dev), following the [Agent Skills specification](https://agentskills.io/specification).
@@ -29,7 +29,7 @@ it. Nothing runs in the background, nothing is injected into every prompt.
 | ----- | -------------- | -----: |
 | [plan](#plan) | Issue drafting, scope analysis, backlog triage, full issue lifecycle | 3 |
 | [build](#build) | Conflict resolution, commits, findings fixes, live probes | 5 |
-| [review](#review) | Adversarial change review, cleanup, approach boards, PR feedback, spec extraction | 5 |
+| [review](#review) | Adversarial change review, cleanup, claim verification, approach boards, PR feedback, spec extraction | 6 |
 | [audit](#audit) | CI, scripts, security, skills, workspace, tsconfig, Three.js, React, tests | 9 |
 | [maintain](#maintain) | Agent config, label and editor config sync, lint migration, repo hardening, process cleanup | 6 |
 | [ship](#ship) | npm releases | 1 |
@@ -287,7 +287,7 @@ Conflict resolution, commit summaries, quick commits, findings fixes, and live b
 
 ### Review
 
-Change review, cleanup, PR feedback, approach boards, and spec extraction.
+Change review, cleanup, claim verification, PR feedback, approach boards, and spec extraction.
 
 `changes-review` attacks a diff — parallel reviewers on different models, each blind to the
 implementer's reasoning, then a verification round that re-attacks the findings before you see
@@ -313,11 +313,21 @@ before anything is ranked. An approach already on the table enters as one candid
 rather than as the subject of an audit. It is the most expensive skill in the collection; spend it on
 decisions that are expensive to reverse.
 
+`doubt` is the cheap half of that idea. It takes a set of claims that already exists — findings, a
+plan, an analysis, a reviewer's objection — and rules on each one with two seats that never see the
+reasoning behind them: one cold, one an agent outside the process. Its verdicts separate a claim
+that is wrong from one that is true only in a narrower case, and both from one that is true and
+still not worth acting on, so a seat that wants a trivial finding dropped never has to argue it is
+false. Upholding the claim set is a normal outcome. Two agents rather than nine is the point: it is
+affordable enough to fire before you contradict a reviewer, before a comment is published, or once
+before fixes start.
+
 | Skill | Description |
 | ----- | ----------- |
 | [changes-review](./review/skills/changes-review/) | Parallel cold reviewers that hunt bugs and requirement gaps, verify them, and optionally publish as a comment or a full review — finds, never fixes |
 | [code-cleanup](./review/skills/code-cleanup/) | Prune comments aggressively, apply project conventions, simplify correct code |
 | [consilium](./review/skills/consilium/) | Approach board — generate candidate approaches, attack them comparatively, recommend one |
+| [doubt](./review/skills/doubt/) | Verify a set of claims with two seats blind to the reasoning behind them — one verdict each |
 | [pr-review](./review/skills/pr-review/) | Review someone else's PR, or verify and answer the feedback on yours — replies and resolves |
 | [code-to-spec](./review/skills/code-to-spec/) | Extract a behavioral spec from a codebase (1 file up to 500+ files) |
 

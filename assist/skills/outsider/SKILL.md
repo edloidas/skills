@@ -157,6 +157,7 @@ now handles that structurally, so there is nothing left to suppress.
 Other skills invoke this one as a skill, not by script path — a repo-relative path only resolves
 inside one checkout.
 
-`review:consilium` runs its outside board seat through this skill, passing its own seat prompt as
-the preamble. That was the last duplicate runner in the collection; there is now one implementation
-of "call an agent CLI that is not the host".
+`review:consilium` runs its outside board seat through this skill, and `review:doubt` runs its
+outside verification seat the same way — both pass their own seat prompt as the preamble. That was
+the last duplicate runner in the collection; there is now one implementation of "call an agent CLI
+that is not the host".

@@ -47,6 +47,7 @@ reads and reasons; it never modifies the thing it examines.
 | -------- | --------- |
 | A diff, and you want it attacked for bugs and requirement gaps | `review:changes-review` |
 | Comment noise, naming, convention drift in changed code | `review:code-cleanup` |
+| A set of claims that already exists, and you want each one ruled on | `review:doubt` |
 | One quick outside opinion, no board and no synthesis | `assist:outsider` |
 | A back-and-forth about a design, not a verdict | `assist:discuss` |
 
