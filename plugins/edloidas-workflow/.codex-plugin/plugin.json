@@ -1,6 +1,6 @@
 {
   "name": "edloidas-workflow",
-  "version": "5.4.1",
+  "version": "5.5.0",
   "description": "A Codex-safe end-to-end workflow bundle that takes a GitHub issue from analysis to merged.",
   "author": {
     "name": "Mikita Taukachou",
