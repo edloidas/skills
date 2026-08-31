@@ -42,12 +42,22 @@ Phase 7 appends to the summary above rather than reprinting it:
 
 ```text
 **Review feedback** (N round(s))
-- <bot or human> — reported | timed out after <budget> | still pending (not waited on)
+- <bot> — reported | timed out after <budget> | still pending (not waited on)
+  | none requested on this PR (timeline checked <time>)
 - N threads — N fixed, N rejected, N discuss, N deferred
 - <one line per thread acted on>
+- Deferred to: #<issue> — <claim>   (merge path only; `—` when nothing was deferred)
 - Shipped after the summary above: <files and one line each, or `nothing`>
 - Held unsent: <human thread, and the draft reply composed for it>
 ```
+
+The reviewer line reports **what was read, not what exists**. "None requested on this PR"
+with the time it was checked is a fact about the timeline; `No automated reviewers` is a
+claim about the repository that no query supports.
+
+The **Deferred to** line is the deferral's only durable home on the merge path: the pull
+request closes and takes the resolved thread with it, so a deferral without an issue
+number here has been lost.
 
 The **Shipped after the summary** line is not optional when it is non-empty. Phase 6
 printed a summary of the commit, and any fix applied here changes what merges — a merge
