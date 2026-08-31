@@ -574,7 +574,7 @@ A caller that asked for a single commit (`"commit #<N>"` from an orchestrating s
 
 #### Check the index before committing
 
-`git reset --soft` leaves **the entire difference between `$fork` and your tree staged** — every file from every commit it unwound, including anything a `wip:` snapshot swept in. Naming files in **Execute** *adds* to that index; it does not narrow it. So after any reset, read the index and remove what must not ship:
+`git reset --soft` leaves **the entire difference between `$fork` and the last commit staged** — every file from every commit it unwound, including anything a `wip:` snapshot swept in. Read that as *committed* difference: the reset restores the index to `HEAD`'s content, so it captures nothing you edited after the last commit. Naming files in **Execute** *adds* to that index; it does not narrow it. So after any reset, read the index and remove what must not ship:
 
 ```bash
 git diff --cached --name-only
@@ -595,9 +595,20 @@ git commit -m "<subject>" -m "<body>"
 Two different states reach this point, and the staging rule differs:
 
 - **No reset happened** (the `0` row). The index starts empty, so `git add <files>` fully determines the commit. Prefer naming files over `git add -A` — here it genuinely is the check that keeps scratch files out.
-- **A reset happened.** The index already holds everything Consolidate unwound. Naming files cannot narrow it, so Consolidate's index check is what keeps scratch out; `git add` here is only for files that were never committed.
+- **A reset happened.** The index already holds everything Consolidate unwound, so `git add` here is for whatever it does **not** already carry — two sets, not one. Stage both, then read the index one last time, in this order:
 
-Finish with `git status --short` showing nothing you meant to commit. Untracked files you deliberately left out may still be listed — that is expected, and Step 3 has no authority to delete them.
+  ```bash
+  git add -u                      # edits to tracked files made after the last commit
+  git add <files>                 # files that were never committed
+  git diff --cached --name-status # re-read: staging may have undone Consolidate's check
+  git restore --staged <path>     # per stray that came back
+  ```
+
+  `git add -u` is the one that is easy to miss and silent when missed. The reset restores the index to `HEAD`'s content, so an edit made after the last `wip:` snapshot sits unstaged and the commit ships the tree as it was *before* it, with no error. This is the mainline path, not an edge case: a caller that trims comments or applies review fixes after its last snapshot lands here every time.
+
+  **The re-read is not optional, and it reads status, not just names.** `git restore --staged` never touches the working tree, so a stray Consolidate unstaged still differs from the index — and `git add -u` puts it straight back. Consolidate's check runs before staging; only this one sees what will actually be committed. Read the letter beside each path: a file that was `M` in the first check and is `D` in this one was deleted from the working tree after Consolidate vetted it, and `git add -u` has just staged its removal. A path you already cleared is not a path you can skip.
+
+Finish with `git status --short`. A **modified tracked file** still listed is the missed-`git add -u` bug, not a leftover — stage it and amend. Untracked files you deliberately left out may still be listed; that is expected, and Step 3 has no authority to delete them.
 
 Print the Step 3 report.
 
@@ -651,14 +662,15 @@ fi
 If the user asks to amend the last commit — including when another skill enters here to
 fold post-review fixes back into a commit that is already pushed.
 
-Read the index first. This path rewrites published history and force-pushes it, so a
-stray staged file is not a bad commit that can be followed by a better one:
+**Stage the fixes you were called here to fold in first** — a caller entering this path (post-review fixes, a comment trim) leaves its edits in the working tree, not the index, and `git commit --amend` commits the index. Skip this and the amend rewrites the message, force-pushes, re-triggers CI and the reviewers, and lands **none of the fixes** — while reporting success.
 
 ```bash
-git diff --cached --name-only
+git add -u                      # edits to tracked files
+git add <files>                 # anything new that belongs in the commit
+git diff --cached --name-status # now read what will actually ship
 ```
 
-Remove anything that must not ship, exactly as Step 3 requires before an ordinary commit.
+Read that last list before committing. This path rewrites published history and force-pushes it, so a stray staged file is not a bad commit that can be followed by a better one — `git restore --staged <path>` anything that must not ship, exactly as Step 3 requires before an ordinary commit. An empty list means there was nothing to amend: stop rather than force-pushing an identical tree.
 
 Then check the branch really is at one commit — `git log --oneline <base>..HEAD`. Amending
 only rewrites the tip, so a branch carrying `wip:` snapshots needs Step 3 → Consolidate
