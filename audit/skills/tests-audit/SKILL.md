@@ -11,17 +11,29 @@ when_to_use: >
   catching bugs.
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
-allowed-tools: Read Grep Glob Bash(grep:*) Bash(rg:*) Bash(fd:*)
+allowed-tools: Read Grep Glob Bash(grep:*) Bash(rg:*) Bash(fd:*) Bash(cat:*) Bash(wc:*) Bash(xargs:*) Bash(od:*) Bash(git diff:*) Bash(mktemp:*) Bash(cp:*)
 argument-hint: "[files | dir]"
 ---
 
 # Tests Audit
 
 Find the tests that don't pin behavior and report what to do with each. **This skill reports;
-it never edits the suite or the code under test.** It does run the suite — order dependence and
-flakiness cannot be found any other way — so route any coverage output to a temp path rather
-than the repo. The suite command is project-specific, so it is deliberately outside
-`allowed-tools`: the mechanical scan is pre-approved, running the suite is not.
+it never edits the repo — not the suite, not the code under test.** After it runs, the working
+tree is byte-identical and the history untouched.
+
+It does run the suite — order dependence and flakiness cannot be found any other way — and the
+mutation pass edits a *disposable copy outside the worktree*, never the repo. Coverage output
+goes to a temp directory too; a runner that cannot be redirected gets no coverage run.
+
+`allowed-tools` covers the read-only scan and the temp copy. Deliberately outside it: **the
+suite command**, which is project-specific, and **applying a mutant**, even to the copy. Those
+two are the audit's whole cost, so they stay a decision the host makes each time rather than a
+blanket grant.
+
+This skill is invoked automatically — by an orchestrator, or loaded on its own when a request
+matches. Assume most runs were never asked for by a person, and that nobody is watching the
+suite run. Say what a pass will cost before starting it, and take the capped budget whenever
+the run is not one somebody requested.
 
 ## Core Principle
 
@@ -59,7 +71,9 @@ Every test must pass all five. Any "no" is a Tighten, Rewrite, or Delete verdict
    constant, the identity function, or the test's own Arrange step satisfies the assert, it
    constrains nothing. Second form, for a test that already looks precise: name a *different*
    real branch of the SUT that produces the same assert. If one exists, the test pins the
-   outcome but not the rule.
+   outcome but not the rule. **Measure this one where the scope allows it** — the mutation pass
+   (`references/audit-procedure.md` §2c) answers it with a red/green matrix instead of a guess,
+   and a guessed answer must never be reported in the register of a measured one.
 4. **Diagnostic** — does the name plus the failure diff identify the broken rule without a
    debugger?
 5. **Deterministic** — same result every run, in any order: no real time, no real network,
@@ -93,16 +107,26 @@ The most-violated rule in real suites, so it gets its own section:
 
 ## Workflow
 
-1. **Scope**: explicit argument → exactly that. Otherwise the project's test suite, sampled
-   when it is too large to read whole — a mix of small and large files, pure-logic and
-   mock-heavy, plus any e2e specs. Reviewing only the tests added in a diff is
-   `review:changes-review`'s job, not this skill's.
+1. **Scope**: explicit argument → exactly that. Otherwise the test files in the working
+   tree's changes; otherwise the project's test suite, sampled when it is too large to read
+   whole — a mix of small and large files, pure-logic and mock-heavy, plus any e2e specs.
+   Diff-scoped is a first-class mode, not a borrowed one: `review:changes-review` judges
+   whether the change is correct, this skill judges whether the tests pin anything. Scope
+   bounds the *verdicts*, not the reading — a Delete for duplicate coverage still means
+   reading the neighbouring tests the diff never touched.
 2. **Mechanical scan** for grep-able smells (weak asserts, sleeps, `.skip`/`@Disabled`,
    `.only`, loops in test bodies, mock round-trips, catch-only error tests) — commands in
    `references/audit-procedure.md`.
 3. **Dynamic checks**: run the suite, then re-run it shuffled and repeated. Isolation,
    flakiness, and runtime don't grep — a green shuffled run is evidence no static audit can
    produce, and a red one is a High finding that names itself.
+3b. **Mutation pass** — break one rule at a time on a disposable copy and record which tests
+   go red. Its feasibility conditions, operator priority, and how to read the matrix are in
+   `references/audit-procedure.md` §2c. Its *size* is set by how this skill was invoked, not
+   by what it can afford: a person asking for a measured audit gets the full pass; auto-loaded
+   or called by another skill, it is capped hard or skipped. **Skip it and say so** whenever
+   it doesn't run — verdicts without a matrix are read, not measured, and must never be
+   written as if they were.
 4. **Per-test pass**: run each test through the Five-Question Gate and the catalog in
    `references/anti-patterns.md`. Assign a verdict:
 
@@ -149,6 +173,8 @@ this skill.
 | `it('fixes JIRA-4521')` | Tighten: rename to the rule the bug violated |
 | Test depends on a previous test's state | Rewrite: each test arranges its own world |
 | e2e: `waitFor...` with no assertion after it | Tighten: assert the outcome explicitly |
+| Fixture's bytes don't match its label — a plain space named no-break, an escape TS ate | Tighten: fix the literal, then confirm the case still goes red for its rule |
+| Red only when two independent mechanisms break at once, and sole cover for neither | Delete — no single realistic regression reddens it |
 | Test asserts an acknowledged-wrong value ("should be 4, left as is") | Report separately: that's a bug, not a test defect |
 | `.skip` / `@Disabled` / commented-out for months | Delete (git remembers) — Rewrite if its intent names an uncovered promise |
 | Getters, framework wiring, generated code under test | Delete — cost > 0, information = 0 |
@@ -164,6 +190,12 @@ Full catalog with mechanisms, detection, and worked fixes: `references/anti-patt
   recommend DRY-ing tests into a shared-helper labyrinth as the fix.
 - **Auditing e2e suites with unit-test rules.** e2e tests legitimately chain steps and share a
   browser; hold them to determinism, explicit asserts, and independence — not to one-Act purity.
+- **Writing an inference in the register of a measurement.** A claim about runtime behavior —
+  dead code, which branch fires, how many times something is called, what an output contains —
+  is either observed, and the report says how and shows the command, or it is a hypothesis,
+  labeled as one and carrying the command that would settle it. Reading the source never
+  licenses "verified". This is the failure mode a strong audit is most likely to have, because
+  the measured findings around it lend it their credibility.
 - **Reporting defects without calibration.** "12 findings" reads the same for an excellent
   suite as for a rotten one. Name the strengths, rank the findings, and don't lead with
   redundant deterministic tests — they cost little, and a pass to lower a test count costs
@@ -172,8 +204,9 @@ Full catalog with mechanisms, detection, and worked fixes: `references/anti-patt
 
 ## References
 
-- `references/audit-procedure.md` — scan commands, dynamic checks, verdict rubric, report
-  template, and the fix-pass order for whoever applies the report
+- `references/audit-procedure.md` — scan commands, dynamic checks, the mutation pass and when
+  it is worth running, verdict rubric, report template, and the fix-pass order for whoever
+  applies the report
 - `references/anti-patterns.md` — full catalog: symptom, mechanism, detection, fix
 - `references/writing-tests.md` — how to rewrite a flagged test: contract listing, naming, case
   selection, doubles, worked example, per-stack idioms (Vitest/TS, R3F, JUnit/Mockito,

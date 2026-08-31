@@ -320,6 +320,66 @@ value through a method the wire format cannot carry.
 **Fix:** assert through the consumer's own idiom, or cross the real boundary the consumer
 crosses and assert on the far side.
 
+### 1.15 Test no single regression can redden
+
+```
+drop the link callback   → only `link text` fails
+drop BARE_URL            → only `a url path` fails
+drop both                → `an angle autolink` finally fails
+```
+
+**Mechanism:** two independent mechanisms in the SUT each produce the asserted outcome, so
+the test stays green while either one survives. It reads as protection and cannot act as it:
+no realistic single-point regression reddens it, and by the time both mechanisms are broken
+the tests that guard each one individually have already failed. Only the mutation pass (§2c)
+finds this — the test body looks precise, its name is honest, and it is green for the same
+reason a good test is.
+
+**Detect:** in the matrix, a test with an empty red row under every single mutation that turns
+red only under a combination. Then ask the question that settles it: is it the sole cover of
+either mechanism?
+
+**Not this — defence in depth is a property of the SUT, not a defect of the test.** An
+integration test surviving mutations that unit tests catch is working correctly; that is the
+layer doing its job. The finding exists *only* when the double-guarded test is the sole
+coverage of neither mechanism. When it is the sole cover of one, it is a Keep and the
+redundancy is the other mechanism's.
+
+**Fix:** Delete, and say which two mechanisms already cover it. If it is the only test naming
+a composed behavior worth pinning, Tighten instead — assert the discriminator that only the
+composition produces, so one mechanism breaking is enough to redden it.
+
+### 1.16 Fixture that isn't what its name says
+
+```ts
+it('keeps a code span running through a no-break-space line', () => {
+  render('a `b\n \nc`');          // that is U+0020. The case has never tested an NBSP
+});
+```
+
+**Mechanism:** the name, the assert and the green status are all honest, and the *input* is
+not the input the name claims. The guarded branch is never reached, so the case pins a
+different rule than everyone downstream believes it pins — and the belief outlives the test,
+since the next person reads the name. Typical shapes: U+0020 where U+00A0 is named; an escape
+the host language's own quoting ate before the SUT saw it; a golden file that lost or gained a
+trailing newline; NFD where the SUT normalizes NFC; a tab that an editor expanded to spaces.
+
+**Detect:** only worth doing where the contract is sensitive to bytes, escaping, whitespace,
+or encoding — a parser, a serializer, a normalizer, a diff, anything with golden files.
+There, dump the literal rather than reading it:
+
+```bash
+# in the test runner, or on the fixture file
+printf '%s' "$fixture" | od -c | head
+```
+
+Ask of each: does the name promise a specific character, escape, or width? Then confirm it is
+there. A fixture whose contract is ordinary values needs none of this.
+
+**Fix:** correct the literal, then re-run — and confirm the case now goes red for its own rule.
+A fixture fix that changes nothing about which mutations kill the test means the case was
+pinning something else all along, and the verdict is 1.15 or Delete, not Tighten.
+
 ---
 
 ## Group 2 — False alarms (red while behavior unchanged)
@@ -500,6 +560,13 @@ count taken as broad protection when the marginal test protects nothing new.
 redundant. Look for one fixture, seed, or helper threading through tests named after
 different features. The mechanical form of the same question: break that one path and count
 how many tests go red.
+
+With a mutation matrix (`audit-procedure.md` §2c) this stops being a reading. Two tests red on
+exactly the same mutation set, and nothing else, are 3.6 proven rather than suspected; one
+mutation reddening many is the mechanism named by the mutation, not by the test titles. Two
+cautions before the verdict: the set is finite, so identical profiles over it are strong
+evidence and not proof of identical contracts, and this stays a suite-level observation at
+whatever confidence — measuring redundancy does not promote it to an urgent finding.
 
 **Fix:** keep the test that pins the mechanism directly, plus the feature tests that add a
 contract of their own; drop the rest **opportunistically** when next touching that area.
