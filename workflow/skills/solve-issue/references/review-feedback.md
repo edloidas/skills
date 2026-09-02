@@ -137,9 +137,9 @@ On resume, re-run Q1 rather than trusting the answer: a request that was never a
 made leaves no event, and holding the merge for a review nobody asked for is the same
 failure in the other direction. If no new event appears, say so and re-ask.
 
-Where the host cannot prompt, take Option 1. **Never default an unattended run to
-waiting** — on a repository with no automated reviewer that turns every `PR + merge` into
-a permanently unmerged branch, which is a worse outcome than merging without a review
+On `auto`, or where the host cannot prompt, take Option 1. **Never default an unattended
+run to waiting** — on a repository with no automated reviewer that turns every `PR + merge`
+into a permanently unmerged branch, which is a worse outcome than merging without a review
 nobody was ever going to give.
 
 ## Rounds

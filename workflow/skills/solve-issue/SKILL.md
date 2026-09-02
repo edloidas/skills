@@ -15,7 +15,7 @@ when_to_use: >
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
 allowed-tools: Bash(git diff:*) Bash(git status:*) Bash(git log:*) Bash(gh pr view:*) Bash(gh api:*) Bash(sleep:*) Bash(jq:*) Bash(rm:*) Bash(ls:*) Read Edit Write Glob Grep Task Skill AskUserQuestion
-argument-hint: "[issue-number]"
+argument-hint: "[issue-number] [auto]"
 metadata:
   author: edloidas
 ---
@@ -49,8 +49,10 @@ neither, ask the same question in normal chat as a numbered list of 2–5 option
 recommended first, one short line of description each — and wait for the user to reply
 with a number.
 
-The endgame question in Phase 6 is never skipped. Every other gate defaults to
-proceeding, so a host that cannot prompt still completes the flow.
+Every gate defaults to proceeding, so a host that cannot prompt still completes the flow.
+The Phase 6 endgame is the one exception — always asked, unless `$ARGUMENTS` carries `auto`.
+That is an unattended run: take the `(Recommended)` option at every gate, this one and the
+Phase 7 seam question included. A bare `auto` with no issue number still asks Phase 0.
 
 ### Delegating to Other Skills
 
@@ -89,13 +91,13 @@ visible per item — never a single opaque "implementing" step.
 | 4.5   | Tests audit (only if tests moved) | No                                      |
 | 4.6   | Advisor round(s) + apply fixes    | No                                      |
 | 5     | Comment cleanup + commit          | No                                      |
-| 6     | Summary + choose endgame          | Always — 4 options via AskUserQuestion  |
+| 6     | Summary + choose endgame          | Always — unless `auto` (takes Option 1) |
 | 7     | Review feedback, then merge       | Through `pr-review`'s own gate          |
 
 ## Phase 0: Resolve Issue
 
 If `$ARGUMENTS` holds an issue number or GitHub issue URL, use it and skip to Phase 1.
-If empty, ask via `AskUserQuestion`:
+If it carries no number, ask via `AskUserQuestion`:
 
 - **question**: "No issue number provided. How should I pick one?"
 - **Option 1** — header `Next issue`, label `Let issue-flow pick` `(Recommended)` — `Rank the backlog and recommend the most relevant open issue.`
