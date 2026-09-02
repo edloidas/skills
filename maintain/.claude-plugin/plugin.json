@@ -1,6 +1,6 @@
 {
   "name": "maintain",
-  "version": "5.5.1",
+  "version": "5.6.0",
   "description": "Agent config, label sync, lint migration, editor config, and repo hardening",
   "author": {
     "name": "Mikita Taukachou",
