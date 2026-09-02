@@ -20,7 +20,7 @@ metadata:
 
 Manages the full GitHub issue lifecycle: select → issue → branch → commits → PR → merge → close. Supports entering at any step and advancing forward. Reads the target repo's CLAUDE.md for project-specific conventions.
 
-This skill owns **every git and `gh` write** in the issue pipeline — branch creation, snapshots, commits, squashing, pushes, PRs, merges — plus issue selection. Skills that orchestrate the pipeline (`solve-issue`) delegate those actions here rather than reimplementing them, so the commit subject format and the squash rules exist in exactly one place.
+Mutation class: **writes and pushes, and writes to external services (GitHub)** — branch creation, snapshots, commits, squashing, pushes, PRs, merges. This skill owns every one of them, plus issue selection. Skills that orchestrate the pipeline (`solve-issue`) delegate those actions here rather than reimplementing them, so the commit subject format and the squash rules exist in exactly one place.
 
 ## Bundled Scripts
 
@@ -90,7 +90,7 @@ Use the current branch name to determine which steps are already done:
 - On base branch (main/master/etc.) with no changes → nothing to do
 - On base branch with changes → full flow from Step 1
 
-Determine entry step from user intent, check prerequisites, then proceed forward. Do NOT re-run earlier completed steps.
+Determine entry step from user intent, check prerequisites, then proceed forward. Do not re-run earlier completed steps.
 
 | User intent                          | Entry step | Prerequisite             |
 | ------------------------------------ | ---------- | ------------------------ |
@@ -126,7 +126,7 @@ Read the target repo's CLAUDE.md for project-specific formatting. Use these defa
 - **Issue titles**: `<type>: <description>` (conventional commit format)
 - **Commit subjects**: `<Issue Title> #<number>`
 - **PR titles**: `<Issue Title> #<number>`
-- **PR body**: concise change list + `Closes #<number>`, one per line. GitHub links only the first reference after a keyword, so `Closes #1 #2 #3` closes #1 and leaves #2 and #3 open
+- **PR body**: one bullet per change, then `Closes #<number>`, one per line. GitHub links only the first reference after a keyword, so `Closes #1 #2 #3` closes #1 and leaves #2 and #3 open
 
 Common types: `feat`, `fix`, `docs`, `chore`, `refactor`, `test`, `style`, `ci`
 
@@ -142,7 +142,7 @@ Never silently pick for the user at a gate that changes git or GitHub state.
 
 ### Skip Interactive Prompts
 
-When the user explicitly provides values for labels, assignee, project, or other options in their request, use those values directly — do NOT ask to confirm what was already stated. Only ask about fields the user left unspecified.
+When the user explicitly provides values for labels, assignee, project, or other options in their request, use those values directly — do not ask to confirm what was already stated. Only ask about fields the user left unspecified.
 
 ### Assignment Defaults
 
@@ -231,9 +231,9 @@ If it is an epic, and the repo has an `epic` label (check `repo-context.sh` outp
 
 ### Body
 
-Write a brief 2-4 sentence description. No markdown headers.
+Write a 2-4 sentence description. No markdown headers.
 
-For epic issues: **do NOT list child issue numbers in the body.** Sub-issue relationships are managed via the GitHub sub-issues API (see **## Sub-Issues**), not via body text.
+For epic issues: **do not list child issue numbers in the body.** Sub-issue relationships are managed via the GitHub sub-issues API (see **## Sub-Issues**), not via body text.
 
 ### Labels
 
@@ -241,7 +241,7 @@ Auto-detect label from the issue type (e.g., `feat` → `feature` or `enhancemen
 
 ### Assignee
 
-Follow **### Assignment Defaults**. The issue always gets an assignee unless the user explicitly asked for none.
+Follow **### Assignment Defaults**.
 
 **`KIND=personal`** — assign `@me` via `--assignee "@me"` without prompting. Skip `issue-assignees.sh` entirely.
 
@@ -331,11 +331,11 @@ gh issue create --title "<title>" --body-file <TMPDIR>/body.md --label "<label>"
 
 When creating multiple issues, use unique filenames per issue: `<TMPDIR>/<slug>-body.md` (e.g. `auth-body.md`, `settings-body.md`). Resolve `<TMPDIR>` once and reuse it for all issues.
 
-**Important:** Replace `<TMPDIR>` with the literal absolute path in all commands (e.g. `--body-file /var/folders/.../issue-flow-AbCdEf/body.md`). Do NOT set `TMPDIR=` as an env var prefix on commands — that changes the command pattern and triggers permission prompts.
+**Important:** Replace `<TMPDIR>` with the literal absolute path in all commands (e.g. `--body-file /var/folders/.../issue-flow-AbCdEf/body.md`). Do not set `TMPDIR=` as an env var prefix on commands — that changes the command pattern and triggers permission prompts.
 
-Do NOT use `--body "$(cat <<'EOF'...)"` — the `$()` command substitution makes the command unmatchable against any pre-approval rule, so hosts that gate shell commands re-prompt every time.
+Do not use `--body "$(cat <<'EOF'...)"` — the `$()` command substitution makes the command unmatchable against any pre-approval rule, so hosts that gate shell commands re-prompt every time.
 
-Print the Step 1 report (see `references/report-format.md`).
+Print the Step 1 report (see `references/report-format.md`). Then stop: an issue exists and no branch does — Step 2 runs only when the intent named it or the user says to continue.
 
 ### Sub-Issues (Optional)
 
@@ -364,6 +364,8 @@ done
 ```bash
 gh api repos/<owner>/<repo>/issues/<parent_number>/sub_issues --jq '.[].number'
 ```
+
+Print one line: `Linked <N> sub-issues to #<parent>`.
 
 When a **newly created** issue is being linked as a child of an existing parent, also follow **## Project Inheritance From Parent** so the child lands on the same project board(s) as the parent.
 
@@ -418,7 +420,7 @@ gh api graphql -f query='mutation {
 }'
 ```
 
-Use `removeBlockedBy` with the same signature to undo. See `references/github-relationships.md` for full details and ID type reference.
+Use `removeBlockedBy` with the same signature to undo. See `references/github-relationships.md` for full details and ID type reference. Print one line per pair: `#<blocked> is now blocked by #<blocking>`.
 
 ## Batch Issue Creation
 
@@ -483,7 +485,7 @@ baseref=$(git rev-parse --verify --quiet "origin/$base" || git rev-parse --verif
 git merge-base "$baseref" HEAD
 ```
 
-Print the Step 2 report, including both `Base:` and `Fork:`.
+Print the Step 2 report, including both `Base:` and `Fork:`. Then stop: do not commit and do not start implementing — the branch is this step's whole deliverable.
 
 ## Step 3: Commit
 
@@ -505,16 +507,12 @@ either derives a body from the code — what the running code does that forced t
 which call paths reach it, what breaks on update, when it broke, what was deliberately left
 alone — or returns two to three lines for a mechanical or generated change.
 
-If the host cannot invoke another skill, or `commit-summary` is not installed, do the same
-inline. Derive when the change alters behaviour, a contract, a public type, or a default, or
-fixes a defect; otherwise write two or three past-tense lines and stop. To derive, answer in
-blank-line-separated paragraphs wrapped at 80, skipping any question with no real answer:
-what the running code does that forces the change (read the implementation, not the diff
-again), which call paths reach it and which are ruled out, how it failed observably, what
-breaks for someone who updates and why it is still correct, when it broke
-(`git log -S '<removed expression>' -- <path>`, `git blame`), what the tests pin, and what
-was noticed and deliberately not fixed. A hash appears only if a command returned it in this
-session; no result means the paragraph is dropped, not softened.
+If the host cannot invoke another skill, or `commit-summary` is not installed, do the same inline:
+derive when the change alters behaviour, a contract, a public type, or a default, or fixes a defect;
+otherwise write two or three past-tense lines and stop. To derive, answer in blank-line-separated
+paragraphs wrapped at 80, dropping any with no real answer — what the running code does that forces
+the change, which call paths reach it, how it failed observably, what breaks on update, what the
+tests pin. Cite a hash only if a command returned it in this session.
 
 When the caller supplies design rationale pulled out of source comments (the `code-cleanup`
 skill produces this), it answers the first question — fold it into that paragraph. It is not
@@ -610,7 +608,7 @@ Two different states reach this point, and the staging rule differs:
 
 Finish with `git status --short`. A **modified tracked file** still listed is the missed-`git add -u` bug, not a leftover — stage it and amend. Untracked files you deliberately left out may still be listed; that is expected, and Step 3 has no authority to delete them.
 
-Print the Step 3 report.
+Print the Step 3 report. Then stop: do not push and do not open a PR — Step 4 runs only when the intent named it or the user says to continue.
 
 ### Snapshot Mode
 
@@ -728,7 +726,7 @@ everywhere else in this file. Pin the SHA instead.
 If the push is rejected, the remote moved: fetch, rebase onto the new tip, and re-run
 rather than escalating to `--force`.
 
-Print the Step 4 report.
+Print the Step 4 report. Then stop: do not create a PR — Step 5 runs only when the intent named it or the user says to continue.
 
 ## Step 5: Create PR
 
@@ -767,7 +765,7 @@ Closes #<number>
 
 ### Assignee and Reviewer
 
-Follow **### Assignment Defaults**. Reviewer selection is separate from assignment: the current user is an assignee on every PR this skill creates, whatever the reviewer outcome.
+Follow **### Assignment Defaults**. Reviewer selection is separate from assignment — see **### Assignees** below.
 
 In a `KIND=personal` repo, skip the reviewer prompt entirely unless the repo's CLAUDE.md sets a reviewer rule or the user asked for one — a solo repo has no one else to review, and the reviewer question is the step where assignment silently gets dropped.
 
@@ -807,7 +805,7 @@ There is no branch of this step that produces zero assignees. If a reviewer prom
 
 ### Create
 
-Write the PR body to `<TMPDIR>/pr-body.md` with the host's file-write tool, then create the PR with `--body-file`. Replace `<TMPDIR>` with the literal absolute path — do NOT use `TMPDIR=` as an env var prefix.
+Write the PR body to `<TMPDIR>/pr-body.md` with the host's file-write tool, then create the PR with `--body-file`. Replace `<TMPDIR>` with the literal absolute path — do not use `TMPDIR=` as an env var prefix.
 
 With a reviewer (pass `--assignee` once per assignee):
 
@@ -821,7 +819,7 @@ Without a reviewer (or self-review):
 gh pr create --title "<title>" --body-file <TMPDIR>/pr-body.md --base <base> --assignee @me
 ```
 
-Do NOT use `--body "$(cat <<'EOF'...)"` — the `$()` command substitution makes the command unmatchable against any pre-approval rule, so hosts that gate shell commands re-prompt every time.
+Do not use `--body "$(cat <<'EOF'...)"` — the `$()` command substitution makes the command unmatchable against any pre-approval rule, so hosts that gate shell commands re-prompt every time.
 
 Update project status to "Review":
 
@@ -856,7 +854,7 @@ echo "$state"
 
 Do **not** run `gh pr checks --watch` here. Check monitoring belongs to Step 6; a PR-only flow reports the mergeability state and ends.
 
-Print the Step 5 report, including the `Mergeable:` line.
+Print the Step 5 report, including the `Mergeable:` line. Then stop: Step 6 runs only on the entry conditions in **### Entering Step 6 at all**, and reaching Step 5 is not one of them.
 
 ## Step 6: Merge PR
 
@@ -889,7 +887,7 @@ Classify the entry, then take one branch and skip the other.
 | ----- | ------------ |
 | **The intent already names the merge** — `"push, PR, and merge #<N>"`, `"merge #<N>"` from an orchestrating skill that already put the question to the user | Already confirmed. Print the pre-merge summary for the record and go straight to **Pre-checks**. Asking again is the duplicate prompt callers are told not to create. |
 | **A full flow that entered at Step 1 and was never told what to do about merging** | Not yet confirmed. Print the pre-merge summary and suggest merging (below). |
-| **Direct entry at Step 6 by the user**, no earlier step in this flow | Not yet confirmed. Print the pre-merge summary and **MUST stop and confirm** before merging. |
+| **Direct entry at Step 6 by the user**, no earlier step in this flow | Not yet confirmed. Merging closes the PR and writes to the base branch. Print the pre-merge summary, show the PR number, the base branch, and the merge method, and wait for approval before merging. |
 
 When confirmation is still needed, ask via `AskUserQuestion`:
 1. "Merge now" (Recommended) — wait for checks and merge
@@ -927,7 +925,7 @@ gh pr checks <pr-number> --watch --fail-fast
 - Exit 0 (all passed/skipped) → proceed to step 3
 - Exit 1 (failure) → report failed checks, **stop**. Do not merge.
 - Bash timeout → report timeout, ask user via `AskUserQuestion`:
-  1. "Merge anyway" — proceed to step 3
+  1. "Merge anyway" — proceed to step 3; the merged report carries `Checks: not confirmed (watch timed out)`
   2. "Wait longer" — re-run `gh pr checks --watch --fail-fast` with another 5-minute timeout
   3. "Abort" — stop
 
@@ -962,19 +960,7 @@ Print the Step 6 merged report.
 
 ## Error Handling
 
-- **Projects V2 fails**: Warn once, then skip all project operations for the rest of the flow. The core lifecycle works without project integration.
-- **`repo-ownership.sh` fails**: Treat as `personal` — assign the current user and continue. Do not prompt, and do not leave the issue or PR unassigned.
+- **Projects V2 fails**: Warn once, then skip all project operations for the rest of the flow — the core lifecycle works without them. Carry `Project: skipped (Projects V2 unavailable)` on every later step report that would have updated the board. Token setup is in `references/project-integration.md`.
 - **Assignment rejected** (`gh` reports the assignee is not a valid collaborator): report which assignee was dropped, then continue. Do not abort the flow or retry with a different user.
 - **gh not authenticated**: Stop immediately, tell user to run `gh auth login`.
-- **Branch already exists**: Ask user via `AskUserQuestion` (switch vs. recreate).
-- **CI checks failing**: Report failed checks, do not attempt merge.
-- **No CLAUDE.md**: Use the default conventions listed above.
 - **No remote**: `detect-base.sh` exits 2 and there is no base branch. Steps 2, 3, 5, and 6 all depend on it, so stop at whichever of them was entered and tell the user to add a remote. Do not fall back to `main`.
-- **Host cannot show structured choices**: Fall back to a numbered list in chat per **### Asking the User**. Do not skip the question.
-
-## Integration
-
-- For commit message body → invoke the `commit-summary` skill; fall back to the inline derivation in **Step 3 → Body** if the host cannot chain skills
-- For project token setup → see `references/project-integration.md`
-- For report templates → see `references/report-format.md`
-- For sub-issues and blocked-by relationships → see `references/github-relationships.md`

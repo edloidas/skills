@@ -24,11 +24,18 @@ next time without you there.
 `$ARGUMENTS` names the subject. With no argument, the subject is whatever the previous message was
 about — go deeper on it rather than restating it shorter.
 
+This skill reports only: it reads, and it runs read-only commands to capture real values. It
+edits nothing.
+
 ## Ground It First
 
 Read the thing before explaining it: the file, the declaration, the failing output, the actual run.
 Never explain from what was said earlier in the conversation when the artifact itself is available.
 Earlier turns are where errors accumulate.
+
+List every file, declaration, and output the trace will touch, and open all of them in one
+response before writing a word. A trace built on one file out of five reads as complete and is
+not.
 
 Where the real value can be produced rather than reasoned about, produce it — run the command,
 print the resolved type, compile the case, log the payload. An explanation built on a captured
@@ -37,8 +44,9 @@ grammar. Where the artifact cannot be read or run at all, explain from what you 
 every unverified step as unverified — recall is still the fallback, but it is never presented as a
 captured value.
 
-Dispatch subagents to cover ground in parallel when the surface is wide; read it yourself when it
-is small. Where the host has no subagent facility, do the same reading inline.
+Read it yourself up to about **5 files** or **1000 lines**. Past that, dispatch subagents over
+disjoint slices in parallel, each returning the values and declarations it found rather than a
+summary. Where the host has no subagent facility, read the same slices inline.
 
 Say what you verified and what you did not.
 
@@ -66,7 +74,8 @@ The second is longer, complete, and needs nothing looked up. Prefer it. Compress
 word is only free when expanding it would tell the reader nothing they cannot already see.
 
 Keep the vocabulary that names what the reader is looking at — `extends`, `declaration`, an
-identifier from the file, a header on the wire. Those are the subject, not shorthand for it.
+identifier from the file, a header on the wire, a config key. Those are the subject, not shorthand
+for it, and they survive every pass below.
 
 ## Pick The Move The Content Calls For
 
@@ -76,13 +85,26 @@ Each move fires on its own trigger. Where none applies, write prose.
 | --- | --- |
 | Some cases change and others do not | Show them side by side, and say which one moved |
 | A value comes out wrong | Walk the substitution that produces it, step by step, with the real symbols |
-| You have real output | Paste it — never describe what a compiler, command, or test would say |
+| You have real output | Paste it in a fenced block, unedited — never describe what a compiler, command, or test would say |
 | An expression is dense | Follow it with one plain sentence restating it |
 | One exact token carries the bug | Annotate that token inline, inside the code block |
 | A fix | The declaration before and the declaration after, and nothing else from the diff |
 | Control crosses several components, threads, or processes | Number the steps in execution order — see **Go Linear** |
 | The answer has genuinely separate parts | Give each a header written as a claim or a question, not a noun |
 | Several things across several dimensions | A table |
+
+Real output goes in a fenced block exactly as it came back. Where you cut lines, say how many and
+from where, inside the block:
+
+```
+FAIL  src/auth.test.ts > rejects a token that expired this second
+AssertionError: expected 401 to be 200
+    at isFresh (src/auth.ts:42:11)
+[9 stack frames cut from the middle]
+    at runTest (node_modules/vitest/dist/chunk.js:88:5)
+```
+
+Never trim silently, and never retype output from memory as though it were captured.
 
 ## The Second Pass
 
@@ -104,14 +126,12 @@ Three things change, and they compose.
 ### Strip the jargon
 
 Round one may use the vocabulary of the subject. Round two may not use anything the reader would
-have to already know.
+have to already know, apart from the names of what is on the screen — per **A Term Is Not An
+Explanation**. Replace every term standing in for a mechanism instead of showing it, and the
+English doing the same job: "falls through", "inherited rather than introduced", "errs towards",
+"surfaces", "propagates".
 
-Keep the terms that name what is on the screen — `extends`, `declaration`, the identifiers, the
-header names, the config keys. Replace every term standing in for a mechanism instead of showing
-it, and replace the English doing the same job: "falls through", "inherited rather than
-introduced", "errs towards", "surfaces", "propagates".
-
-The replacement is what the term means *on this subject*, in plain words. Expect it to be longer:
+The replacement is what the term means *on this subject*, in plain words:
 
 | Instead of | Say |
 | --- | --- |
@@ -170,6 +190,9 @@ move on.
 End on what limits the explanation, where something does: who actually hits this, what is still
 wrong, what you chose not to cover, what you could not check. Stopping at "and that is how it
 works" claims a completeness you have not earned.
+
+Then stop. Do not fix what the explanation exposed and do not offer to — the deliverable is the
+understanding, and the fix is a separate request.
 
 ## Worked Examples
 

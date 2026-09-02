@@ -33,9 +33,11 @@ not be resolved.
 ### [3] Committed
 <short-sha> <commit-subject>
 <N> files changed (+<insertions> -<deletions>)
+Squashed <N> commits -> 1
 ```
 
-One line per commit. Step 3 normally ends at a single commit; several lines appear only
+Include `Squashed <N> commits -> 1` whenever Consolidate reset and recommitted; omit it when
+the branch already held exactly one canonical commit. One line per commit. Step 3 normally ends at a single commit; several lines appear only
 in the one case Consolidate leaves them — the user chose "Keep as-is" on commits with
 genuinely different subjects.
 
@@ -118,3 +120,47 @@ Issue #<number> closed
 - Use `|` to separate inline metadata
 - Always include URLs for created resources (issues, PRs)
 - Use short SHA (7 chars) for commits
+- Name any check that was meant to run and did not, on the report for the step that would have
+  run it: `Project: skipped (Projects V2 unavailable)`, `Checks: not confirmed (watch timed out)`
+
+## Worked Example
+
+A full flow on `edloidas/skills` issue #69, every step filled in with real values:
+
+```
+### [1] Issue Created
+#69: feat: add auto mode to solve-issue
+Labels: enhancement | Assignee: @edloidas
+https://github.com/edloidas/skills/issues/69
+
+### [2] Branch Created
+Branch: issue-69 | Base: master | Fork: 3920634
+
+### [3] Committed
+a1c4f0e feat: add auto mode to solve-issue #69
+6 files changed (+184 -22)
+Squashed 4 commits -> 1
+
+### [4] Pushed
+Branch: issue-69 -> origin/issue-69
+
+### [5] PR Created
+PR #70: feat: add auto mode to solve-issue #69
+Base: master <- issue-69 | Assignees: @edloidas
+Mergeable: yes
+https://github.com/edloidas/skills/pull/70
+
+### [6] Summary
+Issue:  feat: add auto mode to solve-issue - https://github.com/edloidas/skills/issues/69
+PR:     feat: add auto mode to solve-issue #69 - https://github.com/edloidas/skills/pull/70
+Branch: issue-69 -> master (rebase, 1 commit)
+Commit: a1c4f0e feat: add auto mode to solve-issue #69 (6 files, +184/-22)
+
+### [6] Merged
+PR #70 merged into master
+Branch issue-69 deleted
+Issue #69 closed
+```
+
+`Reviewer:` is absent from `[5]` because this is a personal repo, where the reviewer prompt is
+skipped — that is the expected shape, not a missing field.

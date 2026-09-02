@@ -26,7 +26,7 @@ and scope, then commit.
 
 | Directive                     | Behavior                                                                               |
 | ----------------------------- | -------------------------------------------------------------------------------------- |
-| `only staged` / `staged only` | Do NOT stage anything. Commit the existing index.                                      |
+| `only staged` / `staged only` | Stage nothing. Commit the existing index as it stands.                                 |
 | `relevant` / `scoped`         | Stage only files that fit the current task's scope; leave unrelated tweaks out.        |
 | `amend`                       | Use `git commit --amend --no-edit` after staging. Do not rewrite the existing message. |
 | `no trailer`                  | Never append a `Co-Authored-By` trailer, even if the repo uses them.                   |
@@ -45,6 +45,9 @@ section below reasons off this output — do not re-run these commands later.
 | `git diff --cached --stat`  | staged size and file list                 |
 | `git log --oneline -5`      | recent title style                        |
 | `git log -1 --format='%B'`  | trailer style of the last commit          |
+
+When the batch returns, print one line: `State: <N> staged, <M> unstaged, <K> untracked
+on <branch>`.
 
 Then read the repo's own commit convention, if it has one:
 
@@ -142,58 +145,26 @@ diff inline, and the main thread already has the conventions context.
    ```
    If `amend` was requested: `git commit --amend --no-edit`.
 7. Never pass `--no-verify`. If a pre-commit hook fails: fix the issue, re-stage,
-   create a NEW commit (do not amend unless the user asked).
+   create a new commit (do not amend unless the user asked).
 8. Final output: one line — `Committed <short-sha> on <branch>: <title>` —
    followed by a short `skipped: …` list if anything was left out.
+9. Then stop. Do not push, do not open a PR, do not switch branches, do not split the
+   work into a second commit, and do not rewrite history beyond the single
+   `--amend --no-edit` above.
 
 ## Body
 
-The body is the part a reader cannot recover from the diff: what the running code
-does that forced the change, which call paths reach it, what breaks on update, when
-it broke, and what was deliberately left alone.
+The body is the part a reader cannot recover from the diff: what the running code does
+that forced the change, which call paths reach it, how it failed observably, what breaks
+on update, when it broke, what the tests pin, and what was deliberately left alone.
 
-Invoke the `commit-summary` skill to compose it. If the host cannot chain skills or
-`commit-summary` is not installed, do it inline:
+Invoke the `commit-summary` skill to compose it. Where the host cannot chain skills or that
+skill is not installed, answer that list against the code rather than the diff, in past-tense
+paragraphs wrapped at 80 — dropping every question with no answer, and naming no hash or call
+path a command did not return. The stub loses the gate that keeps a rename or a regenerated
+tree down to two mechanical lines, and the worked bodies that set the register.
 
-**Weigh the change first.** Derive when it alters behaviour, a contract, a public
-type, or a default, or when it fixes a defect. Otherwise — a rename, a formatting
-pass, generated output, additive scaffolding — write two or three past-tense lines
-naming what the file list does not show, and stop. Weight decides, not diff size.
-
-**To derive**, answer these against the code, in order, in blank-line-separated
-paragraphs wrapped at 80. Skip any question with no real answer:
-
-1. What changed, and what does the running code do that forces it? Open the
-   implementation behind the declaration, the client behind the handler, the
-   changelog behind the bump — not the diff again. A change holding several
-   independent decisions gets one paragraph each, including anything the fix
-   revealed and anything it made redundant.
-2. Which concrete inputs or call paths reach it, and which are ruled out?
-3. How did it fail observably — what a user saw, not "the type was wrong".
-4. What breaks for someone who updates, and why is it still correct?
-5. When did it break? `git log -S '<removed expression>' -- <path>` or
-   `git blame -L '<line>,+1'`.
-6. What do the tests pin? Name the cases, never "added tests".
-7. What did you notice and deliberately not fix?
-
-**Never invent provenance.** A hash appears only if a command returned it in this
-session; a named call path was read in the source. No result means the paragraph is
-dropped, not softened into "has likely been broken for a while".
-
-Write it in plain words and short sentences. Each paragraph opens on a past-tense
-verb, and the sentence after it is the reason, stated as behaviour.
-
-Design rationale handed over from a comment-cleanup pass answers question 1 — fold
-it into that paragraph rather than appending it as a block.
-
-A project convention found in **Current state** overrides all of this. Some repos cap
-body width or forbid paragraphs outright.
+A project convention found in **Current state** overrides both. Some repos cap body
+width or forbid paragraphs outright.
 
 Nothing is appended after the last paragraph — see the trailer rule in step 5.
-
-## Out of scope
-
-- Pushing, opening PRs, switching branches.
-- Splitting into multiple commits.
-- Rewriting history beyond a single `--amend --no-edit`.
-- Adding files listed in `.gitignore` via `-f`.

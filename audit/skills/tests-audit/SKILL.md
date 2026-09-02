@@ -19,11 +19,10 @@ argument-hint: "[files | dir]"
 
 Find the tests that don't pin behavior and report what to do with each. **This skill reports;
 it never edits the repo — not the suite, not the code under test.** After it runs, the working
-tree is byte-identical and the history untouched.
-
-It does run the suite — order dependence and flakiness cannot be found any other way — and the
-mutation pass edits a *disposable copy outside the worktree*, never the repo. Coverage output
-goes to a temp directory too; a runner that cannot be redirected gets no coverage run.
+tree is byte-identical and the history untouched. It does run the suite — order dependence and
+flakiness cannot be found any other way — with the mutation pass editing a *disposable copy
+outside the worktree* and coverage output going to a temp directory; a runner that cannot be
+redirected gets no coverage run.
 
 `allowed-tools` covers the read-only scan and the temp copy. Deliberately outside it: **the
 suite command**, which is project-specific, and **applying a mutant**, even to the copy. Those
@@ -108,25 +107,32 @@ The most-violated rule in real suites, so it gets its own section:
 ## Workflow
 
 1. **Scope**: explicit argument → exactly that. Otherwise the test files in the working
-   tree's changes; otherwise the project's test suite, sampled when it is too large to read
-   whole — a mix of small and large files, pure-logic and mock-heavy, plus any e2e specs.
+   tree's changes; otherwise the project's test suite — read whole at 30 test files or fewer,
+   and above that sampled to a floor of 20 files or a quarter of the suite, whichever is
+   larger, mixing small and large files, pure-logic and mock-heavy, plus any e2e specs.
    Diff-scoped is a first-class mode, not a borrowed one: `review:changes-review` judges
    whether the change is correct, this skill judges whether the tests pin anything. Scope
    bounds the *verdicts*, not the reading — a Delete for duplicate coverage still means
    reading the neighbouring tests the diff never touched.
+   End with one line: `Scope: 24 of 96 test files (sampled) · vitest 3, wdio 9`.
 2. **Mechanical scan** for grep-able smells (weak asserts, sleeps, `.skip`/`@Disabled`,
    `.only`, loops in test bodies, mock round-trips, catch-only error tests) — commands in
-   `references/audit-procedure.md`.
-3. **Dynamic checks**: run the suite, then re-run it shuffled and repeated. Isolation,
-   flakiness, and runtime don't grep — a green shuffled run is evidence no static audit can
-   produce, and a red one is a High finding that names itself.
+   `references/audit-procedure.md`. End with one line: `Scan: 31 leads across 12 files`.
+3. **Dynamic checks**: the baseline run, the shuffled repeat run, and the coverage run.
+   Isolation, flakiness, and runtime don't grep — a green shuffled run is evidence no static
+   audit can produce, and a red one is a High finding that names itself.
 3b. **Mutation pass** — break one rule at a time on a disposable copy and record which tests
    go red. Its feasibility conditions, operator priority, and how to read the matrix are in
    `references/audit-procedure.md` §2c. Its *size* is set by how this skill was invoked, not
    by what it can afford: a person asking for a measured audit gets the full pass; auto-loaded
-   or called by another skill, it is capped hard or skipped. **Skip it and say so** whenever
-   it doesn't run — verdicts without a matrix are read, not measured, and must never be
-   written as if they were.
+   or called by another skill, it is capped hard or skipped.
+
+   **Every one of the four runs that did not happen is named in the report header with its
+   reason** — skipped by budget, aborted on a wrong flag, unsupported by the runner. This
+   applies to all four equally: a shuffle that never ran is not a green shuffle, an unrun
+   coverage pass is not full coverage, and verdicts without a matrix are read, not measured,
+   and must never be written as if they were. End with one line naming what ran:
+   `Dynamic: baseline green 1.8s · shuffle ×5 green · coverage skipped (runner path not redirectable) · 12 mutants, 4 survived`.
 4. **Per-test pass**: run each test through the Five-Question Gate and the catalog in
    `references/anti-patterns.md`. Assign a verdict:
 
@@ -137,15 +143,17 @@ The most-violated rule in real suites, so it gets its own section:
    | **Rewrite** | Real contract worth pinning, but the test pins implementation or a mock |
    | **Delete** | No contract sentence, duplicate coverage, trivia, rotting disabled test |
 
-5. **Report** using the template in `references/audit-procedure.md`. Name what the suite does
-   *well* alongside the defects — an unnamed good pattern is one refactor from deletion. Close
-   with an overall verdict and an ordered fix path.
+5. **Report** using `references/audit-procedure.md` §5, which is a filled-in example of the
+   deliverable rather than a blank template — match its shape, its header lines and its
+   section order. Name what the suite does *well* alongside the defects; an unnamed good
+   pattern is one refactor from deletion. Close with an overall verdict and an ordered fix
+   path.
 
-Do not edit the suite, even when a fix is obvious — the report is the deliverable. For
-whoever applies it, `references/audit-procedure.md` §6 gives the fix-pass order and
-verification steps, and `references/writing-tests.md` gives the contract-first procedure for
-rewriting a flagged test. Reference both in the fix path so the report is actionable without
-this skill.
+The report is the deliverable. For whoever applies it, `references/audit-procedure.md` §6
+gives the fix-pass order and verification steps, and `references/writing-tests.md` gives the
+contract-first procedure for rewriting a flagged test. Reference both in the fix path so the
+report is actionable without this skill. Then stop: do not apply the report, do not offer to
+apply it, and do not start a second audit pass.
 
 ## Quick Reference
 

@@ -81,7 +81,9 @@ no closing remarks.
 - **Actor**: anonymous client | authenticated user | installed extension code | first-party code | operator action
 - **Severity**: critical | moderate | minor
 - **Confidence**: high | medium | low
-- **Requirement**: <the clause of the request this violates, quoted or closely paraphrased>
+- **Requirement**:
+  > <the clause of the request this violates, pasted unedited from the requirement text, `…`
+  > marking any words cut from the middle>
 - **Defect**: <what the diff does instead, and what satisfying the requirement would look like>
 - **Cases**:
   - `<input or scenario>` -> currently <what a caller sees>; should <what the request asks for>
@@ -99,9 +101,9 @@ Severity means: **critical** — a core thing that was asked for is missing or b
 changes behavior nobody asked to change. **moderate** — a named case or criterion is unmet.
 **minor** — a small stated detail is missing.
 
-Every finding needs a **Requirement** line pointing at real text in the request. If you cannot
-quote the clause, you are inventing a requirement — drop it. Keep the quote short enough to
-read inline; trim to the operative clause rather than pasting a paragraph.
+Every finding needs a **Requirement** blockquote carrying real text from the request, not your
+restatement of it. If you cannot quote the clause, you are inventing a requirement — drop it. Trim to
+the operative clause rather than pasting a paragraph, and mark the trim.
 
 **Every finding needs at least one case, and every case needs both halves.** Naming what the
 caller sees today without naming what the request asks for leaves whoever fixes this to

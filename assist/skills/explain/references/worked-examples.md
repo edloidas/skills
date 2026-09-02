@@ -4,9 +4,6 @@ Four explanations that landed, condensed and renamed for compactness. Each one i
 move that carried it. Read them for shape, not for content — the subjects are incidental. The last
 one is a second pass over a subject already explained once.
 
-<examples>
-
-<example>
 **Asked:** "Why does adding my own `setKey` to a map store break `listenKeys`?"
 
 Your `Ext` is not adding a key — its `setKey` is the only signature `KeyOf` ever reads, so it
@@ -34,9 +31,9 @@ runtime; the shadowing is type-level only.
 
 **The move.** Two rows side by side isolate the change, and one clause names which row moved. Real
 compiler output pasted rather than described. No headers — the answer has one part.
-</example>
 
-<example>
+---
+
 **Asked:** "Why did two tenants see each other's profile, and what did the fix change?"
 
 The cache key was the URL, and the URL is identical for every tenant.
@@ -67,9 +64,9 @@ are unreachable rather than wrong. They expire on their own TTL and nothing read
 **The move.** The failing sequence first, as the two captured requests. The fix is two lines of
 before and after and nothing else from the diff. One plain sentence restates it. The close names
 what the fix does not cover.
-</example>
 
-<example>
+---
+
 **Asked:** "Correct me if I'm wrong. 1. `Get` was broken but we did not notice, because the other
 candidate covered for it — so `Get` can be removed. 2. `Get` still needed the fix. 3. The other
 candidate has its own problem, because `Value[Key]` needs the key present on every branch of the
@@ -92,9 +89,9 @@ reference to an error type before the body was ever considered.
 
 **The move.** A verdict per point, in the user's own numbering. Each correction labelled by kind.
 What is right is confirmed in two words rather than re-explained.
-</example>
 
-<example>
+---
+
 **Asked:** "explain again" — second pass over an origin check on a WebSocket upgrade, already
 explained once as a mechanism with a trap in it.
 
@@ -143,6 +140,3 @@ top and carried through all eight steps. Steps numbered in execution order, each
 happens in it. `predicate` became "the function", `captured by closure` became "worked out while
 the request still exists", `falls through` became "reaches". The trap is called out in the step it
 happens in, not warned about above. Longer than the first pass, not shorter.
-</example>
-
-</examples>

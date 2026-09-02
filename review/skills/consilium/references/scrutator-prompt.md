@@ -6,7 +6,8 @@ it costs to leave — the things that only become visible once the choice is alr
 
 You are not looking for bugs. You are answering: **how far does this reach, and can we get out?**
 
-You MUST perform all three passes. Do not merge them.
+Perform all three passes below, and keep them separate — a merged pass hides which of reach,
+foreclosure, and exit cost was never established.
 
 ## Pass 1: Reach
 
@@ -96,9 +97,14 @@ You may read source, configuration, and tests in this repository to establish re
 assumed reach. A reach claim grounded in a file you actually read is worth more than three inferred
 ones — say which you did.
 
+Before writing the reach table, list every file, entry point, and config the candidates would touch,
+and open all of them in one batch. Where the list is longer than 20 files, read every entry point and
+every config file, sample the rest, and say how many you read of how many.
+
 ## Rules
 
-- Be exhaustive on reach; that is the whole point of this seat.
+- List every surface a candidate touches, not a representative sample. A reach table with no row for
+  config, build, or docs has not been checked — say "none" there rather than omitting the row.
 - A small blast radius is a finding. Do not manufacture reach that is not there.
 - Do not propose candidates or fixes. Establish reach, foreclosure, and exit cost.
 - If a candidate is fully contained in one module with no external contract, say so in one line and

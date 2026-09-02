@@ -31,10 +31,10 @@ caller, not here.
 
 ## The premise
 
-The agent that wrote the code wants it accepted. A reviewer that shares its context inherits its
-blind spots — it reads the implementer's reasoning, finds it persuasive, and confirms the work. So
-every reviewer is dispatched **cold to the implementer's reasoning**: no plan, no rationale, no
+Every reviewer is dispatched **cold to the implementer's reasoning**: no plan, no rationale, no
 commit message body, no prior-round findings, no account of why the change looks the way it does.
+The agent that wrote the code wants it accepted, and a reviewer sharing its context inherits its
+blind spots — it reads that reasoning, finds it persuasive, and confirms the work.
 
 The bugs this catches are the ones that compile and pass lint — premature drops, floor-vs-truncate
 on negative numbers, eager evaluation where laziness was meant. Tooling cannot see them and a
@@ -70,8 +70,7 @@ happens, and it roughly doubles the run, which is why the default follows the sc
 
 A late round in a fix loop is a `simple` run over the fix: small diff, spec settled two rounds ago,
 and reachability is the lens that still changes the outcome. A whole branch reviewed cold is
-`standard`. `deep` is for a large change or a high cost of missing something — two cold reviewers on
-different models diverge usefully, where a second intent reviewer mostly repeats the first.
+`standard`. `deep` is for a large change or a high cost of missing something.
 
 Every rule here that reads as arbitrary has an observation behind it, recorded with its outcome in
 `references/calibration.md`. Read that before loosening one.
@@ -85,8 +84,7 @@ Two things only a calling skill can supply:
 - **The requirement**, when the caller already resolved it. Pass the issue text, not a summary of
   it, and never the implementer's account of the diff.
 
-A caller must not pass a plan, a rationale, a previous round's findings, or a description of what
-the change is trying to do. Those defeat the premise, and this skill cannot detect that it happened.
+A caller must not pass anything **The premise** excludes. This skill cannot detect that it happened.
 
 **Round loops belong to the caller.** This skill reviews once and stops. A caller looping should pass
 the fix itself as the scope on rounds after the first — the snapshot commit, or `--base` against it —
@@ -142,11 +140,13 @@ If nothing resolves, print `No requirement found — running the cold reviewer o
 intent reviewer. Do not invent a requirement from the diff; a reviewer checking a change against a
 requirement inferred from that same change finds nothing.
 
+When one does resolve, print it in one line: `Requirement: issue #42 "Retry 429 with backoff".`
+
 ## Phase 3: Dispatch reviewers
 
 **Launch every reviewer at once so they run concurrently.** They must not see each other's output.
-Do not summarize the change for them, do not explain what it is trying to do, and do not pass along
-anything from a previous round.
+**One job per reviewer** — never merge the prompts — and nothing beyond the diff, plus the requirement
+for the role that takes one. Give them nothing **The premise** excludes.
 
 Choosing models, stated as intent rather than as names, since the roster changes and each host names
 its own:
@@ -227,10 +227,10 @@ Match the resolved file list against this table and dispatch a lens for each row
 
 Invoke the lens skill by name, the same way the external leg goes through `/outsider`, and tell it
 four things: that it is running in **lens mode**, the exact files Phase 1 resolved, the base ref when
-the scope has one, and the fields to return — claim, location, actor, severity, confidence, defect,
-cases. Both lens skills return whatever shape the caller asks for, so a lens nobody asks returns its
-own tally on its own scale, and Phase 4 gets no actor or confidence to work with. A lens must not widen its own scope — a lens that audits the whole project
-returns findings this run cannot attribute to the change.
+the scope has one, and the same finding contract the external leg is mapped onto. Both lens skills
+return whatever shape the caller asks for, so a lens nobody asks returns its own tally on its own
+scale, and Phase 4 gets no actor or confidence to work with. A lens must not widen its own scope — a
+lens that audits the whole project returns findings this run cannot attribute to the change.
 
 Map what comes back onto the finding contract the native reviewers use. A lens rates its own
 findings by its own catalog, so re-rate them here rather than trusting the labels: a lens finding is
@@ -240,6 +240,9 @@ it.
 
 Lenses are optional in the same way the external reviewer is. A lens skill that is not installed is a
 skipped leg, never a failed run, and the report says which lenses ran.
+
+Once everything is away, print one line naming what ran: `Dispatched 3 reviewers (cold, intent,
+external) + 1 lens (react-audit).`
 
 ## Phase 4: Consolidate
 
@@ -259,6 +262,9 @@ anything on verification.
 
 Keep what you killed. Verification rules on the drops too, and a drop confirmed is worth more than
 a drop assumed.
+
+Print one line with the counts: `24 raw findings -> 9 after consolidation (11 killed, 3 deduped,
+1 clustered).`
 
 ## Phase 5: Verify
 
@@ -283,17 +289,11 @@ Every lens is told to **default to refuting** when it cannot demonstrate a claim
 you killed in Phase 4 as well, marked as dropped — a verifier confirming a drop is cheap, and it
 sometimes corrects the reason.
 
-The `mechanism` lens carries the **read-vs-run** rule: reading settles claims about code structure,
-only running settles claims about observable output — layout, rendering, wire format, exit code,
-timing, log content, a golden result. A verdict on one of those reached by reading is not a verdict.
-The lens takes the cheapest observation that answers the claim and stops at one hypothesis; it is a
-verifier, not a debugger. A finding of that kind that could not be observed is refuted like any
-other, and its `Reason` names what was missing — no declared runner, the tool absent, the build
-broken. That absence is a fact about the repo worth carrying into the report.
-
-One extra job for the `mechanism` lens whenever the change ships its own test, story, or fixture:
-**check that the artifact exercises the path it claims to guard.** A fixture that quietly supplies
-the missing precondition is worse than no fixture — it turns an open question into a passing check.
+The prompt states the `mechanism` lens's **read-vs-run** rule and its fixture check in full; do not
+restate either when dispatching. What belongs here instead is what the report does with the result:
+a finding that could not be observed is refuted like any other, and its `Reason` names what was
+missing — no declared runner, the tool absent, the build broken. Carry that absence into the report,
+because it is a fact about the repo.
 
 **Merge rule.** A finding dies when `mechanism` refutes it, when `reachability` cannot name an
 actor who reaches it, or when `spec` kills it. Nothing else removes a finding. Where a lens returns
@@ -309,6 +309,8 @@ ever fall is miscalibrated.
 runs was established by reading; none established by execution was killed or downgraded. Sort the
 queue accordingly: reasoning-only findings first, then anything a reviewer rated low confidence.
 
+Print one line with the counts: `Verification: 3 refuted, 1 narrowed, 2 re-rated up.`
+
 ## Phase 6: Rate and order
 
 The last judgment call, and the one the caller cannot make for itself.
@@ -321,7 +323,8 @@ The last judgment call, and the one the caller cannot make for itself.
 2. **Order.** Severity, then confidence. Decisions last, whatever their severity.
 3. **Separate decisions from defects.** A finding whose entire blast radius is a deprecated,
    unsupported, or already-documented-as-broken surface is not a defect the author will fix — it is a
-   question about whether that is acceptable. Mark it as a decision and say what the decision is.
+   question about whether that is acceptable. Mark it as a decision and say what the decision is; they
+   sort last because mixed in among defects they read as accusations and get closed.
 4. **Check the framing carries the consequence.** A finding framed around what a caller or consumer
    cannot do gets a real fix; the same finding framed around what an internal counter does wrong gets
    a literal one-line patch. Where both framings are available, lead with the consequence.
@@ -340,7 +343,8 @@ leading with the wrong half instead of the durable one, ranking that contradicts
 clause still riding along, a decision filed as a defect, and at most one area nobody covered. It
 cannot add findings.
 
-Apply what it returns, or say why not. It reads a report rather than a repository, so it is the
+Apply what it returns, or say why not, then go to the report. One critique per run: do not dispatch a
+second critic on the revised assembly. It reads a report rather than a repository, so it is the
 cheapest agent in the run — and the only one that sees the findings as a set.
 
 ## Report
@@ -355,9 +359,11 @@ issue from the prose alone.
 <Severity> severity, reachable by <actor>. <Confidence> confidence — <corroboration>.
 
 <A paragraph naming the defect: what the code does, why that is wrong, and what the correct
-behavior is. This is the part someone fixes from. For an intent finding, quote the clause of the
-request it violates here, inline — the caller needs to see what was actually asked before deciding
-whether to fix the code or push back on the issue.>
+behavior is. This is the part someone fixes from.>
+
+> <Intent findings only: the clause of the request this violates, pasted unedited from the
+> requirement text, `…` marking any words cut from the middle. The caller needs to see what was
+> actually asked before deciding whether to fix the code or push back on the issue.>
 
 Concretely:
 
@@ -375,9 +381,7 @@ Rules for the shape:
   in the signal line directly under the title, never in a field list.
 - The actor sits in the signal line too, because it is what makes the severity legible.
 - A **decision** takes the same shape with `Decision, not a defect` where the severity would go, and
-  its paragraph ends in the question being asked rather than the fix. Decisions come after every
-  finding, however severe they look: they need an answer, not a patch, and mixed in among defects
-  they read as accusations and get closed.
+  its paragraph ends in the question being asked rather than the fix.
 - The corroboration clause counts reviewers, never names them: `one reviewer`, `corroborated by 2
   reviewers`. Which reviewer found it is a debugging detail; how many found it independently is the
   signal. Count only reviewers that actually ran.
@@ -417,8 +421,38 @@ Reviewers: cold (<model>) · cold-2 (<model>|skipped) · intent (<model>|skipped
 Lenses: <lens skills that ran, or none matched|skipped>
 ```
 
-A clean result is a real result. Do not pad it with observations, and do not add a section listing
-what was checked and found sound — it reads as padding and nobody acts on it.
+A clean result is a real result: a reviewer returning nothing on sound code is correct behavior, not
+a failed run. Do not pad it with observations, and do not add a section listing what was checked and
+found sound — it reads as padding and nobody acts on it.
+
+### Worked example
+
+```
+## Changes review: 1 finding (0 critical, 1 moderate, 0 minor)
+
+Scope: 4 files, 96 lines, base master · mode: standard
+Reviewers: cold (opus) · cold-2 (skipped) · intent (sonnet) · external (codex)
+Lenses: none matched
+Verification: mechanism, reachability, spec — 2 dropped, 1 re-rated up
+
+### `Retry-After` in HTTP-date form is read as a zero-second delay
+
+Moderate severity, reachable by anonymous client. High confidence — corroborated by 2
+reviewers, demonstrated by execution.
+
+`parseRetryAfter` runs `Number(header)` and falls back to `0` on `NaN`. RFC 9110 allows
+delay-seconds *or* an HTTP-date, and the gateway sends the date form while shedding load, so the
+backoff collapses into a tight retry loop against a service already failing.
+
+> the client must wait at least as long as the server asks before retrying
+
+Concretely:
+
+- `Retry-After: Wed, 21 Oct 2026 07:28:00 GMT` currently retries immediately. It should wait
+  until that instant.
+
+Look at `src/http/retry.ts:41`.
+```
 
 One report serves every caller. A caller wanting something shorter condenses what it got.
 
@@ -446,16 +480,17 @@ budget, the anchoring mechanics and the verdict mapping. Five steps, in order:
    could not demonstrate does not get a section.
 2. **Attribute** — for each survivor, `git blame` and `git diff <base>...HEAD` to establish whether
    this branch introduced the blamed code. Reclassify it as pre-existing, or narrow the claim to the
-   part that is new. Reviewers are blind to the base, so this is the first point it can happen.
+   part that is new. Reviewers are blind to the base, so this is the first point it can happen. Print
+   one line: `Attribution: 3 of 5 introduced here, 1 narrowed, 1 pre-existing.`
 3. **Compose** — one section per cause, ordered by what the author should act on first, following the
    composition rules and the length budget in the reference. In review shape each section becomes an
    inline comment, and the lead and closing paragraphs become the review body.
 4. **Gate** — refuse any section lacking a demonstration or an attribution, and refuse a fifth
    section: more than four means clustering failed. Unverified residue gets one flagged sentence in
    the closing paragraph, never a section.
-5. **Confirm, then post.** Show the composed text **verbatim and complete** — in review shape every
-   inline comment and the body, quoted in full, never summarized or described — and ask before any of
-   it goes anywhere. The flag authorizes the phase, not the words: this is outward-facing
+5. **Confirm, then post.** Show the composed text **verbatim and complete**, in a fenced block — in
+   review shape every inline comment and the body, in full, never summarized or described — and ask
+   before any of it goes anywhere. The flag authorizes the phase, not the words: this is outward-facing
    correspondence published under the user's account, and an approving verdict is the one output that
    cannot be walked back gracefully. Ask once, in prose, as the last line of the message, with the
    verdict after it — not through a structured-choice prompt, which interrupts the report the reader
@@ -466,29 +501,11 @@ budget, the anchoring mechanics and the verdict mapping. Five steps, in order:
 still publishes: one short paragraph, and in review shape an `APPROVE` with an empty `comments`
 array — no line anchors and no method narrative, per the reference.
 
-## Rules
-
-- **One job per reviewer.** Never merge the prompts.
-- **No reasoning reaches a reviewer.** Not the plan, not the rationale, not a summary of intent, not
-  a previous round's findings or verdicts.
-- **Never mutate.** No edits, no autofix, no commits, no stashes. Callers rely on this.
-- **Concrete failure or it does not exist.**
-- **Severity needs an actor.** A rating that does not say who can reach the defect is not a rating.
-- **No manufactured findings.** A reviewer returning "No findings" on sound code is correct
-  behavior, not a failed run.
-- **Publication judges; the report does not.** Phase 8 is the only place this skill drops, narrows or
-  re-attributes a finding it kept, and the only place it writes anything outward-facing.
-
 ## Error handling
 
 | Situation | Action |
 | --------- | ------ |
 | No changes in scope | Print `Nothing to review.` and stop |
-| Trivial diff only | Print `Trivial changes only. Nothing to attack.` and stop |
-| No requirement resolves | Run the cold reviewer only, say so in the report |
-| External CLI missing or times out | Note it in the Reviewers line, continue |
-| Host cannot vary models per reviewer | Run them on the default, say so in the report |
-| Host has no subagents | Run reviewers sequentially, say they were not isolated |
 | A verification lens fails | Apply the merge rule with the lenses that returned, say which is missing |
 | A reviewer stalls or returns nothing | Relaunch it once with a narrowed file list and a stated tool budget — not the same prompt again. A reviewer that goes quiet on a wide diff is usually still reading it |
 | A native reviewer returns nothing usable | Report the remaining reviewers, name the gap |

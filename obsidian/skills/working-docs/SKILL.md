@@ -21,6 +21,11 @@ Manage working documents in the Obsidian vault for cross-session, cross-project 
 
 **Vault path:** `~/Documents/Obsidian Vault/`
 
+This skill creates, edits, and — when promoting an Inbox note — deletes files under that vault
+path, and updates the index. It touches nothing outside the vault: no repo files, no commits.
+Edit an existing document with targeted edits to the lines that change; never rewrite a whole
+document to update a header field.
+
 Prefer the `obsidian:obsidian-cli` skill for vault interactions (read, create, search, manage notes). Fall back to reading and writing the vault path directly only if that skill is unavailable.
 
 ## When to Use
@@ -75,11 +80,31 @@ Every working document (both Inbox and Claude) uses this header:
 
 For Inbox docs, status is always `Draft`. Omit `**Repo**` if not project-specific.
 
+Filled in, as `Dev/Claude/Plan - app-contentstudio - Search filter rework.md`:
+
+```markdown
+# Search filter rework
+
+#claude #plan #app-contentstudio
+
+**Project**: app-contentstudio
+**Repo**: https://github.com/enonic/app-contentstudio
+**Created**: 2026-09-02
+**Updated**: 2026-09-02
+**Status**: Active
+
+---
+
+## Goal
+Replace the three separate filter widgets with one query bar.
+```
+
 ## Operations
 
 ### Find Existing Documents
 
-Before creating a new document, always check if one already exists. Search in order:
+Before creating a document, check whether one already exists. Run every step below that applies
+before concluding there is none — the index goes stale, so step 1 alone does not settle it:
 
 1. Read the index: `~/Documents/Obsidian Vault/Dev/Claude/Claude Working Docs.md`
 2. Glob by type: `~/Documents/Obsidian Vault/Dev/Claude/Note - *`
@@ -109,6 +134,8 @@ Use for structured, persistent documents that will be referenced across sessions
 5. Use the header template with `Status: Draft` or `Active`
 6. Write content below the `---` separator
 7. Update the index file — add a line entry for the new document
+8. Print one line naming the file and the index update:
+   `Created Dev/Claude/Plan - app-contentstudio - Search filter rework.md, index updated`
 
 ### Update Existing Document
 
@@ -127,6 +154,7 @@ When an Inbox note has grown into structured content worth keeping long-term:
 4. Update the header: set proper status, bump `**Updated**` date
 5. Delete the original Inbox file
 6. Update the index file
+7. Print one line naming both paths: `Promoted Inbox/<old> -> Dev/Claude/<new>, index updated`
 
 ### Complete a Document
 
@@ -134,6 +162,7 @@ When the work described in a document is done:
 
 1. Update `**Status**: Completed` and bump `**Updated**` date
 2. Update the index file — mark as completed or move to a completed section
+3. Print one line: `Completed <filename>, index updated`
 
 ### Archive a Document
 

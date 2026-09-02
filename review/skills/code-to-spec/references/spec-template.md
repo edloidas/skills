@@ -119,10 +119,7 @@ Used by `spec-analyzer` for Small-tier output and Large-tier deep dives.
 
 ## Hard Rules Across All Outputs
 
-1. Every factual claim cites `file:line` or `file:start-end`.
-2. Payloads are transcribed literally, never paraphrased.
-3. No placeholders — `[table of N items]`, `[see above]`, `...and others` are all forbidden.
-4. No product or library identifiers in output structure. Library usage is stated as a signal with evidence, not as an identifier.
-5. Describe observable behavior, not syntactic shape.
-6. TypeScript contract attributes (`type` on exports/imports) are preserved.
-7. Tables may be long; prose across Domain Spec + Secondary Units is capped at ~2000 words combined.
+The six **Quality Constraints** in `SKILL.md` apply to every file above — evidence-first citations, literal payloads, no placeholders, domain-neutral naming, observable-behavior framing, and what is excluded from a spec. Two more are specific to this schema:
+
+1. TypeScript contract attributes (`type` on exports/imports) are preserved.
+2. Tables may be long; prose across Domain Spec + Secondary Units is capped at ~2000 words combined.

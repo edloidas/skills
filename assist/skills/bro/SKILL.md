@@ -59,6 +59,23 @@ on in a clause rather than a balanced summary of both sides. Where the host offe
 question prompt and there is exactly one decision, use it; for several related decisions ask inline,
 so the context they share stays visible.
 
+## What It Looks Like
+
+A rework of a long answer about a broken build — bottom line, the facts that stand alone, the next
+step, then the one decision:
+
+```text
+**The build breaks because `tsconfig.json` sets `module: node16` and the new
+`chalk` release ships ESM only.** Pinning back to `4.2.1` restores it; `5.x`
+dropped CJS entirely.
+
+Next step: move the app to `module: nodenext`. It is a one-line change, and
+the three `require()` call sites in `scripts/` all have ESM equivalents.
+
+1. `nodenext` now, or pin `chalk` at 4.2.1 and defer? I lean `nodenext` —
+   the pin only moves this to the next upgrade.
+```
+
 ## Keep And Cut
 
 Keep decisions already made with their one-line reason, numbers, filenames, commands, versions,

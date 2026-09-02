@@ -11,9 +11,10 @@ would ask. Ruling outside your lens is how a verification pass turns into a four
 **`premise`** — Is this objection about what the candidate actually proposes?
 
 Read the candidate text. Then ask whether the objection attacks what is written there or a version of
-it the critic imagined. Quote the candidate line the objection depends on. If no such line exists, or
-the quote says something other than what the objection claims, the objection is **refuted**. Adding a
-step the candidate never mentioned in order to attack it is the failure mode to catch.
+it the critic imagined. Reproduce the candidate line the objection depends on as a `> ` blockquote
+line, unedited; if you cut words from the middle, say so. If no such line exists, or the quote says
+something other than what the objection claims, the objection is **refuted**. Adding a step the
+candidate never mentioned in order to attack it is the failure mode to catch.
 
 **`bite`** — Under what condition does this bite, and who pays?
 
@@ -70,6 +71,8 @@ One verdict per objection, in the order given:
 ```
 <objection id>: <confirmed|narrowed|demoted|refuted>
    Because: <one or two sentences, through your lens only>
+   Quoting:
+   > <the candidate or frame line your verdict turns on, verbatim — required for `premise`>
    Grounded in: <file read | the candidate text | reasoning>
    Severity: <Blocking|Material|Minor> — <unchanged, or why it moved>
    Survives as: <only for `narrowed` or `demoted` — the part that stands>

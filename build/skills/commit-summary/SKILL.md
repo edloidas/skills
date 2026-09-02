@@ -67,7 +67,7 @@ Read `references/commit-body.md` and follow it. It carries the seven questions, 
 table of which code is authoritative for each kind of change, the evidence rules,
 the writing rules, and three worked bodies.
 
-Three things from it that decide whether the output is worth its cost:
+Four things from it that decide whether the output is worth its cost:
 
 - **Answer against the code**, not the diff. Open the implementation behind the
   declaration, the client behind the handler, the changelog behind the bump.
@@ -85,7 +85,19 @@ cleanup pass reporting "Suggested for commit message" — that text answers *why
 code is built this way*. Fold it into the first paragraph. Do not append it as a
 block at the end.
 
-Output paragraphs, blank-line separated, wrapped at 80.
+Output paragraphs, blank-line separated, wrapped at 80. A change with three facts gets
+three, not seven:
+
+```
+`stableTypeOrdering` was added for TypeScript 6, where it defaulted to `false`.
+TypeScript 7 enables it by default.
+
+`moduleResolution: NodeNext` is implied by `module: NodeNext`, and `esModuleInterop`
+defaults to `true` in TypeScript 7.
+
+Kept `strict` explicit so the project adopts any stricter checks added under this
+option in future TypeScript versions.
+```
 
 ## Step 4: Report
 

@@ -15,6 +15,9 @@ argument-hint: "[zed] [vscode] [--dry-run]"
 
 # Editor Config
 
+**Local writes only.** It creates or merges `.zed/` and `.vscode/` files in the target repo.
+It never stages, commits, pushes, or calls a remote service.
+
 ## Purpose
 
 Drop a small, opinionated set of editor configuration files into a project. The
@@ -57,6 +60,15 @@ plain JSON.
 The skill prints a per-file plan (`Write`, `Merge`, `Identical`) and asks for
 confirmation before writing.
 
+### Edit mechanic
+
+`scripts/editor-config.sh` owns every write to a target repo, and it generates each target
+file whole from the merge result — that is correct here, because the merge already carries
+the user's own keys forward. Do not hand-edit a target file instead of re-running the script.
+
+Editing the canonical `assets/` files is the opposite case: apply targeted edits per key, never
+a whole-file rewrite, so the diff carries the key you changed and nothing else.
+
 ## Asking the User
 
 Every question in this skill is written as `AskUserQuestion` options. Use that tool where
@@ -92,13 +104,31 @@ with a number.
    - `--yes` / `-y` — skip the per-run confirmation
    - `-h`, `--help` — usage
 
-3. **Review the plan.** The script prints `Target`, then a per-file action
-   (`Write`, `Merge`, `Identical`).
+3. **Review the plan.** The script prints `Target`, `Editors`, then a per-file action
+   (`Write`, `Merge`, `Identical`). Show that table and end the phase with one line carrying
+   the counts: `3 targets: 1 write, 1 merge, 1 identical`.
 
-4. **Confirm.** Type `y` to apply. Anything else aborts.
+4. **Confirm.** Type `y` to apply. Anything else aborts. A `ParseError` row blocks the whole
+   run — report which file failed and stop; do not repair the file to get past it unless the
+   user asks.
 
-5. **Verify.** After apply, the changed files are listed. Run `git status` /
-   `git diff` in the target repo to inspect.
+5. **Report the changed files** the script lists, then stop. Do not stage or commit them, and
+   do not reopen them to reformat.
+
+### Example plan
+
+```
+Target: /Users/edloidas/repo/voidvigil
+Editors: zed vscode
+
+Action     File
+------     ----
+Merge      .zed/settings.json
+Write      .vscode/settings.json
+Identical  .vscode/extensions.json
+```
+
+Then the phase line: `3 targets: 1 write, 1 merge, 1 identical`.
 
 ## Edge Cases
 

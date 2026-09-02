@@ -17,15 +17,14 @@ argument-hint: "[description or issue number]"
 
 # GitHub Issue Writer
 
-## Purpose
+Drafts and updates well-structured GitHub issues: analyzes the description, asks targeted
+clarifying questions, generates a title under 72 characters, and produces a body from the
+project template.
 
-Help users draft and update well-structured GitHub issues by:
-
-- Analyzing the user's initial description
-- Asking targeted clarifying questions
-- Generating a concise title (under 72 characters)
-- Producing a comprehensive description using the project template
-- Updating existing issues on GitHub
+**Mutation class: writes to external services, and only on the update path.** The draft
+path writes nothing anywhere — it prints a title and body for the user or for `issue-flow`
+to file. The update path edits an existing issue on GitHub through
+`scripts/update-issue.sh`, after the approval gate in Step 5.
 
 ## Asking the User
 
@@ -35,25 +34,15 @@ neither, ask the same question in normal chat as a numbered list of 2–5 option
 recommended first, one short line of description each — and wait for the user to reply
 with a number.
 
-## When to Use This Skill
+## Which Workflow
 
-Use this skill when the user:
-
-**Drafting issues:**
-- Asks to "write an issue" or "draft an issue"
-- Wants help structuring a bug report or feature request
-- Mentions wanting to document a task for GitHub
-- Needs to formalize a task description
+A request naming an existing issue — "update issue #123", "edit that issue", "reword the
+body", or a bare "update the issue" pointing at one created earlier in this session — runs
+the **Update Workflow**. Everything else runs the drafting **Workflow** below.
 
 > For **creating** new issues on GitHub, use `issue-flow` when that skill is
 > available. Otherwise use this skill to prepare the title and body, then
 > create the issue with the available GitHub tooling.
-
-**Updating issues:**
-- Asks to "update issue", "edit issue", or "modify issue"
-- Wants to "change the title" or "update description"
-- References a specific issue: "update issue #123", "edit https://github.com/..."
-- Says "update the issue" (use recently created issue from same session)
 
 ## Bundled Scripts
 
@@ -137,10 +126,6 @@ Identify which template sections are relevant based on scope:
 | Medium (feature, enhancement) | Brief Description, Rationale, Implementation, Acceptance Criteria |
 | Large / Full (architecture, major feature) | All sections as needed |
 
-**Format Auto-Detection:**
-- If keywords like "short issue", "minimal issue", or "quick issue" are present, use Short format
-- If keywords like "simple issue", "draft issue", or "basic issue" are present, use Default format
-
 ### Step 3: Interactive Questionnaire
 
 Ask clarifying questions to fill in gaps, per **Asking the User**. Tailor them to the
@@ -163,7 +148,8 @@ issue type and scope.
 - Are there dependencies on other work?
 - What does "done" look like?
 
-Keep questions focused and avoid asking about things already clear from the description.
+Ask at most three of these in one round, and only the ones the description leaves open —
+a question whose answer is already in the user's own text costs a turn and returns nothing.
 
 ### Step 3.5: Confirm Label
 
@@ -196,31 +182,13 @@ options:
     description: "Skip label assignment"
 ```
 
-**Example for Feature type:**
-```
-options:
-  - label: "feature (Recommended)"
-    description: "New functionality being added"
-  - label: "improvement"
-    description: "Enhancement to existing functionality"
-  - label: "epic"
-    description: "Large feature spanning multiple issues"
-  - label: "No label"
-    description: "Skip label assignment"
-```
+The other types take the same shape with these labels, `No label` always last:
 
-**Example for Task type (with refactoring keywords):**
-```
-options:
-  - label: "refactoring (Recommended)"
-    description: "Code restructuring based on keywords: refactor, cleanup"
-  - label: "improvement"
-    description: "General enhancement"
-  - label: "r&d"
-    description: "Research and exploration work"
-  - label: "No label"
-    description: "Skip label assignment"
-```
+| Type | Recommended | Alternative 1 | Alternative 2 |
+| ---- | ----------- | ------------- | ------------- |
+| Feature | `feature` — new functionality | `improvement` — enhances what exists | `epic` — spans multiple issues |
+| Task (refactor keywords) | `refactoring` — code restructuring | `improvement` — general enhancement | `r&d` — research and exploration |
+| Question | `No label` (recommended) | — | — |
 
 ### Step 4: Generate Title
 
@@ -264,8 +232,36 @@ Show the user:
 3. **Type suggestion:** bug, feature, enhancement, documentation, etc.
 4. **Label suggestions:** Based on the content
 
-Ask if they want any modifications. Use a structured question tool when
-available; otherwise ask directly in chat.
+A finished Default-format draft:
+
+````markdown
+**Title:** `Tooltip: Fix clipping at the viewport edge`
+
+**Description:**
+
+The tooltip is cut off when its anchor sits near the bottom of the window. It renders
+below the anchor regardless of the space available, so the last two lines fall outside
+the viewport and cannot be scrolled into view. It reproduces on any page where an anchor
+is within roughly 80px of the bottom edge, in every browser tested. Users lose the end of
+the text, which on the form fields is where the validation rule is stated.
+
+#### Rationale
+
+The tooltip carries validation copy nobody else states, so a clipped tooltip means a rule
+the user cannot read at all.
+
+#### Implementation Notes
+
+Placement is resolved once on mount from an already-clamped anchor rect, so the overflow
+check always passes. Resolve placement after measuring instead, and flip above the anchor
+when the rect overflows.
+````
+
+**Type:** Bug · **Label:** `bug`
+
+Then ask whether they want changes, per **Asking the User**. Once they are satisfied,
+stop. Do not create the issue on GitHub, and do not offer to — `issue-flow` files it, and
+the user decides when. This step's deliverable is the text above and nothing else.
 
 ## Update Workflow
 
@@ -310,15 +306,17 @@ For title updates:
 
 ### Step 5: Present Changes for Approval
 
-> **Important:** Always show the changes to the user before updating the issue on GitHub. Skip this step only if the user explicitly requests to update without preview (e.g., "update without showing", "skip preview").
+An issue body is public and replaces what was there — an overwritten description cannot be
+recovered from the issue itself. Show the changes and wait for approval before updating.
+Skip the preview only when the user asked for that in so many words ("update without
+showing", "skip preview").
 
 Show the user:
 - **Before**: Current title/description
 - **After**: New title/description
 - **Label changes**: Labels being added/removed
 
-Ask for confirmation before updating. Use a structured question tool when
-available; otherwise ask directly in chat.
+Then ask for confirmation, per **Asking the User**.
 
 ### Step 6: Update on GitHub
 
@@ -331,12 +329,13 @@ bash scripts/update-issue.sh \
   --remove-label "{{LABEL}}"
 ```
 
-Return the updated issue URL to the user.
+Report one line — `Updated #<N>: <what changed> — <url>` — and stop. Do not re-fetch the
+issue to confirm the write; the script fails loudly if it did not land.
 
 ## Template Section Guidelines
 
 ### Description (Required)
-The opening paragraph before any sections. Length varies by format: Short 4-6 sentences, Default 4-8 sentences, Full 1-2 sentences (detailed sections follow). Describe the issue in present tense. Preserve the user's original phrasing — restructure for clarity, don't rewrite.
+The opening paragraph before any sections, written to the Step 5 writing rules. Length by format: Short 4-6 sentences, Default 4-8 sentences, Full 1-2 sentences (the detailed sections follow).
 
 ### Rationale (Optional)
 Explain the "why" when it's not obvious:

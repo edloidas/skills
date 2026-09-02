@@ -20,19 +20,23 @@ Two things decide whether Markdown is good: **where it renders** (which syntax
 you may use) and **how it reads** (whether anyone finishes it). Handle them in
 that order.
 
+This skill writes and edits Markdown files in the working tree, and nothing else — no
+commits. Edit an existing document with targeted edits to the passages you are changing;
+never rewrite the whole file. A whole-file rewrite restyles wrap width, emphasis, and
+heading case that nobody asked to change, and buries the real edit in the diff.
+
 ## 1. Check the render target first
 
 | Renders where | What you may use |
 | --- | --- |
 | GitHub only — issues, PRs, comments, discussions, wiki, repo file views | Everything, including alerts, `<details>`, task lists, footnotes, mermaid, theme-aware images |
-| README that also ships to npm, PyPI, a docs site, or an editor preview | CommonMark + tables + `<details>`. Treat GitHub extras as degradable, not free |
+| README that also ships to npm, PyPI, a docs site, or an editor preview | CommonMark + tables + `<details>`. GitHub extras are degradable, not free: every alert body must read correctly with its `[!IMPORTANT]` line showing as literal text |
 | Terminal, `--help` output, plain-text logs | No Markdown. Write plain text |
 
-The degradation that matters in practice: **a GitHub alert renders on npm as a
-plain blockquote with a literal `[!IMPORTANT]` line above the text.** That is
-acceptable — use alerts in a published README anyway — but only if the sentence
-after it stands on its own without the label. An alert whose body reads "This
-one." is meaningless the moment the label stops rendering.
+What that degradation looks like: on npm a GitHub alert renders as a plain
+blockquote with a literal `[!IMPORTANT]` line above the text. Use alerts in a
+published README anyway — but an alert whose body reads "This one." is
+meaningless the moment the label stops rendering.
 
 Full syntax and per-host support: `references/github-features.md`.
 
@@ -72,7 +76,7 @@ Rules that keep them working:
   with a heading.
 - **Not a wrapper for the obvious.** If the plain sentence would have been read
   anyway, leave it plain.
-- **Never stacked.** Two alerts in a row read as noise.
+- **One at a time.** Two alerts in a row read as noise.
 
 Good uses: the version floor in an install section, a deprecated package banner,
 "this operation is destructive", the one constraint in an epic issue that every
@@ -105,6 +109,26 @@ Delete on sight: "Note that", "It is important to note", "simply", "just",
 "basically", "in order to", "As you can see", "Let's dive in", "In this section
 we will", "feel free to", "powerful", "seamless", "robust".
 
+A section opening, before and after:
+
+````markdown
+<!-- before -->
+## Configuration
+In this section we will look at how configuration works. The library is
+designed to be flexible and provides a powerful configuration system that
+can be adapted to a wide range of use cases.
+
+<!-- after -->
+## Configuration
+Configuration is one file, `roll.config.json`, read from the working directory:
+
+```json
+{ "seed": 42, "sides": 20 }
+```
+
+Every field is optional. Without the file, rolls are unseeded and 6-sided.
+````
+
 **Match the register to the document.** A README talks to the reader. A
 changelog is a list. An architecture doc can be denser. A PR body is a factual
 summary of changes — no personality, no explanation of why the reader should
@@ -134,7 +158,7 @@ codes, fields, comparisons — is a table, not a bulleted list of sentences.
 - **Sentence case headings.** "Error handling", not "Error Handling".
 - **Headings are navigation.** They should read as a list of answers to "how do
   I…" — a skimmer reads only these.
-- **Always tag code fences** with a language (`bash`, `typescript`, `json`,
+- **Tag every code fence** with a language (`bash`, `typescript`, `json`,
   `markdown`). Untagged fences lose highlighting everywhere.
 - **`<details>` for the material only some readers need** — long output,
   benchmark protocol, a migration table. It keeps the page short without

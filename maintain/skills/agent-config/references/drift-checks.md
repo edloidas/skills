@@ -63,15 +63,21 @@ Group findings by section, with line numbers:
 | 1 | STALE          | `npm run deploy`   | _(not found)_       | Script removed      |
 | 2 | COUNT_MISMATCH | "8 scripts"        | 6 scripts           | 2 were removed      |
 | 3 | INFORMATIONAL  | _(not documented)_ | `npm run typecheck` | New script          |
+
+### Section: "## Repository Structure" (lines 71–96)
+
+| # | Class        | Reference        | Actual        | Note                     |
+|---|--------------|------------------|---------------|--------------------------|
+| 4 | PATH_MISSING | `src/legacy/`    | _(not found)_ | Deleted in the v3 layout |
+
+4 findings: 3 fixable, 1 informational, 0 need confirmation.
 ```
 
-Close with a summary line: how many findings are fixable, how many informational, how many
-need confirmation.
+Close with that summary line, in that shape, with the real counts.
 
 ## 5. Apply
 
-Surgical edits only — change the specific reference, never the surrounding prose, ordering,
-or formatting.
+Per-class actions; the skill body's step 6 states the edit mechanic.
 
 - **STALE** — drop the line, list item, or table row. Leave an emptied section heading in
   place; removing it is an authoring decision.

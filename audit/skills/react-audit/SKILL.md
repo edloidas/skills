@@ -22,8 +22,8 @@ metadata:
 ## Purpose
 
 Deep review of React code across three tracks: architectural analysis inline, mechanical convention
-checks in a subagent, and — when the binary is reachable — react-doctor. Finds and reports; it never
-edits. Applying what it finds is `review:code-cleanup`'s job, or the caller's.
+checks in a subagent, and — when the binary is reachable — react-doctor. **Reports only: no edits,
+no installs, nothing written into the project.** After it runs the working tree is byte-identical.
 
 **Linter-aware.** Biome and ESLint already own hook rules, dependency arrays, self-closing elements,
 fragments, type imports, and unused variables. This skill skips all of it.
@@ -34,7 +34,7 @@ fragments, type imports, and unused variables. This skill skips all of it.
 - Reviewing a change that touches components, hooks, or state
 - A component works but has become hard to reason about — unexplained re-renders, an effect chain
   nobody wants to touch, a file that keeps growing
-- Invoked as a stack lens by `review:changes-review` when the diff contains React files
+- Invoked as a stack lens by another skill — see **Lens Mode**
 
 Trigger phrases: "review react", "audit react", "check components", "react patterns", "effects
 review", "why does this re-render".
@@ -103,9 +103,12 @@ grep -rl "data-component" src/ --include="*.tsx" | head -3
 - `$ARGUMENTS` given → that file or directory
 - Otherwise → `git diff --name-only HEAD` plus `git diff --name-only --cached`
 - Filter to `.tsx` and `.ts` files that import React
-- Read every target file before analyzing it
+- List the surviving files, then open all of them in one response before writing any analysis. A
+  file you reasoned about without opening is not audited, and must not appear in the report
 
 If the filter leaves nothing, report that there are no React files in scope and stop.
+
+Close Phase 1 with one line: `Scope: 6 files · React 19.1 · compiler off · conventions: displayName, data-component`.
 
 ---
 
@@ -170,7 +173,8 @@ Run it in the background if the host supports that — the other tracks do not d
 3. Replace `{{CONVENTIONS}}` with only the conventions Phase 1.4 activated, and `{{FILE_LIST}}` with
    the target paths
 4. Dispatch a subagent with that prompt to scan the target files against the active convention rules
-   and return structured violations, each with a file, a line, and the rule it breaks
+   and return structured violations, each with a file, a line, the rule it breaks, and a confidence
+   rating. The subagent reports everything it finds; Phase 3 does the filtering
 
 These are read-only pattern matches, so a cheap subagent is enough. If the host has no subagent
 facility, run the same prompt inline.
@@ -187,6 +191,9 @@ arrays, ref callbacks and their cleanups, early returns versus conditional rende
 debounce construction, context splitting, data fetching in effects over ~15 lines, components over
 200 lines, and related `useState` calls that should be a `useReducer`.
 
+Close Phase 2 with one line naming what each track returned:
+`Tracks: A 14 diagnostics · B 5 violations · C 9 findings`. A skipped track appears with its reason.
+
 ---
 
 ## Phase 3: Collect and Merge
@@ -194,7 +201,11 @@ debounce construction, context splitting, data fetching in effects over ~15 line
 1. Read `$DIAG/diagnostics.json` if Track A ran, whatever its exit code, and filter to the target
    paths. Treat each entry as a hypothesis, not a verdict: open the file at `line` and confirm it
    before reporting, the same standard Track C is held to
-2. Collect the Track B violations
+2. Collect the Track B violations and resolve their confidence ratings. A `high` one ships as
+   found. For every `medium` and `low`, open the cited line and check it against
+   `references/rules-conventions.md`: confirmed ships, contradicted is dropped, and one the file
+   cannot settle ships tagged `(unconfirmed)` after the rule name. Never report a `low` you did
+   not open
 3. Combine with Track C
 
 **Deduplicate.** Same file, same line range, same category from more than one track: keep the most
@@ -204,6 +215,8 @@ text plus the rule's `.txt` file often sharpen the fix Track C would have writte
 
 **Drop what is out of scope.** Anything Biome or ESLint already reports, and anything outside the
 target paths.
+
+Close Phase 3 with one line carrying both counts: `28 raw findings -> 17 after dedupe and scope filter`.
 
 ---
 
@@ -221,37 +234,33 @@ target paths.
 correctness-shaped: report them so the picture is complete, then hand them to `review:code-cleanup`,
 which is the skill that actually applies changes.
 
-### Finding format
+### Example output
+
+One file section per file, then one summary table for the whole run:
 
 ```markdown
-## path/to/Component.tsx
+## src/components/ItemList.tsx
 
 ### Critical
 
-**1. Race condition in fetch effect** (`Component.tsx:45-58`) [Effects #13]
+**1. Race condition in fetch effect** (`ItemList.tsx:45-58`) [Effects #13]
 **Current:** Raw fetch in useEffect without cleanup — a stale response can overwrite a fresh one
-**Fix:** Add an ignore flag in the cleanup, or move to the project's query library
+**Fix:** Add an ignore flag in the cleanup, or move to the project's `useQuery` wrapper
 **Found by:** Deep analysis, react-doctor
 
 ### Improvements
 
-**2. Extract data fetching to a custom hook** (`Component.tsx:30-72`) [Patterns]
+**2. Extract data fetching to a custom hook** (`ItemList.tsx:30-72`) [Patterns]
 **Current:** 40 lines of fetch logic in the component body
 **Fix:** `useItemData`, following the project's existing `use*Data` pattern
 **Found by:** Deep analysis
 
 ### Conventions
 
-**3. Missing displayName** (`Component.tsx`) [displayName]
-**Fix:** `Component.displayName = COMPONENT_NAME;`
+**3. Missing displayName** (`ItemList.tsx`) [displayName]
+**Fix:** `ItemList.displayName = ITEM_LIST_NAME;`
 **Found by:** Mechanical check
-```
 
-### Summary table
-
-After the file sections:
-
-```markdown
 ## Summary
 
 Tracks: deep analysis, mechanical checks. react-doctor skipped (exit 3 — no runner available).
@@ -259,16 +268,17 @@ React 19.1, compiler off.
 
 | # | Finding | Bucket | Location | Found by |
 |---|---------|--------|----------|----------|
-| 1 | Race condition in fetch effect | Critical | `Component.tsx:45-58` | Deep, RD |
-| 2 | Extract data fetching to a hook | Improvement | `Component.tsx:30-72` | Deep |
-| 3 | Missing displayName | Convention | `Component.tsx` | Mech |
+| 1 | Race condition in fetch effect | Critical | `ItemList.tsx:45-58` | Deep, RD |
+| 2 | Extract data fetching to a hook | Improvement | `ItemList.tsx:30-72` | Deep |
+| 3 | Missing displayName | Convention | `ItemList.tsx` | Mech |
 ```
 
-**Always open with the track line.** Which tracks ran, which were skipped and why, the React
-version, and whether the compiler is on. A reader cannot judge coverage without it.
+**Open with the track line.** Which tracks ran, which were skipped and why, the React version, and
+whether the compiler is on. A reader cannot judge coverage without it.
 
-The setup recommendation, when it applies, goes after this table — see the next section. Nothing
-else follows the findings.
+**Show the before and after** for anything non-obvious, and name the project's own pattern when one
+exists. Where the current code is a defensible trade-off rather than a mistake, say so in the
+finding instead of dropping it.
 
 ### No findings
 
@@ -279,13 +289,17 @@ Tracks: deep analysis, mechanical checks, react-doctor. React 19.1, compiler off
 4 files in scope, no findings.
 ```
 
+The setup recommendation, when it applies, is the only thing that may follow the summary table —
+see the next section. Then stop. Do not apply a finding, do not offer to apply one, and do not
+start a second pass.
+
 ---
 
 ## Recommending a Permanent Setup
 
-**The audit itself never installs anything.** Track A always uses the ephemeral runner — fetched for
-the run, cached outside the project, gone afterwards. That holds even when you are about to
-recommend a permanent setup, and it holds if the user says yes: they run the install, not you.
+Track A always uses the ephemeral runner — fetched for the run, cached outside the project, gone
+afterwards. That holds even when you are about to recommend a permanent setup, and it holds if the
+user says yes: they run the install, not you.
 
 A permanent setup is worth recommending anyway, because the ephemeral run is a snapshot. Installed,
 react-doctor runs from a `doctor` script, scans each PR in CI, and is available to the agent between
@@ -317,8 +331,7 @@ they came for:
 0.9.12: it adds a `doctor` script and a `react-doctor` devDependency to `package.json`, writes a
 lockfile, populates `node_modules`, adds `.github/workflows/react-doctor.yml`, and drops a skill
 directory into the config directory of every agent it detects. `--dry-run` printed a "would install"
-list and the same writes still landed, so treat it as an install, not a preview. This skill does not
-make repo-wide changes.
+list and the same writes still landed, so treat it as an install, not a preview.
 
 Say it once, and drop it if the user has declined before.
 
@@ -336,15 +349,3 @@ that mode:
 
 Standalone invocation is unaffected and stays the primary path.
 
-## Rules
-
-- **Read before analyzing** — never flag code you have not read
-- **Respect the version gates** — a React 19 fix on a React 18 project is a wrong answer, and
-  memoization advice under the compiler is noise
-- **Conventions are opt-in** — only when Phase 1.4 detected them
-- **No linter overlap** — skip anything Biome or ESLint already reports
-- **No false positives** — flag only what you are certain of, and say when the current approach is a
-  defensible trade-off
-- **Never mutate** — no edits, no installs, no config written into the project
-- **Show the before and after** for anything non-obvious, and name the project's own pattern when
-  one exists

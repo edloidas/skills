@@ -20,22 +20,29 @@ argument-hint: "[apply|check]"
 
 ## Purpose
 
-**This skill writes.** It changes repository settings, creates rulesets and
-environments, and adds workflow files. Everything is done with `gh api` from the user's
-machine — no admin UI clicking. The baseline covers Actions token defaults, security
-features, immutable releases, a branch protection ruleset, a release tag ruleset, a
-workflow-linting workflow, and branch-restricted environments for deploy secrets.
+**Writes to an external service, and to local files.** It changes GitHub repository settings,
+creates rulesets and environments, deletes repository secrets, and adds a workflow file to the
+working tree — all through `gh api` from the user's machine, no admin UI clicking. Several of
+those writes are visible to everyone with access to the repo and some (a deleted secret) cannot
+be undone from here. Nothing is applied before the Step 0 inventory and the confirmation round
+in **Asking the User**. It never stages, commits, or pushes; the workflow file it writes is left
+for the user to commit.
+
+The baseline covers Actions token defaults, security features, immutable releases, a branch
+protection ruleset, a release tag ruleset, a workflow-linting workflow, and branch-restricted
+environments for deploy secrets.
+
+**Edit mechanic.** `check-workflows.yml` in Step 6 is a new file, generated whole from the
+template. Every other file touched already exists — notably the deploy workflow in Step 5 — and
+is changed with targeted edits per hunk, never a whole-file rewrite, so the diff carries the job
+split and nothing else.
 
 `audit:security-audit` is the read half of the pair. It detects the same gaps and never
 mutates anything — no file edit, no `gh api` write. Its findings are this skill's input.
 Run this skill after an audit, or standalone to set the baseline proactively on a new repo
-or pipeline. If the user wants gaps listed rather than changes made, that is the skill to
-use.
-
-Because this skill writes, Step 0 is not optional: inventory first, show the diff, get
-confirmation, and skip anything already in place. The audit's reference checklists
-document the *why* for every item here in more depth, and are worth reading when a user
-questions an item.
+or pipeline. When the user wants gaps listed rather than changes made, use that skill instead.
+Its reference checklists carry the *why* for every item here in more depth, and are worth
+reading when a user questions an item.
 
 ## When to Use This Skill
 
@@ -45,7 +52,6 @@ Use when the user asks to:
 - "Move deploy secrets to an environment", "lock down the Cloudflare/Vercel/AWS token"
 - "Set up a new repo securely", "bootstrap repo settings"
 
-Do NOT use when the user only wants findings without changes — that is `security-audit`.
 Org-level policies, SSO, and GitHub Enterprise controls are out of scope.
 
 ## Prerequisites
@@ -73,8 +79,12 @@ gh api repos/<owner>/<repo>/immutable-releases
 ls .github/workflows/ 2>/dev/null
 ```
 
-Present the diff and confirm scope with the user before applying (see Asking the User).
-Skip every step whose target state is already in place, and say so in the final report.
+Present the diff and end the phase with one line carrying the counts:
+`Inventory: 5 already set, 6 to apply, 2 manual, 1 not applicable`.
+
+Then confirm scope per **Asking the User** and wait for the answer. Nothing in Steps 1-6 runs
+while that round is open, and no step whose target state is already in place runs at all — those
+are reported as `already set`.
 
 ### Step 1: Actions Token Defaults
 
@@ -126,7 +136,9 @@ gh api "repos/<owner>/<repo>/commits/$(git rev-parse origin/<default-branch>)/ch
   --jq '[.check_runs[].name] | unique'
 ```
 
-Exclude non-blocking checks (benchmarks, deploys) from the required list. Then:
+Take the names from that real run, not from the workflow YAML: a matrix name in YAML is a
+template (`${{ matrix.node-version }}`) and the ruleset needs the expanded name. Exclude
+non-blocking checks (benchmarks, deploys) from the required list. Then:
 
 ```bash
 gh api -X POST repos/<owner>/<repo>/rulesets --input ruleset-branch.json
@@ -137,7 +149,8 @@ Decisions baked into the template (adjust per answers from Asking the User):
 - Bypass actor `{"actor_id": 5, "actor_type": "RepositoryRole", "bypass_mode": "always"}`
   is Repository Admin — right for a solo maintainer (never blocked, while a leaked
   non-admin token or Actions token still is). For teams, drop the bypass and set
-  `required_approving_review_count` to 1+.
+  `required_approving_review_count` to 1+. Never both at once on a solo repo: with no bypass
+  and one required approval the maintainer can never merge, because nobody else can approve.
 - Warn the user: matrix check names are verbatim — reshaping the CI matrix requires a
   matching ruleset update, or merges block (admin bypass still works).
 
@@ -165,7 +178,8 @@ push-triggered workflow executes the workflow file *from the pushed ref*, so any
 push can rewrite it to use repo-level secrets — including deploying that branch over
 production.
 
-**Order matters; follow exactly:**
+The order below is load-bearing: each step leaves the hole open until the next one lands, and
+one of them is irreversible.
 
 1. Create the environment **before** any workflow references it (a workflow run naming a
    nonexistent environment auto-creates it *unprotected*):
@@ -196,14 +210,22 @@ Applies when `.github/workflows/` exists. The rulesets and settings above are en
 GitHub; the workflow files themselves are not, so nothing stops the next PR from
 reintroducing a tag-pinned `uses:` or a `pull_request_target` that checks out PR code.
 
-Clear the existing findings first — do not add a check that fails on day one:
+#### 6a. Clear the existing findings first
+
+Run zizmor and fix what it reports before adding any check — a linter that fails on day one
+reads as the hardening having broken CI:
 
 ```bash
 docker run --rm -t -v "$(pwd):/repo:ro" ghcr.io/zizmorcore/zizmor:latest /repo/.github/workflows
 ```
 
-If Docker is unavailable, ask the user to run it and paste the output. Fix what it reports,
-re-run until clean, then add `.github/workflows/check-workflows.yml`:
+If Docker is unavailable, ask the user to run it and paste the output. Re-run until clean, and
+end the phase with one line: `zizmor: 7 findings -> 0 (4 workflows)`. If it could not run at
+all, that line says so and Step 8 records the reason.
+
+#### 6b. Add the linting workflow
+
+Write `.github/workflows/check-workflows.yml`:
 
 ```yaml
 name: Lint CI workflows
@@ -228,27 +250,31 @@ jobs:
 ```
 
 Resolve both `<sha>` values to real 40-char commit SHAs before writing the file — a
-workflow-linting workflow that is itself tag-pinned will fail its own check. Set
+workflow-linting workflow that is itself tag-pinned fails its own check. Set
 `advanced-security: false` unless the repo has GitHub Advanced Security, or the SARIF
 upload step errors.
 
+#### 6c. Decide whether the check is required
+
 If Step 3 added `required_status_checks`, decide with the user whether `Lint CI workflows`
-joins the required list. Adding it means a linter regression blocks merges; leaving it out
-means the check is advisory. Either is defensible — but if it goes in the ruleset, the
-check name must match the workflow's `name:` exactly, or every PR blocks permanently.
+joins the required list, and put the name in the ruleset exactly as the workflow's `name:`
+reads — a mismatch blocks every PR permanently. Adding it means a linter regression blocks
+merges; leaving it out means the check is advisory. Either is defensible.
 
-Two related items this does not cover, because neither is a `gh api` write:
+#### 6d. Report these two, do not do them
 
-- **Stale branches** still carrying pre-hardening workflow files. Old refs are reachable by
-  `workflow_dispatch` and by `push:` filters that match them, and the Nx compromise ran
-  through a workflow version already fixed on the default branch. List them and let the
-  user decide:
+Neither is a `gh api` write, so both are reported in Step 8 rather than applied:
+
+- **Stale branches** still carrying pre-hardening workflow files. List them and let the user
+  decide — deleting someone's branch is not this skill's call:
   ```bash
   git branch -r --format='%(refname:short) %(committerdate:short)' | grep -v HEAD
   ```
-  Deleting someone's branch is not this skill's call — report and ask.
-- **`sha_pinning_required`** (Actions setting). Flip it only once zizmor reports every
-  `uses:` SHA-pinned; enabling it earlier breaks every workflow run. See Common Mistakes.
+  Old refs are reachable by `workflow_dispatch` and by `push:` filters that match them, and the
+  Nx compromise ran through a workflow version already fixed on the default branch.
+- **`sha_pinning_required`** (Actions setting). Flip it only once zizmor reports every `uses:`
+  SHA-pinned; enabling it while any workflow still uses a tag ref fails every run until they
+  are all pinned.
 
 ### Step 7: Manual Items — Report, Don't Skip Silently
 
@@ -276,8 +302,29 @@ These cannot be done via `gh`; list them for the user in the final report:
 
 ### Step 8: Report
 
-End with a compact table: each baseline item → `applied` / `already set` / `skipped
-(reason)` / `manual (user)`. Include the exact commands for anything deferred.
+One row per baseline item — every one of Steps 1-7, including the ones that did not run, each
+with a reason. Include the exact command for anything deferred. Then stop: do not re-run the
+inventory to confirm, do not commit or push the workflow file, and do not extend the baseline
+to org-level settings.
+
+```markdown
+| Item                        | Status                                                     |
+| --------------------------- | ---------------------------------------------------------- |
+| Actions token defaults      | applied (`read`, PR approval off)                          |
+| Secret scanning + push prot | already set                                                |
+| Dependabot alerts + fixes   | applied                                                    |
+| Private vuln reporting      | applied                                                    |
+| CodeQL default setup        | skipped — private repo without Advanced Security (403)     |
+| Immutable releases          | applied — not retroactive; 11 earlier releases stay mutable |
+| Branch ruleset              | applied — 3 required checks, admin bypass (solo)           |
+| Tag ruleset                 | applied — `refs/tags/v*`                                   |
+| Deploy secrets -> env       | applied — `cloudflare-production`, 2 secrets moved, repo-level copies deleted |
+| Workflow linter             | applied — `check-workflows.yml` written, not committed; advisory, not required |
+| zizmor sweep                | 7 findings -> 0                                            |
+| Stale branches              | manual (user) — 3 remote branches older than 6 months, listed above |
+| `sha_pinning_required`      | deferred — `gh api -X PUT repos/o/r/actions/permissions/workflow -F sha_pinning_required=true` |
+| npm Trusted Publisher       | manual (user) — https://www.npmjs.com/package/voidvigil/access |
+```
 
 ## Asking the User
 
@@ -305,26 +352,3 @@ this round.
 
 Keep it to one round. If the repo has no deploy secrets and no releases, questions 2 and 3
 drop and only ruleset strictness is asked.
-
-## Common Mistakes
-
-- **Creating the environment after the workflow references it** — GitHub auto-creates it
-  unprotected and the branch policy silently never exists.
-- **Deleting repo-level secrets before the environment migration is complete** — breaks
-  deploys; doing it in the right order but stopping halfway leaves the hole open.
-- **Copying check names from workflow YAML instead of a real run** — matrix names in YAML
-  are templates (`${{ matrix.node-version }}`); rulesets need the expanded names.
-- **Adding a `pull_request` rule with `required_approving_review_count: 1` on a solo
-  repo without a bypass** — the maintainer can never merge; nobody else can approve.
-- **Enabling `sha_pinning_required` while workflows still use tag refs** — every workflow
-  run fails until all `uses:` entries are SHA-pinned. Pin first, then flip.
-- **Adding the workflow-linting workflow before clearing its findings** — the first run
-  fails and the user's impression is that the hardening broke CI. Run it locally, fix,
-  then commit the workflow.
-- **Tag-pinning the linter's own actions** — a `check-workflows.yml` using `@v1` fails its
-  own SHA-pinning rule. Resolve real SHAs before writing the file.
-- **Enabling immutable releases without saying it is not retroactive** — the user assumes
-  old releases are sealed too. They are not, and a repo with a long release history keeps
-  that exposure on every version published before the flip.
-- **Deleting a stale branch on the user's behalf** — report the list and let them decide.
-  A branch that looks abandoned may be someone's long-running work.

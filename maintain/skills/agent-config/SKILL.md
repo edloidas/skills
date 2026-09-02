@@ -20,13 +20,16 @@ metadata:
 
 # Agent Config
 
+**Local writes only.** `init` and `apply` create or edit files and symlinks inside the target
+repo; nothing is staged, committed, pushed, or sent to a remote service. `check` is read-only.
+No user-level file is read or written (step 2).
+
 ## Purpose
 
 A repository's agent layer is one document read by many agents under different filenames.
 This skill establishes that layout and then keeps the document honest:
 
-- **Init** — one real instruction file at the repo root, every other host filename a
-  relative symlink pointing at it.
+- **Init** — establish the file-and-symlink layout in **Canonical Layout**.
 - **Check** — find documented commands, paths, directory structures, and counts that have
   drifted from the actual repo.
 
@@ -99,7 +102,11 @@ Exit codes: `0` consistent, `2` no canonical file (or two competing ones), `3` d
 
 Also note whether the repo is a git repository, what build system it uses, and whether an
 instruction file already carries real content. Report present / missing / drifted before
-proposing a single edit.
+proposing a single edit, and end the phase with one line naming the state:
+
+```
+Canonical: CLAUDE.md (real, 214 lines) · AGENTS.md: missing · GEMINI.md: absent (opt-in) · git: yes · build: pnpm
+```
 
 ### 2. Establish the instruction file
 
@@ -149,23 +156,31 @@ model cannot infer, and they are worth a handful of lines in every session.
 
 Read `references/drift-checks.md` and follow it. In short: parse the file into sections,
 keep only the ones making structural claims, collect the matching ground truth, classify
-each finding, report grouped by section with line numbers.
+each finding, report grouped by section with line numbers, and close with the summary line
+that reference defines.
 
-Stop after the report when the mode is `check`.
+In `check` mode the run ends there. Do not apply a finding, and do not offer to.
 
 ### 6. Apply
 
-Apply only `STALE`, `COUNT_MISMATCH`, and `PATH_MISSING` findings, plus `RENAMED` ones the
-user confirmed. `INFORMATIONAL` findings are reported and never applied — deciding what
-deserves documenting belongs to the author.
+The report from step 5 is on screen before the first edit. Apply only `STALE`,
+`COUNT_MISMATCH`, and `PATH_MISSING` findings, plus `RENAMED` ones the user confirmed.
+`INFORMATIONAL` findings are reported and never applied — deciding what deserves documenting
+belongs to the author.
 
-Edits are surgical. Change the reference, not the surrounding prose.
+Edit mechanic: one targeted edit per finding, never a whole-file rewrite of the instruction
+file. Change the reference; leave the surrounding prose, ordering, and whitespace byte-identical.
+
+End with one line: `Applied 3 of 4 findings (1 stale, 1 count, 1 path); 1 informational left`.
 
 ### 7. Verify
 
 Re-run `status`, then `git status` and `git diff` so the user sees exactly what changed. A
 new symlink shows up in `git diff` as a mode `120000` entry — that is correct, not a
 mistake.
+
+Then stop. Do not stage or commit, and do not run `editor-config` or `repo-hardening` off the
+back of this run — they are separate decisions (**Adjacent Skills**).
 
 ## Adjacent Skills
 

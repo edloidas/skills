@@ -18,6 +18,11 @@ argument-hint: "[path-to-tsconfig]"
 
 ## Purpose
 
+**This skill reports by default and writes only after the user approves it in Step 6.** Nothing
+before that step touches a file: Steps 1-5 read, run the checker, and print. An approved apply
+edits `tsconfig.json` files inside the project and nothing else — no commit, no push, no
+`node_modules`.
+
 Report what a `tsconfig.json` should look like on TypeScript 7:
 
 - Options and values TS7 rejects outright, with a migration for each
@@ -26,12 +31,6 @@ Report what a `tsconfig.json` should look like on TypeScript 7:
 - Options that look droppable but should be kept
 
 ## When to Use This Skill
-
-- "Audit my tsconfig"
-- "What can I drop from tsconfig for TypeScript 7?"
-- "Is `baseUrl` / `esModuleInterop` / `downlevelIteration` still needed?"
-- "Prepare this config for the TS7 upgrade"
-- Before or during a TypeScript 6 → 7 upgrade
 
 Trigger phrases: "tsconfig audit", "tsconfig cleanup", "TypeScript 7 migration", "compilerOptions", "drop tsconfig options".
 
@@ -84,6 +83,8 @@ A repo commonly has several — a root config plus build, site, test and benchma
 extending the root. Audit the one the user meant, and say which others exist rather than silently
 auditing only the root. A config reached through `extends` is covered automatically as part of the
 chain; a sibling config is not.
+
+Close the step with one line: `Configs: 4 found, auditing tsconfig.json (extends @tsconfig/node22), 3 siblings not audited.`
 
 ### Step 2: Run the checker
 
@@ -159,10 +160,45 @@ Do not silently recommend deleting an option you could not identify.
 Lead with the blocking findings and the concrete failure each one causes. Then the must-add
 findings, then the safe drops as a single grouped list, then anything to keep and why.
 
-State the compiler and data-file versions the audit ran against. If they differ, say so.
+Close with a **Not checked** list, one line per item with its reason. Everything the run could not
+cover goes there — sibling configs from Step 1, the configs behind project `references`, an option
+Step 4 could not identify, and any finding class the compiler could not produce because the `tsc`
+found was older than 7.x. State the compiler and data-file versions the audit ran against; if they
+differ, that is a `Not checked` line too. A report without this section reads as a full solution
+audit.
 
-If the config has project `references`, the audit covered only the config it was pointed at. List
-the referenced configs and offer to audit each one — do not imply the whole solution was checked.
+A filled report:
+
+```markdown
+## tsconfig audit — tsconfig.json (tsc 6.4.2, data file TS 7.0.2)
+
+### Blocking (2)
+- `baseUrl: "./src"` — removed in TS7 (`TS5102`); the build stops before typechecking.
+  Fold the prefix into `paths`: `"paths": { "*": ["./src/*"] }`.
+- `moduleResolution: "node"` — value removed in TS7 (`TS6046`). Use `"bundler"`; this project
+  is built by Vite, so no `.js` extensions have to be added to relative imports.
+
+### Must add (1)
+- `target` is unset. In TS7 the default floats to the newest stable ECMAScript version, so the
+  emitted syntax changes the day the compiler is upgraded. Pin `"target": "es2023"` — what the
+  current compiler already emits.
+
+### Safe to drop (4)
+`esModuleInterop`, `allowSyntheticDefaultImports` (implied by it), `skipDefaultLibCheck`
+(implied by `skipLibCheck`), `forceConsistentCasingInFileNames` (matches the TS7 default).
+Cleanup, not required work — defaults can move between releases.
+
+### Keep (2)
+- `strict: true`, `module: "esnext"` — keep-list; both are load-bearing on the TS7 defaults.
+- `declaration: true` — `external-consumer`: this package ships `types` in `package.json`.
+
+### Not checked
+- `tsconfig.build.json`, `tsconfig.test.json`, `site/tsconfig.json` — siblings, not reached
+  through `extends`. Offer to audit each.
+- Removal and unknown-option findings came from tsc 6.4.2, not 7.x, so they understate what TS7
+  rejects. Re-run against a 7.x compiler to close this gap.
+- `tsc-alias` sibling key — not a `compilerOptions` entry; out of scope, left alone.
+```
 
 ### Step 6: Offer to apply
 
@@ -174,8 +210,9 @@ Ask before writing, per **Asking the User**:
 
 When applying:
 
-- **Edit surgically.** Remove or change the specific lines. `tsconfig.json` is JSONC and is
-  routinely commented — never reserialize the file, which would strip every comment.
+- **Apply one targeted edit per option.** Remove or change the specific lines and nothing else.
+  Never rewrite or reserialize the whole file: `tsconfig.json` is JSONC and routinely commented,
+  and a reserialize strips every comment and reorders every key.
 - **Only edit files inside the project.** For `editable: false` findings, add a local override.
 - **Capture a baseline first**: `tsc -p <config> --noEmit --locale en` before any edit.
 - **Verify after**: rerun it and compare the *set* of diagnostics, not the count — an equal count
@@ -185,6 +222,9 @@ When applying:
   that catches a `rootDir` regression, which `--noEmit` structurally cannot see.
 - If verification regresses, revert your own edits and report what happened. Do not leave the
   config half-migrated.
+
+Then stop. Report what was applied and what verification said; do not audit the sibling configs,
+do not commit, and do not start a second apply round on findings the chosen option excluded.
 
 ## Cautions
 

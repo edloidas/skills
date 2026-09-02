@@ -414,13 +414,13 @@ The `description` determines when an agent activates the skill. Be specific and 
 ### Body Line Budgets
 
 The 500-line body cap is mechanical, so it lives in `validate-skills.sh` rather than in
-`skill-audit`'s rubric. Three skills carry a larger budgeted allowance in
+`skill-audit`'s rubric. Two skills carry a larger budgeted allowance in
 `BODY_LINE_BUDGETS`:
 
 | Skill | Allowance | Why |
 | ----- | --------- | --- |
 | `plan/skills/issue-flow` | 1000 | **Sanctioned.** It owns every git and `gh` write in the issue pipeline — base detection, the fork point, the squash rules, the force-push lease. That concentration is the seam that let `solve-issue` and `changes-review` become portable, and splitting it would put the same rules in two files, which this repo treats as the drift mechanism. Its size is the cost of being the single writer. |
-| `workflow/skills/solve-issue` | 540 | At 526 after the tests-audit and review-feedback phases were added and the plan template and gate, verification set, and report format moved into `references/`. Trim again on the next substantive edit rather than raising the budget. |
+| `workflow/skills/solve-issue` | 540 | At 537 after the prompting-standard pass added a stop sentence and a named end-of-phase line to every phase, paid for by cutting the 21-row Error Handling table and the trailing `## Scope` recap and moving the deferral block into `references/review-feedback.md`. Three lines of headroom: the next substantive edit trims rather than raising the budget. |
 
 A budget is a per-skill ceiling, not an exemption — a budgeted skill that grows past its
 allowance still fails, so a deliberate size cannot drift into an accidental one. Adding a
@@ -444,6 +444,190 @@ length is proportionate, and whether anything is duplicated into `references/`.
 - Include helpful error messages
 - Handle edge cases gracefully
 
+## Writing a Skill Body
+
+A `SKILL.md` is a prompt fragment injected into an unknown model's context. One file is read by
+several Claude models and by GPT-5.x through Codex, and by whatever replaces them next year.
+Current vendor guidance points those models in opposite directions on the same knobs: one runs
+long and wants a conciseness prompt, another is already too dense; one over-narrates, another
+under-narrates; one over-delegates, another does not.
+
+The framing to reject is "tune a shared prompt for models that disagree" — that is per-model
+compensation, which a portable file cannot carry. The framing to adopt:
+
+> Every per-model knob is a **default the model falls back to when the prompt is silent.** A
+> skill that is not silent — that names the artifact each phase produces and the sentence that
+> ends it — never hands the model a place to apply its default.
+
+So the work is never to add compensation. It is to finish specifying what is still left to the
+model: progress lines, quoting, delegation thresholds, phase stop conditions, edit mechanics.
+Where the artifact is specified, the models converge. Where it is not, each falls back to its
+own habit.
+
+**A skill states what the task requires. It does not state what the model requires.**
+
+### The layer model
+
+Four layers hold instructions. Each rule lives in exactly one.
+
+| Layer | Owns | Examples |
+| ----- | ---- | -------- |
+| Host system prompt | Model calibration the host tunes per model | verbosity, narration cadence, formatting density, correction narration, thinking depth |
+| `CLAUDE.md` (user or repo) | Cross-cutting policy for this person's work | commit format, autonomy baseline, comment policy, git conventions |
+| `SKILL.md` body | What this task requires, and only this task | the procedure, its gates, its output contract, its safety boundary |
+| `references/` | Material consulted *during* execution, not before | rule catalogs, dispatched prompts, lookup tables, worked examples |
+
+Two tests for a candidate line. Would it still be correct if the task were different? Then it is
+not a skill's line. Would the skill produce *wrong results* without it, as opposed to
+differently-styled results? If not, it is not a skill's line.
+
+**The deliberate exception is the authorization delta.** These skills install into other people's
+repos, where this file does not exist. A read-only skill must say it is read-only in its own body.
+It must not restate what "read-only" *means*. Same for a skill that pushes, or writes to an
+external service: it names the writes it performs and the gates it never skips, and nothing more.
+
+The autonomy baseline those deltas are measured against: for requests to answer, explain, review,
+diagnose, or plan — inspect and report, do not implement unless asked. For requests to change,
+build, or fix — make in-scope local changes and run non-destructive validation without asking.
+Require confirmation for external writes, destructive actions, and scope expansion. A skill adds
+only what differs from that.
+
+### Say a thing once
+
+A rule is stated once, in the section that owns it. Other sites cross-reference that section by
+name. This generalizes the [Asking the User](#asking-the-user) convention — "call sites do not
+re-explain the fallback" — which was for a long time the only place the repo applied it. It is
+the largest single win available: stating each rule once measures at +10–15% eval quality for
+41–66% fewer tokens.
+
+**No trailing `## Rules` recap that restates earlier sections.** A closing block of bold negatives
+fails on every model at once, each for its own reason: one reads it as emphasis and over-weights
+it, one pays the repetition tax, one treats a trailing recap as a summary and skims it — so a rule
+living *only* there is lost. Either delete the section, or make it the single home of rules that
+appear nowhere else.
+
+**Locality is not repetition.** A constraint belongs beside the action it constrains. A safety
+boundary stated once at the top and never again next to the command that would breach it is a
+boundary read 300 lines too early. Say-once forbids a second *copy*; locality requires the *only*
+copy to sit in the right place. When the two pull against each other, move the rule down to the
+action and cross-reference it from the top.
+
+### Specify the artifact, not the behaviour
+
+- **Length in units, never adjectives.** "One section per cause, at most four." "One line:
+  `Committed <sha>`." Never "be concise" or "no fluff" — an adjective is a knob each model turns
+  differently, a unit is a fact. A check works too: `assist/skills/bro`'s "Shorter than the
+  original, always; if it is not, cut more."
+- **Every phase spanning more than one tool call names the line it prints at its end.** This
+  replaces "give progress updates" and settles the narration split with no per-model text. Make
+  the line carry real counts: `12 raw findings -> 5 after consolidation`. It has to be **one line
+  per phase**, not one per skill: a single named line elsewhere is read as the ceiling rather than
+  the floor, and the model goes silent everywhere it was not asked.
+- **Every phase that could continue ends with a stop sentence naming what does not follow.**
+  `review/skills/changes-review` is the model: "Then stop. Do not fix, do not offer to fix, and do
+  not start a second round." This is also the real defence against a model bolting its own re-check
+  on top of the specified one, and against ending a turn with a promise ("Round 3 would attack the
+  fix…") instead of an action. Where a skill runs in rounds, add: a round ends only in one of the
+  states in the table; a description of the next round is not a state, run it.
+- **Reproduced source text is marked, and the template shows the marker.** An instruction saying
+  "quote the clause" while the template renders prose gets prose. Put a literal `> ` blockquote
+  line in the template where the quote goes. Where a skill says "paste it, never describe it", add:
+  in a fenced block, unedited; if you cut lines, say how many and from where.
+- **A skill that edits files states the edit mechanic once:** targeted edits per hunk, never a
+  whole-file rewrite. Otherwise removing six comments from a 300-line file becomes a whole-file
+  write whose diff carries whitespace and quote-style churn nobody asked for. Language about
+  "surgical" *scope* is a different statement and does not cover this.
+- **Quantify read-scope where under-reading is possible.** "What to read" without "how many" gets
+  one file opened, the rest reasoned about, and the "what I verified" line quietly downgraded.
+  One sentence fixes it and fixes tool-call batching at the same time: list every file the trace
+  will touch, and open all of them in one response before writing a word.
+- **Every dynamic check that did not run is named in the report, with why.** If one optional check
+  says "skip it and say so" and its sibling does not, the sibling gets skipped silently and a
+  partial run reads as a clean one.
+
+### Phrasing
+
+- Say what to do, not what to avoid, where both work.
+- **No shouty emphasis as a compliance device** — enforced by `validate-skills.sh`. Where the
+  shout sits on an approval gate, drop the shout and keep the gate: "Pushing the tag publishes it
+  and cannot be recalled. Show the version and the tag, and wait for approval." Same imperative
+  force, no capitals. Never weaken a gate to satisfy the rule.
+- **Instruction first, rationale after, one line, next to the rule.** The *why* genuinely helps and
+  the rationale-heavy skills in this collection work — do not strip rationale. What fails is
+  rationale *wrapping* an imperative: in a 40-line section holding two instructions and 38 lines of
+  reasoning, the instructions get extracted and the scope the reasoning attached to them is lost.
+- **A condition attached to a table row lives in the row.** Tables and fenced templates bind far
+  more reliably than the prose paragraph after them, so a condition in the following sentence is
+  dropped while the row is applied.
+- **Tables for classification, prose steps for procedure.** Tables bind for exact mappings and
+  mutually exclusive cases, poorly for ordered procedures, exceptions, and nested conditionals.
+- **Never gate a finding on the model's own confidence.** "Only report violations you are CERTAIN
+  about", "only report high-severity", "be conservative" are followed literally and cap recall.
+  Worst inside a *dispatched* prompt, where the sub-agent is the one finding things and no filter
+  stage exists downstream. Carry `**Confidence**: high | medium | low` as a reported field and
+  filter in synthesis — the architecture `review/skills/changes-review` already uses.
+- **No behavioural-style words in a body** — "be thorough", "think carefully", "double-check",
+  "verify your work". Warned by `validate-skills.sh`. `description` and `when_to_use` are exempt:
+  those match what a user types, so `consilium`'s "think hard" and "ultrathink" triggers are
+  correct. Quoted trigger phrases in a body are exempt for the same reason.
+- **No model-calibration adverb in `description` or `when_to_use`** — "thoroughly", "concisely",
+  "carefully". Enforced by `validate-skills.sh`. Discovery text is read every session by every
+  host and cannot make a skill fire by describing how it works.
+
+### Examples and verification
+
+**Every skill producing structured output ships one complete worked example of that output** — a
+filled-in instance of the skill's own template, not a second template. One, in the body, as a
+fenced block; anything further goes in `references/`. Do not use `<example>` tags: fenced blocks
+already separate example from instruction, and XML tagging is a system-prompt tool. The exception
+is the quoting marker above, which earns an explicitly marked block.
+
+**Do not instruct a model to double-check its own work.** Cut "before finishing, verify your
+answer", "add a final verification step", "use a subagent to double-check your own output". Keep
+everything external and structural — an independent agent attacking the artifact blind to the
+implementer's reasoning, running the project's tests, a live observation. Those are not
+self-verification. In practice the defence against over-verification is the stop sentence above,
+not a prohibition.
+
+### Delegation
+
+- **Every dispatch site carries a numeric threshold or a named trigger.** `build/skills/commit` is
+  the model: "~500 changed lines or ~20 files AND you need actual diff content". An adjective like
+  "when the surface is wide" leaves it to the model, so one host spawns and another does not.
+- **An inline fallback for a chained skill is at most 5 lines and a pointer.** A fallback longer
+  than the invocation gets taken every time, and it is a second copy of the skill it replaces —
+  the drift mechanism this file warns about throughout.
+
+### Cut order, when a body is over budget
+
+1. Duplicated mission statements and restated procedure summaries
+2. Historical rationale not attached to a live constraint (compress to one line)
+3. "Core Principle" sections that do not change a later decision
+4. Failure-mode tables that only restate the procedure
+5. Generic agent-behaviour advice (host layer)
+
+Never cut: task-specific boundaries, decision criteria, gates, edge cases, required commands,
+output schemas, worked examples, and the one-line reason behind a surprising rule.
+
+### Deliberately not adopted
+
+Recorded so it is not re-derived. Effort sweeps and `output_config` (an API loop; a skill has no
+analogue) · prefill migration, structured outputs, `budget_tokens` (request shape; a skill never
+constructs a request) · turn-scoped system messages, beta headers, append-only history (harness
+layer) · programmatic tool-calling routing (vendor-specific, and naming it is a mechanism
+violation) · XML-tagged system-prompt blocks and the "mannered prose" block (host-layer
+calibration) · "ask the model to self-check" (superseded above) · restating a conciseness reminder
+near the end of a long prompt (model-specific compensation; the per-phase stop sentence does the
+same job portably) · "prefer general instructions over prescriptive steps" (wrong here — these
+skills exist to *replace* the model's default procedure, which is the whole premise of
+`issue-flow`'s squash rules and `changes-review`'s cold dispatch) · "report everything, filter
+separately" as new text (already the architecture; adding it again violates say-once).
+
+`effort:` and `model:` frontmatter stay unset collection-wide. Claude Code supports them and the
+other hosts ignore them, so there is no portability cost — but there is also no measurement saying
+which skills are under- or over-thought, and the rubric already treats a `model` override as
+needing justification. Revisit with numbers, not intuition.
+
 ## Creating a New Skill
 
 1. Choose the appropriate group directory (`plan/`, `build/`, `review/`, `audit/`, `maintain/`, `ship/`, `assist/`, `write/`, `obsidian/`, or `workflow/`)
@@ -464,10 +648,10 @@ another:
 
 | Checker | Owns | Failure |
 | ------- | ---- | ------- |
-| `.github/scripts/validate-skills.sh` | Marketplace and plugin manifests, canonical layout, per-skill frontmatter rules, dangling bundled paths, Claude-only mechanisms in a portable skill | Hard, fails CI |
+| `.github/scripts/validate-skills.sh` | Marketplace and plugin manifests, canonical layout, per-skill frontmatter rules, dangling bundled paths, Claude-only mechanisms in a portable skill, shouty emphasis and calibration adverbs (see [Writing a Skill Body](#writing-a-skill-body)) | Hard, fails CI; behavioural-style words warn only |
 | `scripts/validate-codex.sh` | Codex catalog, `compatibility` agreement, `agents/openai.yaml`, host subset rule | Hard, fails CI |
 | `tests/run.sh` | What a bundled script actually returns — exit codes, chosen branch, parsed output, refusals | Hard, fails CI |
-| `skill-audit` | Discovery, instruction quality, context cost, portability, safety | Scored 1-5, PASS / FAIL |
+| `skill-audit` | Discovery, instruction quality, context cost, portability, safety, layer discipline | Scored 1-5, PASS / FAIL |
 
 `skill-audit` never edits anything and never regenerates the packaging layer — a stale
 generated tree is one of its findings. Anything mechanically checkable belongs in one of the

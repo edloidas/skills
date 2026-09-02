@@ -96,15 +96,17 @@ Invoke `/changes-review`. Pass the scope, the issue when one resolved, and the m
 | 2 | `standard` | The round-1 fix |
 | 3–5 | `simple` | The previous round's fix |
 
+When the review returns, print one line: `Round <N> <mode>: <count> findings`.
+
 Round 2 still has enough new surface to be worth several reviewers. By round 3 the diff is a
 handful of lines and a full run spends most of its budget re-deriving a spec that settled two rounds
 ago — so late rounds go `simple`, and reachability is the lens that still changes the outcome.
 Round 1 is the only one a caller should override: a workflow that wants a whole branch attacked hard
 asks for `deep` there.
 
-**Pass no reasoning.** Not your plan, not what the fix was trying to do, not the previous round's
-findings or which of them you rejected. The reviewers are cold to the implementer's reasoning by
-design, they cannot detect that it leaked, and this skill *is* the implementer by round 2.
+**Pass no reasoning.** `changes-review` owns that rule — it dispatches every reviewer **cold to
+the implementer's reasoning** — and this skill is subject to it twice over: it *is* the implementer
+by round 2, and a reviewer cannot detect that reasoning leaked into its prompt.
 
 ### Snapshots
 
@@ -130,7 +132,8 @@ squash, amend, or push them yourself. Two constraints come with them:
 
 ## Phase 2: Triage
 
-The gate. Both dials have to clear it before a single file is edited.
+The gate. Both dials have to clear it before a single file is edited. When the gate has been
+applied to every finding, print one line: `Triage: <F> to fix, <R> reported, <H> held, <D> dropped`.
 
 | | High confidence | Medium | Low |
 | --- | --- | --- | --- |
@@ -173,12 +176,12 @@ report; getting it wrong the other way costs a decision the caller never made.
 Fixes run in subagents. The orchestrator holds the ledger; it does not hold file contents. That is
 what keeps a five-round loop inside one context.
 
-Dispatch one fixer per finding, giving it the finding **in the reviewer's own wording**, the files
-named in it, and nothing else. It returns what it changed in a line or two, plus anything it could
+Dispatch one fixer per file-cluster of findings that cleared the gate, giving it those findings
+**in the reviewer's own wording**, the files named in them, and nothing else. It returns what it changed in a line or two, plus anything it could
 not fix and why. The prompt is `references/fix-agent-prompt.md`.
 
-- **Two fixers must never share a file.** Cluster findings by file and dispatch one fixer per
-  cluster. Concurrent edits to one file lose work silently.
+- **Two fixers must never share a file.** That is what the clustering above is for — concurrent
+  edits to one file lose work silently.
 - A finding a review reported as one root cause with several symptoms is **one** fixer. Splitting it
   produces three patches that each treat a symptom.
 - **No scope expansion.** A fixer that spots a second bug reports it; it does not fix it. That
@@ -186,13 +189,16 @@ not fix and why. The prompt is `references/fix-agent-prompt.md`.
 - Where the host has no subagent facility, apply the same prompts inline, one at a time, in the same
   clustering order, and say so in the report.
 
+Before dispatching, print one line: `Fixing <F> findings in <C> fixers across <N> files`.
+
 ## Phase 4: Verify the fix
 
 Before the next review round, the tree has to build and its tests have to pass — or at minimum,
 everything the change touches. A review round spent on code that does not compile is a wasted round.
 
 1. **Find the project's own checks** — package manifest scripts, a makefile, a task runner, the CI
-   workflow. Never invent a command the repo does not define.
+   workflow. Never invent a command the repo does not define. When they have run, print one line:
+   `Checks: <command>, <command> — green` (or `red: <the failing check>`).
 2. **Establish the baseline first.** Checks already red before any fix are not the fix's fault.
    Record that and judge the fixes only against *new* failures.
 3. **Prefer the narrow checks** — a type check plus the tests covering the touched files. Run the
@@ -212,10 +218,9 @@ artifact against the one that established the finding. Where the host cannot cha
 same method inline. Three outcomes:
 
 - **The symptom is gone** → `fixed`.
-- **The symptom reproduces** → the fix did not work, and the green checks prove they do not cover
-  it. Treat it as a red check: correct the cause and re-observe, and on a second reproduction
-  revert the fix and record it as `reverted` with the artifact. Never widen a test to cover a
-  symptom the fix failed to remove.
+- **The symptom reproduces** → treat it as a red check: correct the cause and re-observe, and on a
+  second reproduction revert the fix and record it as `reverted` with the artifact. Never widen a
+  test to cover a symptom the fix failed to remove.
 - **Nothing could be observed** → `held`, not `fixed`. The absence is named in the report.
 
 A repo with no checks at all: say so in the report and do not manufacture a test suite to fill the
@@ -239,8 +244,9 @@ Every finding ends each round in exactly one state:
 
 ### Re-checking held findings
 
-Alongside each new round's review, dispatch one subagent per held finding whose only job is to
-settle it — demonstrate the failure or refute it. Prompt: `references/recheck-prompt.md`. These run
+Whenever a round leaves findings in the `held` state, dispatch one subagent per held finding
+alongside the next round's review, whose only job is to settle it — demonstrate the failure or
+refute it. Prompt: `references/recheck-prompt.md`. These run
 in parallel with the review and see only their own finding.
 
 | Verdict | Action |
@@ -263,6 +269,10 @@ Stop as soon as any of these holds:
 - A check is red for a reason the fixes cannot resolve.
 
 Never start a round after one that changed nothing.
+
+A round ends only by meeting one of those conditions or by running the next one. A description of
+the round that would come next — "round 3 would attack the eleven-line fix" — is not an ending;
+run it. When the run does end, print the report below and nothing after it.
 
 ## Interactive mode
 
@@ -290,28 +300,36 @@ A question that does not look like a question gets scrolled past.
 ## Report
 
 ```
-## Fix and reverify: N fixed, M reported, K dismissed · R rounds
+## Fix and reverify: 4 fixed, 2 reported, 1 dismissed, 1 reverted · 3 rounds
 
 Rounds: 1 standard (12 findings) → 2 standard (3) → 3 simple (0)
-Checks: `<command>`, `<command>` — green
+Checks: `pnpm typecheck`, `pnpm test -- src/offset` — green
 Snapshots: abc1234, def5678 — squash before committing
 
 ### Fixed
 
-- `path/to/file.ext:42` — <the finding, one line> → <what the fix does>
+- `src/parse/offset.ts:42` — `parseOffset` truncates instead of flooring, so `-1.5` parses as
+  `-1` → switched to `Math.floor`
+- `src/net/socket.ts:130` — the reconnect timer is never cleared on unmount → cleared in teardown
+- `test/offset.test.ts:12` — the assertion pinned the truncating behavior → updated to the floored
+  values
 
 ### Reported, not fixed
 
-- <the finding, in the reviewer's own wording> — escalated: <the trade-off, and the options>
-- <the finding> — minor, carried
+- "The offset parser belongs behind the schema validator, not in front of it" — escalated: two
+  valid layerings, and moving it changes the public `parse()` signature. Validate-then-parse
+  changes one call site; parse-then-validate keeps the signature and duplicates the range check
+- "`offset` and `skip` read as synonyms in the public API" — minor, carried
 
 ### Dismissed
 
-- <the finding> — re-checked in round 2, could not be demonstrated
+- "`clampOffset` can be reached with a NaN" — re-checked in round 2, could not be demonstrated:
+  every call site coerces through `Number.parseInt` first
 
 ### Reverted
 
-- <the fix> — broke `<command>` twice: <the failing line>
+- The `AbortController` guard in `src/net/socket.ts:88` — broke `pnpm test -- src/net` twice:
+  `expected 1 reconnect attempt, received 0`
 ```
 
 Rules for the shape:
@@ -334,20 +352,6 @@ Scope: <files, lines, base> · reviewed at <mode>
 
 Then stop. Do not commit the fixes, do not squash the snapshots, do not push, and do not start a
 round the stop rules already ended.
-
-## Rules
-
-- **A fix is unreviewed code.** Every round that changed something gets reviewed, or the loop has
-  proved nothing.
-- **Never fix below the gate.** Minor and low-confidence findings are carried, not patched.
-- **Never fix an escalation unattended.** Report it and let the caller decide.
-- **Never fix around a failing check.** Revert instead.
-- **No reasoning reaches the review.** No plan, no rationale, no previous findings, no account of
-  what the fix was for.
-- **Fix in subagents, one file to one fixer.** The orchestrator keeps the ledger, not the code.
-- **No scope expansion.** Fix what was found. A refactor spotted on the way is a finding for the
-  next round, not work for this one.
-- **Every finding ends somewhere.** One ledger state each, all of them in the report.
 
 ## Error handling
 

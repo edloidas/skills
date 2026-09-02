@@ -23,13 +23,17 @@ argument-hint: "[files | commit-ref] [--dry-run] [--comments-only] [--no-simplif
 Post-implementation cleanup of code that is already correct. Prunes the comment noise an AI tends
 to add, applies the project's conventions, and simplifies what is needlessly complicated.
 
+**Local writes only.** It edits files in the working tree and reports; it never stages, commits, or
+pushes, and it opens no issue and edits no PR.
+
 **Correctness is not this skill's job.** It does not hunt for bugs, and it must not "fix" behavior
 it thinks is wrong — that is `/changes-review`. Everything here preserves behavior.
 
 ## Core Principle
 
 **A comment stays only if the code cannot carry it and no other artifact can either.** The default
-for every comment in scope is *delete*. One survives by earning its line, not by being defensible.
+for every comment in scope is *delete*. Being true is not the bar; a comment survives by earning
+its line, not by being defensible.
 
 **Ask where the sentence belongs before asking whether it is true.** A comment competes with the
 code itself and with three other artifacts, and it loses to all four:
@@ -53,10 +57,9 @@ Two further removals are not about placement:
 - **A fact already stated nearby.** Once one comment carries a mechanism, a second comment on
   another part of that mechanism is duplication — see Phase 2.5.
 
-**Be aggressive, and know what aggression means here.** It means deleting what does not earn its
-place. It does not mean shortening to save space: a surviving comment must still read well and
-still be correct, and a compaction that drops a fact or leaves a half-sentence is a worse outcome
-than the verbose original it replaced.
+**Delete what does not earn its place; do not shorten to save space.** A surviving comment must
+still read well and still be correct, and a compaction that drops a fact or leaves a half-sentence is
+a worse outcome than the verbose original it replaced.
 
 ## Read Intent First
 
@@ -115,6 +118,9 @@ Filter to code files (exclude `*.md`, `*.json`, `*.lock`, `*.yaml`, `*.yml`, `di
 
 Leave unrelated pre-existing comments elsewhere in the file alone — surgical. For an explicitly
 named file, the whole file is in scope.
+
+Open **every** file in the resolved list, in one batch, before classifying anything. A comment judged
+from a hunk alone is judged without the declaration it serves, which is exactly what Phase 2.5 needs.
 
 **Step 4: Load the conventions that apply.** Skip entirely under `--comments-only`.
 
@@ -189,6 +195,8 @@ One the project or the user placed is a marker, and stays.
 restatement — remove it. Keep one only where it conveys intent the calls don't (e.g. "most recent,
 not stale"). The test name and assertions should carry the rest.
 
+Print one line with the counts: `Classified 41 comments: 26 remove, 4 compact, 2 rename, 9 keep.`
+
 ### Phase 2.5: Read the survivors together
 
 Phase 2 judges one comment at a time, which is exactly how three individually defensible comments
@@ -212,6 +220,11 @@ places to update, and it is the failure this skill is most often called back to 
 
 **Auto-apply.** Edit directly — uncommitted changes are the review surface, and `git diff` shows
 exactly what changed. With `--dry-run`, produce the Phase 4 report and stop without editing.
+
+**Apply targeted edits per hunk; never rewrite a whole file.** Removing six comments from a 300-line
+file by rewriting it picks up trailing-whitespace, quote-style, and line-ending churn nobody asked
+for, and buries the six real deletions in a diff no reviewer will read. One edit per comment, or per
+adjacent run of comments.
 
 **Order:** remove restatement → pull rationale and wider context out (collect for the report by
 destination) → strip external references → de-duplicate per Phase 2.5 → compact gotchas →
@@ -250,6 +263,9 @@ guessing that a suppression is stale is how a suppression becomes a build failur
 - Never delete `HACK` / `FIXME` / `XXX` / `BUG` comments — flag them.
 - Never remove license headers or copyright notices.
 - Preserve `// region` / `// endregion` and any project-specific markers.
+
+Print one line with the counts: `Applied across 4 files: 26 comments removed, 4 compacted, 2 renames,
+3 convention fixes.`
 
 ### Phase 3.5: Simplifier pass
 
@@ -291,6 +307,8 @@ Declined, or the host cannot prompt → fall back to the existing **Suggested re
 applied)** section. Under `--no-simplify` and `--dry-run` the analysis still runs and populates
 that section; under `--comments-only` the pass does not run at all and the section carries only
 the renames and convention fixes it would otherwise have applied.
+
+Print one line with the counts: `Simplifier: 5 candidates, 3 applied, 2 suggested.`
 
 ### Phase 4: Report
 
@@ -358,9 +376,11 @@ gone. They are *inputs* to those artifacts, not blocks to be pasted at the end o
 the first thing a body has to establish, so the commit writer folds it into that opening paragraph.
 Write it as prose that can carry that weight — the reason, not a label for it.
 
-**PR body** and **an issue** are handed to whoever writes them. This skill files nothing itself: it
-opens no issue and edits no PR. Omit a section that has nothing in it rather than printing an empty
-heading.
+**PR body** and **an issue** are handed to whoever writes them. Omit a section that has nothing in it
+rather than printing an empty heading.
+
+Then stop. Do not stage, do not commit, do not open the issue you just filed text for, and do not
+start a second cleanup pass over the same files.
 
 ## Examples
 
@@ -460,28 +480,6 @@ suppressRender: boolean;
 // After — the fact is in the file; the issue number bought the reader nothing
 // Chrome reports a zero-height box until the font loads, so measure after `ready`.
 ```
-
-## Common Mistakes
-
-- **Deleting a gotcha as if it were restatement.** "Captured before the click blurs the field" is
-  *why*, not *what* — compact it, don't drop it.
-- **Keeping rationale "to be safe".** If it's the decision story, the commit message is its home;
-  surface it and remove it from the source.
-- **Over-trimming docs.** Public API docs are for humans reading the signature — correct and
-  tighten, never gut.
-- **Renaming exported symbols with outside callers.** That's a refactor, not a rename-to-kill —
-  flag it, don't apply it.
-- **Trimming a duplicate's wording instead of deleting it.** Three shorter comments still telling
-  one story is the same defect, one round later. Phase 2.5 is not optional.
-- **Keeping a comment because it is true.** True is not the bar — being unobtainable from the code,
-  and belonging in this file rather than the commit, the PR, or an issue, is.
-- **Authoring a `// !` warning, a `// ?` or a `// *` prefix.** Those are the user's to place.
-- **Touching unrelated comments.** Stay within the changed code; surgical.
-- **Drifting into correctness.** A simplification that changes behavior is a bug you introduced,
-  not a cleanup. If the code looks wrong rather than untidy, say so in the report and leave it —
-  `/changes-review` owns correctness.
-- **Imposing the references on a project that disagrees.** `CLAUDE.md` and the repo's own rules
-  files win. The references are defaults, not a house style to export.
 
 ## Arguments
 

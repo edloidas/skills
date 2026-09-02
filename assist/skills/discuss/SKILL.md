@@ -32,6 +32,9 @@ Two things this is not, and they fail in opposite directions:
 The test for any turn: does it contain something the user can disagree with? If not, it is not a
 discussion turn yet.
 
+This skill reports only. It reads, searches, and runs read-only commands; it writes no file and
+runs no mutating command for the whole session — see **Hard Rules**.
+
 ## When to Use
 
 - The user brings a proposal, plan, or set of review findings and wants it judged
@@ -53,28 +56,37 @@ position, not a phase of its own. This is the common case.
 
 ### A broad topic — "discuss the backend architecture on this repo", "let's talk about the store layer"
 
-There is no proposal yet, so there is nothing to have a verdict on. Do not answer it as though there
-were, and do not ask what they meant before you have looked. The arc is **investigate, then open,
-then go deeper on what they pick.**
+The arc is **investigate, then open, then go deeper on what they pick.** There is no proposal yet,
+so there is nothing to have a verdict on — do not answer as though there were, and do not ask what
+they meant before you have looked.
 
 **Investigate first.** Map the thing properly before saying anything — entry points, the layers, the
-seams, where the complexity actually sits, what looks deliberate versus accreted. Dispatch subagents
-to cover ground in parallel when the surface is wide; read it yourself when it is small. This is the
-one case where a long silent tool phase is correct.
+seams, where the complexity actually sits, what looks deliberate versus accreted. List the files the
+map covers and open all of them; a picture drawn from the entry point alone is a guess. Read it
+yourself up to about **10 files** or one directory. Past that, dispatch subagents over disjoint
+slices in parallel, each returning what it found rather than a summary, or read the same slices
+inline where the host has no subagent facility. This is the one case where a long silent tool phase
+is correct.
 
-**Then open the discussion.** Not with a tour of what you found. Lead with your read of the
-situation — what is holding up well, what is not, and the decisions you can see are live whether or
-not anyone has named them. Two or three sentences of picture, then your position on it.
+**Then open the discussion.** End the silent phase by naming the ground it covered in the first
+line — `Read the handlers, the two service layers, and the store` — so the position that follows is
+anchored to something. Then lead with your read of the situation, not a tour of what you found:
+what is holding up well, what is not, and the decisions you can see are live whether or not anyone
+has named them. Two or three sentences of picture, then your position on it.
 
 **Then ask what to go deeper on.** A broad topic contains more threads than one session can pull.
 Name the ones you think matter, say which you would start with and why, and ask which they care
 about. This is a menu of areas, not a question list — keep it short enough to choose from. This is
-where questions belong: not to establish what they meant, but to let them steer once you both have
-the same picture.
+where questions belong, per **Asking Questions**.
+
+Then stop and wait. Do not answer your own menu by going deeper on the thread you would have
+picked; naming what you would start with is the recommendation, and the user still chooses.
 
 **Then go deeper on what they picked**, and from there it behaves like the concrete case.
 
-What the opening turn looks like — picture, position, then the steer:
+### What the opening turn looks like
+
+Picture, position, then the steer:
 
 ```text
 Read the handlers, the two service layers, and the store. The shape is
@@ -115,11 +127,11 @@ the scope is already small enough to hold in one turn.
   and is most of the work.
 - **Take a position.** Every point gets your verdict. "It depends" is only acceptable when you name
   what it depends on and go find out.
-- **Facts are your job, decisions are the user's.** Never ask the user something the environment can
-  answer. When a point turns on a fact you do not have, look it up — dispatch a subagent for
-  anything wide, or read it yourself when it is one file. Never decide something only they can.
-- **No fluff.** Do not restate the user's idea before reacting. Do not open with praise. Get to the
-  verdict.
+- **Facts are your job, decisions are the user's.** When a point turns on a fact you do not have,
+  look it up at the scale in **Investigate first** rather than asking — per **Asking Questions**.
+  Never decide something only they can.
+- **Verdict in the first sentence.** Do not restate the user's idea before reacting, and do not
+  open with praise. If the first sentence is not your answer, cut everything above it.
 - **Critical and honest by default.** Do not agree out of inertia. If the idea is worse than an
   alternative, say so plainly.
 

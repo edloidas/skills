@@ -18,19 +18,17 @@ allowed-tools: Bash(pnpm:*) Bash(npm:*) Bash(node:*) Bash(npx:*) Bash(turbo:*) R
 
 ## Purpose
 
-Analyze pnpm monorepo workspace configuration to:
-- Optimize dependency management
-- Check workspace protocol and catalog usage
-- Audit build hook and dependency rule configuration
-- Identify cargo-culted or outdated settings
+Analyze pnpm workspace configuration — dependency placement, workspace protocol and catalog
+usage, build hooks, dependency rules, and cargo-culted `.npmrc` settings.
 
-## When to Use This Skill
+**This skill reads and reports; it never edits the workspace.** Every command below is a read or a
+dry run (`pnpm dedupe --check`, `turbo run build --dry-run`, `syncpack list-mismatches`), so no
+config file, lockfile, or `node_modules` tree changes. The one command that would write is
+`pnpm -r run build` in Step 6 — it is there for a user who asks for it, not for the audit.
 
-Use when the user asks to:
-- "Audit my monorepo"
-- "Check workspace configuration"
-- "Optimize pnpm workspace"
-- "Review monorepo setup"
+Scoped to pnpm 10+ deliberately: catalogs, `allowBuilds`, `minimumReleaseAge` and the rest are
+pnpm's own fields, and none of it transfers to npm, yarn or bun. On a repo whose lockfile is
+`package-lock.json`, `yarn.lock` or `bun.lock`, say so and stop rather than translating the advice.
 
 Trigger phrases: "workspace audit", "monorepo", "pnpm workspace", "workspaces"
 
@@ -45,6 +43,15 @@ ls -la nx.json turbo.json 2>/dev/null
 ```
 
 Check the `packageManager` field — it tells you the exact pnpm version. Audit advice below assumes pnpm 10+; call out version-gated settings when the project is on an older minor.
+
+If no `pnpm-lock.yaml` exists, print `Not a pnpm workspace — <lockfile> found.` and stop.
+
+Start a **not-checked list** here and carry it to Step 11. Every step below that cannot run goes
+in it with its reason: an absent `.npmrc` or `turbo.json`, a `pnpm` binary too old for a
+version-gated field, an `npx` tool (`syncpack`, `madge`) that is not installed or refused to
+fetch. A report that names only the findings reads as a full audit of everything else.
+
+Close the step with one line: `Workspace: pnpm 10.28.1, 7 packages (3 apps, 4 libs), turbo.json present, no nx.json.`
 
 ### Step 2: Analyze Workspace Structure
 
@@ -74,8 +81,8 @@ packages:
 }
 ```
 
-**Audit:**
-- Flag hardcoded versions (`"^1.0.0"`) for internal packages — should use `workspace:*`
+**Audit:** flag a hardcoded version (`"^1.0.0"`) on an *internal* package — it should be
+`workspace:*`. Third-party deps are Step 5's rule, not this one.
 
 ```bash
 # Find all package.json files and check for org-scoped internal refs
@@ -122,10 +129,14 @@ catalog:
 ```
 
 #### Audit checks
-- All shared deps should use `catalog:`, not hardcoded versions in individual packages
+
+**The rule: a third-party dep used by two or more packages is declared once in the catalog and
+referenced as `catalog:` everywhere.** A hardcoded version in an individual package is the finding.
+
+- `catalogMode: force` (10.12.1+) makes pnpm enforce that rule at install time. Flag it as unset
+  wherever a shared dep exists.
 - Avoid `@latest` in catalog entries — defeats reproducibility and conflicts with `minimumReleaseAge`
 - `npm:` aliases must be intentional and version-pinned (not `@latest`)
-- `catalogMode: force` (10.12.1+) — enforces that all packages use `catalog:` for any dep in the catalog; flag if shared deps exist but this is not enabled
 - `cleanupUnusedCatalogs: true` (10.15+) — automatically removes stale catalog entries on install; flag if catalog has grown large and this is not set
 
 ### Step 6: Check Build Order
@@ -143,9 +154,12 @@ Verify cross-package dependencies are declared:
 ```
 
 ```bash
-pnpm -r run build        # respects topological order
-turbo run build --dry-run  # if Turbo is used
+turbo run build --dry-run   # if Turbo is used — prints the order, builds nothing
+pnpm -r ls --depth -1       # topological package list
 ```
+
+`pnpm -r run build` proves the order end to end but writes build output, so the audit does not run
+it. Offer it as a follow-up when the declared graph looks wrong.
 
 ### Step 7: Check Build Hook Configuration
 
@@ -282,6 +296,11 @@ shell-emulator=true
 
 ### Step 10: Check for Common Issues
 
+Both tools below are fetched by `npx` and may be unavailable offline or blocked by a registry
+policy. Run each, and put any that does not run on the not-checked list with its reason —
+`syncpack` and `madge` cover findings no other step produces, so a silent skip leaves a gap the
+report would otherwise appear to have covered.
+
 #### Inconsistent dep versions (not in catalog)
 ```bash
 npx syncpack list-mismatches
@@ -300,43 +319,61 @@ pnpm install  # removes stale entries if cleanupUnusedCatalogs is enabled
 
 ### Step 11: Generate Report
 
+One section per step group, `[x]` for what holds and `[ ]` for each finding, then a numbered
+**Recommendations** list ordered worst-first, then **Not checked** — one line per entry on the
+list started in Step 1, with its reason.
+
+A filled report:
+
 ```markdown
 ## Workspace Audit Report
 
 ### Structure
-- pnpm version: 10.x
-- Packages: 5 (3 apps, 2 libs)
+- pnpm 10.28.1 (`packageManager`), 7 packages (3 apps, 4 libs), turbo.json present
 
 ### Workspace Protocol
-- [x] workspace:* used for all internal deps
-- [ ] 2 packages use hardcoded versions for internal deps
+- [x] `workspace:*` on 11 of 13 internal refs
+- [ ] `apps/web/package.json` and `apps/docs/package.json` pin `@acme/ui: "^2.1.0"` — a published
+      version, so a local edit to `packages/ui` is not picked up. Use `workspace:*`
 
 ### Catalog
-- [x] Shared deps pinned in catalog
-- [ ] @latest used in 1 catalog entry — defeats reproducibility
-- [ ] catalogMode not set — consider force to enforce catalog usage
+- [x] `react`, `react-dom`, `typescript`, `vitest` declared once and referenced as `catalog:`
+- [ ] `vite` is `^7.0.0` in `apps/web` and `^7.1.2` in `apps/docs` — shared, so it belongs in the
+      catalog
+- [ ] `catalogMode` unset — nothing stops the next package from hardcoding a catalogued dep
 
 ### Build Hooks
-- [x] onlyBuiltDependencies configured in pnpm-workspace.yaml
-- [ ] Build hook config found in package.json — move to pnpm-workspace.yaml
-- [ ] strictDepBuilds not set — unchecked build scripts
+- [x] `onlyBuiltDependencies: [esbuild, sharp]` in `pnpm-workspace.yaml`
+- [ ] pnpm is 10.28, so `onlyBuiltDependencies` is the legacy split key. Migrate to `allowBuilds`
+      (`pnpx codemod run pnpm-v10-to-v11`) before the v11 bump removes it
+- [ ] `strictDepBuilds` unset — a new dependency requesting a build script is skipped silently
 
 ### Dependency Rules
-- [ ] minimumReleaseAge not set (supply-chain risk)
-- [ ] trustPolicy not set (complements minimumReleaseAge)
-- [x] overrides pin transitive deps to catalog versions
-- [ ] blockExoticSubdeps not set — exotic transitive sources unchecked
+- [ ] `minimumReleaseAge` unset — a package published 40 seconds ago installs. Set `1440`
+- [ ] `trustPolicy` unset
+- [x] `overrides` pins `vite` and `vitest` to `catalog:`
+- [ ] `blockExoticSubdeps` unset while `packages/legacy` pulls a `git:` transitive dep
 
 ### Configuration
-- [x] .npmrc is minimal — no cargo-culted settings
-- [ ] prefer-frozen-lockfile=true in .npmrc — already the default, remove it
+- [ ] .npmrc sets `prefer-frozen-lockfile=true` (pnpm 10 default) and
+      `auto-install-peers=true` (pnpm 9+ default) — both no-ops, delete them
+- [x] `@acme:registry=https://npm.acme.dev/` is a legitimate .npmrc entry
 
 ### Recommendations
-1. Set minimumReleaseAge: 1440 in pnpm-workspace.yaml
-2. Set trustPolicy: audit alongside minimumReleaseAge
-3. Move build hook config from package.json to pnpm-workspace.yaml
-4. Enable strictDepBuilds: true
-5. Replace hardcoded internal dep versions with workspace:*
+1. Set `minimumReleaseAge: 1440` and `trustPolicy: audit` in `pnpm-workspace.yaml`
+2. Enable `strictDepBuilds: true` and migrate to `allowBuilds`
+3. Move `vite` into the catalog and set `catalogMode: force`
+4. Replace the two hardcoded `@acme/ui` versions with `workspace:*`
+5. Enable `blockExoticSubdeps: true` once the `git:` transitive dep in `packages/legacy` is gone
+6. Delete the two redundant .npmrc lines
+
+### Not checked
+- Circular dependencies — `npx madge` could not fetch; the registry is behind a proxy
+- Build order — no `nx.json`, and `turbo run build --dry-run` needs an install this audit
+  does not perform
 ```
+
+Then stop. Report the findings; do not edit `pnpm-workspace.yaml`, a `package.json`, or .npmrc,
+and do not run `pnpm install` or `pnpm dedupe` without `--check`.
 
 See `references/workspace-template.md` for an optimized pnpm-workspace.yaml template.

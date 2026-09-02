@@ -45,13 +45,9 @@ workflow, report the observation and hand it over: reconciling rulesets against 
 
 ## When to use
 
-- "Audit my CI", "review the workflows", "why is CI slow"
-- "Cut our Actions minutes", "parallelize the pipeline"
-- "Fix caching in CI", "the cache never hits"
-- "Why did that merge when the tests failed" — gating correctness, family A
-
 Trigger phrases: `ci audit`, `github actions`, `workflow performance`, `actions minutes`, `ci slow`,
-`parallelize ci`, `ci caching`, `required check`.
+`parallelize ci`, `ci caching`, `required check`. "Why did that merge when the tests failed" is
+family A — gating correctness.
 
 ## Phase 1: Inventory
 
@@ -91,6 +87,9 @@ gh run view <id> --json jobs --jq '.jobs[] | "\(.name) \(.startedAt) \(.complete
 Say whether timings are measured or estimated. An estimated saving stated as a measured one is the
 fastest way to lose an audit's credibility.
 
+Close the phase with one line carrying the counts:
+`Inventory: 4 workflows, 11 jobs, critical path lint -> build -> e2e -> gate, ~9m measured over 20 runs.`
+
 ## Phase 2: Run the catalog
 
 Read `references/checks.md` and work the four families. Each check there carries what to look for,
@@ -115,10 +114,17 @@ Two rules on severity:
   are independent and sit on the critical path; splitting them removes ~90s from every run" is.
   Where the number cannot be established, say it is an estimate.
 
+Do not recommend splitting a unified check command until you have established that the toolchain does
+not already parallelize internally — `vitest`, `turbo`, and `biome check` all do, and splitting them
+adds runner startup for no gain.
+
 Recognise what is already right. A workflow doing the non-obvious things well — a fan-in gate with
 `if: always()`, `cancel-in-progress: false` on the release, an unprivileged job producing the
 artifact a privileged one consumes — should be told so, in one line each. It is how the report earns
 the right to be believed about the rest.
+
+Close the phase with one line carrying the counts:
+`Catalog: families A-D run over 4 workflows, 7 findings (2 gating, 3 critical path, 1 caching, 1 spend), 2 checks not run.`
 
 ## Phase 3: Report
 
@@ -142,32 +148,67 @@ the right to be believed about the rest.
 
 ### Handed to security-audit
 - <required-check reconciliation, or anything touching the security surface>
+
+### Not checked
+- <check or family> — <why it could not run>
 ```
 
-Drop any section with no findings. Do not pad a clean result — a workflow set with nothing wrong is a
-real outcome, and `Already right` carries it.
+Drop any finding section with no findings. Do not pad a clean result — a workflow set with nothing
+wrong is a real outcome, and `Already right` carries it.
+
+`Not checked` is the one section that is never dropped while anything is in it, and every check
+that did not run goes in it — an unparsed workflow, a callee outside this repository, `yq` absent so
+the graph was read by hand, `gh` absent or no run history so timings are estimates, a family skipped
+for lack of input. A partial audit that omits them reads as a clean one.
+
+A filled report:
+
+```
+## CI audit: 3 workflows, 9 jobs · critical path 8m40s (measured, 20 runs)
+
+### Gating correctness
+`ci.yml` — `test` is a `node: [20, 22]` matrix and protection requires `test (20)` / `test (22)`. A
+failing leg leaves the `ci-ok` dependent *skipped*, which protection reads as passing. Add a fan-in
+job with a stable name and `if: always()`, require that instead of the legs.
+
+### Critical path
+`ci.yml` — `lint`, `typecheck`, `build` are three sequential steps of one job on the critical path
+and share no output. Splitting them into parallel jobs removes ~95s of the 8m40s (measured).
+
+### Caching
+`e2e.yml` — the Playwright cache keys on `runner.os` alone, so a browser bump is served the stale
+entry and the install re-downloads anyway. Key on `hashFiles('pnpm-lock.yaml')` plus `restore-keys`.
+
+### Spend and hygiene
+`e2e.yml` — no `timeout-minutes` on `e2e`, which waits on a dev server. A hung run bills the full 6h
+default. Set `timeout-minutes: 20`.
+
+### Already right
+- `release.yml` sets `cancel-in-progress: false` — a publish is never cancelled mid-run.
+- `ci.yml` builds once in an unprivileged job and passes the artifact to `e2e`.
+
+### Handed to security-audit
+- Required check `security/codeql` matches no workflow here; reconciling it against the ruleset
+  needs `gh api` calls that audit makes.
+
+### Not checked
+- `deploy.yml` family B — `uses: org/.github/.github/workflows/deploy.yml@v2`, a reusable workflow
+  outside this repository; only the caller's graph was audited.
+- `nightly.yml` timings — `gh run list` returned no runs; its findings are static.
+```
+
+Then stop. Report the findings; do not edit a workflow, do not open a PR, and do not run a second
+pass over the same catalog.
 
 `references/ci-template.yaml` is an optimized pnpm workflow with parallel jobs, path filters and
 concurrency control; `references/ci-template-vp.yaml` is the Vite+ (`voidzero-dev/setup-vp`) variant.
 Offer them when a repository is starting from nothing, not as a target to converge every pipeline on.
 
-## Rules
-
-- **Read and report. Never edit a workflow.** Findings are for the maintainer to apply.
-- **Gating correctness before speed.** A faster pipeline that checks less is a regression.
-- **No finding without a consequence.** Name what it costs or what it lets through.
-- **Measured or estimated, always stated.** Never present an estimate as a measurement.
-- **Stay off the security surface.** Pinning, `permissions:`, and trigger safety belong to
-  `security-audit`. Report the boundary crossing, not the verdict.
-- **Do not recommend splitting a unified check command** without establishing that the toolchain does
-  not already parallelize internally.
-
 ## Error handling
 
 | Situation | Action |
 | --------- | ------ |
-| No `.github/workflows/` | Print `No GitHub Actions workflows found.` and stop |
-| `.github/workflows/` exists but holds no YAML | Same message. A directory with only a README is not a pipeline |
+| `.github/workflows/` holds no YAML, or is absent | Phase 1's stop condition. A directory with only a README is not a pipeline |
 | Workflows exist but only `workflow_dispatch` | Audit them, and say nothing runs automatically |
 | A workflow fails to parse | Report the parse error as the first finding and audit the rest |
 | `yq` unavailable | Read the YAML directly, and say the job graph was derived by reading |
@@ -175,3 +216,5 @@ Offer them when a repository is starting from nothing, not as a target to conver
 | A reusable workflow (`uses:` at job level) | Audit the caller's graph; say the callee was not read unless it is in this repository |
 | A composite action in the repository | Read it — its steps are on the critical path too |
 | Only one job, doing everything | Still audit families A, C and D. A single job is not automatically wrong |
+
+Every row above that fires puts a line in `Not checked`, naming the check and the reason.

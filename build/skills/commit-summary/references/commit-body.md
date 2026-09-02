@@ -1,42 +1,8 @@
 # Deriving a commit body
 
-A commit body is not a summary of the diff. The diff is already in the commit —
-whoever reads the message later can read it. What they cannot recover is what the
-running code does that forced the change, which call reaches the broken path, what
-breaks for someone who updates, when the defect was introduced, and what was
-noticed and deliberately left alone.
-
-This file is the procedure for producing that. It answers questions **against the
-code**, not against the diff.
-
-## Depth gate
-
-Run the derivation when the change:
-
-- alters behaviour, a contract, a public type, or a default, or
-- fixes a defect.
-
-Skip it — two or three lines, one fact per line — when the change is:
-
-- mechanical (a rename, a mass import rewrite, a formatting pass),
-- generated (lockfiles, build output, snapshots, regenerated symlink trees), or
-- purely additive scaffolding with no behaviour to describe.
-
-A rename across 30 files is one fact. A one-line semantic fix earns a full
-derivation. Weight, not diff size, decides.
-
-> [!IMPORTANT]
-> Skip any question with no real answer. A body that answers three of seven
-> honestly is better than one that answers seven with padding — a config deletion
-> has three facts and gets three lines. Padding a thin change to look thorough is
-> worse than a one-line body.
-
-## Repo conventions win
-
-If the project's `CLAUDE.md`, `AGENTS.md`, or `CONTRIBUTING.md` caps body width,
-forbids paragraphs, prescribes a template, or requires a language other than the
-one the change is written in, that house style overrides this file. Answer as many
-questions as the house style has room for, in the order below, and drop the rest.
+The procedure for answering the seven questions **against the code**, not against the
+diff. `SKILL.md` has already weighed the change and decided to derive; it also owns the
+repo-convention override, the skip rule, and the attribution ban.
 
 ## Evidence rules
 
@@ -245,7 +211,7 @@ becomes auditable. It is also usually where a second commit is hiding.
   do one job. No aphorisms, no "crucially", no "it is worth noting", no sentence whose
   point is that the writer noticed something. `The runtime stores it and calls it
   without checking on the next cold mount.` — that is the whole standard.
-- **No footers.** See **No attribution** below.
+- **No footers.** The body ends on its last paragraph, per **No attribution** in `SKILL.md`.
 - **Identifiers in backticks**, with the member form where the language has one:
   `ReadableAtom#eq`, `MapStore#setKey()`.
 - **Paragraphs, blank-line separated, wrapped at 80.** One idea per paragraph, in
@@ -255,49 +221,6 @@ becomes auditable. It is also usually where a second commit is hiding.
 - **Findings survive the write-up.** An inconvenient result earns its own paragraph
   rather than being dropped — including a discovery that one of the change's own
   fixes does not do what it was meant to.
-
-Subject lines, conventional-commit types, and issue-number suffixes are out of
-scope here. Whatever the repo or the calling skill already prescribes stands.
-
-## No attribution
-
-The body ends on its last paragraph. Nothing is appended to it, and whichever skill
-runs the `git commit` strips these from the assembled message before committing —
-wherever they came from, including a body another skill returned and a message being
-amended:
-
-- No "Drafted with AI", "Generated with", "Co-authored with an assistant", or any
-  variant naming a model or a tool.
-- No session, chat, or transcript link.
-- No `<sub>` line, `---` rule, badge, or promotional footer.
-- No `Co-Authored-By` trailer crediting an assistant. **An existing one in the
-  repo's history is not licence to repeat it** — a body that mirrors the previous
-  commit's trailers reproduces it forever.
-
-A trailer crediting a *human* is fine when the repo's convention asks for one. The
-ban is on attributing the work to an assistant, not on trailers.
-
-The only exception is an explicit request: the repo's instruction file, the user's
-own configuration, or the user's prompt asking for attribution in so many words.
-Inferring it from a footer you found in the log is not that.
-
-## Example A — a config deletion has three facts, so it gets three lines
-
-No failure mode, no blast radius, no tests. The only judgment call in the change is
-the one that gets explained:
-
-```
-Remove redundant TSConfig options
-
-`stableTypeOrdering` was added for TypeScript 6, where it defaulted to `false`.
-TypeScript 7 enables it by default.
-
-`moduleResolution: NodeNext` is implied by `module: NodeNext`, and
-`esModuleInterop` defaults to `true` in TypeScript 7.
-
-Keep `strict` explicit so the project adopts any stricter checks added under
-this option in future TypeScript versions.
-```
 
 ## Example B — same one-line diff, both contracts
 

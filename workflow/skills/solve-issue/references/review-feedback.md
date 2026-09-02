@@ -163,3 +163,25 @@ previous rounds by design, so a claim it already rejected can come back — reco
 that is this flow's job, not its. The same applies to `defer`: a claim deferred in round
 1 already has an issue filed against it, so carry the issue number forward and reference
 it rather than filing a duplicate.
+
+## Filing the deferrals
+
+On `PR + merge` only, and before the merge intent. One `issue-flow` `"create an issue"`
+invocation per `defer` in `pr-review`'s report:
+
+- **Title** — the reviewer's claim, reduced to a title.
+- **Body** — the claim quoted verbatim in a blockquote, the pull request number, and
+  `pr-review`'s stated reason for deferring.
+
+Put the issue numbers in the Phase 7 report block.
+
+`pr-review` lists every `defer` even though it resolved those threads, and that list is
+the handoff the merge destroys: the pull request closes and the resolved thread carrying
+the deferral goes with it. Filing any earlier is impossible — `pr-review` owns those
+threads and replies and resolves in one pass, so the in-thread reply cannot carry a number
+that does not exist yet.
+
+Nothing deferred files nothing. `PR only` files nothing either — the pull request stays
+open with the report in front of the user. Where the host cannot reach `issue-flow` to
+file, do **not** merge silently: report the deferrals as unfiled and leave the pull
+request open, because that is the state the merge was going to destroy.

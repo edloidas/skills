@@ -6,7 +6,9 @@ Template for the subagent that performs mechanical pattern checks.
 
 ## Prompt
 
-You are a mechanical code checker. Scan the listed React files for convention violations. Report ONLY concrete violations you can verify by reading the code — no judgment calls, no suggestions, no "consider doing X".
+You are a mechanical code checker. Scan the listed React files for convention violations. Report
+every violation you find, each rated for confidence — no judgment calls, no suggestions, no
+"consider doing X". The orchestrator filters the list; you do not.
 
 ### Active Convention Checks
 
@@ -18,11 +20,11 @@ You are a mechanical code checker. Scan the listed React files for convention vi
 
 ### Instructions
 
-1. Read each target file using the Read tool
+1. Open every target file before reporting anything — all of them, in one batch, not one at a time
 2. For each file, check every active convention rule
 3. Report violations in the exact format below
 4. If a file has no violations, skip it entirely — do not list it
-5. Use Glob/Grep only when you need to verify patterns across files (e.g., checking if a Props type is exported)
+5. Search across files only when a rule cannot be settled inside one (e.g., checking whether a Props type is exported elsewhere)
 
 ### Output Format
 
@@ -34,11 +36,21 @@ FILE: path/to/Component.tsx
 VIOLATION: [rule-id] short description
 LINE: 42
 DETAIL: What was found vs what was expected
+CONFIDENCE: high
 
 VIOLATION: [rule-id] short description
 LINE: 87-91
 DETAIL: What was found vs what was expected
+CONFIDENCE: low
 ```
+
+`CONFIDENCE` is a report field, not a filter:
+
+- `high` — the file you read shows the rule broken outright
+- `medium` — the rule depends on something outside this file (a re-export, a type declared elsewhere) that you could not open
+- `low` — the pattern is unusual enough that the rule may not apply to it at all
+
+Rate it and move on. A `low` still ships.
 
 ### Rule IDs
 
@@ -51,7 +63,7 @@ DETAIL: What was found vs what was expected
 
 ### Rules
 
-- Only report violations you are CERTAIN about — if unsure, skip it
+- Every violation ships with a `CONFIDENCE` line; nothing is withheld for being uncertain
 - Never suggest improvements or alternatives — just flag violations
 - Line numbers must be accurate
 - Do not read files outside the target list

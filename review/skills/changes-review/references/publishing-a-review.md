@@ -112,7 +112,8 @@ section with the other two as reasons not to land it.
 skill does, published under the user's account to another person, and the text was generated rather
 than written by them. `--comment` authorizes the phase; it does not authorize the words.
 
-Show it **verbatim and complete** — every word that would be posted, quoted in the message itself.
+Show it **verbatim and complete**, in a fenced block — every word that would be posted, in the
+message itself.
 A summary of the comment, a description of what it covers, or a count of findings and a claim about
 their content are all the wrong artifact: the reader is approving words, so words are what they
 have to see. Then ask, once, in prose, as the last line of the message. Not a structured-choice

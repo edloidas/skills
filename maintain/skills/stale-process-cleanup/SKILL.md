@@ -16,6 +16,10 @@ argument-hint: "[report|apply]"
 
 # Stale Process Cleanup
 
+**Kills processes — destructive and irreversible.** The default run reports only and changes
+nothing; `--apply` sends SIGTERM then SIGKILL to the processes it listed as orphaned. Nothing
+is killed until the user has seen that list and approved it. No file is written either way.
+
 ## Purpose
 
 Developer tooling — dev servers, language-server processes, and MCP servers —
@@ -63,13 +67,42 @@ with a number.
 
 ## Workflow
 
-1. Run the script with no flags and show the user the **ORPHANED** and **LIVE** sections.
-2. If there are orphans and the user wants them gone, confirm before killing anything, then
-   run with `--apply --yes`. An explicit "kill them" in the request already counts as
-   confirmation. Otherwise ask per **Asking the User**:
-   1. `Kill orphans` (Recommended) — reap the N orphaned processes listed above
+1. Run the script with no flags and show the user the **ORPHANED** and **LIVE** sections
+   verbatim, in a fenced block. End the phase with one line carrying the counts:
+   `3 orphaned, 2 live (2 duplicates)`.
+2. The kill is gated on the list from step 1. Ask only after that list is on screen, and name
+   the same count in the option. An explicit "kill them" in the original request already counts
+   as approval; otherwise ask, per **Asking the User**:
+   1. `Kill orphans` (Recommended) — reap the 3 orphaned processes listed above
    2. `Keep them` — leave everything running
-3. Never run `--apply` against LIVE entries — surface duplicates and suggest an app restart instead.
+   With approval, run `--apply --yes`. Without it, stop here — do not re-run the script, and do
+   not kill anything one PID at a time instead.
+3. `--apply` reaps only what the script itself classified as orphaned. A LIVE entry is reported,
+   never killed: surface the duplicates and suggest restarting the owning app.
+4. After a reap, report the script's closing line — `Reaped 3/3 orphaned process(es).` — and
+   stop. Do not re-scan to confirm, do not restart what was killed, and do not free ports.
+
+### Example report
+
+```
+Stale dev/agent process scan -- user: edloidas
+
+ORPHANED (abandoned tooling, reparented to launchd -- safe to reap):
+  PID 4821   06:14:02   vite dev server  node /Users/edloidas/repo/voidvigil/node_modules/.bin/vite-plus dev
+  PID 4830   06:14:02   vite dev server  node .../vite-plus/dist/dev-server.js --port 5173
+  PID 9142   1-03:22:10 oxlint LSP       oxlint --lsp
+
+LIVE (traces up to a running session/app -- left alone):
+  PID 2210   02:41:55   MCP server       (owner: Claude.app)
+  PID 2244   02:41:55   MCP server       (owner: Claude.app)
+
+NOTE: possible duplicate live servers (same command running 2+ times): 2210 2244
+      Restart the owning app to collapse them; don't blind-kill a live one.
+
+Dry run. Re-run with --apply to kill the 3 orphaned process(es) (add --yes to skip the prompt).
+```
+
+Then the phase line: `3 orphaned, 2 live (2 duplicates)`.
 
 ## What it detects
 

@@ -30,8 +30,10 @@ once. The board answers four questions: **what are we actually deciding**, **wha
 It is not a review skill. Defects appear here only as *evidence that an approach is wrong* — a bug
 that is fixable inside a candidate is not this board's output. A diff goes to `changes-review`.
 
-Autonomous: run every step without asking the user, and present the report when done. Consilium
-reads and reasons; it never modifies the thing it examines.
+**Mutation class**: reports only. Consilium reads and reasons and never modifies the thing it
+examines; the one file it writes is the temp question file `outsider` needs for Peregrinus.
+Autonomous: run every step without asking the user — resolve ambiguity yourself and say how — and
+present the report when done.
 
 ## When to Use
 
@@ -71,8 +73,7 @@ questions one seat could answer.
 
 ## The Seats
 
-Three generate, three critique. The generators never see each other's output; the critics see the
-assembled candidate set and nothing about who produced which candidate.
+Three generate, three critique. Each phase's isolation rule sits with its own dispatch.
 
 ### Core (always)
 
@@ -136,11 +137,12 @@ Where a constraint is a claim about the existing system, **check it in the repo*
 asserting it. A frame built on a constraint that is not actually true wastes every seat on the board,
 and this is the only phase where it is cheap to catch.
 
-If the decision cannot be stated in one sentence, say so and stop — the board cannot rank candidates
-against a question nobody has written down.
+If the decision cannot be stated in one sentence, say so and stop. Do not invent a decision — the
+board cannot rank candidates against a question nobody has written down.
 
-Announce the frame in a few lines. Every seat receives this identical frame; nothing else about the
-conversation reaches them.
+Announce the frame as four labelled lines: decision, candidate A (or `none`), constraints,
+non-goals. Every seat receives this identical frame; nothing else about the conversation reaches
+them.
 
 ## Phase 2: Diverge
 
@@ -187,6 +189,10 @@ the run continues without it. Say so in the report, and say how many generators 
 Librarius unselected that is **one**, and a single-generator board cannot show the design space was
 explored. Prefer selecting Librarius in that case even if its trigger is weak.
 
+When the generators return, print one line: `Diverge: 3 generators ran (Novator, Peregrinus/<agent>,
+Librarius) -> 7 raw candidates`. Then assemble; do not dispatch a second wave of generators because
+the set looks thin — Phase 4 is what tests it.
+
 ## Phase 3: Assemble the Candidate Set
 
 Before the critics run, merge the generators' output into one numbered set. This is the orchestrator's
@@ -204,7 +210,8 @@ job and it is not clerical:
    common voice at the same level of detail, and order them so the pre-existing approach is not
    first. You will still know which is which; the critics must not.
 
-Announce the set as one line per candidate.
+Announce the set headed by one line — `Candidate set: 4 (7 raw, 2 merged, 1 dropped)` — then one
+line per candidate.
 
 ## Phase 4: Converge
 
@@ -220,6 +227,8 @@ Prompts, with `{{FRAME}}` and `{{CANDIDATES}}` replaced:
 
 On a host with no subagents, run each prompt in turn and never show one critic another's output. Say
 in the report that they were not isolated — a sequential run leaks earlier objections into later ones.
+
+When the critics return, print one line: `Converge: 2 critics ran -> 14 raw objections`.
 
 ### The Objection Contract
 
@@ -266,6 +275,9 @@ a board of six with nothing between an opinion and the report is six unchecked o
    Verification rules on them too, and a confirmed drop is worth more than an assumed one — the
    lenses sometimes find the stated reason for dropping was wrong.
 
+Print one line when consolidation is done: `Consolidated: 14 raw -> 6 objections, 3 dropped, 2
+preferences`.
+
 **Verify:** dispatch the lenses from `references/verification-prompt.md`, all at once, one per lens.
 Replace `{{LENS}}` with the lens name, `{{FRAME}}` with the Phase 1 frame, `{{CANDIDATES}}` with the
 assembled set, and `{{OBJECTIONS}}` with the consolidated objections plus the drops — a lens told to
@@ -293,14 +305,21 @@ adjustment is named.
 should come out *sharper*. A verify phase whose ratings only ever fall is miscalibrated. Verify the
 reasoned ones hardest, and anything a critic rated confidently without evidence.
 
+Print one line when the verdicts are merged: `Verification: 2 refuted, 1 narrowed, 1 demoted, 2
+confirmed`. One pass of lenses, then synthesize — no second round, and no objections of your own
+added at this stage.
+
 ## Phase 6: Synthesize
 
 Read `references/synthesis-guide.md` and follow it. It covers ranking the candidates, choosing the
-recommendation, when to override the board, and the report format.
+recommendation, when to override the board, the report format, and a filled-in report to match.
 
 Before presenting, judge the board against your own broader context: dismiss what is wrong or
 irrelevant, demote what is correct but insignificant, promote what matches a concern you already had,
 and note the reasoning for any override. You have context no seat had — use it, and say when you did.
+
+Then present the report and stop. Do not implement the recommendation, do not edit anything, and do
+not offer to run a second board.
 
 ## Edge Cases
 
@@ -318,7 +337,6 @@ and note the reasoning for any override. You have context no seat had — use it
   with no live alternative, and say what was rejected and why.
 - **All candidates carry a Blocking objection** — the honest report. Say the frame may be wrong and
   hand back the cross-cutting objections rather than picking a least-bad candidate.
-- **The problem cannot be stated as a decision** — stop and say so. Do not invent a decision.
 - **No objections survive verification** — a valid outcome. Report the ranking on trade-offs alone
   and say the board found nothing disqualifying.
 - **A finished plan with no open question** — it becomes candidate A and the board still generates
@@ -328,17 +346,5 @@ and note the reasoning for any override. You have context no seat had — use it
 - **Every candidate came from one generator** — say so in the header. A single-generator run cannot
   show the design space was explored. Prefer selecting Librarius to avoid it, and re-run with a
   different frame if the candidates still feel narrow.
-- **Only one critic ran** — allowed only for small, cheap-to-undo candidates, and the report says the
-  board had one critic. Otherwise select Scrutator or Censor in Phase 3 and dispatch it.
-
-## Rules
-
-- **Concurrent dispatch**: all generators at once, then all critics at once. Never serialize what can
-  run in parallel, and never let one seat see another's output within a phase.
-- **Autonomous**: do not ask the user questions mid-run — resolve ambiguity yourself and say how.
-- **Every objection carries a condition and a bearer**, the bearer drawn from the closed list. One
-  missing both is a preference and ranks nothing; one missing either is incomplete and is completed or
-  dropped.
-- **No modifications**: this board reads and reasons. It never edits the thing it examines.
-- **Name the agent that answered** for Peregrinus, and say which kind of diversity the run got.
-- **Honest synthesis**: disagree with the board when your broader context warrants it, and say so.
+- **Only one critic ran** — permitted only under the exception in **The Seats**. Otherwise select
+  Scrutator or Censor in Phase 3 and dispatch it.

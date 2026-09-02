@@ -26,6 +26,9 @@ metadata:
 Rule on a set of **claims** — assertions a reasonable person could disagree with. Not a diff, not a
 question. Two seats, one verdict each, no ranking and no fixes.
 
+**Reports only** — the tree comes out byte-identical; it never edits, never fixes, never commits.
+**Autonomous** — no questions mid-run. Resolve ambiguity yourself and say how.
+
 The premise is `changes-review`'s: whoever produced a claim wants it accepted, and a seat that reads
 their reasoning inherits it. So the seats get the propositions and nothing else.
 
@@ -87,11 +90,13 @@ wrote a claim judges the author.
 **If there is no claim set, stop and say so.** Never manufacture propositions from a conversation
 that only asked questions.
 
+Print one line: `Doubting 7 claims from the changes-review report.`
+
 ## Phase 2: Dispatch
 
-Both seats run concurrently on the same input — the numbered propositions and repo access. Withhold
-the plan, the rationale, the commit message body, author names, and any hint of which claims you
-favour.
+Both seats run concurrently on the same input — the numbered propositions and repo access — and
+neither sees the other's output. Withhold the plan, the rationale, the commit message body, author
+names, and any hint of which claims you favour.
 
 **Cold seat** — dispatch a subagent briefed with `references/seat-prompt.md`, propositions appended,
 on a different model from your own where the host allows one. Where the host has no subagent
@@ -113,6 +118,8 @@ Outsider refuses an unresolvable `--preamble` and names the path that failed.
 **Name the agent that answered** — outsider prints it on its first line. A verdict from a seat you
 cannot identify is not interpretable.
 
+Print one line once both are away: `Seats away: cold (sonnet) · outside (codex).`
+
 ## Phase 3: Verdicts
 
 Each seat rules on every proposition, from a closed vocabulary:
@@ -124,6 +131,9 @@ Each seat rules on every proposition, from a closed vocabulary:
 | `BELOW BAR` | True, and not worth acting on — the fix costs more than it buys | What acting costs, what it buys |
 | `FALLS` | Wrong, unreachable, or attacking something that is not there | What the claimant missed |
 | `UNPROVEN` | Undemonstrable either way from what is available | What evidence would settle it |
+
+A verdict without the field its row requires is incomplete: complete it, or drop the claim and say
+which you did.
 
 `NARROWER` corrects a true claim's scope; `BELOW BAR` accepts it in full and rejects the work.
 Neither substitutes for the other — without `BELOW BAR`, a seat that wants a trivial claim dropped
@@ -174,6 +184,29 @@ Seats: cold (<model>) · outside (<agent>)
 Omit a zero count from the header. Say whether the run got model diversity or role diversity alone.
 A run where everything holds is a complete report, not a failed one.
 
+### Worked example
+
+```
+## Doubt: 3 claims · 1 held, 1 below bar, 1 fell
+Seats: cold (sonnet) · outside (codex)
+
+1. HOLDS — corroborated. `parseRetryAfter` returns 0 for an HTTP-date `Retry-After`.
+   Both seats put the header through it: `retry.ts:41` calls `Number("Wed, 21 Oct 2026 07:28:00
+   GMT")`, which is `NaN`, and the `?? 0` on line 43 swallows it.
+
+2. BELOW BAR — corroborated. The 503 handler duplicates the same parse.
+   Costs a shared helper plus two call-site edits, buys one fewer place to fix later. True as
+   stated; the 429 path is the one that fires under load.
+
+3. FALLS — split (cold: FALLS, outside: UNPROVEN). The retry loop can exhaust the connection pool.
+   Cold: `pool.ts:88` caps concurrent retries at 4 against a pool of 32. Outside could not reach
+   the pool config.
+   Ruling: FALLS — the cap is in the repo and the outside seat only lacked the file.
+```
+
+Then stop. Do not fix what fell, do not narrow a claim on the claimant's behalf, and do not re-run
+the panel on the same propositions. The caller decides what the verdicts are worth.
+
 ## Edge Cases
 
 - **Outside seat unavailable** — this skill ships in the review bundle and `outsider` in assist, so
@@ -192,12 +225,3 @@ A run where everything holds is a complete report, not a failed one.
   preamble never reached it. Discard rather than map it; an unbriefed answer looks like a verdict
   and is not one.
 - **One claim** — valid, and cheap. Run it.
-
-## Rules
-
-- **Autonomous.** No questions mid-run. Resolve ambiguity yourself and say how.
-- **No modifications.** This skill reads and reasons. It never edits, never fixes, never commits.
-- **Seats stay blind** to authorship, to the reasoning behind a claim, and to which claims you
-  favour — and to each other's output.
-- **Every verdict carries what its row requires.** One that does not is incomplete: complete it or
-  drop it, and say which.

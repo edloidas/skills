@@ -29,9 +29,10 @@ evidence, not by the effort you want to show.
 
 - **The answer first**, in the first clause. "In short, `AnyStore` requires the wrong members." Not a
   preamble, not a restatement of the question.
-- **The real symbols.** Quote the actual declaration, default, or line — not a description of it. Where
-  a claim turns on a chain of resolution, walk it with the real values and label the steps:
-  `Before: DeepMapStore<T> extends MapStore  // FALSE`.
+- **The real symbols.** Reproduce the actual declaration, default, or line in a fenced block,
+  unedited — never a description of it; if you cut lines from the middle, say how many and from
+  where. Where a claim turns on a chain of resolution, walk it with the real values and label the
+  steps: `Before: DeepMapStore<T> extends MapStore  // FALSE`.
 - **Evidence with a link** where one exists — release notes, the source line, the changelog entry.
   A link is what turns a contradiction into a fact.
 - **Concede immediately and plainly** when the commenter is right. "Hmm, I missed that part." A reply
@@ -80,10 +81,3 @@ unobserved claim asserts something you did not check, in public, under your own 
 
 `defer` always appears in the report even though its thread is closed. A deferral nobody can see is
 backlog that does not exist yet.
-
-## Never
-
-- Resolve a thread rooted by a human, whatever the verdict. Closing someone's thread is theirs to do.
-- Post a reply that mirrors a bot's certainty without having verified the premise.
-- Reply to a thread whose last comment is already yours; the ball is not in your court.
-- Answer a thread between other people where you were never mentioned. Report it as context.

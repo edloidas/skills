@@ -23,6 +23,9 @@ metadata:
 Get a fast opinion from an agent CLI running outside this session. One reviewer, no synthesis step
 — a sanity check, not an exhaustive review. Use `review:consilium` when you want a board.
 
+This skill writes one temp file per run — the question — and nothing else. The responder is
+launched read-only: it reports, and it does not edit the repo.
+
 The value is structural: the responder shares none of this conversation's context and runs in its
 own process, usually on a different model family. Which vendor answers is incidental, which is why
 this skill resolves the agent instead of naming one.
@@ -43,8 +46,8 @@ of running an agent CLI unbounded, because a hung agent would hang the caller's 
 
 ## Agent Selection
 
-The script picks the agent. Always pass `--host <the agent you are>` — `claude`, `codex`,
-`opencode`, or `pi` — so it never asks you to review your own work. Add `--agent <name>` only when
+The script picks the agent. Pass `--host <the agent you are>` on every invocation — `claude`,
+`codex`, `opencode`, or `pi` — so it never asks you to review your own work. Add `--agent <name>` only when
 the user named one; that overrides everything, host included.
 
 ```bash
@@ -66,7 +69,8 @@ and how to add an agent.
 ## Ask Mode
 
 1. **Prepare a focused question with context.** Extract only the relevant code or plan excerpt —
-   don't dump the conversation. Keep it under 2000 words.
+   don't dump the conversation. Keep it under 2000 words; past that, use review mode, which
+   extracts the diff itself.
 
 2. **Resolve the temp directory** (once per session):
 
@@ -89,7 +93,8 @@ and how to add an agent.
    <relevant code, plan excerpt, or description>
    ```
 
-4. **Run it:**
+4. **Run it**, after printing one line naming the agent that will answer and the wait —
+   `Asking codex (ask mode, up to 2 min).`
 
    ```bash
    bash <skill-dir>/scripts/run-outsider.sh ask --host claude <TMP>/outsider-<ID>-question.md
@@ -119,8 +124,10 @@ Pick the scope first:
 | `--base <branch>` | On a feature branch, review against the base |
 | `--commit <sha>` | Review one commit |
 
-Review takes 3–10 minutes. Pass `540` so the script's own timer fires first and can print its
-timeout message, and set the surrounding command timeout to the highest value the host allows:
+Review takes 3–10 minutes. Print one line before it starts, naming the agent, the scope, and the
+wait — `Asking codex to review 6 uncommitted files (up to 9 min).` Pass `540` so the script's own
+timer fires first and can print its timeout message, and set the surrounding command timeout to
+the highest value the host allows:
 
 ```bash
 bash <skill-dir>/scripts/run-outsider.sh review --host claude --uncommitted 540
@@ -128,25 +135,36 @@ bash <skill-dir>/scripts/run-outsider.sh review --host claude --uncommitted 540
 
 ## Presenting Output
 
-The first line of the output is `[outsider] agent: <name>`. **Always say which agent answered** —
-the response is not interpretable without it.
+The first line of the output is `[outsider] agent: <name>`. Name that agent in your report — the
+response is not interpretable without knowing who gave it.
 
 - Lead with "Codex's take:", "From pi:", and so on, using the agent the script actually ran
-- Don't blindly adopt the findings — evaluate them with your own context
+- Evaluate the findings against your own context rather than adopting them
 - Highlight agreements; flag disagreements and explain which side you land on and why
 - The responder only ever saw what you piped it. Discount findings that are really requests for
   context it could not see
 - Empty output or an error line means it had nothing to offer — say so and move on
 
+```text
+Codex's take: it agrees the cache key is wrong and would key on tenant + URL,
+same as the fix on the branch.
+
+One disagreement: it wants `resolveTenant()` awaited at the call site. It could
+not see `src/router.ts`, where the await already happens — discounting that one.
+
+One thing it caught that I had not: the seeded test passes against the buggy
+key, so the case as written would not have failed before the fix.
+```
+
+Then stop. Do not run a second agent, and do not re-ask the same question with more context — one
+outside opinion is the whole deliverable.
+
 ## Edge Cases
 
 - **No agent installed, or only the host is** — the script says so and exits 0. Don't retry.
 - **Timeout** — the script prints a timeout message. Note it and proceed without.
-- **No `timeout` binary** — the script skips rather than running an agent unbounded, and
-  says which tool is missing. Report that to the user and proceed without an outside
-  opinion; do not retry.
-- **Large context** — keep ask mode under 2000 words. For large changes use review mode, which
-  extracts the diff itself.
+- **No `timeout` binary** — the script skips and says which tool is missing, per
+  **Requirements**. Report that and proceed without an outside opinion; do not retry.
 
 ## Notes for Callers
 

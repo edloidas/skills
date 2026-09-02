@@ -22,6 +22,11 @@ Fetches a GitHub issue, analyzes its full scope, cross-references local project 
 checks blocking relationships, and outputs a structured analysis with an implementation
 task list. Standalone — no forced next step.
 
+**Reports only; the tree stays byte-identical.** Every call it makes is a read: `gh issue
+view`, `gh api` **GET**s, `git rev-parse`, and local file reads. `allowed-tools` cannot
+express a method restriction, so its `gh` and `git` grants are wider than that — this
+sentence is the limit, not the declaration.
+
 ## Phase 1: Resolve & Fetch
 
 ### Guard: no argument
@@ -98,8 +103,11 @@ gh api repos/<owner>/<repo>/issues/<N>/sub_issues 2>/dev/null
 gh issue view <sub-N> --repo <owner>/<repo> --json number,title,body,state
 ```
 
-Collect all sub-issue data. Closed sub-issues are noted in the analysis as already done
-but do not generate implementation tasks.
+Collect all sub-issue data. A closed sub-issue is noted in the analysis as already
+implemented and generates no implementation task.
+
+End Phase 1 with one line: `Fetched #<N> "<title>" — <state>, <N> sub-issues, assigned to
+<user|nobody>.`
 
 ## Phase 2: Local Context Search
 
@@ -119,7 +127,7 @@ entirely — do not mention it in output.
 
 ### Find doc files
 
-Use `Glob` tool to find:
+Glob for:
 - `<git-root>/AGENTS.md`
 - `<git-root>/CLAUDE.md`
 - `<git-root>/.claude/*.md`
@@ -132,7 +140,7 @@ If no files found, skip phase.
 
 ### Search for issue number
 
-Use `Grep` to search all found files for:
+Search **every** file the globs returned — not a sample of them — for:
 - `#<N>` (e.g. `#42`)
 - Word-boundary match for bare number (to avoid matching `142` when looking for `42`)
 
@@ -144,13 +152,16 @@ From the issue title and body, extract:
 - File paths mentioned (e.g. `src/components/Button.tsx`)
 - Technical terms: API endpoint names, config keys, function names in backticks
 
-Use `Grep` to search all found files for each extracted term. Collect unique
-(file path, matching line) pairs. Deduplicate across term searches.
+Search every found file for each extracted term. Collect unique (file path, matching line)
+pairs. Deduplicate across term searches.
 
 ### Result
 
 If nothing found across all searches → omit the Local Context section from output.
 If matches found → collect as: `{ file: string, reason: string }[]` for use in Phase 4.
+
+End Phase 2 with one line: `Local context: <N> files searched, <N> matched.` A skipped
+phase says `Local context: none present.` — say which, never nothing.
 
 ## Phase 3: Dependency Analysis
 
@@ -214,6 +225,10 @@ For each dependency found:
 - **Parent epic**: include only if it adds implementation context not in the issue itself.
 - **No dependencies**: omit the Dependencies section from output entirely.
 
+End Phase 3 with one line naming the queries that did not run and why: `Dependencies: <N>
+open blockers, <N> parents` or `Dependencies: blockedBy unavailable on this repo; <N>
+parents.`
+
 ## Phase 4: Synthesize & Output
 
 ### Scope Analysis — quality bar
@@ -224,9 +239,9 @@ planning — not a summary of the issue text, but an interpretation of it.
 A high-quality Scope Analysis:
 - Explains what the issue is truly asking for (beyond restating the title)
 - Identifies technical scope: what needs to be built or changed, and roughly where
-- For epics: weaves sub-issues into a coherent narrative. Example: "This epic covers three
-  areas: authentication (#43, done), session management (#44), and token refresh (#45)."
-  Closed sub-issues are noted as already implemented and excluded from tasks.
+- For epics: weaves sub-issues into a coherent narrative, per the Phase 1 rule on closed
+  ones. Example: "This epic covers three areas: authentication (#43, done), session
+  management (#44), and token refresh (#45)."
 - Surfaces implicit requirements not stated in the issue (e.g., "adding X implies Y also
   needs to handle the new input format")
 - Calls out ambiguities or decisions the implementer will face
@@ -282,15 +297,50 @@ This issue's output expected by #<K> — must deliver <Y>.
 <issue URL>
 ````
 
+### A filled-in analysis
+
+```markdown
+# #412: Tooltip clips at the viewport edge
+
+## Scope Analysis
+
+The report is about clipping, but the cause is placement: `Tooltip` picks a side once, on
+mount, from an anchor rect that `useAnchorRect` has already clamped to the viewport. A
+tooltip anchored near the bottom edge therefore measures as if it fits, renders below, and
+is cut off. Fixing the clamp alone is not enough — placement has to be re-resolved after
+measuring, which means the flip decision moves out of the mount path.
+
+Implicitly in scope: `Popover` consumes the same hook, so returning an unclamped rect
+changes its input too. Explicitly out of scope: `Popover`'s own placement logic, which has
+a separate clamp of its own and is not what this issue reports.
+
+One decision the implementer faces: re-measure on scroll and resize, or resolve once after
+first paint. The issue does not say, and the second is materially cheaper.
+
+## Local Context
+
+- `.claude/docs/overlays.md` — states the overlay layer owns positioning, not the anchor
+
+## Implementation Tasks
+
+1. Return the raw measured rect from `useAnchorRect`; drop the viewport clamp
+2. Resolve placement in `Tooltip` after measurement, flipping when the rect overflows
+3. Re-check `Popover`'s use of the hook for a regression from the unclamped rect
+4. Add a `Tooltip` test asserting resolved placement near the bottom edge
+
+---
+https://github.com/owner/repo/issues/412
+```
+
+Then stop. This skill analyzes and reports — it does not create a branch, edit a file, or
+start implementing, and it does not offer to. A caller that wants the work done invokes
+`issue-flow` or `solve-issue` next; that is the caller's decision, not this skill's.
+
 ## Error Handling
 
 | Situation | Action |
 |---|---|
-| `$ARGUMENTS` is empty | Stop: "Provide an issue number or URL. Usage: /issue-analyze 42" |
 | `gh` not authenticated | Stop: "Run `gh auth login` first." |
 | Not in a git repo + no URL given | Stop: "Provide a full GitHub URL or run from inside a git repository." |
 | Issue number not found (`gh` 404) | Stop: "Issue #<N> not found in <owner>/<repo>." |
-| Sub-issues API returns 404 | Skip silently |
-| No `.claude/` directory | Skip local context phase silently |
-| GraphQL returns error or empty data | Skip dependencies section silently |
 | Issue body is empty | Analyze from title only; note in Scope Analysis that the issue has no description |

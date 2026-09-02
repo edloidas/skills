@@ -21,10 +21,14 @@ Summarize the current in-context conversation into a handoff a fresh agent (or
 future-you) can pick up without re-reading the session. Two output modes:
 
 - **Inline mode** (default) — render the handoff as Markdown directly in chat.
-  Nothing else. The output IS the handoff.
+  Nothing else. The output is the handoff.
 - **Doc mode** — write the handoff to a per-project file and print only two
   lines in chat: a link to the file and a copy-paste shortcut for the next
   session.
+
+Inline mode writes nothing. Doc mode writes exactly one Markdown file, in the host's
+projects directory (or `.tmp/handoff/` when the host is unknown). Neither mode edits
+the project, stages, or commits.
 
 ## Hard Rules
 
@@ -121,6 +125,37 @@ Start with:
 Then the applicable sections, each as `## Section name` followed by its
 content. Do not print a trailing summary, sign-off, or question.
 
+### A complete inline handoff
+
+```markdown
+# Handoff
+
+acme-api · issue-214 · 2026-09-02 17:40
+
+## Goal
+Stop the profile cache serving one tenant's body to another, without losing the
+p95 win the cache was added for.
+
+## Where we are
+`~/repo/acme-api`, branch `issue-214`, tree dirty (3 modified, nothing staged).
+Last commit `a91c4e2 fix: key the profile cache by tenant #214`.
+
+## What's been decided
+Key on `tenant + URL` rather than dropping the cache — measured at
+`bench/parse.ts`, a correct per-tenant cache still saves ~12ms of the 40ms parse.
+
+## Tried & ruled out
+Keying on the resolved `Host` header: `resolveTenant()` runs after routing
+(`src/router.ts:88`), so the header is not yet normalised at cache-write time.
+
+## Next step
+Add the seeded two-tenant case to `test/cache.test.ts` — it currently passes
+against the buggy key, which is why the bug shipped.
+
+## References
+- Issue: https://github.com/acme/api/issues/214
+```
+
 ## Doc mode
 
 1. Resolve the encoded cwd: take the absolute working directory and replace
@@ -139,11 +174,8 @@ content. Do not print a trailing summary, sign-off, or question.
    | Codex | `~/.codex/projects/<encoded-cwd>/handoff/` |
    | OpenCode | `${XDG_CONFIG_HOME:-~/.config}/opencode/projects/<encoded-cwd>/handoff/` |
    | pi | `~/.pi/agent/projects/<encoded-cwd>/handoff/` |
-   | Unknown | `.tmp/handoff/` in the current project |
+   | Unknown, or you cannot tell | `.tmp/handoff/` in the current project — take this over guessing a home directory |
 
-   If you cannot tell which host you are in, prefer the project-local `.tmp/handoff/`
-   path over guessing a home directory — a handoff written somewhere the user cannot
-   find is worse than one in the repo.
 4. Create the `handoff/` directory if needed.
 5. On collision (same filename), suffix with `-2`, `-3`, … before `.md`.
 6. Write the same Markdown body as inline mode to the file.
@@ -167,9 +199,8 @@ read-only inspection if needed:
 - `git log -1 --oneline` — last commit.
 - `basename "$PWD"` — project name for the strap line.
 
-Do not run mutating commands, do not edit code, do not commit. Reading
-project files to ground a fact is fine, but only if the conversation pointed
-at them — don't go exploring.
+Read-only commands only. Reading project files to ground a fact is fine, but
+only if the conversation pointed at them — don't go exploring.
 
 ## Edge cases
 

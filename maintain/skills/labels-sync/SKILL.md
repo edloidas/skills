@@ -14,20 +14,15 @@ argument-hint: "[apply|check|get]"
 
 # Labels Sync: GitHub Label Synchronization
 
+**Writes to an external service.** `apply` mode creates, renames, recolours and **deletes**
+labels on the GitHub repository through `gh`. Deleting a label strips it from every issue and
+PR that carries it and cannot be undone, so apply runs only after the diff has been shown and
+approved (**Step 6**). `check` and `get` modes read only and change nothing, locally or remotely.
+
 ## Purpose
 
-Synchronize GitHub repository labels with a predefined set of standard labels, or export the current repository labels as reusable JSON. The skill can compare the repo against a JSON definition, apply the missing changes, or return the repo's current label definitions in copy-ready form.
-
-## When to Use This Skill
-
-Use when the user asks to:
-- "Sync labels", "update labels", "fix labels"
-- "Check labels", "show label differences", "preview label changes"
-- "Manage GitHub labels", "set up labels"
-- "Apply standard labels to this repo"
-- "Export labels", "get current labels", "show labels JSON", "copy labels to another repo"
-
-Trigger phrases: "labels-sync", "labels sync", "sync labels", "label sync", "github labels", "check labels", "export labels", "get labels"
+Compare a repository's labels against a JSON definition, apply the difference, or export the
+repo's current labels in copy-ready JSON. Which of the three runs is decided in **Step 1**.
 
 ## Operations
 
@@ -54,19 +49,13 @@ with a number.
 
 ### Step 1: Determine Intent
 
-From the command arguments or conversation context, determine the user's intent:
+Match the arguments or the conversation against one of three modes:
 
-**Apply changes** if user explicitly requests (keywords in args or context):
-- `apply`, `sync`, `update`, `fix`, `set`, `enforce`
-- Example: `labels-sync apply` or "sync my labels"
-
-**Report only** if user wants to check (keywords):
-- `check`, `list`, `show`, `preview`, `dry-run`, `diff`
-- Example: `labels-sync check` or "show label differences"
-
-**Export current labels** if user wants reusable output (keywords):
-- `get`, `export`, `read`, `copy`, `json`
-- Example: `labels-sync get` or "export current labels so I can copy them to another repo"
+| Mode | Keywords | Effect |
+|------|----------|--------|
+| Apply | `apply`, `sync`, `update`, `fix`, `set`, `enforce` | Diff, then write to GitHub after approval |
+| Check | `check`, `list`, `show`, `preview`, `dry-run`, `diff` | Diff only |
+| Get | `get`, `export`, `read`, `copy`, `json` | Print current labels as JSON |
 
 If intent is unclear or no arguments are provided, ask per **Asking the User**:
 
@@ -104,22 +93,15 @@ Read the label definitions from the bundled JSON file:
 references/labels.json
 ```
 
-Use the Read tool to load the file contents.
-
 Skip this step for **get/export** mode.
 
-### Step 4: Execute Sync Script
+### Step 4: Compute the Diff
 
-Pipe the label JSON to the sync script:
+Run the dry-run first, in every mode including apply — the diff is what the approval in Step 6
+is given against:
 
-For **dry-run** (report only):
 ```bash
 cat references/labels.json | scripts/sync-labels.sh
-```
-
-For **applying changes**, add `--apply` flag:
-```bash
-cat references/labels.json | scripts/sync-labels.sh --apply
 ```
 
 ### Step 5: Present Results
@@ -144,11 +126,65 @@ Parse the JSON output and present as a readable markdown report:
 #### Unchanged Labels
 - label1, label2, label3...
 
-If no changes are needed, report that all labels are already in sync.
+End the phase with one line carrying the counts: `7 to create, 2 to update, 1 to delete, 12 unchanged`.
+If every count is zero, that line is `All 22 labels already in sync` and the run is finished.
 
-If changes were applied, confirm success. If any errors occurred, report them.
+For **get/export** mode, return the exact JSON in a fenced code block first, then optionally a
+short summary table of names and colors.
 
-For **get/export** mode, prefer returning the exact JSON in a fenced code block first, then optionally add a short summary table of label names and colors if that helps the user scan it.
+#### Worked example
+
+```markdown
+#### Labels to Create
+| Name | Description | Color |
+|------|-------------|-------|
+| `feature` | New functionality | 1D76DB |
+| `chore` | Maintenance work with no user-facing change | FEF2C0 |
+
+#### Labels to Update
+| Name | Field | From | To |
+|------|-------|------|-----|
+| `bug` | color | d73a4a | b60205 |
+| `Documentation` | name | Documentation | docs |
+
+#### Labels to Delete
+| Name |
+|------|
+| `wontfix` |
+
+#### Unchanged Labels
+- enhancement, good first issue, help wanted, question
+```
+
+Then the phase line: `2 to create, 2 to update, 1 to delete, 4 unchanged`.
+
+### Step 6: Gate the Apply
+
+In **check** and **get** mode, stop after Step 5. Do not offer to apply, and do not run the
+script again with `--apply`.
+
+In **apply** mode, the diff from Step 5 is on screen; deletions cannot be undone. Ask, per
+**Asking the User**, naming the counts and every label in the delete list:
+
+1. `Apply all` (Recommended) — create 2, update 2, delete 1 (`wontfix`)
+2. `Apply without deletes` — create and update only; leave extra labels in place
+3. `Cancel` — change nothing
+
+Then run the choice:
+
+```bash
+cat references/labels.json | scripts/sync-labels.sh --apply
+```
+
+`--apply` performs the whole diff, so `Apply without deletes` means editing the definition or
+running the create/update `gh` calls individually — never `--apply` with a delete the user
+declined.
+
+### Step 7: Report and Stop
+
+Report what the script's stderr log confirms — `Created 2, updated 2, deleted 1` — and name any
+`gh` error verbatim. Then stop: do not re-run the diff to confirm, and do not touch issues,
+milestones, or anything else in the repo.
 
 ## Customization
 
@@ -157,15 +193,16 @@ To customize the label set, edit the JSON file at:
 references/labels.json
 ```
 
-Each label entry requires three fields:
+Apply targeted edits per entry; never rewrite the whole file, so the diff shows only the labels
+that actually changed. Each label entry requires three fields:
 - `name` — Label name (case-sensitive)
 - `description` — Short description
 - `color` — Hex color without `#` prefix (e.g., `B60205`)
 
 ## Bundled Files
 
-- `scripts/sync-labels.sh` — Generic sync/export script (exports current labels, or reads stdin JSON, diffs via `jq`, and applies via `gh`)
-- `references/labels.json` — Label definitions (single source of truth)
+- `scripts/sync-labels.sh` — the sync/export script driving every step above
+- `references/labels.json` — label definitions (single source of truth)
 
 ## Prerequisites
 

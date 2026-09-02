@@ -20,6 +20,9 @@ metadata:
 
 # Live Probe
 
+Runs commands and may create scratch files; every one it creates is removed before it returns. It
+never edits source, never commits, and never changes what it is observing.
+
 ## The premise
 
 **Reading settles claims about code structure. Only running settles claims about observable
@@ -74,7 +77,10 @@ guess that contradicts them is worse than no probe.
 2. **The repo's declared commands** — manifest scripts, a `Makefile`, a task runner, the CI
    workflow. CI is the most reliable of these: it is the one list of commands that is known to run.
 3. **Nothing else.** Never invent a command the repo does not define, and never assume a tool is
-   installed because the ecosystem usually has it. Absent both sources, the answer is `unverified`.
+   installed because the ecosystem usually has it. Absent both sources, the answer is `unverified` —
+   do not manufacture a test suite, a harness, or a fixture the project does not have. A repo with
+   no way to run itself is reported as such; filling that gap is scope expansion wearing a safety
+   vest.
 
 Expect **one** such tool to exist, not a matched pair. A project with a component harness often has
 no browser driver, and the reverse is as common. Detect what is there; do not require a pair.
@@ -100,6 +106,8 @@ the input to rendering, not its result — the claim is about the result.
 
 **A snapshot or golden is inspected, never accepted.** Updating it to match makes any claim pass.
 
+Before running, print one line: `Probing <the claim> at rung <N>: <the command>`.
+
 ## The one-hypothesis boundary
 
 The probe tests the claim as stated. When the first observation does not settle it:
@@ -118,7 +126,7 @@ debugging workflow instead.
 
 ## Running things without breaking things
 
-The instruction layer owns the specifics. Three rules hold regardless of what it says:
+The instruction layer owns the specifics. These hold regardless of what it says:
 
 - **Probe ownership before touching a port or process.** Something already listening was not
   started here. Use it read-only and never stop it.
@@ -126,6 +134,8 @@ The instruction layer owns the specifics. Three rules hold regardless of what it
 - **Suppress anything that opens a window or a browser tab** on a machine a person is using.
 - **Captured artifacts go where the project puts them** — the instruction layer names the
   directory. Absent one, the scratch location, never the working tree.
+- **Never edit source to make a probe work.** Removing a prop to expose a symptom is reverted the
+  moment the observation is taken.
 
 ## What to return
 
@@ -141,14 +151,17 @@ specific thing.
 
 `unverified` also carries **what was missing** — no declared runner, the tool is not installed, the
 build failed, the observation was ambiguous. A named absence is a usable result; a silent one reads
-as a pass.
+as a pass. Never report `reproduced` or `refuted` without an artifact on the evidence line.
 
-## Rules
+A filled instance:
 
-- Never report `reproduced` or `refuted` without an artifact in the evidence line.
-- Never manufacture a test suite, a harness, or a fixture the project does not have. A repo with no
-  way to run itself is reported as such — filling that gap is scope expansion wearing a safety vest.
-- Never leave a process running, a port held, or a scratch file in the tree.
-- Never edit source to make a probe work. Removing a prop to expose a symptom is reverted the moment
-  the observation is taken.
-- One hypothesis. The boundary above is not advisory.
+```text
+- **Verdict**: refuted
+- **Rung**: 2 — `node --test test/scratch-offset.probe.mjs`
+- **Evidence**: `parseOffset('-1.5')` returned `-2`, not the `-1` the finding claimed; the same
+  probe returned `-1` against the previous commit
+- **Cleanup**: removed `test/scratch-offset.probe.mjs`
+```
+
+Then stop. Do not fix what the probe revealed, do not probe the same code a second time, and do not
+turn the result into an investigation. The caller decides what happens next.

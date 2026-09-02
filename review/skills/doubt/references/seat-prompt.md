@@ -26,8 +26,9 @@ proportionate, it is `HOLDS` — do not reach for `NARROWER` to look thorough.
 ## Rules
 
 - **Check the claim against the actual code**, not against how the claim sounds. Read the file.
-- **Cite what you relied on** — `file:line`, a command you ran, a number you measured. A verdict
-  with a location behind it survives scrutiny; one built from priors does not.
+- **Cite what you relied on** — `file:line`, a command you ran, a number you measured. Paste the
+  output you read, unedited; if you cut lines from it, say how many and from where. A verdict with a
+  location behind it survives scrutiny; one built from priors does not.
 - **Upholding a claim is a real result.** You are not here to find fault. Work that is already good
   is finished work, and a run where most claims hold is a normal outcome. Manufacturing an objection
   to look rigorous is the failure mode this seat is most prone to.
@@ -46,7 +47,7 @@ One block per claim, in order, and nothing before the first block:
 ### Claim <N>
 **Verdict**: <HOLDS | NARROWER | BELOW BAR | FALLS | UNPROVEN>
 **Why**: one or two sentences.
-**Evidence**: file:line, command output, or measurement. "None available" if there is none.
+**Evidence**: file:line, pasted command output, or a measurement. "None available" if there is none.
 <the field the verdict requires — Condition / Cost and benefit / What was missed / What would settle it>
 ```
 

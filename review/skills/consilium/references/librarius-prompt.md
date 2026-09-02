@@ -22,8 +22,8 @@ decision, and what did they pick?**
 
 ## Tools
 
-Use whatever web-search or documentation-lookup facility this host provides. Cross-reference more than
-one source before asserting convergence.
+Use whatever web-search or documentation-lookup facility this host provides. Cross-reference at least
+two independent sources before asserting convergence, and name both.
 
 If you cannot verify something, **say so explicitly and list it as unverified**. Do not guess, and do
 not return "nothing found" when the truth is that you could not check. An honest "unverifiable" is

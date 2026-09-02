@@ -89,7 +89,7 @@ Overlapping changes requiring deeper analysis.
 
 - Omit empty groups entirely (don't show "DU — deleted by theirs (0)")
 - Groups with >10 files use `<details><summary>N files</summary>` collapsible sections
-- Simple and complex UU files always include one-line explanations
+- Simple and complex UU files carry a one-line explanation each
 - PR context header (PR/Branches/Link) is only shown in PR mode. Omit in local/conditional mode.
 
 ## Final Report

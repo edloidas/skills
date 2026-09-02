@@ -16,13 +16,10 @@ allowed-tools: Bash(jq:*) Read Glob Grep
 
 ## Purpose
 
-Audit `package.json` scripts to:
-- Classify the package with minimal manifest context
-- Check whether the script interface fits that package role
-- Prefer Vite Plus conventions for app-style repos
-- Enforce stable naming and suffix conventions
-- Improve composition, CI ergonomics, and performance
-- Flag misleading, platform-specific, or overgrown scripts
+Audit a package's `package.json` scripts against the role the package actually plays: naming,
+composition, lifecycle hooks, consistency, and performance. Vite Plus conventions are preferred for
+app-style repos. **Reports only — it reads the manifest and writes a report; no file in the repo is
+touched, so the working tree is byte-identical afterwards.**
 
 ## When to Use This Skill
 
@@ -69,7 +66,7 @@ Do not recommend ESLint-specific patterns in this skill. If the repo exposes Bio
 Non-VP patterns are still worth mentioning when the repo actually uses them:
 - Plain `pnpm` script composition is the normal baseline for monorepo roots, publishable libraries, and release flows.
 - `biome` scripts are a valid non-VP quality layer, especially in libraries, CLIs, and repos with explicit lint or format commands.
-- `prepare: "husky"` is a valid non-VP setup pattern when the repo manages git hooks explicitly.
+- Lifecycle hooks in non-VP repos follow Step 7.
 
 When VP is detected, do not try to "improve" the repo by replacing VP-native app flows with separate non-VP app scripts unless the user explicitly asks for that direction.
 
@@ -121,32 +118,40 @@ Use minimal manifest signals to decide what a sensible script surface looks like
 
 If the package is ambiguous, say so and audit against the closest role instead of inventing missing requirements.
 
+Close detection with one line: `Role: monorepo root · pnpm 9 · 14 scripts · VP not detected`.
+
 ### Step 3: Check Whether the Public Script Interface Fits the Role
 
-Do not demand the same scripts from every package.
+Do not demand the same scripts from every package. These are pattern families, not one universal
+template: audit against the family the Step 2 role selected, and ignore the others.
 
-#### App
-
-Healthy default surface:
+#### App (Vite Plus)
 
 ```json
 {
   "dev": "vp dev",
   "build": "vp run clean && tsgo && vp build",
   "clean": "rm -rf dist coverage reports",
-  "check": "vp check && vp run typecheck",
   "typecheck": "tsgo --noEmit",
+  "check": "vp check && vp run typecheck",
   "test": "vp test --run",
   "test:ci": "vp test --run --coverage",
   "prepare": "vp config"
 }
 ```
 
-If the repo is VP-driven, separate `lint`, `lint:fix`, `format`, and `format:check` scripts are optional. Keep them only when they expose distinct Biome behavior the team actually uses.
+Separate `lint`, `lint:fix`, `format`, and `format:check` scripts are optional in a VP-driven repo. Keep them only when they expose distinct Biome behavior the team actually uses:
 
-#### Monorepo root
+```json
+{
+  "lint": "biome check .",
+  "lint:fix": "biome check --write .",
+  "format": "biome format --write .",
+  "format:check": "biome format ."
+}
+```
 
-Root scripts should preserve the same public contract as the main package they expose:
+#### Monorepo root (pnpm)
 
 ```json
 {
@@ -154,38 +159,50 @@ Root scripts should preserve the same public contract as the main package they e
   "check": "pnpm --filter @edloidas/example run check",
   "test": "pnpm --filter @edloidas/example run test",
   "test:ci": "pnpm --filter @edloidas/example run test:ci",
-  "dev": "pnpm --filter @edloidas/example exec vp dev"
+  "dev": "pnpm --filter @edloidas/example exec vp dev",
+  "prepare": "pnpm --filter @edloidas/example run prepare"
 }
 ```
 
 Prefer delegation over re-implementing leaf commands in the root package.
 
-#### Publishable library
-
-Healthy default surface:
+#### Publishable library (non-VP)
 
 ```json
 {
-  "build": "pnpm clean && pnpm build:*",
   "clean": "rm -rf dist coverage",
   "typecheck": "tsc --noEmit",
   "lint": "biome lint .",
+  "lint:fix": "biome lint --write .",
+  "format": "biome format --write .",
   "format:check": "biome format .",
+  "check": "pnpm typecheck && pnpm lint && pnpm format:check",
+  "check:fix": "pnpm typecheck && pnpm lint:fix && pnpm format",
+  "build": "pnpm clean && pnpm build:*",
   "test": "vitest run",
+  "test:watch": "vitest",
+  "test:ci": "vitest run --coverage",
   "validate": "pnpm check && pnpm build && pnpm test:ci",
+  "release:dry": "pnpm publish --dry-run --no-git-checks",
   "prepublishOnly": "pnpm validate"
 }
 ```
 
-#### Service / bot / CLI
-
-Healthy default surface:
+#### Service / bot / CLI (non-VP)
 
 ```json
 {
   "start": "bun src/index.ts",
+  "typecheck": "tsc --noEmit",
+  "lint": "biome lint .",
+  "lint:fix": "biome lint --write .",
+  "format": "biome format --write .",
+  "format:check": "biome format .",
   "check": "bun run typecheck && bun run lint && bun run format:check",
-  "test": "bun test"
+  "check:fix": "bun run typecheck && bun run lint:fix && bun run format",
+  "test": "bun test",
+  "test:watch": "bun test --watch",
+  "validate": "bun run check && bun run test"
 }
 ```
 
@@ -338,8 +355,13 @@ Call out these issues explicitly:
 
 ### Step 9: Generate Report
 
+One section per issue class, in the order below. Drop any section with no findings rather than
+writing "none".
+
 ```markdown
 ## Scripts Audit Report
+
+`@edloidas/example-root` · monorepo root · pnpm 9 · 14 scripts · VP not detected
 
 ### Package Role
 - Monorepo root delegating to `@edloidas/example`
@@ -366,85 +388,14 @@ Call out these issues explicitly:
 4. Move long inline smoke-test logic into `scripts/`.
 ```
 
-## Common Patterns
+With nothing to report, the whole report is the header line plus one sentence:
 
-Use these as pattern families, not a single universal template. VP app repos should prefer the VP example. Libraries, CLIs, and monorepo roots often use the non-VP `pnpm` or Bun patterns below.
+```markdown
+## Scripts Audit: clean
 
-### Vite Plus App
-
-```json
-{
-  "dev": "vp dev",
-  "build": "vp run clean && tsgo && vp build",
-  "clean": "rm -rf dist coverage reports",
-  "typecheck": "tsgo --noEmit",
-  "check": "vp check && vp run typecheck",
-  "test": "vp test --run",
-  "test:ci": "vp test --run --coverage",
-  "prepare": "vp config"
-}
+`@edloidas/example` · publishable library · pnpm 9 · 11 scripts · VP not detected
+The script surface matches the library role; no naming, composition, lifecycle, or consistency issues.
 ```
 
-Optional Biome companion scripts:
-
-```json
-{
-  "lint": "biome check .",
-  "lint:fix": "biome check --write .",
-  "format": "biome format --write .",
-  "format:check": "biome format ."
-}
-```
-
-### Monorepo Root (pnpm)
-
-```json
-{
-  "build": "pnpm --filter @edloidas/example run build",
-  "check": "pnpm --filter @edloidas/example run check",
-  "test": "pnpm --filter @edloidas/example run test",
-  "test:ci": "pnpm --filter @edloidas/example run test:ci",
-  "dev": "pnpm --filter @edloidas/example exec vp dev",
-  "prepare": "pnpm --filter @edloidas/example run prepare"
-}
-```
-
-### Non-VP Publishable Library
-
-```json
-{
-  "clean": "rm -rf dist coverage",
-  "typecheck": "tsc --noEmit",
-  "lint": "biome lint .",
-  "lint:fix": "biome lint --write .",
-  "format": "biome format --write .",
-  "format:check": "biome format .",
-  "check": "pnpm typecheck && pnpm lint && pnpm format:check",
-  "check:fix": "pnpm typecheck && pnpm lint:fix && pnpm format",
-  "build": "pnpm clean && pnpm build:*",
-  "test": "vitest run",
-  "test:watch": "vitest",
-  "test:ci": "vitest run --coverage",
-  "validate": "pnpm check && pnpm build && pnpm test:ci",
-  "release:dry": "pnpm publish --dry-run --no-git-checks",
-  "prepublishOnly": "pnpm validate"
-}
-```
-
-### Non-VP Service / CLI
-
-```json
-{
-  "start": "bun src/index.ts",
-  "typecheck": "tsc --noEmit",
-  "lint": "biome lint .",
-  "lint:fix": "biome lint --write .",
-  "format": "biome format --write .",
-  "format:check": "biome format .",
-  "check": "bun run typecheck && bun run lint && bun run format:check",
-  "check:fix": "bun run typecheck && bun run lint:fix && bun run format",
-  "test": "bun test",
-  "test:watch": "bun test --watch",
-  "validate": "bun run check && bun run test"
-}
-```
+Then stop. Do not edit `package.json`, do not offer to apply the recommendations, and do not audit
+dependencies, `exports`, or publish metadata on the way past — that is the Scope boundary above.

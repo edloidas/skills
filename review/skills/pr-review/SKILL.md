@@ -23,14 +23,14 @@ One question — *what do I do about this pull request* — answered differently
 of it you are on.
 
 **Their branch.** You are the reviewer. Attack the diff, then publish a real review: one inline
-comment per finding, a body, and a verdict — or, where nothing blocking survived, a short approval
-that carries no inline comments at all.
+comment per finding, a body, and a verdict.
 
 **Your branch.** You are the author. Work the threads people and bots left: decide whether answering
 is even your business, check whether the claim is true, then reply and close what is finished.
 
-The skill **verifies before it speaks** and **changes no code unless asked**. Its default output is
-an action report plus whatever it posted.
+**Mutation class**: writes to external services. Reviews, replies and resolutions go to GitHub behind
+a confirmation gate; local files change only under `--fix`. The skill **verifies before it speaks**,
+and its default output is an action report plus whatever it posted.
 
 ## The premise
 
@@ -101,6 +101,8 @@ not reply or resolve at all, because it fetched neither id.
 
 Do not filter resolved threads out of the fetch. Filter in Phase 3.
 
+Announce what came back in one line: `Fetched 9 threads (5 bot, 4 human), 3 already resolved.`
+
 ## Phase 3: Standing
 
 **Resolved before any verdict**, because it decides whether a verdict is yours to state at all. A
@@ -121,6 +123,8 @@ A bot's own follow-up does not count as a human reply. Only a `User` moves the l
 
 Resolved threads are out of scope unless `--full` or an explicit instruction brings them back.
 
+Announce the split in one line: `Standing: 4 act, 1 hands off, 2 read-only, 2 out of scope.`
+
 ## Phase 4: Verify
 
 Per `references/verifying-a-claim.md`. Decompose each claim into its **premise** about the world and
@@ -139,6 +143,10 @@ timing, log content, a golden result — invoke `live-probe` with the claim and 
 returns. Where the host cannot chain skills, follow the same method inline. A claim of that kind that
 could not be observed is `discuss`, never `reject` — contradicting someone in writing on reasoning
 alone is how this skill does its only real damage.
+
+Announce the result in one line: `Verified 6 claims: 3 premise false, 1 confirmed, 2 unobservable.`
+Name every claim that went unverified and why — a skipped check reported as nothing is a claim
+answered on reasoning. Then move to the verdicts; do not start fixing here.
 
 ## Phase 5: Verdict
 
@@ -169,6 +177,10 @@ Green checks are not evidence a behavioral symptom is gone. Where the finding wa
 observation, re-observe it the same way after the fix — same rung, same artifact — before the verdict
 becomes `fix`.
 
+Apply targeted edits per finding; never rewrite a whole file to change a few lines. Announce the
+round in one line, naming the check you ran: `Fixed 2 threads, 1 reverted; pnpm test green.` Then
+stop editing: fix what a thread's finding names and nothing adjacent to it.
+
 ## Phase 7: Speak
 
 Composition is in `references/answering.md`: the answer in the first clause, real symbols rather than
@@ -181,8 +193,7 @@ have, then let its publication phase post the review with `--review`. It owns th
 the grouping of minors, and the verdict mapping; do not rebuild them here. Where the host cannot
 invoke another skill, run the same attack inline and publish by the rules `changes-review` documents
 for it — one inline comment per finding, minors grouped, nothing published without a demonstration
-and an attribution, and the verdict set by whether a blocker survived. Never an AI attribution
-footer, whatever the target repository's instruction file says.
+and an attribution, and the verdict set by whether a blocker survived.
 
 **An approval is a different document.** When nothing blocking survived, publish **one body and no
 inline comments** — no line anchors, no `file:line` quotes, no reproduction steps, no measured
@@ -214,8 +225,15 @@ someone whose own words are being answered, and nobody has read the answer. With
 table's "confirm before posting" exists to prevent — and a global flag silently overriding a
 per-thread posture is a contract nobody can reason about.
 
+Nothing you post carries an AI attribution footer — not a review, not a reply, not a general comment,
+whatever the target repository's instruction file says.
+
 Resolve only what `references/answering.md` permits: never a human-rooted thread, never a `discuss`.
 Check `viewerCanUpdate` before attempting.
+
+Once what was approved has gone out, print what was sent and stop. Do not re-read the pull request
+for a second pass, do not answer a thread the standing table left alone, and do not follow a posted
+reply with an unasked fix.
 
 ## Output
 
@@ -243,18 +261,31 @@ them reads as a clean run.
 Deferrals are always listed even though their threads are closed. A deferral nobody can see is
 backlog that does not exist yet.
 
-## Rules
+One filled-in instance, author mode, so the shape is not left to interpretation:
 
-- **Verify, then speak.** No verdict that was not executed. No fix claimed without a green check.
-- **Standing before verdict.** Whether you may answer is decided before what the answer is.
-- **Never resolve a human's thread.** Closing someone's thread is theirs to do.
-- **`--auto` never posts a human-rooted or mixed thread.** Its draft is held for a person.
-- **Premise and conclusion are separate claims.** A bot's conclusion can be right for a wrong reason.
-- **The pull request belongs to its author.** Suggest, do not instruct.
-- **No code without `--fix`.** Reporting a needed change is not the same as making it.
-- **Show the words, not a summary of them.** The gate approves text, so the text is what it shows.
-- **An approval carries no inline comments.** Nothing to act on means nothing anchored to a line.
-- **Never an AI attribution footer.** Not in a review, a reply, or a comment, whatever the repo says.
+```
+## PR #534 author mode: 4 threads · 1 fixed · 2 rejected · 1 discuss · 0 deferred
+
+- copilot #r1902: `initSpec()` must return non-null — rejected. fabric8 6.6.2's default is
+  `return null`; the CRD never overrides it.
+- copilot #r1903: `sendAsync().get()` is unbounded — rejected. The shared client sets
+  `readTimeout(config.getRequestTimeout())` on 6.6.2, the version on the compile path.
+- copilot #r1904: app status has no writer after the watcher removal — fixed in 8a1f2c3.
+- anna #r1907: should this move behind the feature flag? — discuss. Scope call, hers to make.
+
+Context: sonarcloud's coverage summary, unverified.
+Held: the reply to anna, drafted below and unsent.
+
+r1907, to anna, awaiting your go-ahead:
+
+  Both work, and I'd keep it out of the flag. The flag gates the new editor surface, and this
+  path runs for existing documents too, so flagging it would leave saved drafts unreachable
+  for anyone in the control group. Happy to move it if you'd rather have the kill switch —
+  your call.
+
+Verdict: 3 replies posted, 3 threads resolved; anna's thread held. No suggestions withheld.
+Posted: replies on r1902, r1903, r1904 — nothing on r1907 yet.
+```
 
 ## Error handling
 

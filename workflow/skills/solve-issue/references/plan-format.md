@@ -43,6 +43,8 @@ User** convention, only if **any** of these fire:
 - Implementation would clearly touch files outside what the issue title implies
 - The Changes list grew beyond ~10 items during planning
 - The analyzer surfaced a dependency that is unresolved
+- The analyzer surfaced an epic, a multi-file architecture decision, or a contract change —
+  this skill is for issues the user already judged simple enough to delegate end-to-end
 
 Then ask one focused question and wait for the reply:
 

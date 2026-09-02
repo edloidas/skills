@@ -22,6 +22,8 @@ metadata:
 
 Extract a behavioral specification from a source-code bundle — anywhere from ≤6 files up to a 500+ file application. The output is detailed enough that another engineer or LLM could rebuild the same observable behavior in any language or framework without reading the original source.
 
+**Mutation class:** local writes only — it reads source, writes the spec under the destination you pick and scratch files under `<TMP>`, and never modifies the code it reads.
+
 The skill orchestrates a pipeline of bundled plugin agents: a scout that maps structure, module analyzers that produce medium-depth summaries, a contract resolver for cross-module events and exports, deep analyzers for flagged critical modules, an auditor that verifies the spec against source, and a synthesizer that assembles the final output directory.
 
 ## When to Use
@@ -40,7 +42,7 @@ Three forms, detected at invocation time:
 | **Paths** | `/code-to-spec src/foo src/bar.ts modules/lib/src` | Explicit files / folders; folders expanded |
 | **Guide** | `/code-to-spec auth flow`, `/code-to-spec the message bus` | Natural-language scope — skill searches with Grep/Glob and proposes a file list |
 
-**Detection rule:** if every argument resolves to an existing file or directory on disk → paths mode. Otherwise → guide mode.
+Phase 1 Step 1 owns the detection rule that picks between them.
 
 ## Tiers
 
@@ -158,7 +160,7 @@ Resolve the temp directory:
 bash -c 'printf "%s" "${TMPDIR:-/tmp}"'
 ```
 
-Use it as `<TMP>`. Create a session subdirectory: `<TMP>/code-to-spec-${CLAUDE_SESSION_ID}/`.
+Use it as `<TMP>`. Create a session subdirectory: `<TMP>/code-to-spec-${CLAUDE_SESSION_ID}/`. Leave it in place when the run ends — the OS reclaims it, and a failed synthesis is unrecoverable without it.
 
 #### Small Tier
 
@@ -197,7 +199,7 @@ Skip scout, module analyzers, contract resolver, synthesizer.
 <auditor output verbatim>
 ```
 
-6. **Report.** Print output path + `N Critical / N Warning / N Note`.
+6. **Report**, per **Run Report** below.
 
 #### Medium Tier
 
@@ -207,9 +209,9 @@ Skip scout, module analyzers, contract resolver, synthesizer.
    - `prompt`: bundle file list, file count, LOC, tier
    - Write output to `<TMP>/code-to-spec-${CLAUDE_SESSION_ID}/scout.md`
 
-2. **Parse modules from scout output.** Extract the Module Inventory table. For each row, collect the module name, path, and file subset.
+2. **Parse modules from scout output.** Extract the Module Inventory table. For each row, collect the module name, path, and file subset. Announce it in one line: `Scout: 7 modules, 2 nominated critical.`
 
-3. **Parallel module analysis.** Dispatch `spec-module-analyzer` per module, capped at **5 concurrent**. For larger module counts, dispatch in batches of 5 in successive messages.
+3. **Parallel module analysis.** Dispatch `spec-module-analyzer` per module, capped at **5 concurrent**. When they return, announce in one line: `Modules: 7 analyzed, 1 failed.`
    - Each dispatch: `subagent_type: "review:spec-module-analyzer"`, `model: "opus"`, prompt contains module name, role, files, and scout excerpt.
    - Write each output to `<TMP>/code-to-spec-${CLAUDE_SESSION_ID}/modules/<module-name>.md`.
 
@@ -226,10 +228,10 @@ Skip scout, module analyzers, contract resolver, synthesizer.
 7. **Synthesis.** Single `spec-synthesizer` dispatch:
    - `subagent_type: "review:spec-synthesizer"`
    - `model: "sonnet"`
-   - `prompt`: destination path, tier, bundle summary, and absolute paths to all upstream output files
+   - `prompt`: destination path, tier, bundle summary, the absolute path to `references/spec-template.md` as the output schema, and absolute paths to all upstream output files
    - Synthesizer writes the final directory.
 
-8. **Report.** Print output directory path + consolidated severity totals.
+8. **Report**, per **Run Report** below.
 
 #### Large Tier
 
@@ -251,6 +253,21 @@ Steps 1–4 identical to Medium tier. Then:
 
 10. **Report** — as Medium step 8.
 
+### Run Report
+
+Four lines, then the turn ends:
+
+```
+Spec written to docs/spec/ — Medium tier, 24 files, 7 modules, 2 deep dives.
+Audit: 1 Critical / 6 Warning / 9 Note.
+Missing coverage: modules/legacy-adapter — analyzer failed, noted in audit.md.
+Skipped: contract resolution (resolver returned no output).
+```
+
+Drop the last two lines when nothing failed and nothing was skipped. Name every stage that did not run and why — a pipeline reported only by its severity totals reads as complete when half of it was skipped.
+
+Then stop. Do not act on the audit findings, do not edit the source the spec describes, and do not re-run the pipeline to improve a severity count.
+
 ### Phase 4: Error Handling
 
 - **Missing file path** — abort before Phase 1 Step 2 completes. Name the failing path.
@@ -265,13 +282,7 @@ Steps 1–4 identical to Medium tier. Then:
 
 ## Parallelism Caps
 
-When dispatching N parallel Task subagents where N exceeds the cap, send them in batches of `cap` in successive messages. Caps:
-
-- `spec-module-analyzer`: 5
-- `spec-analyzer` (deep): 3
-- `spec-auditor`: 5
-
-The caps balance throughput against context and rate-limit pressure. Do not exceed without user direction.
+Each dispatch step above names its own cap. Where the count exceeds it, send the agents in batches of that cap in successive messages, and never raise a cap without user direction — the caps balance throughput against context and rate-limit pressure.
 
 ## Output Layout
 
@@ -292,20 +303,13 @@ The caps balance throughput against context and rate-limit pressure. Do not exce
     └── <module>.md    (only flagged critical modules in Large tier)
 ```
 
-## Quality Constraints (Non-negotiable)
+## Quality Constraints
+
+Restate these six in every agent prompt you dispatch. They are also the rubric the auditor scores against, so an agent that never received them fails its own audit:
 
 1. **Domain-neutral prompts.** No library, framework, or product names in any agent body or in the final output structure.
 2. **Evidence-first.** Every claim in every output cites `file:line` or `file:start-end`.
-3. **Literal payloads.** Event payloads, state assignments, and branch behaviors are transcribed as constructed in source, not paraphrased.
-4. **No placeholders.** Every section in every output file is complete or explicitly marked N/A with reason.
+3. **Literal payloads.** Event payloads, state assignments, and branch behaviors are transcribed in a fenced block exactly as constructed in source, never paraphrased. Where a payload is elided, say how many fields were cut.
+4. **No placeholders.** Every section in every output file is complete or explicitly marked N/A with reason. `[table of N items]`, `[see above]` and `...and others` are all forbidden.
 5. **Finish dropped.** Markup, CSS, bundler config, exact private naming, stack-specific primitives — excluded from the spec.
 6. **Observable-behavior framing.** Describe what gets emitted, routed, dropped — not syntactic shape.
-
-## Rules
-
-- **Confirm the bundle before dispatching agents.** Bundle size drives budget.
-- **Tier auto-select, with user override via Narrow/Edit.**
-- **Parallelism capped at agent-specific limits.** Batched dispatch when counts exceed caps.
-- **Temp files under `<TMP>/code-to-spec-${CLAUDE_SESSION_ID}/`** — left for OS cleanup.
-- **No source modification.** The skill only reads source and writes to the destination.
-- **One run per invocation.** Re-running overwrites only if the user accepts.

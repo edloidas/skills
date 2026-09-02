@@ -29,6 +29,35 @@ error() {
   errors=1
 }
 
+# Advisory. Used where the rule is a heuristic word list rather than a structural
+# fact, so a false positive costs a person ten seconds instead of a red build.
+warn() {
+  echo "::warning::$*" >&2
+}
+
+# Body prose with everything that legitimately carries a flagged token removed:
+# fenced blocks, inline code spans, GitHub alert markers, and double-quoted phrases.
+# Emits `<line number in the file>:<text>` so a hit can be reported where it lives.
+#
+# The quote strip is what separates an instruction to the model from a trigger
+# phrase a user types: `**No fluff.**` is the former, `"think hard"` the latter.
+body_prose() {
+  awk '
+    BEGIN { delimiter_count = 0; fence = 0 }
+    delimiter_count < 2 && $0 == "---" { delimiter_count++; next }
+    delimiter_count < 2 { next }
+    /^[[:space:]]*(```|~~~)/ { fence = !fence; next }
+    fence { next }
+    {
+      line = $0
+      gsub(/`[^`]*`/, " ", line)
+      gsub(/\[![A-Za-z]+\]/, " ", line)
+      gsub(/"[^"]*"/, " ", line)
+      print NR ":" line
+    }
+  ' "$1/SKILL.md"
+}
+
 require_jq() {
   if ! command -v jq >/dev/null 2>&1; then
     echo "::error::jq is required to validate marketplace and plugin manifests" >&2
@@ -122,6 +151,40 @@ CLAUDE_ONLY_EXEMPT="audit/skills/skill-audit"
 DISCOVERY_TOOL_PATTERNS="tool|(AskUserQuestion|ToolSearch|TodoWrite|SlashCommand|NotebookEdit|WebFetch|WebSearch|StructuredOutput)
 tool|(Task|Agent|Skill|Read|Write|Edit|Glob|Grep|Bash)[ ]tool
 subagent field|subagent_type"
+
+# Shouty emphasis used to force a behaviour. Current guidance is that
+# "CRITICAL: You MUST use this tool when…" *overtriggers*, and that the flat
+# "Use this tool when…" is the fix — so the capitals buy nothing and cost recall
+# elsewhere in the body.
+#
+# All three instances this first caught sat on approval gates, which is the nuance
+# that matters: the gate is correct and stays. What goes is the shout. The
+# replacement shape is instruction plus the one-line reason the gate exists —
+# "Pushing the tag publishes it and cannot be recalled. Show the version and the
+# tag, and wait for approval." Same imperative force, no capitals.
+#
+# `IMPORTANT` and `REQUIRED` are deliberately absent. `write/skills/markdown-writing`
+# documents GitHub's `[!IMPORTANT]` alert as its own subject matter, and `REQUIRED`
+# occurs inside identifiers like `RULESET_REQUIRED_CHECKS`. Both would be false
+# positives on a hard-fail rule, and a validator that cries wolf gets muted.
+SHOUTY_PATTERNS="shouty emphasis|(^|[^A-Za-z])(CRITICAL:|MANDATORY|You MUST|MUST|ALWAYS|NEVER)([^A-Za-z]|\$)"
+
+# Model-calibration phrasing: it tells the model how to *be* rather than what the
+# task requires, which is the host system prompt's business, not a skill's. These
+# are advisory because the list is a heuristic — a new skill may have a legitimate
+# use no one predicted, and a warning lets a person judge it.
+#
+# Quoted spans are stripped before matching (see body_prose): `consilium` lists
+# "think hard" and "ultrathink" as literal trigger phrases a user types, which is
+# discovery text doing its job rather than an instruction to the model.
+BEHAVIOURAL_PATTERNS="behavioural-style instruction|[Bb]e concise|[Bb]e brief|[Bb]e thorough|[Bb]e exhaustive|[Tt]hink carefully|[Tt]hink hard|[Dd]ouble-check|[Vv]erify your work|[Nn]o fluff|[Tt]ake your time"
+
+# Discovery text is read every session by every host, before any body loads. An
+# adverb describing *how* to work cannot help a skill fire — nobody searches for the
+# thorough one — and it biases the host for the rest of the turn. Trigger phrases a
+# user would actually type are exempt, which is why this list holds only adverbs and
+# not the P7 phrases above.
+CALIBRATION_PATTERNS="calibration adverb|(thoroughly|concisely|exhaustively|meticulously|rigorously)"
 
 CLAUDE_ONLY_PATTERNS="dynamic-injection|^!\`[^ \`/!][^\`]*\`
 dynamic-injection|[[:space:]]!\`[^ \`/!][^\`]*\`
@@ -274,7 +337,50 @@ validate_skill_content() {
     done <<EOF
 $DISCOVERY_TOOL_PATTERNS
 EOF
+
+    while IFS= read -r rule; do
+      [ -n "$rule" ] || continue
+      label="${rule%%|*}"
+      pattern="${rule#*|}"
+      match=$(printf '%s\n' "$field" | grep -oiE "$pattern" | head -n 1 || true)
+      if [ -n "$match" ]; then
+        error "Skill '$skill_name': $key uses the $label '$match'. Discovery text is matched against what a user types, so an adverb describing how to work cannot help it fire — state what the skill does instead"
+      fi
+    done <<EOF
+$CALIBRATION_PATTERNS
+EOF
   done
+
+  # Body-only. `description` and `when_to_use` are exempt from both lists below:
+  # those are matched against what a person types, and a phrase a user would say is
+  # correct discovery text even when the same words would be wrong as an instruction.
+  while IFS= read -r rule; do
+    [ -n "$rule" ] || continue
+    label="${rule%%|*}"
+    pattern="${rule#*|}"
+    while IFS= read -r hit; do
+      [ -n "$hit" ] || continue
+      error "Skill '$skill_name': $label at SKILL.md:${hit%%:*} — capitals do not add force, they cost attention elsewhere in the body. Keep the instruction and add the one-line reason it matters"
+    done <<INNER
+$(body_prose "$skill_dir" | grep -E "$pattern" || true)
+INNER
+  done <<EOF
+$SHOUTY_PATTERNS
+EOF
+
+  while IFS= read -r rule; do
+    [ -n "$rule" ] || continue
+    label="${rule%%|*}"
+    pattern="${rule#*|}"
+    while IFS= read -r hit; do
+      [ -n "$hit" ] || continue
+      warn "Skill '$skill_name': $label at SKILL.md:${hit%%:*} — this tells the model how to be, which the host system prompt owns. State the deliverable in units instead, or drop it"
+    done <<INNER
+$(body_prose "$skill_dir" | grep -E "$pattern" || true)
+INNER
+  done <<EOF
+$BEHAVIOURAL_PATTERNS
+EOF
 
   if skill_declares_non_claude_host "$skill_dir" && ! claude_only_exempt "$skill_dir"; then
     while IFS= read -r rule; do

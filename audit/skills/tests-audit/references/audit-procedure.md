@@ -7,9 +7,10 @@ the worktree, and §6 is for whoever applies the report afterwards.
 ## 1. Scope and inventory
 
 Resolve scope: explicit argument → exactly that. Otherwise test files among uncommitted
-changes (`git diff --name-only HEAD`); otherwise sample the suite — a mix of small and large
-files, pure-logic and mock-heavy, plus any e2e specs. Say which of the three you resolved to
-in the report header; this skill asks nothing, so a wrong scope has to be visible instead.
+changes (`git diff --name-only HEAD`); otherwise sample the suite to the floor set in SKILL.md's
+workflow step 1 — a mix of small and large files, pure-logic and mock-heavy, plus any e2e specs.
+Say which of the three you resolved to in the report header, and the read count when you sampled;
+this skill asks nothing, so a wrong scope has to be visible instead.
 
 Inventory the landscape first (frameworks, count, location):
 
@@ -119,6 +120,9 @@ coverage and say so — it is the least load-bearing of the three runs.
 | Shuffle red | An order dependence exists. **High** finding, and the failing pair names it |
 | Slow for its size | Real IO, sleeps, or a missing seam — go find which (2.3). A fast suite is evidence the boundary discipline held |
 | Coverage report | Judge the *uncovered lines*. Defensive branches and exhaustiveness guards uncovered = correct, say so. A whole error path or module uncovered = a real gap and a finding |
+
+Each of these three runs that did not happen is named in the report header with its reason, on
+the same terms as the mutation pass — see SKILL.md workflow step 3.
 
 Never report the coverage percentage as a finding in either direction, and don't recommend
 raising a threshold to round a number up — see the Core Principle corollary in SKILL.md.
@@ -298,6 +302,8 @@ fabricated-verification failure SKILL.md's Common Mistakes names:
 Frameworks: vitest 3 (unit), wdio 9 (e2e)
 Verdicts: Keep 61 · Tighten 18 · Rewrite 7 · Delete 5
 Observed: 1,285 tests in 1.8s; shuffled ×5 green (6,425 runs, 4.2s); 99.9% lines covered
+  (any run that did not happen appears here as `coverage not run — reportsDirectory not
+  redirectable`, never as an omission)
 Mutations: 22 single-point on src/parse.ts — 18 killed, 4 survived (or: not run, scope is a
 whole-suite sample)
 

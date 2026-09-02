@@ -14,6 +14,11 @@ argument-hint: "[major, minor, or patch]"
 
 # pnpm / Bun / npm Package Release Workflow
 
+This skill **writes to external services**. It edits `package.json` and the lockfile, creates a
+commit and a signed tag locally, then pushes both to the git remote — and that push publishes
+the version, to the npm registry through CI or directly on the manual-publish path. npm does
+not allow a published version to be replaced. Steps 0-7 are local and undoable; Step 8 is not.
+
 ## Package manager detection
 
 Detect the active package manager by lockfile first. Priority order:
@@ -26,34 +31,17 @@ If no lockfile is present, fall back to tool availability in the same preference
 
 `release-prepare.sh` runs this check and prints `Package manager: <name>`. Read that output and use the same manager consistently in every later step. All command blocks below list pnpm first, then bun, then npm — pick the one for the detected manager.
 
-## Purpose
-
-Automate the release process for pnpm / bun / npm packages with:
-
-- Pre-flight validation and safety checks
-- Intelligent version bump recommendations
-- Git workflow automation (commit, tag, push)
-- User approval before publishing
-- CI/CD integration support
-
-## When to Use This Skill
-
-Use this skill when the user:
-
-- Asks to "release", "publish", or "create a new version"
-- Wants to bump the package version
-- Needs to create a release tag
-- Mentions releasing to npm registry
-
 ## Bundled Scripts
 
-This skill includes three helper bash scripts in the `scripts/` directory:
+Three helper bash scripts in `scripts/`, executed from the skill directory. They work with any
+pnpm/bun/npm project and need no project-specific setup. If the project already ships its own
+release scripts, use those instead of these.
 
-1. **release-prepare.sh** - Validates git status, branch, and runs dry-run build
-2. **release-analyze.sh** - Analyzes commits since last tag and suggests version bump
-3. **release-execute.sh** - Creates git tag and pushes to remote
-
-To use bundled scripts, execute them from the skill directory:
+| Script | Does | Run at |
+| ------ | ---- | ------ |
+| `release-prepare.sh` | Checks branch and working tree, detects and prints the package manager, runs the dry-run release | Step 1 |
+| `release-analyze.sh` | Finds the last tag, lists and classifies commits since it, prints file-change stats and a bump recommendation | Step 3 |
+| `release-execute.sh` | Reads the version from `package.json`, creates the tag if absent, **pushes** commits and tags, prints verification links | Step 8 only — it pushes, so never run it before the Step 7 approval |
 
 ```bash
 bash scripts/release-prepare.sh
@@ -61,11 +49,8 @@ bash scripts/release-analyze.sh
 bash scripts/release-execute.sh
 ```
 
-These scripts work with any pnpm/bun/npm project and don't require project-specific setup.
-
-## Prerequisites
-- `jq` installed (used by release-analyze.sh and release-execute.sh)
-- Git repository with at least one prior commit
+Prerequisites: `jq` installed (used by `release-analyze.sh` and `release-execute.sh`), and a git
+repository with at least one prior commit.
 
 ## Asking the User
 
@@ -75,9 +60,8 @@ neither, ask the same question in normal chat as a numbered list of 2–5 option
 recommended first, one short line of description each — and wait for the user to reply
 with a number.
 
-User prompts occur at **Step 0** (ambiguous conventions) and **Step 7** (release approval).
-Do not proceed past either without a user reply. Never guess ambiguous conventions. Never
-push without approval.
+Questions occur at **Step 0** (ambiguous conventions) and **Step 7** (release approval). Neither
+is skippable on your own judgement: ask, and wait for the reply before continuing.
 
 ## Release Workflow
 
@@ -85,7 +69,7 @@ Follow these steps in order. Create an in-memory plan at the start.
 
 ### Step 0: Read Project Conventions
 
-Before doing anything else, read the project's instruction files to honor local conventions. Check, in order:
+Read the project's instruction files first, so the release honors local conventions. Check, in order:
 
 1. `CLAUDE.md` at the repo root
 2. `AGENTS.md` at the repo root
@@ -101,43 +85,32 @@ Extract and apply whatever applies to this release:
 
 If `CLAUDE.md` / `AGENTS.md` doesn't exist or doesn't say anything about releases, fall back to the defaults below. If an instruction is ambiguous, ask the user, per **Asking the User**.
 
+End the step with one line naming what you found, defaults included:
+`Conventions: commit "chore: release v<version>", tag v<version>, master only, no CHANGELOG gate`.
+
 ### Step 1: Pre-flight Checks
-
-**Verify git status and branch:**
-
-1. Check current branch is `master` or `main` (or other default branch if different)
-2. Check for uncommitted changes (staged or unstaged)
-3. If there are issues:
-   - Reply with a short, clear message explaining the problem
-   - Suggest stashing changes and trying again: `git stash && [retry]`
-   - Do not proceed further
-
-**Use the bundled script:**
 
 ```bash
 bash scripts/release-prepare.sh
 ```
 
-**Or manual checks:**
+Or manually:
 
 ```bash
-# Check branch
-git branch --show-current
-
-# Check for changes
-git status --porcelain
-
-# Verify build and packaging
-pnpm release:dry
-# or
-bun run release:dry
-# or
-npm publish --dry-run
+git branch --show-current   # must be master, main, or the project's documented release branch
+git status --porcelain      # must be empty
 ```
+
+If the branch is wrong or the tree is dirty, name which in one line, suggest `git stash && [retry]`
+or committing first, and stop there. Do not stash, commit, or switch branches yourself to clear
+the check.
+
+End the step with one line: `Pre-flight: branch master, tree clean, package manager pnpm`.
 
 ### Step 2: Validate Release Build
 
-Run dry-run release to ensure everything builds correctly:
+`release-prepare.sh` already ran the dry run — read its output rather than running it twice. To
+run it alone:
 
 ```bash
 pnpm release:dry
@@ -147,23 +120,18 @@ bun run release:dry
 npm publish --dry-run
 ```
 
-If validation fails:
+If it fails, report the error and stop: no version bump, no commit, no tag. Fixing build, lint,
+or type errors is separate work the user asks for.
 
-- Report the error to the user
-- Do not proceed with release
-- Suggest fixing issues first
+End the step with one line: `Dry run passed: 42 files, 128 kB`.
 
 ### Step 3: Analyze Commits for Version Decision
-
-Determine whether to use `major`, `minor`, or `patch` bump by analyzing changes since last release.
-
-**Use the bundled script:**
 
 ```bash
 bash scripts/release-analyze.sh
 ```
 
-**Or manual analysis:**
+Or manually:
 
 ```bash
 # Get last version tag
@@ -176,21 +144,23 @@ git log $(git describe --tags --abbrev=0)..HEAD --oneline
 git log $(git describe --tags --abbrev=0)..HEAD --stat
 ```
 
-**Decision criteria:**
+| Bump | When |
+| ---- | ---- |
+| **Major** (x.0.0) | Breaking API changes, removal of public APIs, incompatible behavior changes — post-1.0 only |
+| **Minor** (0.x.0) | New features, significant enhancements, API additions; also breaking changes while pre-1.0 |
+| **Patch** (0.0.x) | Bug fixes, small improvements, documentation updates, refactoring |
 
-- **Major bump** (x.0.0): Breaking API changes, removal of public APIs, incompatible behavior changes (post-1.0 only)
-- **Minor bump** (0.x.0): New features, significant enhancements, API additions, breaking changes (in pre-1.0)
-- **Patch bump** (0.0.x): Bug fixes, small improvements, documentation updates, refactoring
-
-If commits don't provide enough context, examine specific diffs:
+If the commit subjects don't settle it, read the diffs of the files they touch:
 
 ```bash
 git diff $(git describe --tags --abbrev=0)..HEAD -- [key-files]
 ```
 
+End the step with one line: `12 commits since v0.15.3 (4 feat, 6 fix, 2 chore) -> recommend minor`.
+
 ### Step 4: Bump Version
 
-Update `package.json` version. Use the detected package manager; always pass the flag that disables the automatic commit/tag (we create those manually in later steps).
+Update `package.json` version. Use the detected package manager; always pass the flag that disables the automatic commit/tag, so this step cannot create either by accident.
 
 ```bash
 # pnpm
@@ -216,7 +186,10 @@ npm  version prerelease --preid=alpha --no-git-tag-version
 bun pm version prerelease --preid=alpha --no-git-tag-version
 ```
 
-**Important:** `--no-git-tag-version` prevents automatic commit/tag creation — we create them explicitly in Steps 5 and 6.
+Stop once `package.json` carries the new version. Commit, tag, and push belong to Steps 5, 6,
+and 8 — do not run any of them here.
+
+End the step with one line: `Bumped package.json to 0.16.0`.
 
 ### Step 5: Commit Version Bump
 
@@ -234,6 +207,8 @@ git commit -m "release: v{{VERSION}}"             # project-specific alternative
 
 If the project uses a non-obvious template (commit body, trailers, sign-off), reproduce it exactly as documented. Never invent a format the project didn't specify.
 
+End the step with one line: `Committed Release v0.16.0 (a1b2c3d)`. The tag is Step 6.
+
 ### Step 6: Create Git Tag
 
 Tag the release commit with a **signed** tag (`-s` implies `-a`, so the tag is also annotated — required for `--follow-tags`, preserves tagger/date/message, and provides a verifiable signature regardless of the user's `tag.gpgSign` config):
@@ -246,42 +221,35 @@ Example: `git tag -s v0.16.0 -m "Release v0.16.0"`
 
 If the user has no signing key configured, `git tag -s` fails with a gpg/ssh error. In that case, advise them to configure SSH or GPG signing (`user.signingkey`, `gpg.format`) before retrying.
 
+The tag now exists locally only. Do not push it here — Step 7 gates the push.
+
+End the step with one line: `Tagged v0.16.0 (not pushed)`.
+
 ### Step 7: User Review & Approval
 
-**CRITICAL: Always pause here for explicit user approval unless explicitly told to skip.**
+Pushing the tag publishes the release and cannot be recalled: CI starts from the tag, and npm
+refuses to replace a published version. Show the version and the tag, and wait for approval.
+Skip this gate only when the user has already told you, in this session, to release without
+stopping.
 
-Present a summary to the user (each on a new line):
+Present a summary, each item on its own line — the version, the bump type, the tag as it stands,
+2-4 bullets of key changes from the Step 3 analysis, and what the push will do:
 
-- **Version:** What version is being released (e.g., v0.16.0)
-- **Bump type:** Minor or Patch
-- **Changes summary:** 2-4 bullet points of key changes based on your analysis
-- **What happens next:** Push commits and tags, CI/CD will publish
+```
+Version:  v0.16.0
+Bump:     minor
+Tag:      v0.16.0 — created locally, not pushed
+Changes:
+  - Adds `--watch` to the build command (4 commits)
+  - Fixes lockfile drift under pnpm 10 (#212)
+  - Removes the deprecated `legacy` export — pre-1.0, so minor rather than major
+Next:     git push --follow-tags -> CI publishes @acme/widget@0.16.0 to npm
+```
 
 Ask for approval, per **Asking the User**:
 
 1. `Yes` (Recommended) — Proceed with pushing and releasing
 2. `No` — Cancel the release and keep local changes for review
-
-With `AskUserQuestion`, "Other" is added automatically and lets the user provide custom instructions. With the chat fallback, the user can always reply with free text instead of picking a number.
-
-Example structured call:
-```
-AskUserQuestion:
-  question: "Ready to push v{{VERSION}} and release?"
-  header: "Release"
-  options:
-    - label: "Yes (Recommended)"
-      description: "Push commits and tags to trigger CI/CD publishing"
-    - label: "No"
-      description: "Cancel release (local commit and tag will remain)"
-```
-
-Example chat fallback:
-```
-Ready to push v{{VERSION}}?
-1. Yes — push commits and tags to trigger release
-2. No — keep local commit and tag for review
-```
 
 **If user selects:**
 - **Yes** → Proceed to Step 8
@@ -290,69 +258,34 @@ Ready to push v{{VERSION}}?
 
 ### Step 8: Push Release
 
-**Only after user approves:**
-
-**Use the bundled script:**
+Only after the user approves:
 
 ```bash
 bash scripts/release-execute.sh
-```
-
-**Or manual push:**
-
-```bash
+# or
 git push --follow-tags
 ```
 
 `--follow-tags` pushes commits plus any **annotated** tags reachable from them in a single round-trip. It avoids the torn state of two separate pushes and won't accidentally publish stale local tags from other branches the way `git push --tags` does.
 
+End the step with one line: `Pushed master + v0.16.0`.
+
 ### Step 9: Confirm Completion
 
-Inform the user:
+Report in one block:
 
-- Release has been pushed
-- CI/CD will handle publishing (if configured)
-- Provide relevant links:
-  - GitHub release page
-  - npm package page
-  - Any deployment URLs
+- The release is pushed
+- Whether CI publishes it. If the repo has no publish workflow, say so — publishing is still owed, see **Advanced: Manual Publishing**
+- Links you can construct: GitHub release page, npm package page, any deployment URL
 
-## Bundled Helper Scripts Details
-
-The three bundled scripts provide complete release workflow support:
-
-### scripts/release-prepare.sh
-
-- Validates current branch is master/main
-- Checks for uncommitted changes
-- Detects package manager via lockfile first (pnpm → bun → npm), falls back to tool availability, and prints the result
-- Runs dry-run release to verify build (`pnpm release:dry` / `bun run release:dry` / `npm publish --dry-run`)
-- Provides clear error messages and suggestions
-
-### scripts/release-analyze.sh
-
-- Finds last release tag
-- Shows all commits since last release
-- Analyzes commit messages for features, fixes, etc.
-- Provides version bump recommendation (minor vs patch)
-- Shows file change statistics
-
-### scripts/release-execute.sh
-
-- Reads version from package.json
-- Creates git tag with v prefix
-- Pushes commits and tags to remote
-- Confirms before pushing if tag exists
-- Shows post-release verification links
+Then stop. Do not start a second release, and do not publish manually on top of a CI workflow
+that is already running.
 
 ## Error Handling
 
-If any step fails:
-
-1. Stop the workflow immediately
-2. Report the error clearly to the user
-3. Suggest corrective action
-4. Do not proceed to next steps
+A failing step ends the workflow where it stands: report the error and the corrective action,
+one line each, and do not run the steps after it. Do not retry a failed command with different
+flags to get past the failure.
 
 ## Common Issues
 
@@ -378,7 +311,8 @@ If any step fails:
 
 ## Advanced: Manual Publishing
 
-If CI/CD is not configured or manual publishing is needed:
+Prefer CI/CD for publishing — it keeps the published artifact consistent and keeps the npm token
+off local machines. Where CI is not configured, or the user asks for a manual publish:
 
 ```bash
 # After pushing tags
@@ -388,14 +322,3 @@ bun publish --access public
 # or
 npm publish --access public
 ```
-
-**Note:** Most projects should use CI/CD for publishing to ensure consistency and security.
-
-## Integration Notes
-
-This skill is self-contained and requires no project-specific setup. However:
-
-1. **CI/CD Integration**: Projects should configure GitHub Actions or similar for automated npm publishing
-2. **Documentation**: Projects can reference this skill in their CLAUDE.md or README
-3. **Custom Scripts**: If projects already have release scripts, use those instead of bundled ones
-4. **Flexibility**: All steps can be performed manually if bundled scripts don't fit the workflow

@@ -19,7 +19,9 @@ false.
 2. **Find the smallest change that makes the failure impossible.** Not the smallest edit — the
    smallest change. A one-line patch that leaves the same mistake available two lines down is not
    the smallest change, it is the cheapest-looking one.
-3. **Apply it.**
+3. **Apply it as targeted edits, one per hunk.** Never rewrite a whole file to change a few lines
+   — a full-file write drags in trailing whitespace and quote-style changes nobody asked for, and
+   the next round has to review them.
 4. **Check the case the finding named.** Run it if it can be run: execute the failing input, compile
    the change, write a throwaway probe. A fix you demonstrated is worth more than three you reasoned
    your way to.

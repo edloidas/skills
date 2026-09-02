@@ -133,6 +133,66 @@ share the preference — but they did not rank anything.>
 <Refuted objections, one line each, with the lens that killed them.>
 ```
 
+## A Filled-In Report
+
+One instance of the format above, so the shape is not left to interpretation:
+
+```markdown
+## Consilium
+
+**Decision**: Where unsaved editor drafts live between the keystroke and the server write.
+**Board**: Novator, Peregrinus (codex/gpt-5.6), Seneca, Censor — 2 generators, 2 critics,
+verification: premise, bite, escapability
+**Candidates**: 3 — debounced-server, local-first, session-buffer
+**Recommendation**: 2. Local-first — survives an offline tab, and its exit cost is one migration
+**Diversity**: model
+
+### The Decision
+
+We are choosing where a draft lives for the seconds between a keystroke and a durable write, under
+an existing REST API we do not control and a hard requirement that a closed tab never loses work.
+Two objections hit every candidate: none of them says what happens when two tabs edit the same
+draft, and all three assume the server's `updatedAt` is authoritative, which nobody has checked.
+Peregrinus read the problem as a conflict-resolution question rather than a storage question — an
+outside reading worth taking seriously before the frame is treated as settled.
+
+### Candidates
+
+#### 2. Local-first  — recommended
+
+Writes land in IndexedDB on every keystroke; a background task pushes to the server and reconciles
+on `updatedAt`. The editor reads only from the local store.
+
+- **Buys**: a closed or offline tab loses nothing; the editor never waits on the network
+- **Costs**: a reconcile path, a store migration story, and a second source of truth to debug
+- **Forecloses**: server-rendered draft previews, which would now read stale data
+- **Exit**: moderate — drop the store, keep the push path, one migration to drain pending writes
+- **Objections**: Material — a schema change strands drafts in an old store shape, borne by the
+  end user, whenever a release changes the draft model
+- **Design notes**: version the stored records and drain on upgrade (from `escapability`, cheap);
+  this is what keeps the Blocking "silent data loss on upgrade" objection from ruling it out
+
+### Recommendation
+
+Take local-first. It is the only candidate that satisfies the no-lost-work requirement without a
+change to the API we do not control, its exit cost is a single migration, and the offline case it
+buys is the one the support tickets are about. The strongest objection against it — two sources of
+truth are harder to debug — is real and does not change the answer, because the alternative puts
+the same divergence on the network instead of in a store we can inspect.
+
+**What would change this**: if multi-tab editing becomes a requirement, session-buffer wins — it
+already serializes through one connection, and local-first would need a leader election to match.
+
+### Preferences
+
+- Candidate 1: "debouncing at 400ms feels laggy" — no condition and no bearer named.
+
+### Dismissed
+
+- Candidate 3: "session storage is capped at 5MB" — refuted by `premise`; the candidate stores
+  a diff, not the document.
+```
+
 ## Degradation
 
 - **A seat failed** — say so in the header and continue. Do not speculate about what it would have

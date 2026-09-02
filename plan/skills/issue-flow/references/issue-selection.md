@@ -243,6 +243,9 @@ same procedure.
 
 ## Output
 
+Print one line before asking, with the real counts:
+`Ranked 14 candidates -> top 4 (tiers 1-3), 2 blocked`.
+
 Present the top candidates via `AskUserQuestion`.
 
 **Header:** `Issue #<N>` — must be 12 characters or fewer. That holds to four digits;
@@ -268,7 +271,10 @@ Rules:
 
 Invoke the `issue-analyze` skill on `<N>` immediately. Do not print a summary first —
 the analysis is the output. If the host cannot chain skills, or `issue-analyze` is not
-installed, fall back to a brief handoff: issue number, title, and why it ranked first.
+installed, fall back to a three-line handoff: issue number, title, and why it ranked first.
+
+Then stop. Selection ends at the analysis — do not create a branch, and do not start
+implementing. Step 2 runs only when the caller's intent named it.
 
 `None` → print:
 

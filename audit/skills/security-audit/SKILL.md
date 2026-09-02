@@ -31,9 +31,9 @@ branch-restricted environments for deploy secrets. Findings from this skill are 
 run it after an audit, or standalone on a new repo. If the user wants changes made rather
 than gaps listed, that is the skill to use.
 
-Read-only is what makes this skill safe to run anywhere, including on a repo the user does
-not own. Keep it that way: a new audit area adds a checklist under `references/` and a
-prompt in `references/subagent-prompts.md`, never a mutation.
+A new audit area adds a checklist under `references/` and a prompt in
+`references/subagent-prompts.md`, never a mutation — that is what keeps the skill safe to run
+on a repo the user does not own.
 
 **Audit areas currently implemented:**
 
@@ -63,14 +63,6 @@ a required check name that no workflow produces, it hands the observation over, 
 rulesets against triggers needs the `gh api` calls only this skill makes.
 
 ## When to Use
-
-Use when the user asks to:
-- "Audit security" / "security audit"
-- "Check supply chain" / "review for supply-chain attacks"
-- "Harden CI" or "harden actions" — audit first, then hand off to `repo-hardening`
-- "Audit release workflow" / "audit npm publishing"
-- "Harden settings" / "audit rulesets" / "audit repo settings"
-- "Audit install scripts" / "audit lifecycle scripts" / "audit package manager"
 
 Trigger phrases: `security audit`, `supply chain`, `ci hardening`, `harden actions`, `audit release`, `harden settings`, `audit rulesets`, `audit install scripts`, `audit package manager`, `minimum release age`, `allowBuilds`, `staged publishing`, `pwn request`, `sha pinning`.
 
@@ -111,7 +103,9 @@ gh api repos/<owner>/<repo> --jq '{private, default_branch, security_and_analysi
 
 Resolve `<owner>/<repo>` from `gh repo view --json nameWithOwner --jq .nameWithOwner`. If the API calls fail with `404` or auth errors, note it — repo-settings findings will be skipped for that area.
 
-**Extract org-scope context for Subagent D** (compute in the orchestrator, then substitute):
+Compute the following in the orchestrator and substitute them into the dispatch prompts.
+
+**Org-scope context, for Subagent D:**
 
 - `org_prefix` — derived from `package.json` `name:`. If the name is `@<prefix>/<pkg>`, the prefix is `<prefix>`. If the name is unscoped, leave `org_prefix` empty (no org scopes will be flagged).
 - `org_scope_patterns` — given a non-empty `org_prefix`, owned scopes are `@<prefix>/*` AND any scope matching `@<prefix>-*/*` (e.g., for `enonic`: `@enonic/*`, `@enonic-types/*`, `@enonic-cli/*`).
@@ -121,10 +115,12 @@ These pre-approve scopes the team has already decided to trust. Subagent D treat
 
 **Default posture: deny everything.** Subagent D flags missing exclude/registry config **only** for owned scopes (matching `org_scope_patterns`) that appear in the lockfile and are not in `already_covered_scopes`. All other scopes stay under the release-age and dependency-confusion gates — that is the intended hardening. If `org_prefix` is empty, no scope-specific findings are emitted.
 
-**Extract release-target context for Subagent B** (compute in the orchestrator, then substitute):
+**Release-target context, for Subagent B:**
 
 - `release_publishes_to_npm` — `true` if any of these exist (the audit does not care WHICH non-npm publisher is used, only whether npm is involved): a `release.yml` / `release.yaml` in `.github/workflows/` containing a literal `npm publish`, `npm stage publish`, `pnpm publish`, `yarn publish`, or `bun publish`; a `publishConfig.registry` field in `package.json`; or a `scripts.publish` value containing any of those commands.
 - `detected_build_systems` — assembled from root file presence: `npm` if `package.json` + any lockfile, `gradle` if `build.gradle`/`build.gradle.kts`, `maven` if `pom.xml`, `cargo` if `Cargo.toml`, `pip` if `requirements.txt`/`pyproject.toml`, `docker` if `Dockerfile`. `github-actions` is always added when `.github/workflows/` exists. This drives item 7 (dependabot ecosystem coverage) so the audit recommends the right ecosystems regardless of stack.
+
+Close the step with one line: `Layout: pnpm 10.28, 5 workflows, release.yml present, gh api 200 — dispatching A, B, C, D; E skipped (config-only repo).`
 
 **Routing.** Skip the Actions subagent if `.github/workflows/` is absent. Skip the Release subagent unless one of these holds: a `release.yml`/`release.yaml` exists, `package.json` has `publishConfig`, or `package.json` `scripts` has any of `publish`, `release`, `prepublishOnly`. If `package.json` is absent or `private: true`, note it — release findings about provenance change severity. Dispatch the Package Manager subagent if any lockfile exists — including `package-lock.json` or `yarn.lock`, where its whole job is the one out-of-scope finding (the audit supports pnpm and bun only) rather than a tuning pass. Dispatch the Repo Settings subagent if `gh api .../actions/permissions` returns HTTP 200; skip only on `404` or auth error. An empty `[]` from `/rulesets` is success — Subagent C treats the absence of rulesets as a finding, not a reason to skip. Skip the code subagent on a configuration-only or docs-only repo.
 
@@ -142,6 +138,8 @@ resolve.
 As new audit areas are added under `references/`, add the matching prompt to that file. No
 change to Step 3 or Step 4 is needed.
 
+Close the step with one line: `Dispatched 4 of 5 auditors in parallel; awaiting A, B, C, D.`
+
 ### Step 3: Aggregate Findings
 
 Wait for all dispatched subagents. Apply the four aggregation rules, then assemble the
@@ -151,7 +149,7 @@ disagreement between subagents on the same finding shape.
 **Aggregation rule 1 — Pin-status cross-check (A ↔ C).** Reconcile Subagent A's pin findings with Subagent C's `sha_pinning_required` report:
 
 - A reports zero pin findings (every `uses:` is SHA-pinned) AND C reports `sha_pinning_required: false` → emit **high**: "All actions are SHA-pinned but `sha_pinning_required` is off. Enable to prevent regression: `gh api -X PUT /repos/<owner>/<repo>/actions/permissions -F sha_pinning_required=true`."
-- A has pin findings AND C reports `sha_pinning_required: false` → do NOT additionally flag the setting. The issue is the unpinned actions (already in A's report). In "Already hardened" add: "`sha_pinning_required` cannot be enabled until A's pin findings are fixed — re-run the audit afterward."
+- A has pin findings AND C reports `sha_pinning_required: false` → do NOT additionally flag the setting. The issue is the unpinned actions (already in A's report). In `### Already hardened` add: "`sha_pinning_required` cannot be enabled until A's pin findings are fixed — re-run the audit afterward."
 - C reports `sha_pinning_required: true` → "Already hardened: `sha_pinning_required` enforced."
 
 **Aggregation rule 2 — Required-status-check coverage (A ↔ C).** For each `{ruleset_id, protected_branches, required_checks}` entry in C's `RULESET_REQUIRED_CHECKS` map, for each `required_check`, for each `protected_branch`:
@@ -159,33 +157,79 @@ disagreement between subagents on the same finding shape.
 - Find workflow(s) in A's `WORKFLOW_TRIGGER_MAP` whose `name:` matches `required_check`.
 - If no workflow matches the name, OR none of the matching workflows trigger on `protected_branch` (check both `push_branches` and `pr_branches`; treat `*` as matching any branch), emit **high**: "Required check `<check>` on branch `<branch>` (ruleset `<id>`) is not produced by any workflow triggering on that branch. PRs to `<branch>` will be permanently BLOCKED. Either add the branch to the workflow's `on.push.branches` / `on.pull_request.branches`, or remove the check from the ruleset's `required_status_checks`."
 
-**Aggregation rule 3 — Pass collation.** Each subagent's report ends with a "passes" / "already hardened" section. Concatenate these into `### Already hardened`, prefixed with the source subagent: `[Actions] persist-credentials: false on all checkouts`, `[Repo Settings] secret_scanning enabled`, `[Package Manager] minimumReleaseAge: 4320 with Strict: true`. For each subagent skipped per Step 1 routing, add instead: `[<area>] Skipped — <reason>`.
+**Aggregation rule 3 — Pass collation.** Each subagent's report ends with a "passes" / "already hardened" section. Concatenate these into `### Already hardened`, prefixed with the source subagent: `[Actions] persist-credentials: false on all checkouts`, `[Repo Settings] secret_scanning enabled`, `[Package Manager] minimumReleaseAge: 4320 with Strict: true`.
+
+**Aggregation rule 3b — Not-checked collation.** Anything that did not run gets a line in `### Not checked`, never in `### Already hardened` — a skip listed among the passes reads as a pass. One line per item, with its reason: every one of the five areas skipped by Step 1 routing; a `gh api` `404` or auth failure that dropped repo settings; a subagent that returned nothing or errored; an item a subagent itself skipped and declared in its header (Subagent B's npm-publisher items when `release_publishes_to_npm` is false, Subagent D's items 2-8 on an unsupported manager); and any tool the detection needed but did not find (`gh`, `jq`, `yq`). Areas with nothing outstanding still appear here as `[<area>] Fully checked` only if you list them for all five — otherwise list only the gaps.
 
 **Aggregation rule 4 — Sequencing hints.** If any finding pair has a "fix A before C is actionable" relationship (rule 1's second case is canonical; the rule-2 BLOCKED-PR finding depends on the ruleset existing at all; D's `allowBuilds` fix may break installs until paired with `strictDepBuilds`), surface the ordering in a final `### Sequencing` section: `1. Apply [Actions] findings → 2. Re-run audit → 3. Apply [Repo Settings] sha_pinning_required recommendation.` Render the section only if at least one relationship exists.
 
 **Weighting.** `release.yml` is the privileged target — weight findings there above equivalent findings in ordinary CI.
 
-**Report skeleton:**
+Sort findings within each severity bin worst-first (most exploitable first; policy findings after CVE-rated findings of the same severity). Keep file:line / API-path references intact from each subagent's report.
+
+Close the step with one line: `Aggregated 4 auditor reports: 19 raw findings -> 14 after cross-checks (1 critical, 5 high, 6 medium, 2 low), 6 passes, 3 not checked.`
+
+**Report skeleton** — every heading below is rendered, `### Sequencing` only when rule 4 produced a relationship:
 
 ```markdown
 ## Security Audit Report
 
-<one-line summary: areas audited, areas skipped>
+<one line: areas audited, areas not checked>
 
 ### Critical
 ### High
 ### Medium
 ### Low / Informational
-
 ### Already hardened
-- [Actions] ...
-- [Release] Skipped — <reason>
-
+### Not checked
 ### Sequencing
-1. ...
 ```
 
-Sort findings within each severity bin worst-first (most exploitable first; policy findings after CVE-rated findings of the same severity). Keep file:line / API-path references intact from each subagent's report.
+A filled report:
+
+```markdown
+## Security Audit Report
+
+Audited Actions, Release, Repo Settings, Package Manager. Code not checked (config-only repo).
+
+### Critical
+- **Deploy secrets reachable from any branch** — `[Repo Settings]` `CLOUDFLARE_API_TOKEN` is a
+  repo-level secret and `.github/workflows/deploy.yml:14` references it under a bare `push:`.
+  Any branch can exfiltrate production credentials. Move it to a branch-restricted `environment:`
+  (checklist item 10 — create the environment first, delete the repo-level copy last).
+
+### High
+- **12 unpinned actions** — `[Actions]` `ci.yml:9,17,31`, `release.yml:12,20` use tags. Run
+  `pinact run`; a moved tag is arbitrary code holding your token.
+- **No tag ruleset on `refs/tags/v*`** — `[Repo Settings]` `release.yml` triggers on `v*` tags and
+  nothing blocks `update` or `deletion`, so a tag can be re-pointed after review.
+  `gh api -X POST /repos/<owner>/<repo>/rulesets --input tag-ruleset.json`
+- **Release-age gate unset** — `[Package Manager]` (policy) `pnpm-workspace.yaml` has no
+  `minimumReleaseAge`. Add `minimumReleaseAge: 4320` (minutes), `minimumReleaseAgeStrict: true`.
+
+### Medium
+- **`npm publish`, not `npm stage publish`** — `[Release]` `release.yml:41`. Staging is the one
+  control a fully compromised CI job cannot forge. Requires npm >= 11.15.0.
+- **No workflow linter in CI** — `[Actions]` nothing runs zizmor, so the above regresses silently.
+
+### Low / Informational
+- **`allowed_actions: "all"`** — `[Repo Settings]` common and appropriate for a public repo.
+
+### Already hardened
+- `[Actions]` `persist-credentials: false` on all six checkouts; workflow-level
+  `permissions: contents: read` on every workflow
+- `[Repo Settings]` secret scanning and push protection enabled
+- `[Release]` credentialed publish job holds only auth, download, `publish --ignore-scripts`
+
+### Not checked
+- `[Code]` Skipped — configuration-only repository, no application source
+- `[Repo Settings]` `immutable-releases` — `gh api` returned `404` on this plan; state unknown
+- `[Release]` publisher-side npm settings (Trusted Publisher pinning, token-based publishing
+  disallowed) — not API-auditable; confirm these on npmjs.com yourself
+
+### Sequencing
+1. Apply `[Actions]` pin findings -> 2. Re-run this audit -> 3. Enable `sha_pinning_required`.
+```
 
 ### Step 4: Hand Off Findings
 

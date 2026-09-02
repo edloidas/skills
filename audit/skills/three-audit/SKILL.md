@@ -27,19 +27,15 @@ what to look for, why it matters, and how to fix it. The skill walks you
 through running them against a target codebase and producing a structured
 findings report.
 
+**This skill reports; it never edits the scene.** After a run the working tree
+is byte-identical — fixes are for the maintainer to apply.
+
 This is not a linter — most checks need contextual judgment, not just
 pattern-matching. The agent is expected to read the offending code and reason
 about whether the pattern actually applies in this scene.
 
 Detection commands assume `rg` (ripgrep) and `jq` are on `PATH`. Substitute
 `grep -rn` and a manual read of `package.json` where they are not.
-
-## When to Use This Skill
-
-- Reviewing a 3D scene's performance, or before shipping a Three.js / R3F build
-- Investigating a frame-rate regression, especially one that tracks window size
-- Reviewing a change that touches renderer setup, `useFrame`, materials, shadows,
-  instancing, or texture loading
 
 ## Workflow
 
@@ -71,7 +67,8 @@ rg -n '<\s*Canvas\b' --type tsx --type jsx
 rg -n "useThree\(|gl\s*[:=]" --type tsx --type jsx
 ```
 
-Note the file paths — each check refers back to them.
+Note the file paths — each check refers back to them. Close the step with one
+line: `Anchors: 1 WebGLRenderer, 2 Canvas mounts, 6 useThree sites across 14 files.`
 
 ### Step 3 — Decide which conditional checks apply
 
@@ -91,9 +88,14 @@ jq -r '((.dependencies // {}) + (.devDependencies // {})) | keys[]' package.json
   | rg 'nanostores|zustand|jotai|valtio'
 ```
 
-No signal → skip that check and say so in the report's skipped list. Each check
-file restates its own activation condition; follow that over this summary if
-they disagree.
+No signal → skip that check and record it. Each check file restates its own
+activation condition; follow that over this summary if they disagree.
+
+Keep a running **not-run list** from here to the report. Every check that does
+not execute goes in it with its reason, whatever the reason: a conditional check
+with no signal, a check `--check=<name>` excluded, a check whose detection needs
+`rg` or `jq` where neither is on `PATH`, a check whose target files could not be
+read. A run that names only the conditional skips reads as a full audit.
 
 ### Step 4 — Run checks from the catalog
 
@@ -101,8 +103,11 @@ For each row in the **Checks** tables below, open
 `references/checks/<name>.md` and follow its detection and assessment
 guidance. If the user passed `--check=<name>`, run only that one.
 
-Read every candidate site before reporting it. Most checks list legitimate
-uses of the pattern they detect — a grep hit is a candidate, not a finding.
+A grep hit is a candidate, not a finding — most checks list legitimate uses of
+the pattern they detect. List every candidate site a check produced and open all
+of them in one response before writing any of its findings.
+
+Close the step with one line: `Checks: 11 of 14 run, 47 candidate sites read, 6 findings.`
 
 ### Step 5 — Report findings
 
@@ -127,9 +132,54 @@ check that produced a finding. Format:
 Each check file ends with a **How to report this finding** section — use its
 wording so findings from different checks read consistently.
 
-Skip checks that produced no finding (don't pad the report). End with a tally:
-`<N> findings: <high> high, <medium> medium, <low> low`, followed by one line
-naming any conditional checks skipped for lack of a signal.
+Skip checks that produced no finding (don't pad the report). End with a tally,
+`<N> findings: <high> high, <medium> medium, <low> low`, then a **Not run**
+list — one line per entry on the not-run list from Step 3, with its reason.
+
+A filled report:
+
+```markdown
+### dpr-cap — high
+
+**Where:** src/scene/Stage.tsx:41
+
+**What's wrong:** `<Canvas dpr={window.devicePixelRatio}>` is uncapped, so a 2x
+Retina display at fullscreen shades 4x the pixels of the dev preview.
+
+**Suggested fix:**
+\`\`\`tsx
+<Canvas dpr={[1, Math.min(window.devicePixelRatio, 2)]}>
+\`\`\`
+
+**Why it matters:** This is the "smooth in the preview pane, choppy fullscreen"
+regression — frame time roughly quadruples with no visible quality gain.
+
+### render-loop-allocations — high
+
+**Where:** src/scene/Orbiter.tsx:58, src/scene/Trail.tsx:24
+
+**What's wrong:** `new THREE.Vector3()` inside `useFrame`, allocating two vectors
+per frame per instance — 240 objects/s at 120 fps.
+
+**Suggested fix:**
+\`\`\`ts
+const tmp = useMemo(() => new THREE.Vector3(), [])
+useFrame(() => { tmp.set(x, y, z); mesh.current.position.copy(tmp) })
+\`\`\`
+
+**Why it matters:** Minor GC pauses land as visible hitches during motion.
+
+2 findings: 2 high, 0 medium, 0 low
+
+**Not run:**
+- `store-wiring` — no atom store dependency in `package.json`
+- `useframe-priority` — no `useFrame` priority argument anywhere in the tree
+- `texture-budget` — `public/textures/` is git-lfs and the pointers did not
+  resolve; on-disk sizes could not be read
+```
+
+Then stop. Report the findings; do not apply a suggested fix, and do not start a
+second pass over the same catalog.
 
 ## Lens Mode
 

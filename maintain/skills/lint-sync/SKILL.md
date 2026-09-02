@@ -16,15 +16,22 @@ argument-hint: "[sync, audit, or update]"
 
 # Lint Sync
 
+**Local writes only, and only two of the three modes write.** `sync` and `audit` analyse and
+report — no config file changes unless the user asks for the generated patch to be applied.
+`update` rewrites the bundled `references/*.json` files in this skill. Nothing is staged,
+committed, or pushed, and no remote service is written to.
+
+**Edit mechanic.** A config file that does not exist yet — `.oxlintrc.json`, `.oxfmtrc.json` —
+is generated whole from `references/oxc-defaults.json`. Every file that already exists —
+`vite.config.ts`, `biome.json`, an ESLint config, a reference JSON in `update` mode — is changed
+with targeted edits per hunk, never a whole-file rewrite: a formatter-wide reflow of someone's
+`vite.config.ts` buries the rules that actually changed.
+
 ## Purpose
 
 Two workflows in one skill:
 1. **Migrate** — Move ESLint/Prettier rules to Biome or Oxc with rule-by-rule comparison
 2. **Modernize** — Update existing Biome/Oxc configs: promote nursery rules, enable new quality flags, apply latest formatter options
-
-## When to Use This Skill
-
-Trigger phrases: "lint sync", "lint-sync", "eslint biome overlap", "biome migration", "oxlint migration", "migrate to oxc", "disable eslint rules", "modernize biome config", "update biome rules", "promote nursery rules", "update oxlint config"
 
 ## Modes
 
@@ -33,15 +40,6 @@ Trigger phrases: "lint sync", "lint-sync", "eslint biome overlap", "biome migrat
 | **sync** | No mode or `sync` | Quick overlap check (migrate) or nursery/feature check (modernize). |
 | **audit** | `audit` | Full analysis with performance data, coverage stats, migration/modernization checklist. |
 | **update** | `update` | Refresh mapping and version reference files from upstream sources. |
-
-## Documentation
-
-Before fetching docs from the web, check `references/docs.md` for Context7 library IDs and direct URLs. This saves tokens significantly.
-
-**Context7 IDs for quick lookups:**
-- Biome: `/biomejs/website` (5357 snippets)
-- Oxc: `/oxc-project/website` (5057 snippets)
-- Vite+: `/websites/viteplus_dev` (210 snippets)
 
 ## Asking the User
 
@@ -77,6 +75,9 @@ fd -t f 'vite\.config\.(ts|js|mjs)$' --max-depth 2
 # Quick Vite+ detection
 grep -l "from ['\"]vite-plus['\"]" vite.config.ts 2>/dev/null
 ```
+
+Run every detection command before deciding anything, and end the phase with one line naming
+what was found: `Found: eslint.config.ts, .prettierrc, vite.config.ts (Vite+) · no biome.json`.
 
 ### Step 2: Determine Workflow
 
@@ -133,7 +134,9 @@ bash scripts/get-eslint-rules.sh
 bash scripts/get-biome-rules.sh   # or get-oxlint-rules.sh
 ```
 
-If a script fails, fall back to reading configs manually.
+Each script needs its tool installed in the project and auto-detects the package manager
+(pnpm / yarn / bun / npm). If one fails, fall back to reading the configs manually and say in
+the report which list came from a config read rather than from the tool.
 
 ### M3: Load References
 
@@ -183,6 +186,9 @@ for each active ESLint rule:
      b. Active → DISABLE
      c. Not active → ENABLE_TARGET
 ```
+
+Classify every active rule before reporting any of them, and end the phase with one line
+carrying the counts: `142 active ESLint rules -> 61 DISABLE, 12 REVIEW, 24 ENABLE_TARGET, 38 ESLINT_ONLY, 7 TYPE_AWARE`.
 
 ### M5: Prettier Migration Analysis
 
@@ -261,7 +267,9 @@ Cross-reference slowest rules against mapping and type-aware list.
 
 ### M8: Generate Migration Report
 
-See [Report Templates](#report-templates) below.
+See [Report Templates](#report-templates) below. Then stop: the report and the ready-to-paste
+config are the deliverable. Do not edit the ESLint config, write the target config, or run
+either linter to check the result unless the user asks for the changes to be applied.
 
 ---
 
@@ -319,10 +327,7 @@ Generate a ready-to-apply diff or config patch.
 
 ### N6: Suggest New Formatter Options and Sorting
 
-Check project dependencies first:
-```bash
-jq -r '.dependencies.tailwindcss // .devDependencies.tailwindcss // empty' package.json
-```
+Check whether Tailwind is a project dependency first, with the same `jq` query as M6.
 
 **Biome:** Check `biome-versions.json` for `newFormatterOptions`. Highlight useful additions:
 - `formatter.trailingNewline` (v2.4)
@@ -336,6 +341,9 @@ jq -r '.dependencies.tailwindcss // .devDependencies.tailwindcss // empty' packa
 - `sortTailwindcss` (if Tailwind in deps — replaces `prettier-plugin-tailwindcss`)
 - `jsdoc` formatting (off by default)
 - For Vite+: `lint.options.typeAware` and `lint.options.typeCheck` (recommended on)
+
+End the analysis with one line carrying the counts: `3 stale nursery refs, 9 new stable rules,
+4 formatter options available`.
 
 ### N7: Generate Modernize Report
 
@@ -376,21 +384,17 @@ These rules are stable and recommended but not in your config:
 
 Refreshes all reference files from upstream.
 
-### U1: Update biome-eslint-mapping.json
+### U1: Update the ESLint mapping files
 
-1. Fetch `https://biomejs.dev/linter/rules-sources/`
-2. Parse ESLint → Biome rule mappings
-3. Diff against existing, show added/removed
-4. Update `_meta.biomeVersion` and `_meta.updatedAt`
+| File | Source | `_meta` fields to bump |
+|------|--------|------------------------|
+| `references/biome-eslint-mapping.json` | `https://biomejs.dev/linter/rules-sources/` | `biomeVersion`, `updatedAt` |
+| `references/oxc-eslint-mapping.json` | `https://oxc.rs/docs/guide/usage/linter/rules` | `oxlintVersion`, `updatedAt` |
 
-### U2: Update oxc-eslint-mapping.json
+For each: fetch, parse the rule mappings (Oxc's are grouped by plugin), diff against the
+existing file, show what was added and removed, then bump the `_meta` fields.
 
-1. Fetch `https://oxc.rs/docs/guide/usage/linter/rules`
-2. Parse supported rules by plugin
-3. Diff against existing, show added/removed
-4. Update `_meta.oxlintVersion` and `_meta.updatedAt`
-
-### U3: Update type-aware-rules.json
+### U2: Update type-aware-rules.json
 
 ```bash
 gh api repos/typescript-eslint/typescript-eslint/contents/packages/eslint-plugin/src/configs/flat/disable-type-checked.ts --jq '.content' | base64 -d
@@ -398,7 +402,7 @@ gh api repos/typescript-eslint/typescript-eslint/contents/packages/eslint-plugin
 
 Parse, diff, update `_meta.updatedAt`.
 
-### U4: Update version files
+### U3: Update version files
 
 Check Biome and Oxc changelogs for new versions not yet tracked:
 - Biome: `https://biomejs.dev/blog/` — look for new `biome-vX-Y` posts
@@ -410,49 +414,60 @@ For each new version found, add entry to `biome-versions.json` or `oxc-versions.
 - New formatter options
 - New features
 
+End with one line per refreshed file: `biome-eslint-mapping.json: +14 / -3 (v2.4.2)`. Then stop
+— `update` maintains this skill's reference files and touches no project config.
+
 ---
 
 ## Report Templates
 
 ### Sync Mode (Migration)
 
+Filled with real values from one run; a table with no rows for this run is kept, showing `_(none)_`.
+
 ```markdown
 ## Lint Sync Report
 
 ### Environment
-- ESLint: vX.x (flat/legacy config)
-- Target: Biome vX.x / Oxlint vX.x + Oxfmt vX.x
-- Mapping version: YYYY-MM-DD (current / stale)
-- Prettier config: found / not found
+- ESLint: v9.18.0 (flat config)
+- Target: Oxlint v1.14.0 + Oxfmt v0.4.2 (via Vite+ 1.0.3, `vite.config.ts`)
+- Mapping version: 2025-11-04 (stale — installed Oxlint is newer, run `update`)
+- Prettier config: found (`.prettierrc`)
 
 ### Summary
 | Category | Count |
 |----------|-------|
-| DISABLE (safe to remove) | X |
-| REVIEW (check before removing) | X |
-| ENABLE_TARGET (can migrate) | X |
-| ESLINT_ONLY (must keep) | X |
-| TYPE_AWARE | X |
+| DISABLE (safe to remove) | 61 |
+| REVIEW (check before removing) | 12 |
+| ENABLE_TARGET (can migrate) | 24 |
+| ESLINT_ONLY (must keep) | 38 |
+| TYPE_AWARE | 7 |
 
 ### DISABLE — Safe to Turn Off in ESLint
 | ESLint Rule | Target Equivalent |
 |-------------|------------------|
+| `no-debugger` | `oxc/no-debugger` |
+| `@typescript-eslint/no-unused-vars` | `typescript/no-unused-vars` |
 
 ### REVIEW — Check Before Disabling
 | ESLint Rule | Target Equivalent | Notes |
 |-------------|------------------|-------|
+| `import/no-cycle` | `import/no-cycle` | Inspired; Oxlint ignores `maxDepth` |
 
 ### ENABLE_TARGET — Available to Migrate
 | ESLint Rule | Target Equivalent | Relationship |
 |-------------|------------------|--------------|
+| `eqeqeq` | `eslint/eqeqeq` | same (not yet active) |
 
 ### ESLINT_ONLY — Must Keep
 | ESLint Rule | Type-Aware? |
 |-------------|-------------|
+| `@typescript-eslint/no-floating-promises` | yes |
 
 ### Prettier Migration (if applicable)
 | Prettier Option | Current Value | Target Option | Target Default | Action |
 |----------------|--------------|--------------|----------------|--------|
+| `printWidth` | 80 | `printWidth` | 100 | set explicitly to keep 80 |
 
 ### Ready-to-Paste Config
 ```
@@ -480,16 +495,6 @@ For each new version found, add entry to `biome-versions.json` or `oxc-versions.
 - [ ] Run both linters and compare output
 ```
 
-## Important Notes
-
-- Scripts require the respective tools installed in the project
-- Scripts auto-detect the package manager (pnpm/yarn/bun/npm)
-- Version files track which Biome/Oxc versions introduced which changes
-- Modernize workflow uses version files to detect stale nursery refs and suggest new features
-- For doc lookups, use Context7 IDs from `references/docs.md` before web search
-- **Vite+** projects embed Oxlint/Oxfmt config in `vite.config.ts` (`lint`/`fmt` blocks) — do not create standalone `.oxlintrc.json`/`.oxfmtrc.json` alongside Vite+
-- External repos accessed: `typescript-eslint/typescript-eslint` (public)
-
 ## Bundled References
 
 - `references/biome-eslint-mapping.json` — ESLint → Biome rule mapping (~260 entries)
@@ -498,7 +503,7 @@ For each new version found, add entry to `biome-versions.json` or `oxc-versions.
 - `references/oxc-versions.json` — Oxc version changelog: new rules, features, recommended config
 - `references/oxc-defaults.json` — Opinionated Oxlint/Oxfmt defaults for initialization
 - `references/type-aware-rules.json` — TypeScript-ESLint type-aware rules (~60 entries)
-- `references/docs.md` — Context7 library IDs and documentation URLs
+- `references/docs.md` — Context7 library IDs and doc URLs for Biome, Oxc, and Vite+; read it before any web fetch
 - `scripts/get-eslint-rules.sh` — Extract active ESLint rules via `--print-config`
 - `scripts/get-biome-rules.sh` — Extract active Biome rules via `biome rage --linter`
 - `scripts/get-oxlint-rules.sh` — Extract active Oxlint rules

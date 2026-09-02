@@ -20,10 +20,9 @@ metadata:
 
 Semi-automatic merge and rebase conflict resolution.
 
-## Compatibility
-
-This skill mutates git state and may rewrite branch history. Expose it to Codex
-only as an explicitly invoked skill.
+**Writes and pushes.** It rewrites the working tree, rewrites branch history through a rebase, and
+in PR mode offers a force-push. The push is the only step that leaves the machine, and it is gated
+on approval.
 
 ## Asking the User
 
@@ -61,7 +60,7 @@ Parse the key=value output. Handle exit codes:
 | 4 | Issue has no linked PR | Show context, stop |
 | 5 | PR has no conflicts | Show context, stop |
 
-**Always display context header** (even when stopping):
+Display the context header, including when stopping:
 
 ```
 PR: <title>
@@ -111,13 +110,14 @@ After all conflicts resolved and rebase complete:
    2. `Skip push` — keep the rebased branch local only
    - Yes → `git push --force-with-lease="<head>:$before" origin <head>`
    - No → skip
+4. Then stop. Do not merge the PR, do not update its description, and do not start another
+   rebase.
 
-A bare `git push --force-with-lease` leases against the remote-tracking ref, which any
-`git fetch` refreshes. Resolution loops for as long as the conflicts take, so anything
-fetching in between would turn the lease into a no-op and let the push discard a commit
-someone else added to the PR branch. `$before`, captured in Step 3, is the value the
-rebase was actually built on. If the push is rejected, the remote moved: re-run from
-Step 3 rather than escalating to `--force`.
+A bare `--force-with-lease` leases against the remote-tracking ref, which any `git fetch`
+refreshes — and resolution loops for as long as the conflicts take, so a fetch in between turns
+the lease into a no-op and lets the push discard a commit someone else added. `$before`, captured
+in Step 3, is the tip the rebase was built on. A rejected push means the remote moved: re-run from
+Step 3, never `--force`.
 
 If unresolved conflicts remain:
 1. Show final report with remaining files
@@ -183,29 +183,34 @@ the repository root, because the paths are relative to it.
 
 Batch all trivial UU files into one resolver subagent for parallel execution.
 
+When the group is done, print one line: `Auto-resolved <N> of <T> conflicts (DU <n>, UD <n>, DD <n>,
+AA <n>, UU trivial <n>)`.
+
 ### Phase 3: Context-Aware Resolve
 
-Attempt to resolve all remaining UU files (simple and complex).
+Attempt to resolve all remaining UU files (simple and complex). Before dispatching, print one line:
+`Resolving <N> UU files (<S> simple, <C> complex) in <R> resolvers`.
 
-**Effort thresholds:**
-- ≤3 complex files → spend significant effort on each, read surrounding code for context
-- 4–10 complex files → attempt each, move on if stuck after reasonable effort
-- 10+ complex files → attempt but don't over-invest; resolve what's feasible
+**How far to read per complex file:**
+
+| Complex files in this batch | Read before resolving |
+|-----------------------------|-----------------------|
+| ≤3 | The conflicted file, its imports, and the callers of anything either side changed |
+| 4–10 | The conflicted file and its imports. Leave a file unresolved rather than widening the read |
+| >10 | The conflicted file only, one pass each. Whatever that pass cannot settle stays unresolved |
 
 **Parallelization:**
-- Dispatch one resolver subagent per file for parallel resolution
-- Cap at ~5 concurrent resolver subagents
-- Resolver subagents: read the conflicted file → understand both sides → write
-  the resolved version → `git add`
-- Resolver subagents must NOT run lint, build, typecheck, or any verification
-  commands
+- Dispatch one resolver subagent per file, at most 5 running concurrently
+- Resolver subagents run no lint, build, typecheck, or verification commands. Verification is one
+  pass at the end, over the whole tree.
 
-**For each resolver subagent, do this:**
+**Each resolver subagent does this:**
 1. Read the file to find all conflict markers
-2. For each conflict block, understand what "ours" changed and what "theirs" changed
-3. Decide how to combine both changes (or pick one side if they're truly incompatible)
-4. Write the resolved file (no conflict markers remaining)
-5. `git add "<file>"`
+2. For each conflict block, work out what "ours" changed and what "theirs" changed
+3. Combine both changes, or pick one side where they are genuinely incompatible
+4. Replace each conflict block in place, markers and all. Do not regenerate the file from its
+   two sides — a rewrite changes lines neither branch touched and buries the resolution in noise
+5. `git add "<file>"` once no markers remain
 
 **If a resolver subagent cannot resolve a file:** Leave the conflict markers in
 place. Do not `git add` it. The file will appear in the final report as
@@ -230,8 +235,6 @@ After all resolvable conflicts are handled:
 
 ## Verification
 
-Run after all conflicts are resolved and rebase/merge is complete.
-
 1. `git status` — confirm clean working tree
 2. Check for project-specific lint/typecheck commands:
    - Read `CLAUDE.md` or `package.json` scripts for available commands
@@ -242,3 +245,17 @@ Run after all conflicts are resolved and rebase/merge is complete.
    - Re-run the check to confirm
 4. Run build only at the very end if the project has a fast build (typical for JS projects)
 5. If issues cannot be fixed → report them alongside any unresolved conflicts
+
+A filled final report:
+
+```
+Resolved 9/12 conflicts automatically. 3 remaining need review.
+
+### UU — complex (3)
+
+- `src/scene/init.ts` — both sides restructured the mount sequence
+- `src/net/socket.ts` — same `reconnect()` retry loop modified by both sides
+- `pnpm-lock.yaml` — regenerated on both branches
+
+Checks: `pnpm typecheck` — 2 errors in `src/scene/init.ts`, both from the unresolved markers.
+```
