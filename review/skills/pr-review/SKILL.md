@@ -194,7 +194,8 @@ have, then let its publication phase post the review with `--review`. It owns th
 the grouping of minors, and the verdict mapping; do not rebuild them here. Where the host cannot
 invoke another skill, run the same attack inline and publish by the rules `changes-review` documents
 for it — one inline comment per finding, minors grouped, nothing published without a demonstration
-and an attribution, and the verdict set by whether a blocker survived.
+and an attribution. Submit once, as `event`, `body` and `comments` (`path`, `line`, `side`) posted to
+`repos/<owner>/<repo>/pulls/<N>/reviews`, with `event` set by whether a blocker survived.
 
 **An approval is a different document.** One body, no inline comments, two to four sentences on what
 now holds up for a user — nothing about what you ran or measured, which goes in the operator report.
@@ -221,7 +222,8 @@ it covers, not a count of comments and a claim about their content: the reader i
 words, so the words are what they have to see. In author mode that is every composed reply; in
 reviewer mode the body and each inline comment. Then ask, once, in prose, as the last line — per
 **Asking the User**. `--auto` skips the question for bot-rooted threads and posts those directly,
-and still prints what it sent.
+and still prints what it sent. `--draft` skips it in reviewer mode: the gate exists to put the words
+in front of a reader before they reach the author, and a pending review does that on its own.
 
 **`--auto` covers bot-rooted threads only.** It skips the gate where Phase 3 standing already reads
 *Act* — a thread a bot rooted, with no human in it. Any other thread is composed and **held unsent**
@@ -293,6 +295,22 @@ r1907, to anna, awaiting your go-ahead:
 
 Verdict: 3 replies posted, 3 threads resolved; anna's thread held. No suggestions withheld.
 Posted: replies on r1902, r1903, r1904 — nothing on r1907 yet.
+```
+
+Reviewer mode under `--draft` reports the same shape, with the verdict recommended rather than set:
+
+```
+## PR #612 reviewer mode: 5 findings · 2 blocking · 3 judgement calls
+
+- The touch check only works where `click` is a `PointerEvent` — blocking, reproduced on the
+  Safari 18.2 boundary. Anchored at combobox.tsx:755.
+- Three minors grouped at popover.tsx:88.
+
+Suggestions: none withheld — all five are in the draft.
+Held: nothing. The review is on GitHub and unsubmitted.
+
+Recommended verdict: REQUEST_CHANGES — the iOS 16/17 no-op lands on the issue's own acceptance case.
+Posted: pending review with 3 inline comments, https://github.com/o/r/pull/612/files — yours to submit.
 ```
 
 ## Error handling
