@@ -1,6 +1,6 @@
 {
   "name": "review",
-  "version": "5.6.0",
+  "version": "5.6.1",
   "description": "Adversarial review, cleanup, claim verification, approach boards, PR feedback triage, and spec extraction",
   "author": {
     "name": "Mikita Taukachou",
