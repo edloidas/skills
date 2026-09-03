@@ -28,12 +28,14 @@ Located in `scripts/` relative to this skill:
 
 | Script                     | Purpose                                         |
 | -------------------------- | ----------------------------------------------- |
-| `check-env.sh`             | Validate git repo, gh CLI, authentication       |
+| `check-env.sh`             | Validate git repo, gh CLI, jq, authentication   |
 | `detect-base.sh`           | Detect base branch name (main/master/next/epic-*) |
 | `repo-context.sh`          | Fetch labels, collaborators, projects           |
 | `repo-ownership.sh`        | Classify repo as personal / org / external      |
 | `pr-reviewers.sh`          | Rank top PR reviewers by recent review activity |
 | `issue-assignees.sh`       | Rank top issue assignees by recent assignments  |
+| `issue-types.sh`           | List GraphQL-supported issue types              |
+| `create-issue.sh`          | Create one issue and reconcile partial success  |
 | `add-to-project.sh`        | Add issue to GitHub Projects V2                 |
 | `get-issue-projects.sh`    | List projects an issue is already a member of   |
 | `suggest-projects.sh`      | Rank up to 4 likely projects (USED + RELATED)   |
@@ -68,6 +70,8 @@ bash "<skill-dir>/scripts/repo-context.sh"
 bash "<skill-dir>/scripts/repo-ownership.sh" [<owner>/<repo>]
 bash "<skill-dir>/scripts/pr-reviewers.sh" [<owner>/<repo>] [<limit>]
 bash "<skill-dir>/scripts/issue-assignees.sh" [<owner>/<repo>] [<limit>]
+bash "<skill-dir>/scripts/issue-types.sh" [<owner>/<repo>]
+bash "<skill-dir>/scripts/create-issue.sh" -- --title "<title>" --body-file <path> [...]
 bash "<skill-dir>/scripts/add-to-project.sh" <issue-number> <project-title> [status]
 bash "<skill-dir>/scripts/get-issue-projects.sh" <issue-number>
 bash "<skill-dir>/scripts/suggest-projects.sh" [<owner>/<repo>]
@@ -264,20 +268,18 @@ If the question is skipped or unanswered, default to `@me` — never create the 
 
 ### Type
 
-Issue types are an organization-level feature. Probe for them:
+Issue types are an organization-level feature. Probe through the same GraphQL field `gh issue create` depends on:
 
 ```bash
-gh api "repos/<owner>/<repo>/issue-types" --jq '.[].name' 2>/dev/null || true
+bash "<skill-dir>/scripts/issue-types.sh"
 ```
 
 - Names returned → map the conventional commit type onto the closest one and pass
-  `--type "<name>"` to `gh issue create`.
-- `404 Not Found` → the repo has no issue types. This is the normal answer for a
-  personal repo, since only orgs define them. Skip silently.
+  `--type "<name>"` to the create wrapper.
+- Empty output → the repo has no assignable issue types. This is the normal answer for a
+  personal repo. Skip silently.
 
-Do **not** probe with `gh issue create --type bug --dry-run`. There is no `--dry-run`
-flag on `gh issue create`; it fails with `unknown flag` regardless of whether the repo
-supports types, so the probe always reports "unsupported".
+Do **not** probe with the REST `repos/<owner>/<repo>/issue-types` catalog: it can list type names for a personal repository even though GraphQL `repository.issueTypes` is `null`, and `gh issue create --type` will fail after creating the issue. Do **not** probe with `gh issue create --type bug --dry-run`; there is no `--dry-run` flag.
 
 ### Project
 
@@ -319,15 +321,17 @@ Which milestone for this issue?
 
 Order by due date (soonest first). The first non-closed milestone is recommended.
 
-Assign via `--milestone "<title>"` in the `gh issue create` command.
+Assign via `--milestone "<title>"` in the create-wrapper command.
 
 ### Create
 
-Use the `<TMPDIR>` from the parallel setup batch. Write the issue body to `<TMPDIR>/body.md` with the host's file-write tool, then create the issue with `--body-file`:
+Use the `<TMPDIR>` from the parallel setup batch. Write the issue body to `<TMPDIR>/body.md` with the host's file-write tool, then create the issue through the wrapper:
 
 ```bash
-gh issue create --title "<title>" --body-file <TMPDIR>/body.md --label "<label>" --assignee "<assignee>" [--milestone "<name>"]
+bash "<skill-dir>/scripts/create-issue.sh" -- --title "<title>" --body-file <TMPDIR>/body.md --label "<label>" --assignee "<assignee>" [--type "<name>"] [--milestone "<name>"]
 ```
+
+The wrapper runs `gh issue create` once. If `gh` returns nonzero after creating the issue, it checks recent issues by exact title, current author, and the creation window; when exactly one match exists, reuse that URL and continue. If it exits nonzero, stop and reconcile manually. Do not retry issue creation until that reconciliation finds no created issue.
 
 When creating multiple issues, use unique filenames per issue: `<TMPDIR>/<slug>-body.md` (e.g. `auth-body.md`, `settings-body.md`). Resolve `<TMPDIR>` once and reuse it for all issues.
 
@@ -431,7 +435,7 @@ When the user asks to create multiple issues at once (e.g., an epic with child i
 1. Resolve `<TMPDIR>` once via `mktemp -d`
 2. Create the parent/epic issue first (if applicable)
 3. Write all child issue body files with unique slugs: `<TMPDIR>/<slug>-body.md`
-4. Create all child issues in parallel (`gh issue create` calls) — apply **### Assignment Defaults** once and reuse the same assignee for every issue in the batch, including the parent. Do not prompt per issue.
+4. Create all child issues in parallel (one create-wrapper call per issue) — apply **### Assignment Defaults** once and reuse the same assignee for every issue in the batch, including the parent. Do not prompt per issue.
 5. Batch-link sub-issues to parent (if applicable) — use the for loop from **## Sub-Issues**
 6. Add all issues to project sequentially — run `add-to-project.sh` in a for loop, one at a time (parallel calls cause API rate-limit failures and require retries). When children are linked to an **existing** parent, resolve the project set via **## Project Inheritance From Parent** instead of asking generically.
 7. Ask about initial project status (e.g., "Backlog", "Current Sprint") via `AskUserQuestion` — then batch-update via `project-status.sh`
@@ -916,18 +920,24 @@ gh pr view <pr-number> --json state,mergeable
 - If PR is not open: report current state and **stop**.
 - If there are conflicts: rebase onto base, force-push, then continue to step 2.
 
-2. Wait for CI checks using `gh pr checks --watch` (use a 5-minute Bash timeout):
+2. Wait for CI checks with a 5-minute timeout (`timeout` on Linux, `gtimeout` from coreutils on macOS):
 
 ```bash
-gh pr checks <pr-number> --watch --fail-fast
+if command -v timeout >/dev/null 2>&1; then
+  TIMEOUT_BIN=timeout
+else
+  TIMEOUT_BIN=gtimeout
+fi
+"$TIMEOUT_BIN" 5m gh pr checks <pr-number> --watch --fail-fast
 ```
 
 - Exit 0 (all passed/skipped) → proceed to step 3
 - Exit 1 (failure) → report failed checks, **stop**. Do not merge.
-- Bash timeout → report timeout, ask user via `AskUserQuestion`:
+- Exit 124 (timeout) → report timeout, ask user via `AskUserQuestion`:
   1. "Merge anyway" — proceed to step 3; the merged report carries `Checks: not confirmed (watch timed out)`
-  2. "Wait longer" — re-run `gh pr checks --watch --fail-fast` with another 5-minute timeout
+  2. "Wait longer" — re-run the same timeout command
   3. "Abort" — stop
+- Exit 127 (`gtimeout` missing) → report the missing timeout binary and **stop**.
 
 3. After checks pass, verify mergeability one more time:
 

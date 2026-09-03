@@ -35,32 +35,37 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_TOKEN=$(bash "$SCRIPT_DIR/_resolve-project-token.sh" 2>/dev/null) || true
 
 if [[ -z "$PROJECT_TOKEN" ]]; then
-  echo "(no token with read:project scope available)"
+  echo "(no token with read:project scope available; run gh auth refresh -s read:project)"
 else
-  PROJECTS=$(GH_TOKEN="$PROJECT_TOKEN" gh api graphql -f query="
-    query {
-      repository(owner: \"$OWNER\", name: \"$NAME\") {
-        projectsV2(first: 20) {
-          nodes { id title }
-        }
-      }
-    }
-  " 2>/dev/null | jq -r '.data.repository.projectsV2.nodes[]? | "\(.id)\t\(.title)"' 2>/dev/null) || true
+  ERR_FILE=$(mktemp "${TMPDIR:-/tmp}/repo-context-projects-err.XXXXXX")
+  DATA=$(GH_TOKEN="$PROJECT_TOKEN" gh api graphql \
+    -f owner="$OWNER" \
+    -f name="$NAME" \
+    -f query='
+query($owner:String!, $name:String!) {
+  repository(owner:$owner, name:$name) {
+    projectsV2(first: 20) { nodes { id title updatedAt } }
+  }
+  repositoryOwner(login:$owner) {
+    ... on Organization { projectsV2(first: 50, orderBy: {field: UPDATED_AT, direction: DESC}) { nodes { id title updatedAt } } }
+    ... on User         { projectsV2(first: 50, orderBy: {field: UPDATED_AT, direction: DESC}) { nodes { id title updatedAt } } }
+  }
+}' 2>"$ERR_FILE") || {
+    cat "$ERR_FILE" >&2
+    rm -f "$ERR_FILE"
+    echo "(failed to fetch projects: Projects V2 lookup requires read:project scope; run gh auth refresh -s read:project)"
+    exit 0
+  }
+  rm -f "$ERR_FILE"
+
+  PROJECTS=$(printf '%s' "$DATA" | jq -r '
+    ([.data.repository.projectsV2.nodes[]?] + [.data.repositoryOwner.projectsV2.nodes[]?])
+    | unique_by(.id)
+    | .[]
+    | "\(.id)\t\(.title)"' 2>/dev/null) || true
 
   if [[ -z "$PROJECTS" ]]; then
-    PROJECTS=$(GH_TOKEN="$PROJECT_TOKEN" gh api graphql -f query="
-      query {
-        organization(login: \"$OWNER\") {
-          projectsV2(first: 50, orderBy: {field: UPDATED_AT, direction: DESC}) {
-            nodes { id title }
-          }
-        }
-      }
-    " 2>/dev/null | jq -r '.data.organization.projectsV2.nodes[]? | "\(.id)\t\(.title)"' 2>/dev/null) || true
-  fi
-
-  if [[ -z "$PROJECTS" ]]; then
-    echo "(no projects found or token lacks read:project scope)"
+    echo "(no projects found)"
   else
     echo "$PROJECTS"
   fi

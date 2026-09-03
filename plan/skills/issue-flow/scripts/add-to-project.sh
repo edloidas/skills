@@ -43,31 +43,36 @@ if [[ -z "$ISSUE_NODE_ID" || "$ISSUE_NODE_ID" == "null" ]]; then
   exit 1
 fi
 
-# Find matching project (always query both repo-level and org-level, then merge)
-REPO_PROJECTS=$(gh api graphql -f query="
-  query {
-    repository(owner: \"$OWNER\", name: \"$NAME\") {
-      projectsV2(first: 20) {
-        nodes { id title }
-      }
-    }
+# Find matching project at repository level and owner level. Owners can be users or orgs.
+ERR_FILE=$(mktemp "${TMPDIR:-/tmp}/add-to-project-err.XXXXXX")
+PROJECT_DATA=$(gh api graphql \
+  -f owner="$OWNER" \
+  -f name="$NAME" \
+  -f query='
+query($owner:String!, $name:String!) {
+  repository(owner:$owner, name:$name) {
+    projectsV2(first: 20) { nodes { id title } }
   }
-" 2>/dev/null | jq -r '.data.repository.projectsV2.nodes[]? | "\(.id)\t\(.title)"' 2>/dev/null) || true
-
-ORG_PROJECTS=$(gh api graphql -f query="
-  query {
-    organization(login: \"$OWNER\") {
-      projectsV2(first: 50, orderBy: {field: UPDATED_AT, direction: DESC}) {
-        nodes { id title }
-      }
-    }
+  repositoryOwner(login:$owner) {
+    ... on Organization { projectsV2(first: 50, orderBy: {field: UPDATED_AT, direction: DESC}) { nodes { id title } } }
+    ... on User         { projectsV2(first: 50, orderBy: {field: UPDATED_AT, direction: DESC}) { nodes { id title } } }
   }
-" 2>/dev/null | jq -r '.data.organization.projectsV2.nodes[]? | "\(.id)\t\(.title)"' 2>/dev/null) || true
+}' 2>"$ERR_FILE") || {
+  cat "$ERR_FILE" >&2
+  rm -f "$ERR_FILE"
+  echo "ERROR: Could not fetch projects; Projects V2 lookup requires read:project scope. Run: gh auth refresh -s read:project"
+  exit 1
+}
+rm -f "$ERR_FILE"
 
-ALL_PROJECTS=$(printf '%s\n%s\n' "$REPO_PROJECTS" "$ORG_PROJECTS" | awk 'NF' | sort -u -t$'\t' -k1,1)
+ALL_PROJECTS=$(printf '%s' "$PROJECT_DATA" | jq -r '
+  ([.data.repository.projectsV2.nodes[]?] + [.data.repositoryOwner.projectsV2.nodes[]?])
+  | unique_by(.id)
+  | .[]
+  | "\(.id)\t\(.title)"' 2>/dev/null) || true
 
 if [[ -z "$ALL_PROJECTS" ]]; then
-  echo "ERROR: Could not fetch projects"
+  echo "ERROR: Project '$PROJECT_TITLE' not found"
   exit 1
 fi
 

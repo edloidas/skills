@@ -35,6 +35,7 @@ if [[ -z "$LOGIN" ]]; then
   exit 1
 fi
 
+ERR_FILE=$(mktemp "${TMPDIR:-/tmp}/suggest-projects-err.XXXXXX")
 DATA=$(gh api graphql \
   -f owner="$OWNER" \
   -f name="$NAME" \
@@ -56,10 +57,17 @@ query($owner:String!, $name:String!, $me:String!) {
     ... on Organization { projectsV2(first: 100) { nodes { id title updatedAt } } }
     ... on User         { projectsV2(first: 100) { nodes { id title updatedAt } } }
   }
-}' 2>/dev/null) || true
+}' 2>"$ERR_FILE") || {
+  rc=$?
+  cat "$ERR_FILE" >&2
+  rm -f "$ERR_FILE"
+  echo "ERROR: GraphQL project query failed; Projects V2 lookup requires read:project scope. Run: gh auth refresh -s read:project" >&2
+  exit "$rc"
+}
+rm -f "$ERR_FILE"
 
 if [[ -z "$DATA" ]]; then
-  echo "ERROR: GraphQL query failed" >&2
+  echo "ERROR: GraphQL project query returned no data" >&2
   exit 1
 fi
 
@@ -85,5 +93,10 @@ RELATED=$(echo "$DATA" | jq --arg used "$USED_IDS" -r '
   | "RELATED\t\(.id)\t\(.title)\tupdated \(.updatedAt[0:10])"
 ')
 
-[[ -n "$USED" ]] && printf '%s\n' "$USED"
-[[ -n "$RELATED" ]] && printf '%s\n' "$RELATED"
+if [[ -n "$USED" ]]; then
+  printf '%s\n' "$USED"
+fi
+if [[ -n "$RELATED" ]]; then
+  printf '%s\n' "$RELATED"
+fi
+exit 0

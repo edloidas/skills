@@ -1,7 +1,7 @@
 #!/bin/bash
 # check-env.sh
-# Validates git repo, gh CLI, and gh authentication.
-# Exit codes: 0 = ready, 1 = not a git repo, 2 = gh not installed, 3 = gh not authenticated
+# Validates git repo, gh CLI, jq, and gh authentication.
+# Exit codes: 0 = ready, 1 = not a git repo, 2 = gh not installed, 3 = gh not authenticated, 4 = jq not installed
 # Success: single-line status. Failure: verbose actionable message.
 
 set -e
@@ -24,6 +24,13 @@ if ! gh auth status > /dev/null 2>&1; then
     echo "  Run: gh auth login" >&2
     echo "  Or set GITHUB_TOKEN / GH_TOKEN environment variable" >&2
     exit 3
+fi
+
+if ! command -v jq > /dev/null 2>&1; then
+    echo "ERROR: jq is not installed" >&2
+    echo "  Install with: brew install jq" >&2
+    echo "  Or visit: https://jqlang.github.io/jq/" >&2
+    exit 4
 fi
 
 REPO=""
