@@ -1,6 +1,6 @@
 {
   "name": "workflow",
-  "version": "5.8.1",
+  "version": "5.8.2",
   "description": "End-to-end issue workflows that orchestrate analysis, planning, implementation, verification, and shipping",
   "author": {
     "name": "Mikita Taukachou",

@@ -13,7 +13,7 @@
       "name": "plan",
       "source": "./plan",
       "description": "Issue drafting, analysis, triage, and full issue lifecycle skills",
-      "version": "5.8.1",
+      "version": "5.8.2",
       "author": {
         "name": "Mikita Taukachou",
         "url": "https://edloidas.io"
@@ -24,7 +24,7 @@
       "name": "build",
       "source": "./build",
       "description": "Conflict resolution, commit summaries, quick commits, and findings fixes",
-      "version": "5.8.1",
+      "version": "5.8.2",
       "author": {
         "name": "Mikita Taukachou",
         "url": "https://edloidas.io"
@@ -35,7 +35,7 @@
       "name": "review",
       "source": "./review",
       "description": "Adversarial review, cleanup, critical review board, PR feedback triage, and spec extraction",
-      "version": "5.8.1",
+      "version": "5.8.2",
       "author": {
         "name": "Mikita Taukachou",
         "url": "https://edloidas.io"
@@ -46,7 +46,7 @@
       "name": "audit",
       "source": "./audit",
       "description": "CI, script, security, skill, workspace, Three.js, React, and test-suite auditing skills",
-      "version": "5.8.1",
+      "version": "5.8.2",
       "author": {
         "name": "Mikita Taukachou",
         "url": "https://edloidas.io"
@@ -57,7 +57,7 @@
       "name": "maintain",
       "source": "./maintain",
       "description": "Agent config, label sync, lint migration, editor config, and repo hardening",
-      "version": "5.8.1",
+      "version": "5.8.2",
       "author": {
         "name": "Mikita Taukachou",
         "url": "https://edloidas.io"
@@ -68,7 +68,7 @@
       "name": "ship",
       "source": "./ship",
       "description": "Release workflows for npm packages",
-      "version": "5.8.1",
+      "version": "5.8.2",
       "author": {
         "name": "Mikita Taukachou",
         "url": "https://edloidas.io"
@@ -79,7 +79,7 @@
       "name": "assist",
       "source": "./assist",
       "description": "External opinion, assistance, Q&A, and plain restatement tools including Codex CLI integration",
-      "version": "5.8.1",
+      "version": "5.8.2",
       "author": {
         "name": "Mikita Taukachou",
         "url": "https://edloidas.io"
@@ -90,7 +90,7 @@
       "name": "write",
       "source": "./write",
       "description": "Markdown, README, and repository documentation writing skills",
-      "version": "5.8.1",
+      "version": "5.8.2",
       "author": {
         "name": "Mikita Taukachou",
         "url": "https://edloidas.io"
@@ -101,7 +101,7 @@
       "name": "obsidian",
       "source": "./obsidian",
       "description": "Obsidian vault organization and working document management skills",
-      "version": "5.8.1",
+      "version": "5.8.2",
       "author": {
         "name": "Mikita Taukachou",
         "url": "https://edloidas.io"
@@ -112,7 +112,7 @@
       "name": "workflow",
       "source": "./workflow",
       "description": "End-to-end issue workflows that orchestrate analysis, planning, implementation, verification, and shipping",
-      "version": "5.8.1",
+      "version": "5.8.2",
       "author": {
         "name": "Mikita Taukachou",
         "url": "https://edloidas.io"
