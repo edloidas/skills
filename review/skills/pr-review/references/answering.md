@@ -24,8 +24,10 @@ Nothing goes out that has not been established:
 
 ## How a reply reads
 
-Short, and answering rather than opening. One or two paragraphs is normal; the length is set by the
-evidence, not by the effort you want to show.
+Short, and answering rather than opening. One paragraph is normal; the length is set by the
+evidence, not by the effort you want to show. Explain the mechanism only where the author needs it
+to act on the reply — a `reject` needs the evidence, not a lecture on why the evidence is true, and
+a `discuss` needs the tradeoff, not the history behind it.
 
 - **The answer first**, in the first clause. "In short, `AnyStore` requires the wrong members." Not a
   preamble, not a restatement of the question.

@@ -268,6 +268,15 @@ header at the top scrolls past before the evidence that justifies it has been re
 suggestions were withheld, say so on that line too — an approval that silently swallowed two of
 them reads as a clean run.
 
+**Each finding appears once in what you print.** The per-thread line is a pointer — the claim in a
+clause, the verdict, the action, and the evidence in a clause at most — never the mechanism, which
+lives in the composed text that **Confirm before anything leaves** already requires in full. In
+reviewer mode `changes-review`'s own report is an
+intermediate: do not reprint it. Carry each finding into the per-thread line with its corroboration
+as a clause (`reproduced`, `2 reviewers`) and let the composed review carry the rest. The reader
+should be able to read the header and the per-thread lines, skip to the verdict, and open the
+composed text only to approve the words.
+
 Deferrals are always listed even though their threads are closed. A deferral nobody can see is
 backlog that does not exist yet.
 

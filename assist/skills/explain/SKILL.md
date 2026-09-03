@@ -34,8 +34,9 @@ Never explain from what was said earlier in the conversation when the artifact i
 Earlier turns are where errors accumulate.
 
 List every file, declaration, and output the trace will touch, and open all of them in one
-response before writing a word. A trace built on one file out of five reads as complete and is
-not.
+response before writing a word — on a second pass over files already read this session, only the
+ones carrying a step you are about to assert as mechanism. A trace built on one file out of five
+reads as complete and is not.
 
 Where the real value can be produced rather than reasoned about, produce it — run the command,
 print the resolved type, compile the case, log the payload. An explanation built on a captured
@@ -117,17 +118,20 @@ Three things change, and they compose.
 
 ### Change the move
 
+- A finding becomes a mechanism. Evidence, severity, and a recommendation answer "what should I do
+  about this", which is a different question from "how does this work". Check this one first: if
+  round one answered the other question, this is the swap, and the rest follow from it.
 - Describing becomes tracing — walk the substitution instead of characterizing it.
 - The general case becomes one concrete instance, with real values in it.
 - Prose becomes a run — show the thing happening.
-- A finding becomes a mechanism. Evidence, severity, and a recommendation answer "what should I do
-  about this", which is a different question from "how does this work".
 
 ### Strip the jargon
 
 Round one may use the vocabulary of the subject. Round two may not use anything the reader would
-have to already know, apart from the names of what is on the screen — per **A Term Is Not An
-Explanation**. Replace every term standing in for a mechanism instead of showing it, and the
+have to already know, apart from the names of what is on the screen and the reader's own stack,
+which stays at **Altitude** — per **A Term Is Not An Explanation**. What gets stripped is the term
+standing in for the mechanism being explained, not the vocabulary the reader works in every day.
+Replace every term standing in for a mechanism instead of showing it, and the
 English doing the same job: "falls through", "inherited rather than introduced", "errs towards",
 "surfaces", "propagates".
 
@@ -156,7 +160,8 @@ fuel valve, that fills the cylinder, that fires.
 - Fix one scenario at the top and carry it unchanged to the end — real host names, real config,
   real values. Never switch examples mid-walk.
 - Number the steps in the order execution reaches them, one thing per step. Title each step with
-  what happens in it, not what it is about.
+  what happens in it, not what it is about. **Pick The Move** applies per step, not per answer — one
+  step may carry annotated code and the next pasted output.
 - Introduce nothing before the step where it matters, and refer back to nothing that has not
   happened yet.
 - Where a step is the surprising one, say so inside that step rather than warning about it earlier.

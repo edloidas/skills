@@ -88,9 +88,11 @@ introduced as such.
 **In, always:**
 
 - **A heading written as the claim in a sentence.** Not a noun phrase, not a label.
-- **The consequence first, in the issue's own terms, then the mechanism that produces it.** Real
-  symbols from the code, plain words for everything else — "fails closed" is "when the check throws,
-  the request is blocked": longer, and nothing to look up.
+- **The consequence first, in the issue's own terms, then the mechanism that produces it — to the
+  depth the author needs to fix it, and no further.** Where the claim and the line already say what
+  to change, the mechanism is one sentence; the full walk is for a finding whose fix is not evident
+  from the claim. Real symbols from the code, plain words for everything else — "fails closed" is
+  "when the check throws, the request is blocked": longer, and nothing to look up.
 - **One reproduction or one measurement.** `the 280px submenu spans 295 to 575 on a 320px-wide
   viewport` is a measurement; "the submenu is clipped" is not. One — a second is a variant of the
   first. A frame may ride alongside a measurement (**Attaching a frame**), never replace it.
