@@ -33,9 +33,10 @@ Mechanical on purpose. It is what stops composition from being style mimicry.
 - **No demonstration, no section.** A finding that survives verification but carries no reproduction
   the reader can run gets one sentence in the closing paragraph, flagged as unverified with the
   reason. Never a section of its own.
-- **No attribution, no section.** Every claim states whether this branch introduced the blamed code
-  or the base already had it. `git blame` and `git diff <base>...HEAD` settle it; there is no third
-  answer.
+- **No attribution, no section.** Establish for every claim whether this branch introduced the
+  blamed code or the base already had it. `git blame` and `git diff <base>...HEAD` settle it; there
+  is no third answer. It is written into the claim only where the base had it — see **What comes
+  out, and what goes in**.
 - **No section for a finding the verify phase killed**, however good the prose would be.
 - **At most four sections.** More than four means clustering failed — go back and group by cause.
 
@@ -61,51 +62,56 @@ blind to the base by design, so they cannot do it — only this phase can.
 
 ## Length
 
-The example below is the **serious** finding, and it is the longest thing this phase should ever
-produce. Budget by what the author has to do, not by severity words:
+Sizes are ceilings, not targets — a range with a floor gets filled to the floor. Budget by what the
+author has to do, not by severity words:
 
-| Kind | What it gets | Rough size |
-| ---- | ------------ | ---------- |
-| Needs a change before ship | Heading, code quote, mechanism, consequence in the issue's own terms, reproduction, fix offered | 250–350 words |
-| A judgement call | A paragraph plus a measurement or reproduction, and the tradeoff | 100–150 words |
-| Minor | Two sentences, grouped with other minors or folded into the closing paragraph | no section |
+| Kind | What it gets | Ceiling |
+| ---- | ------------ | ------- |
+| Needs a change before ship | The always-in ingredients, plus each conditional one whose trigger fires — **What comes out, and what goes in** | 200 words, code blocks excluded |
+| A judgement call | One paragraph: the tradeoff, and the measurement that shows it | 80 words |
+| Minor | Two sentences, grouped with the other minors in the closing paragraph | no section |
 | Unverified residue | One sentence in the closing paragraph, with why it could not be shown | no section |
 
-If the whole comment runs past roughly 900 words on a diff of a few hundred lines, the problem is
-clustering, not the budget.
+The worked example at the end of this file is a serious finding at about 140 words of prose; match
+that shape rather than the ceiling. A whole comment past roughly 700 words on a diff of a few hundred
+lines has a clustering problem, not a budget problem.
 
 ## What comes out, and what goes in
 
 **Out:** finding IDs, severity words, confidence levels, reviewer counts, `demonstrated by
-execution` / `reasoned` tags, the `Concretely:` scaffolding, and the `Scope:` / `Reviewers:` /
-`Lenses:` / `Verification:` headers. Severity survives as **prose and placement** — the serious one
-goes first and is introduced as the one needing a change before ship.
+execution` / `reasoned` tags, the `Concretely:` scaffolding, the `Scope:` / `Reviewers:` /
+`Lenses:` / `Verification:` headers, and the account of what was run — engines, probes, the tooling
+result. Those are the operator's decision inputs and stay in the operator report; the author sees CI.
+Severity survives as **placement**: the one needing a change before ship goes first and is
+introduced as such.
 
-**In:**
+**In, always:**
 
-- **A lead paragraph that earns standing.** What was run, and what works. A reviewer who has
-  demonstrated they ran the thing is answerable differently from one who has read it. If a previous
-  round's findings were fixed, say so here first.
-- **A heading per finding, written as the claim in a sentence.** Not a noun phrase, not a label.
-- **A code quote**, two or three lines, with a `// path:line` comment on the first line.
-- **A runnable reproduction or a measurement.** `the 280px submenu spans 295 to 575 on a
-  320px-wide viewport` is a reproduction. "The submenu is clipped" is not. A rendered frame can
-  now travel with it — see **Attaching a frame** — but it rides alongside the measurement and
-  never replaces it: a number is checkable by the author, an image is only viewable.
-- **The attribution clause**, inline in the claim.
-- **A suggested fix, offered as an option.** The author's PR, the author's call.
-- **An explicit withdrawal** of anything an earlier round of this review got wrong. A review that
-  visibly corrects itself is cheaper to trust than one that never has to.
-- **A closing paragraph** on what held up, including the tooling result and any unverified residue.
+- **A heading written as the claim in a sentence.** Not a noun phrase, not a label.
+- **The consequence first, in the issue's own terms, then the mechanism that produces it.** Real
+  symbols from the code, plain words for everything else — "fails closed" is "when the check throws,
+  the request is blocked": longer, and nothing to look up.
+- **One reproduction or one measurement.** `the 280px submenu spans 295 to 575 on a 320px-wide
+  viewport` is a measurement; "the submenu is clipped" is not. One — a second is a variant of the
+  first. A frame may ride alongside a measurement (**Attaching a frame**), never replace it.
+
+**In only when its trigger fires — otherwise absent:**
+
+| Ingredient | Trigger |
+| ---------- | ------- |
+| A code quote, two or three lines, `// path:line` on the first | Issue-comment shape only. In review shape the comment sits on the line, and a quote repeats what GitHub already shows above it |
+| The attribution clause, inline in the claim | The base already had the blamed code, or part of it. New on this branch is what a reader assumes and needs no sentence |
+| A suggested fix, offered as an option | The fix is not the plain inverse of the claim. "The guard is inverted" needs no fix paragraph; "use `pointerdown` instead" does |
+| An explicit withdrawal, one clause | An earlier round of this review said something this round found wrong. A review that visibly corrects itself is cheaper to trust |
+| A lead paragraph | Two or more findings. One sentence on which need a change and which are judgement calls, one on what held up in the issue's terms. Standing is a clause inside it — `I ran the AppRoot story in Storybook` — never a paragraph: each reproduction below is the proof of method |
+| A closing paragraph | Grouped minors or unverified residue exist. One sentence per minor, one for the residue with why it could not be shown |
 
 ## Order
 
-By what the author should act on first, never by severity. Open with one sentence saying which
-findings need a change and which are judgement calls, so a reader knows the shape before reading the
-sections.
-
-Group by cause, not by symptom site. Three findings about the same block of code publish as one
-section with the other two as reasons not to land it.
+By what the author should act on first, never by severity. Group by cause, not by symptom site:
+three findings about the same block of code publish as one section, with the other two as reasons
+not to land it. The lead paragraph's opening sentence gives the reader the shape before the sections
+— its trigger and content are in **What comes out, and what goes in**.
 
 ## Where to post, and under whose name
 
@@ -192,14 +198,10 @@ removed. When a finding's line falls outside the diff — a consequence in a fil
 touched — it belongs in the body. Never anchor it to the nearest line the API happens to accept:
 that sends the reader to code that is not the problem.
 
-**The body is not a summary of the inline comments** and never repeats a finding's text. It carries
-only what the whole review can say:
-
-- what was run, and what held up — the standing paragraph, same rule as above
-- how the findings group, in a sentence or two
-- what was deliberately excluded, and why
-- which ones you would not merge without
-- the closing paragraph, with unverified residue and the tooling result
+**The body is not a summary of the inline comments** and never repeats a finding's text. It is the
+lead and closing paragraphs from **What comes out, and what goes in** and nothing else: which
+comments you would not merge without, how the rest group, what was deliberately excluded and why,
+and unverified residue in one sentence. The account of what was run stays in the operator report.
 
 **The verdict follows from what survived**, never from how many findings there are:
 
@@ -221,17 +223,21 @@ quote, a reproduction snippet, or a measured table. Everything above about ancho
 minors, and the body being a map rather than a summary applies to reviews that ask for something;
 an approval asks for nothing, so there is nowhere for a reader to be sent.
 
-Write it as a conclusion, and keep it to roughly:
+Write it as a conclusion, in **two to four sentences**: that it was verified against the issue and
+approved, and what holds up in behavioural terms — what a user can now do. No headings, no lists, no
+observation about the code: anything the author would want flagged is a suggestion, and the next
+paragraph says where suggestions go.
 
-- one sentence that it was verified against the issue and approved
-- two or three sentences on what holds up, in behavioural terms — what a user can now do
-- at most one technical observation, where the change turned on something worth the author's time
-- a plain close
+**What was run stays out of it.** The engines, the probe names, the clean tooling result — the
+author sees CI, and the method earned *your* confidence, not theirs. It goes in the operator report.
+A verification narrative inside an approval reads as asking for credit.
 
-**What was run stays out of it.** The engines, the story matrix, the probe names, the clean tooling
-result — the author sees CI, and the method is what earned *your* confidence, not something they
-need to audit. It belongs in the report to the operator. A verification narrative inside an
-approval reads as the reviewer asking for credit.
+The whole body, on a run of the combobox branch where nothing blocking survived:
+
+```markdown
+Verified against #142 and approving. A chevron tap now opens the popup without raising the keyboard
+on iOS 16 and 17 as well as 18, and a mouse click still lands the caret in the search input as before.
+```
 
 **Non-blocking suggestions do not ride along.** Withhold them, hand them to the operator as their
 own block, and offer a follow-up issue. Anchoring a suggestion to an approved pull request asks the
@@ -256,6 +262,46 @@ gh api repos/<owner>/<repo>/pulls/<N>/reviews --input review.json
 }
 ```
 
+### Holding it as a draft
+
+Omit `event` and the same endpoint creates a **pending** review instead of a submitted one:
+
+```json
+{
+  "body": "<the review body>",
+  "comments": [
+    { "path": "src/components/app-root/app-root.tsx", "line": 71, "side": "RIGHT", "body": "<finding>" }
+  ]
+}
+```
+
+A pending review is visible only to the account that created it and notifies nobody; it sits on the
+Files changed tab behind **Finish your review** until that account submits it. Create it without the
+confirmation gate — the gate puts the words in front of a reader before they reach the author, and a
+pending review does exactly that.
+
+Keep the verdict out of the payload and put it in the report, one line:
+`Recommended verdict: REQUEST_CHANGES — the containing-block finding blocks the issue's own
+acceptance case.` The submitting user picks the event; a pre-labelled draft has made that choice for
+them.
+
+Everything else holds: the demonstration and attribution gate, the four-section cap, the length
+budget, one inline comment per finding, minors grouped.
+
+- One pending review per account per pull request; a second returns 422. Before composing, run
+  `gh api repos/<owner>/<repo>/pulls/<N>/reviews --jq '.[] | select(.state=="PENDING") | .id'`. One
+  found is the failure-table row; deleting it (`gh api -X DELETE .../reviews/<id>`) happens only when
+  the user asks for it.
+- The body rides on the pending review into the Finish your review box. Print it in the report as
+  well, so nothing has to be recomposed if that box comes up empty.
+- This works on your own pull request. GitHub blocks approving your own branch at submit time, not
+  holding a draft on it — say in the report that `COMMENT` is the only event it will accept.
+- No attachment, same as a submitted review (below).
+
+Report the Files changed URL, the inline-comment count and the recommended verdict, then stop. Do not
+submit it in the same run, and do not ask whether to submit — that answer comes later, from a person
+who has read it.
+
 **A review cannot carry an attachment.** `--attach` exists on `gh pr comment` and not on `gh api`,
 so nothing submitted through this endpoint uploads a file. **Attaching a frame** above applies to
 the issue-comment shape only. In review shape a visual finding publishes as its measurement, and
@@ -264,46 +310,37 @@ it from the review, which splits one review across two objects and notifies twic
 
 ### The body that shipped, annotated
 
-From calibration run 4 — eight inline comments, `REQUEST_CHANGES`, abridged here:
+From calibration run 4 — eight inline comments, `REQUEST_CHANGES`. What shipped opened with a fuller
+narrative of the method; this is the same body cut to the rules above:
 
 ````markdown
-I pulled the branch and worked through the AppRoot story in Storybook, reading computed styles
-rather than class names. The core of this holds up. The portal plumbing resolves the way the prop
-doc describes, the theme class lands inside the root so `dark:` utilities actually match, and the
-scroll fix is doing real work — I confirmed a scroll inside the root is invisible to
-`window.addEventListener('scroll', fn, true)` and visible to the same listener on the root.
+I ran the AppRoot story in Storybook against the current head. The portal plumbing, the theme class
+and the scroll fix all hold — a scroll inside the root is invisible to a capturing `scroll` listener
+on `window` and visible to one on the root, which is what the issue asked for.
 
-What I found falls into two groups. Three are shadow-root behaviours the code gets wrong or does
-not cover, and I could reproduce each one. The rest are scope questions against the issue — things
-it asks for that are not here, and things here it did not ask for.
-
-I started on the earlier commit and re-read everything against the current head first, so this
-excludes the `.light` token selector — reverting that and making `theme='light'` emit nothing is the
-right call, and one consequence of it is in the grouped comment at the end.
-
-One comment per finding, next to the code it concerns, with the small ones grouped at the end. The
-two I would not merge without are the stylesheet situation on `AppRoot` and the portal layer's
-containing block. Both are reproducible, and both land on the acceptance case the issue names.
+Two of the eight comments I would not merge without: the stylesheet situation on `AppRoot` and the
+portal layer's containing block. Both reproduce, and both land on the acceptance case the issue
+names. Three more are shadow-root behaviours the code gets wrong; the small ones are grouped in one
+comment at the end. This excludes the `.light` token selector — reverting it is the right call, and
+its one consequence is in the grouped comment.
 ````
 
 | Part | Why it is there |
 | ---- | --------------- |
-| "I pulled the branch and worked through the AppRoot story… reading computed styles rather than class names" | Standing, earned in the first clause. It names the method, and the method is the reason to believe the rest |
-| "The core of this holds up… the scroll fix is doing real work" | What works, before what does not. A review that concedes first is answerable; one that opens on defects is a list of accusations |
-| "What I found falls into two groups" | The shape, so a reader knows what is coming before they meet it |
-| "so this excludes the `.light` token selector" | What was deliberately left out and why. Without it, a re-review reads as having missed something |
-| "One comment per finding, next to the code it concerns" | Tells the reader where the rest of the review is. The body is a map, not a summary |
-| "The two I would not merge without are…" | The verdict, in prose, before the API's verdict says the same thing. This is where severity survives |
+| "I ran the AppRoot story in Storybook against the current head" | Standing, in one clause, and the method is not narrated further — each inline comment carries its own reproduction |
+| "The portal plumbing, the theme class and the scroll fix all hold" | What works, before what does not, in the issue's terms. One sentence, not a tour |
+| "Two of the eight comments I would not merge without" | The verdict in prose, and where the rest of the review is. Severity survives here and nowhere else |
+| "This excludes the `.light` token selector" | What was left out and why, so a re-review does not read as a miss |
 
 Nothing in that body restates a finding. Every claim, measurement and reproduction lives in the
 inline comment on the line it belongs to.
 
 ## A clean run
 
-A review that found nothing still publishes, in one short paragraph: what held up, in the terms the
-issue used. Never a section list of everything checked — on the calibration run a "checked and
-clear" section drew no response at all beyond the closing sentence, and in review shape this is the
-`APPROVE` body, which per the section above carries no method narrative and no inline comments.
+A review that found nothing publishes in the `APPROVE` shape above — the same two to four sentences
+whether it goes out as a review or, on your own pull request, as an issue comment. Never a section
+list of everything checked: on the calibration run a "checked and clear" section drew no response at
+all beyond the closing sentence.
 
 ## When publication cannot finish
 
@@ -316,6 +353,7 @@ outward-facing thing here, so the safe failure is always silence plus a full loc
 | No pull request resolves for the branch | Print the composed text, and say no PR was found |
 | The user declines, or does not answer | Print everything. A declined publication is a normal outcome, not a failed run |
 | `--review` on a pull request the user authored | GitHub refuses it. Fall back to the issue-comment shape and say why |
+| A draft was asked for and a pending review already exists | Print the composed text and the existing draft's id; create nothing, and never clear it to make room |
 | A finding's line is outside the diff | Move it to the review body. Never anchor it to a nearby line the API happens to accept |
 | No write access to the target repository | Print everything and say it cannot post. `viewerCanUpdate` answers this before the attempt |
 | The review submits but a comment is rejected | Say which finding did not land and print it. Do not resubmit the whole review |
@@ -331,7 +369,8 @@ mechanics rather than restating them here.
 
 The annotations are the point. An unannotated example gets copied for its cadence.
 
-This is the serious finding from calibration run 3, published as written:
+This is the serious finding from calibration run 3, in issue-comment shape, cut to the ingredients
+whose triggers fired:
 
 ````markdown
 ### The touch check only works where `click` is a `PointerEvent`
@@ -341,28 +380,24 @@ This is the serious finding from calibration run 3, published as written:
 const isTouch = 'pointerType' in event && event.pointerType === 'touch';
 ```
 
-This is correct in Chromium — I confirmed the handler really does receive a `PointerEvent` with
-`pointerType` of `touch` or `mouse`, so the mechanism is sound and the earlier worry that `click`
-never carries `pointerType` is simply wrong.
+On iOS 16 and 17 this PR does nothing for its own goal. WebKit only made `click` a `PointerEvent`
+with a truthful `pointerType` in Safari 18.2, so on earlier versions the `in` guard fails, `isTouch`
+is `false`, and a chevron tap still focuses the input and brings the keyboard up. Chromium is fine —
+the handler does receive a `PointerEvent` there, so the earlier claim that `click` never carries
+`pointerType` was wrong.
 
-Safari is the problem. WebKit only made `click` a `PointerEvent` with a truthful `pointerType` in
-**Safari 18.2**. So on iOS 16 and 17 the `in` guard fails, `isTouch` is `false`, and the input gets
-focused on chevron tap exactly as before. On those versions the PR is a no-op for its own goal, and
-iOS is the platform the issue is about.
-
-You can see it without an old device — open **Examples / Basic** and run this in the console:
+To see it without an old device, open **Examples / Basic** and run this in the console:
 
 ```js
-const t = document.querySelector('[data-component="Combobox.Toggle"]');
-t.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+document.querySelector('[data-component="Combobox.Toggle"]')
+  .dispatchEvent(new MouseEvent('click', { bubbles: true }));
 ```
 
-That is the event shape those Safari versions deliver. The popup opens and the caret lands in the
-search input — on a phone that is the keyboard coming up.
+That is the event those Safari versions deliver: the popup opens and the caret lands in the search
+input.
 
-The fix is the `pointerdown` route: record `event.pointerType` in an `onPointerDown` and read the
-recorded value in `onClick`. `pointerdown` has been a real `PointerEvent` with a correct
-`pointerType` in Safari since 13, so it sidesteps the version gap entirely.
+If you want to cover them: record `event.pointerType` in `onPointerDown` and read it in `onClick`.
+`pointerdown` has carried a correct `pointerType` since Safari 13.
 ````
 
 Reading it against the rules above:
@@ -370,15 +405,15 @@ Reading it against the rules above:
 | Part | Why it is there |
 | ---- | --------------- |
 | The heading | The claim as a sentence, not a noun phrase or a label |
-| The code quote | Three lines with a `file:line` comment — enough to locate, not enough to re-read the function |
-| "This is correct in Chromium… is simply wrong" | **The withdrawal, first.** It kills the review's own earlier overstatement. This concession is what makes the next paragraph credible |
-| "Safari is the problem… **Safari 18.2**" | The mechanism, with the version that draws the boundary |
-| "On those versions the PR is a no-op for its own goal" | The consequence **in the issue's own terms**. The finding is only serious because iOS is what the PR is for |
-| The console snippet | A reproduction runnable by someone with no mobile device. The one thing that made this finding land |
-| "The fix is the `pointerdown` route" | Offered, not demanded. No verdict |
+| The code quote | Issue-comment shape, so the quote is what locates the line. In review shape this block is absent |
+| "On iOS 16 and 17 this PR does nothing for its own goal" | The consequence first, **in the issue's own terms** — iOS is what the PR is for. The mechanism follows in the same paragraph, with the version that draws the boundary |
+| "so the earlier claim … was wrong" | The withdrawal, one clause. Its trigger fired: round one rated this critical on a false premise |
+| The console snippet | The one reproduction, runnable by someone with no device. The thing that made the finding land |
+| "If you want to cover them" | Offered, not demanded. Its trigger fired: the fix is a different event, not the inverse of the claim |
 
-No severity label appears anywhere, and a reader can still tell it is the serious one — because it
-was placed first and introduced as the one needing a change before ship.
+No attribution clause appears, because the line is new on this branch. No severity label appears
+anywhere, and a reader can still tell it is the serious one — it was placed first and introduced as
+the one needing a change before ship.
 
 **What the same run refused to publish**, and why each refusal matters more than the example:
 

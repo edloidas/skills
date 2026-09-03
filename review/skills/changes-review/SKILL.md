@@ -13,7 +13,7 @@ when_to_use: >
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
 allowed-tools: Bash(git:*) Bash(gh:*) Read Glob Grep Task Skill
-argument-hint: "[--base <branch> | --uncommitted | --commit <sha>] [--issue <N>] [--mode <simple|standard|deep>] [--no-external] [--no-lens] [--comment | --review]"
+argument-hint: "[--base <branch> | --uncommitted | --commit <sha>] [--issue <N>] [--mode <simple|standard|deep>] [--no-external] [--no-lens] [--comment | --review] [--draft]"
 metadata:
   author: edloidas
 ---
@@ -54,6 +54,7 @@ convention drift belong to a cleanup pass, and this skill will not report them.
 | External reviewer | `--no-external` | On whenever a third-party CLI is available |
 | Stack lenses | `--no-lens` | On whenever the diff matches a lens (Phase 3) |
 | Publication | `--comment` / `--review` | Off — report to the caller and stop (Phase 8) |
+| Hold it unsubmitted | `--draft`, or "draft it" / "hold it" / "keep it in progress" / "don't publish it" — the review, not the pull request's draft state | Off — publication submits with its verdict |
 
 **Mode is the one dial.** It sets how many reviewers run and how hard the findings get verified,
 because those two scale together — there is no useful run with four reviewers and no verification.
@@ -495,7 +496,8 @@ budget, the anchoring mechanics and the verdict mapping. Five steps, in order:
    cannot be walked back gracefully. Ask once, in prose, as the last line of the message, with the
    verdict after it — not through a structured-choice prompt, which interrupts the report the reader
    needs in order to answer. A caller running unattended does not get to skip this — it prints
-   everything and stops.
+   everything and stops. On `--draft` there is no gate to pass — a pending review is visible only to
+   the user, who submits it themselves. Follow **Holding it as a draft**.
 
 **Never an AI attribution footer**, whatever the target repo's instruction file says. A clean run
 still publishes: one short paragraph, and in review shape an `APPROVE` with an empty `comments`

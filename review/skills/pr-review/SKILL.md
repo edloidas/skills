@@ -12,7 +12,7 @@ when_to_use: >
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
 allowed-tools: Bash(git:*) Bash(gh:*) Bash(pnpm:*) Bash(npm:*) Read Glob Grep Edit Task Skill
-argument-hint: "[PR number | URL | #discussion_r<id> | author | text] [--fix] [--full] [--auto]"
+argument-hint: "[PR number | URL | #discussion_r<id> | author | text] [--fix] [--full] [--auto] [--draft]"
 metadata:
   author: edloidas
 ---
@@ -55,6 +55,7 @@ confirmations and was caught only because the fix would not compile.
 | Apply code changes | `--fix` | Off — verify, check, report |
 | Verification breadth | `--full` | Bot claims, plus anything heading for `fix` or `reject` |
 | Unattended | `--auto` | Off — previews and confirmations are shown. Never covers a human-rooted thread |
+| Hold the review unsubmitted | `--draft` | Off — reviewer mode submits with its verdict; in author mode, replies print unsent |
 
 **Explicit instructions in the invocation override the default posture in both directions.** "Just
 triage this" stays read-only however the postures resolve; "answer Anna" acts on a human thread that
@@ -195,17 +196,24 @@ invoke another skill, run the same attack inline and publish by the rules `chang
 for it — one inline comment per finding, minors grouped, nothing published without a demonstration
 and an attribution, and the verdict set by whether a blocker survived.
 
-**An approval is a different document.** When nothing blocking survived, publish **one body and no
-inline comments** — no line anchors, no `file:line` quotes, no reproduction steps, no measured
-tables. The author is not being asked to act, so detail that earns its place next to a blocking
-finding becomes noise stapled to a merge. Write it as a conclusion: what was verified, in a
-sentence or two; the one technical observation worth the author's time, if there is one; and a
-plain close. What you ran, what you measured, and what you could not reach belong in the operator
-report, not in the review.
+**An approval is a different document.** One body, no inline comments, two to four sentences on what
+now holds up for a user — nothing about what you ran or measured, which goes in the operator report.
+`changes-review` owns the rule and carries the example, under **`APPROVE` has its own shape** in its
+publishing reference.
 
 **Non-blocking suggestions do not ride along on an approval.** Withhold them, report them to the
 operator as their own block, and offer to raise them as a follow-up issue. A suggestion anchored to
 a line of an approved pull request asks the author to revisit code nobody needs to reopen.
+
+**"Draft it", "keep it in progress", "hold it", "don't publish it" mean hold, not skip: run the
+whole review and leave it on GitHub pending, for the user to submit.** The word is about the
+*review*, not the pull request's own draft state — an already-open pull request does not answer it.
+In reviewer mode pass `--draft` with `--review` to `changes-review`, whose **Holding it as a draft**
+section owns the payload, the recommended-verdict line and the one-pending-review limit. Where the
+host cannot invoke another skill: post the same review payload with the `event` key omitted, after
+checking `gh api repos/<owner>/<repo>/pulls/<N>/reviews --jq '.[] | select(.state=="PENDING") | .id'`
+returns nothing; report the recommended verdict rather than baking it in. In author mode there is no
+review to hold: print the composed replies and post nothing.
 
 **Confirm before anything leaves.** Show the composed text **verbatim and complete** — every word
 that would be posted, quoted, in the message itself. Not a summary of it, not a description of what
@@ -250,7 +258,7 @@ Held: <what awaits your confirmation, what --fix would have changed, and any hum
 <the composed text, verbatim>
 
 Verdict: <APPROVE | COMMENT | REQUEST_CHANGES, or the replies and resolves> — <one clause of why>
-Posted: <what actually went out, or nothing yet>
+Posted: <what actually went out, the pending review's URL under --draft, or nothing yet>
 ```
 
 **The verdict goes last, on its own line.** It is the one thing the reader is looking for, and a
