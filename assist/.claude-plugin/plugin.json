@@ -1,6 +1,6 @@
 {
   "name": "assist",
-  "version": "5.8.0",
+  "version": "5.8.1",
   "description": "External opinion, assistance, Q&A, and plain restatement tools including Codex CLI integration",
   "author": {
     "name": "Mikita Taukachou",
