@@ -201,7 +201,7 @@ Claude-only subagent field|subagent_type"
 # unnoticed. Adding a row is a deliberate decision that needs a reason in CLAUDE.md.
 BODY_LINE_CAP=500
 BODY_LINE_BUDGETS="plan/skills/issue-flow=1000
-workflow/skills/solve-issue=540"
+workflow/skills/solve-issue=550"
 
 # Lines after the closing frontmatter delimiter.
 #
@@ -319,6 +319,49 @@ validate_skill_content() {
       error "Skill '$skill_name': body is $body_lines lines; its budgeted allowance is $body_budget. Trim it, or raise the budget deliberately"
     fi
   fi
+
+  # An unterminated fence swallows every instruction after it into a code block, so the
+  # agent loading the skill never reads them. A real one shipped past every other check
+  # in here: live-probe's worked example ate its own "Then stop" sentence.
+  #
+  # Nesting is tracked rather than counted. A ````-delimited block legitimately holds ```
+  # fences, and a naive even/odd count on '^```' calls that balanced only by luck — one
+  # example fence inside such a block would report the file broken.
+  while IFS= read -r md_file; do
+    [ -f "$md_file" ] || continue
+    # Parsed character by character rather than with a regex: matching a fence needs an
+      # interval like [`~]{3,}, and BSD awk on macOS does not treat interval expressions
+      # the way gawk and mawk do, so the same pattern would behave differently per runner.
+    unclosed=$(awk '
+      {
+        indent = 0
+        while (substr($0, indent + 1, 1) == " ") indent++
+        # four spaces makes it an indented code block; a fence may be indented up to three
+        if (indent > 3) next
+        ch = substr($0, indent + 1, 1)
+        if (ch != "`" && ch != "~") next
+        n = 0
+        while (substr($0, indent + n + 1, 1) == ch) n++
+        if (n < 3) next
+        if (open == 0) { open = n; open_char = ch; opened_at = NR; next }
+        # a closing fence matches the opening char, is at least as long, and carries no
+        # info string — ```js inside an open ``` block is content, not a closer
+        if (ch != open_char || n < open) next
+        rest = substr($0, indent + n + 1)
+        for (i = 1; i <= length(rest); i++) {
+          c = substr(rest, i, 1)
+          if (c != " " && c != "\t") next
+        }
+        open = 0
+      }
+      END { if (open != 0) print opened_at }
+    ' "$md_file")
+    if [ -n "$unclosed" ]; then
+      error "Skill '$skill_name': ${md_file#"$skill_dir"/} opens a code fence at line $unclosed that is never closed. Everything after it loads as code, not as instructions"
+    fi
+  done <<EOF
+$(find "$skill_dir" -name '*.md' -type f | sort)
+EOF
 
   for key in description when_to_use; do
     field=$(frontmatter_scalar "$skill_dir" "$key")

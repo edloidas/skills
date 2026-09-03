@@ -223,6 +223,29 @@ The templates live in `references/templates.md`, one per format — Full, Defaul
 Short. Read the one matching the chosen format. `## Template Section Guidelines` below
 says what belongs in each section.
 
+**Media the user supplied.** Where Step 3 turned up a screenshot, a recording, or a mockup
+that exists as a file, reference it in the body by its path at the point it belongs, and
+give it alt text that states what it shows:
+
+```markdown
+![the tooltip clipped at the bottom of the viewport](.tmp/screenshots/tooltip-clipped.png)
+```
+
+For a bug that is next to the actual-behaviour sentence, not in a trailing section — the
+image is the symptom, so it reads with the sentence it evidences. For a feature or a
+mockup it is the Full template's `### Examples`. One image per point; a body opening with
+four screenshots is read as none.
+
+On this path the draft is the deliverable, so the reference is written and nothing is
+uploaded — `issue-flow` files the issue and uploads with it. List every referenced path
+under the draft in Step 6, because a path nobody uploads renders as a broken image. The
+Update Workflow is the exception: it edits an issue that already exists, and its Step 6
+uploads through `--attach` itself.
+
+A file that is not on disk cannot be referenced this way — an image pasted into the
+conversation is content in the transcript, not a path. Describe what it shows in prose,
+or ask the user to save it and give you the path.
+
 ### Step 6: Present to User
 
 Show the user:
@@ -231,6 +254,8 @@ Show the user:
 2. **Description:** The formatted description
 3. **Type suggestion:** bug, feature, enhancement, documentation, etc.
 4. **Label suggestions:** Based on the content
+5. **Attachments:** every local path the body references, one per line, or nothing where
+   the body references none
 
 A finished Default-format draft:
 
@@ -241,9 +266,13 @@ A finished Default-format draft:
 
 The tooltip is cut off when its anchor sits near the bottom of the window. It renders
 below the anchor regardless of the space available, so the last two lines fall outside
-the viewport and cannot be scrolled into view. It reproduces on any page where an anchor
-is within roughly 80px of the bottom edge, in every browser tested. Users lose the end of
-the text, which on the form fields is where the validation rule is stated.
+the viewport and cannot be scrolled into view.
+
+![the tooltip clipped at the bottom of the viewport, with two lines cut off](.tmp/screenshots/tooltip-clipped.png)
+
+It reproduces on any page where an anchor is within roughly 80px of the bottom edge, in
+every browser tested. Users lose the end of the text, which on the form fields is where
+the validation rule is stated.
 
 #### Rationale
 
@@ -257,7 +286,7 @@ check always passes. Resolve placement after measuring instead, and flip above t
 when the rect overflows.
 ````
 
-**Type:** Bug · **Label:** `bug`
+**Type:** Bug · **Label:** `bug` · **Attachments:** `.tmp/screenshots/tooltip-clipped.png`
 
 Then ask whether they want changes, per **Asking the User**. Once they are satisfied,
 stop. Do not create the issue on GitHub, and do not offer to — `issue-flow` files it, and
@@ -294,6 +323,9 @@ Ask the user what they want to change:
 - Description only
 - Both title and description
 - Labels (add or remove)
+- Media to add — a screenshot or recording that exists as a file, referenced in the new
+  description per Step 5 of the create workflow. Record each path and its alt text; Step 6
+  uploads them.
 
 ### Step 4: Apply Changes
 
@@ -315,8 +347,11 @@ Show the user:
 - **Before**: Current title/description
 - **After**: New title/description
 - **Label changes**: Labels being added/removed
+- **Attachments**: every file Step 6 would upload, one path per line, or nothing where
+  there are none
 
-Then ask for confirmation, per **Asking the User**.
+Then ask for confirmation, per **Asking the User**. An upload is public and permanent, so a
+file that was not on that list does not go out.
 
 ### Step 6: Update on GitHub
 
@@ -326,8 +361,22 @@ bash scripts/update-issue.sh \
   --title "{{NEW_TITLE}}" \
   --body "{{NEW_DESCRIPTION}}" \
   --add-label "{{LABEL}}" \
-  --remove-label "{{LABEL}}"
+  --remove-label "{{LABEL}}" \
+  --attach "{{PATH}}#{{ALT_TEXT}}"
 ```
+
+`--attach` uploads a local file and rewrites the matching local path in the new body,
+keeping the alt text already written there. Repeat it once per file, and pass only paths
+the body references — an unreferenced one is appended to the end of the issue instead. The
+script refuses a path that is not on disk before it edits anything. Needs `gh` 2.99.0 or
+newer and does not work on GitHub Enterprise Server; where either is missing, update the
+text and say the image could not be uploaded.
+
+Uploading is not idempotent, and which way it bites depends on `--body`. Passed together
+with a body, `gh` rewrites the paths that body references, so a retry replaces rather than
+duplicates. Passed alone, `gh` keeps the existing body and appends — and it cannot tell a
+file is already attached, so an attach-only retry leaves two copies of every image. After
+a partial failure, retry with the body, or pass only the paths that did not upload.
 
 Report one line — `Updated #<N>: <what changed> — <url>` — and stop. Do not re-fetch the
 issue to confirm the write; the script fails loudly if it did not land.
@@ -381,7 +430,8 @@ How to find and test in the application:
 - Expected outcomes
 
 ### Examples (Optional)
-Screenshots, mockups, or code examples showing expected result.
+Screenshots, mockups, or code examples showing expected result. A bug's repro image is not
+an example — it belongs beside the actual-behaviour sentence, per Step 5.
 
 ### Out of Scope (Optional)
 What is explicitly NOT part of this task. Prevents scope creep.

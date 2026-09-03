@@ -1,7 +1,7 @@
 #!/bin/bash
 # update-issue.sh
 # Updates an existing GitHub issue
-# Usage: update-issue.sh --issue <number> [--title "New title"] [--body "New body"] [--body-file file] [--add-label "label"] [--remove-label "label"]
+# Usage: update-issue.sh --issue <number> [--title "New title"] [--body "New body"] [--body-file file] [--add-label "label"] [--remove-label "label"] [--attach path[#alt text]]
 
 set -e
 
@@ -12,6 +12,7 @@ BODY=""
 BODY_FILE=""
 ADD_LABELS=()
 REMOVE_LABELS=()
+ATTACHMENTS=()
 
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -39,6 +40,10 @@ while [[ $# -gt 0 ]]; do
             REMOVE_LABELS+=("$2")
             shift 2
             ;;
+        --attach)
+            ATTACHMENTS+=("$2")
+            shift 2
+            ;;
         *)
             echo "Unknown option: $1"
             exit 1
@@ -49,14 +54,24 @@ done
 # Validate required arguments
 if [ -z "$ISSUE" ]; then
     echo "ERROR: --issue is required"
-    echo "Usage: update-issue.sh --issue <number> [--title \"Title\"] [--body \"Body\"] [--add-label \"label\"] [--remove-label \"label\"]"
+    echo "Usage: update-issue.sh --issue <number> [--title \"Title\"] [--body \"Body\"] [--add-label \"label\"] [--remove-label \"label\"] [--attach \"path#alt\"]"
     exit 1
 fi
 
 # Check that at least one modification is specified
-if [ -z "$TITLE" ] && [ -z "$BODY" ] && [ -z "$BODY_FILE" ] && [ ${#ADD_LABELS[@]} -eq 0 ] && [ ${#REMOVE_LABELS[@]} -eq 0 ]; then
-    echo "ERROR: At least one modification required (--title, --body, --body-file, --add-label, or --remove-label)"
+if [ -z "$TITLE" ] && [ -z "$BODY" ] && [ -z "$BODY_FILE" ] && [ ${#ADD_LABELS[@]} -eq 0 ] && [ ${#REMOVE_LABELS[@]} -eq 0 ] && [ ${#ATTACHMENTS[@]} -eq 0 ]; then
+    echo "ERROR: At least one modification required (--title, --body, --body-file, --add-label, --remove-label, or --attach)"
     exit 1
+fi
+
+# An attachment path must exist locally; gh reports this late and after other edits land
+if [ ${#ATTACHMENTS[@]} -gt 0 ]; then
+    for attachment in "${ATTACHMENTS[@]}"; do
+        if [ ! -f "${attachment%%#*}" ]; then
+            echo "ERROR: --attach file not found: ${attachment%%#*}"
+            exit 1
+        fi
+    done
 fi
 
 # Check environment
@@ -110,11 +125,31 @@ for label in "${REMOVE_LABELS[@]}"; do
     echo "Remove label: $label"
 done
 
+for attachment in "${ATTACHMENTS[@]}"; do
+    GH_ARGS+=("--attach" "$attachment")
+    echo "Attach: ${attachment%%#*}"
+done
+
 echo ""
 
-# Execute the update
+# Execute the update.
+# gh exits nonzero when some attachments fail to upload even though the edit landed,
+# so the output is reported either way and the status is passed through.
+set +e
 RESULT=$(gh "${GH_ARGS[@]}" 2>&1)
+STATUS=$?
+set -e
 
-echo "=== Issue Updated ==="
+if [ "$STATUS" -eq 0 ]; then
+    echo "=== Issue Updated ==="
+else
+    echo "=== Issue Update Incomplete (gh exit $STATUS) ==="
+    echo "The edit may have landed with only some attachments uploaded."
+    echo "Open the issue and see which images rendered before retrying. A retry that also"
+    echo "passes --body rewrites the referenced paths and is safe; an attach-only retry"
+    echo "appends again, so pass only the paths that did not upload."
+fi
 echo ""
 echo "$RESULT"
+
+exit "$STATUS"

@@ -77,7 +77,10 @@ Use this comprehensive template for Full format issues (includes all sections as
 
 **{{EXAMPLE_CASE}}**
 
-![{{ALT_TEXT}}]({{IMAGE_URL}})
+![{{ALT_TEXT}}]({{IMAGE_PATH_OR_URL}})
+
+{{A local path is uploaded when the issue is filed or updated — see Step 5 of SKILL.md.
+Alt text states what the image shows, not the filename.}}
 
 ---
 
@@ -112,6 +115,11 @@ Use this template for Default format issues. Use h4 headers, no horizontal rules
 
 ```markdown
 {{DESCRIPTION — 4-8 sentences: what the issue is, what it affects, how to reproduce (when applicable), what's impacted. Keep the user's original phrasing.}}
+
+{{For a bug with a screenshot or recording, put the reference here, on its own line
+directly after the sentence describing what goes wrong:}}
+
+![{{ALT_TEXT}}]({{IMAGE_PATH_OR_URL}})
 
 #### Rationale
 

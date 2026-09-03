@@ -428,7 +428,7 @@ Delete anything that should not ship with the commit:
   gitignored working artifacts. Only files this run created; never a config directory.
 - Temp files under `tmp/` or `.tmp/` at the repo root created during this run
 - Captured probe artifacts — screenshots, traces, dumps — wherever the instruction layer
-  puts them, if they were throwaway
+  puts them. Nothing this run captured ships in the commit, a retained frame included
 
 Use `git status --short` to sanity-check that no untracked scratch files are about to be
 staged, and that every intended deletion shows up.

@@ -126,5 +126,11 @@ mutation($threadId: ID!) {
 
 A general comment gets a new general comment, not a reply: `gh pr comment <pr> --body-file <file>`.
 
+**A thread reply cannot carry an image.** `--attach` is a `gh pr comment` flag, and both replying
+and resolving go through `gh api`, which has no equivalent. So a finding settled by looking at a
+rendered frame replies with its measurement, and the frame stays in the operator report. Do not
+post a general comment to host the image and link it from the reply — that puts an unthreaded
+comment on the pull request for every reader, to serve one thread.
+
 Resolving requires write access. `viewerCanUpdate` answers that before the attempt — a failed
 mutation after a posted reply leaves the thread half-answered.

@@ -88,9 +88,10 @@ goes first and is introduced as the one needing a change before ship.
   round's findings were fixed, say so here first.
 - **A heading per finding, written as the claim in a sentence.** Not a noun phrase, not a label.
 - **A code quote**, two or three lines, with a `// path:line` comment on the first line.
-- **A runnable reproduction or a measurement.** Screenshots do not survive into a PR comment;
-  numbers and console snippets do. `the 280px submenu spans 295 to 575 on a 320px-wide viewport` is
-  a reproduction. "The submenu is clipped" is not.
+- **A runnable reproduction or a measurement.** `the 280px submenu spans 295 to 575 on a
+  320px-wide viewport` is a reproduction. "The submenu is clipped" is not. A rendered frame can
+  now travel with it — see **Attaching a frame** — but it rides alongside the measurement and
+  never replaces it: a number is checkable by the author, an image is only viewable.
 - **The attribution clause**, inline in the claim.
 - **A suggested fix, offered as an option.** The author's PR, the author's call.
 - **An explicit withdrawal** of anything an earlier round of this review got wrong. A review that
@@ -126,6 +127,41 @@ case is a branch you opened.
 ```bash
 gh pr comment <N> --body-file <file>
 ```
+
+### Attaching a frame
+
+A finding settled by looking at something rendered can carry the frame it was settled by. Write the
+image into the body as a normal local-path reference, at the point in the finding where the
+reproduction sits — under the code quote, never in a gallery at the end:
+
+```markdown
+![the submenu clipped at the right edge of a 320px viewport](.tmp/screenshots/submenu-320.png)
+```
+
+Then pass the same path, once per file, with alt text after a `#`:
+
+```bash
+gh pr comment <N> --body-file <file> --attach '.tmp/screenshots/submenu-320.png#the submenu clipped at the right edge of a 320px viewport'
+```
+
+`gh` uploads the file and rewrites that reference in place, so the image lands where you put it. A
+path you attach without referencing is appended at the end instead, which is the gallery this rule
+exists to avoid.
+
+- **One image per finding.** The cap is 50 per invocation and that is not a budget to spend; a
+  comment carrying six frames reads the way fifteen inline comments read.
+- **Alt text always, via the `#` form.** Without it the filename becomes the alt text, and
+  `submenu-320.png` describes nothing to anyone reading with a screen reader. A video is the
+  exception — it renders as a player and cannot take alt text at all.
+- **Needs `gh` 2.99.0 or newer, and it does not work on GitHub Enterprise Server.** Check
+  `gh --version` before composing a body that references a local path. Where either is missing,
+  publish the measurement alone and say in the operator report that the frame could not travel.
+- **Images and GIFs cap at 10 MB**; video depends on the target repo's plan. PNG, JPEG, GIF, WebP,
+  SVG, MP4, MOV and WebM are accepted, nothing else.
+
+**No frame goes out that the confirmation gate did not show.** The gate above shows the composed
+text; name each attachment and its path there too, because an image is the one part of a comment
+the approver cannot read in the body.
 
 **No AI attribution footer, ever.** Not a `<sub>` line, not a session link, not a sentence noting
 the review was automated. This used to resolve from the target repository's instruction file, which
@@ -220,6 +256,12 @@ gh api repos/<owner>/<repo>/pulls/<N>/reviews --input review.json
 }
 ```
 
+**A review cannot carry an attachment.** `--attach` exists on `gh pr comment` and not on `gh api`,
+so nothing submitted through this endpoint uploads a file. **Attaching a frame** above applies to
+the issue-comment shape only. In review shape a visual finding publishes as its measurement, and
+the frame stays in the operator report — do not post a separate comment to host the image and link
+it from the review, which splits one review across two objects and notifies twice.
+
 ### The body that shipped, annotated
 
 From calibration run 4 — eight inline comments, `REQUEST_CHANGES`, abridged here:
@@ -277,6 +319,7 @@ outward-facing thing here, so the safe failure is always silence plus a full loc
 | A finding's line is outside the diff | Move it to the review body. Never anchor it to a nearby line the API happens to accept |
 | No write access to the target repository | Print everything and say it cannot post. `viewerCanUpdate` answers this before the attempt |
 | The review submits but a comment is rejected | Say which finding did not land and print it. Do not resubmit the whole review |
+| An attachment is rejected — too large, wrong type, `gh` too old, Enterprise Server | Post the body with the local-path reference removed, and report which frame could not travel. Never post a body whose image reference did not resolve |
 
 ## Boundary with `write:markdown-writing`
 

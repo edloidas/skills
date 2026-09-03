@@ -335,6 +335,16 @@ The wrapper runs `gh issue create` once. If `gh` returns nonzero after creating 
 
 When creating multiple issues, use unique filenames per issue: `<TMPDIR>/<slug>-body.md` (e.g. `auth-body.md`, `settings-body.md`). Resolve `<TMPDIR>` once and reuse it for all issues.
 
+**Media the body references.** Where the body carries a local image or video path — a screenshot of the bug, a mockup — pass it through the wrapper once per file. Alt text follows the path after a `#`, on images only: a video renders as a player and cannot carry any, so a `#` on one is a mistake.
+
+```bash
+bash "<skill-dir>/scripts/create-issue.sh" -- --title "<title>" --body-file <TMPDIR>/body.md --attach "<path>#<alt text>"
+```
+
+`gh` uploads the file and rewrites that path in place, so the image lands where the body put it. A path passed without being referenced is appended to the end of the issue instead. Needs `gh` 2.99.0 or newer and does not work on GitHub Enterprise Server: check `gh --version` first, and where either is missing, create the issue with the image reference stripped from the body and report that it could not be uploaded.
+
+**A failed upload does not fail the issue, and this wrapper hides that.** When some attachments upload and others do not, `gh` still creates the issue with the ones that worked, prints its URL to stdout, and exits nonzero. The wrapper reads that nonzero as "create failed", ignores the URL it was handed, finds the issue again by title, and reports `reusing <url>` — so the step succeeds while the published body still carries a local path that resolves to nothing. Confirm every referenced path exists before running the wrapper, and on a `reusing` warning open the issue and check each image rendered before printing the Step 1 report.
+
 **Important:** Replace `<TMPDIR>` with the literal absolute path in all commands (e.g. `--body-file /var/folders/.../issue-flow-AbCdEf/body.md`). Do not set `TMPDIR=` as an env var prefix on commands — that changes the command pattern and triggers permission prompts.
 
 Do not use `--body "$(cat <<'EOF'...)"` — the `$()` command substitution makes the command unmatchable against any pre-approval rule, so hosts that gate shell commands re-prompt every time.
@@ -824,6 +834,8 @@ gh pr create --title "<title>" --body-file <TMPDIR>/pr-body.md --base <base> --a
 ```
 
 Do not use `--body "$(cat <<'EOF'...)"` — the `$()` command substitution makes the command unmatchable against any pre-approval rule, so hosts that gate shell commands re-prompt every time.
+
+No media goes in a PR body, even though `gh pr create` accepts `--attach`. A PR body is read at merge time and again in release notes, where a screenshot of the old behaviour is describing something that no longer exists. The before-state belongs on the issue; an after-state, if it is worth showing at all, belongs in a comment on the PR.
 
 Update project status to "Review":
 

@@ -20,8 +20,9 @@ metadata:
 
 # Live Probe
 
-Runs commands and may create scratch files; every one it creates is removed before it returns. It
-never edits source, never commits, and never changes what it is observing.
+Runs commands and may create scratch files; every one it creates is removed before it returns,
+except a rendered frame a caller asked to keep. It never edits source, never commits, and never
+changes what it is observing.
 
 ## The premise
 
@@ -48,7 +49,9 @@ Three properties, all required:
   line, a golden diff, a rendered frame, a stack trace with a file and line. "It looked right" is
   not an artifact.
 - **Discarded** — scratch files, scratch scripts, and captured output leave the tree. Nothing a
-  probe creates is committed.
+  probe creates is committed. The one exception is a rendered frame a caller asked to keep so it
+  can publish it: that file stays in the artifact directory and its path goes on the `Cleanup`
+  line, and removing it belongs to the caller. Everything else the probe made still goes.
 
 ## Which claims need one
 
@@ -146,7 +149,7 @@ specific thing.
 - **Verdict**: reproduced | refuted | unverified
 - **Rung**: 1 | 2 | 3 | 4 — <the command or tool actually used>
 - **Evidence**: <the artifact: response, exit code, log line, diff, frame — not "checked the code">
-- **Cleanup**: <what was removed, or "nothing created">
+- **Cleanup**: <what was removed, or "nothing created"; and the path of any frame kept on request>
 ```
 
 `unverified` also carries **what was missing** — no declared runner, the tool is not installed, the
@@ -161,6 +164,17 @@ A filled instance:
 - **Evidence**: `parseOffset('-1.5')` returned `-2`, not the `-1` the finding claimed; the same
   probe returned `-1` against the previous commit
 - **Cleanup**: removed `test/scratch-offset.probe.mjs`
+```
+
+The same block with a frame kept for the caller to publish:
+
+```text
+- **Verdict**: reproduced
+- **Rung**: 4 — Storybook on port 6007, `Combobox / Basic` at a 320px viewport
+- **Evidence**: the 280px submenu's computed rect spans x 295 to 575, so 255px of it sits outside
+  the 320px viewport; the same story at 768px spans 295 to 575 inside a 768px box
+- **Cleanup**: stopped the instance this probe started; kept
+  `.tmp/screenshots/submenu-320.png` as requested
 ```
 
 Then stop. Do not fix what the probe revealed, do not probe the same code a second time, and do not
