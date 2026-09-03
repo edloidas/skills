@@ -1,6 +1,6 @@
 {
   "name": "edloidas-maintain",
-  "version": "5.6.1",
+  "version": "5.7.0",
   "description": "A Codex-safe maintenance bundle for agent instruction setup, label sync, lint migration, and repo hardening.",
   "author": {
     "name": "Mikita Taukachou",
