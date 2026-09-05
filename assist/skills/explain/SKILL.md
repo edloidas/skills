@@ -22,7 +22,9 @@ Build understanding. The test of the answer is whether the reader can predict wh
 next time without you there.
 
 `$ARGUMENTS` names the subject. With no argument, the subject is whatever the previous message was
-about — go deeper on it rather than restating it shorter.
+about — go deeper on it rather than restating it shorter. Where that message already carried a
+recommendation or a plan, keep it: the trace goes underneath it, and the recommendation is restated
+unchanged at the end. Deepening the reasoning is not a reason to withdraw the answer.
 
 This skill reports only: it reads, and it runs read-only commands to capture real values. It
 edits nothing.
@@ -197,7 +199,8 @@ wrong, what you chose not to cover, what you could not check. Stopping at "and t
 works" claims a completeness you have not earned.
 
 Then stop. Do not fix what the explanation exposed and do not offer to — the deliverable is the
-understanding, and the fix is a separate request.
+understanding, and the fix is a separate request. Restating a recommendation the previous message
+already made is not that.
 
 ## Worked Examples
 
