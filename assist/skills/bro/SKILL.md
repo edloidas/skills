@@ -53,9 +53,10 @@ Include a part only when there is something to put in it.
 ## The Decision Block
 
 Anything the user has to decide goes at the end, never buried mid-answer and never mixed in with the
-facts. One numbered question per decision, each carrying your own lean so agreeing costs one word.
-Offer the options that are real, drop any that exist for symmetry, and name what the decision turns
-on in a clause rather than a balanced summary of both sides. Where the host offers a structured
+facts. One question per decision, each carrying your own lean so agreeing costs one word. Number the
+questions from two decisions up — a single decision is a sentence, never a list of one. Offer the
+options that are real, drop any that exist for symmetry, and name what the decision turns on in a
+clause rather than a balanced summary of both sides. Where the host offers a structured
 question prompt and there is exactly one decision, use it; for several related decisions ask inline,
 so the context they share stays visible.
 
@@ -72,8 +73,8 @@ dropped CJS entirely.
 Next step: move the app to `module: nodenext`. It is a one-line change, and
 the three `require()` call sites in `scripts/` all have ESM equivalents.
 
-1. `nodenext` now, or pin `chalk` at 4.2.1 and defer? I lean `nodenext` —
-   the pin only moves this to the next upgrade.
+`nodenext` now, or pin `chalk` at 4.2.1 and defer? I lean `nodenext` — the
+pin only moves this to the next upgrade.
 ```
 
 ## Keep And Cut
