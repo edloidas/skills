@@ -24,7 +24,7 @@ metadata:
 
 Runs the full issue workflow in one command; **Flow Overview** below is the phase list.
 Designed for issues the user already judged simple. When uncertainty appears, pause and
-ask.
+ask — or, under `auto`, decide through a board (**Asking the User**).
 
 **Mutation class: writes to external services.** It edits the working tree, and through
 `issue-flow` it commits, pushes, opens pull requests, files issues, and merges.
@@ -52,17 +52,26 @@ neither, ask the same question in normal chat as a numbered list of 2–5 option
 recommended first, one short line of description each — and wait for the user to reply
 with a number.
 
-Every gate defaults to proceeding, so a host that cannot prompt still completes the flow.
-A user who picks a `Stop` option exits the run cleanly, leaving local state as it stands.
-The Phase 6 endgame is the one exception — always asked, unless `$ARGUMENTS` carries `auto`.
-That is an unattended run: take the `(Recommended)` option at every gate, this one and the
-Phase 7 seam question included. A bare `auto` with no issue number still asks Phase 0.
+Every gate defaults to proceeding, so a host that cannot prompt still completes the flow;
+**Flow Overview** lists which phases ask. A `Stop` option exits the run cleanly, leaving
+local state as it stands. `auto` in `$ARGUMENTS` is an unattended run: take the
+`(Recommended)` option at every gate, the Phase 6 endgame and the Phase 7 seam question
+included. A bare `auto` with no issue number still asks Phase 0.
+
+**Unattended, no question is asked.** Where a phase would stop for a decision that has no
+`(Recommended)` option — a Phase 2 pause condition, or a Phase 3 blocker of the "decision
+required" kind — invoke `consilium` with the decision and its candidates, take its ranked
+recommendation, and record it in the Phase 6 summary as `Decided unattended: <choice> —
+<one-line reason>`; without `consilium`, stop as an attended run would. A blocker no
+decision resolves — missing credentials, a service down, an open blocking issue — still
+stops the run. Notes are filed as issues, per Phase 7 → **File the deferrals before
+merging**, instead of waiting for a reader who is not there.
 
 ### Delegating to Other Skills
 
 This skill is an orchestrator: it invokes `issue-flow`, `issue-analyze`, `changes-review`,
-`tests-audit`, `live-probe`, `code-cleanup`, and `pr-review` rather than reimplementing
-them. "Invoke `<name>`" means hand control to that skill however the host chains skills.
+`tests-audit`, `live-probe`, `code-cleanup`, `pr-review`, and under `auto` `consilium` and
+`doubt`, rather than reimplementing them. "Invoke `<name>`" means hand control to that skill however the host chains skills.
 Where chaining means loading its instructions into *this* context, it means following
 them — its commands included. They stay its rules, not yours.
 
@@ -111,10 +120,9 @@ If it carries no number, ask, per **Asking the User**:
 
 - Option 1 → invoke `issue-flow` with intent `"pick an issue"`. Its Step 0 ranks the
   backlog, lets the user choose, and chains into `issue-analyze` on the selection —
-  continue from Phase 2 with the number and the analysis it returns. Two outcomes are not
-  a selection: the user picks `None`, or the branch it short-circuited on carries no issue
-  number. Both end the run — stop and say which. Phase 5 commits under the issue title, so
-  never continue without one.
+  continue from Phase 2 with the number and the analysis it returns. `None` picked, or a
+  short-circuit branch carrying no issue number, ends the run — stop and say which, since
+  Phase 5 commits under the issue title.
 - Option 2 → print `Re-run with an issue number, e.g. /solve-issue 42.` and stop.
 
 Two preconditions stop the run before anything else: `gh` unauthenticated, which
@@ -167,20 +175,17 @@ which checks out `issue-<N>` off the correct base branch and updates the project
 "In Progress" when available. If `issue-<N>` already exists, let `issue-flow` handle the
 switch-vs-recreate prompt.
 
-Record the `Fork:` SHA from its Step 2 report — later phases diff against it to scope
-verification and pass it to the reviewers. Use `Fork:`, not `Base:`: `Base:` is a branch
-*name*, and an epic branch that exists only on the remote fails `git diff <name>..HEAD`
-with `unknown revision`. A SHA always resolves.
+Record the `Fork:` SHA from its Step 2 report — later phases scope verification by it and
+pass it to the reviewers. Use `Fork:`, not `Base:`: a branch name that exists only on the
+remote fails `git diff` with `unknown revision`, a SHA always resolves.
 
 **Every phase that scopes by the fork reads the working tree, never `<fork>..HEAD`.** The
 form is `git diff --name-only <fork>` plus `git ls-files --others --exclude-standard`,
-stated once here so no phase or reference restates it. Snapshots are optional until Phase
-4.6, so on a run that never took one `HEAD` still *is* the fork and that range is empty
-while the changes sit unstaged — silently scoping a phase to nothing.
+stated once here. Snapshots are optional until Phase 4.6, so without one `HEAD` still *is*
+the fork and that range is empty while the changes sit unstaged.
 
-Do not detect the base yourself; `issue-flow` owns it, and its `detect-base.sh` handles
-the `epic-*` cases a naive `origin/HEAD` lookup gets wrong. Entered on an existing branch
-with no Step 2 report, ask `issue-flow` for the fork point.
+Do not detect the base yourself; `issue-flow` owns it and handles the `epic-*` cases.
+Entered on an existing branch with no Step 2 report, ask `issue-flow` for the fork point.
 
 End Phase 2 with one line: `Phase 2: branch issue-<N> off <base>, fork <sha>, <N> changes
 planned.`
@@ -195,7 +200,7 @@ Step 3 snapshot mode freezes the tree into a content-free `wip:` commit. Phase 5
 those away. Do **not** push between tasks.
 
 If a task hits a hard blocker (missing credentials, external service down, decision
-required), stop and ask the user.
+required), stop and ask the user — or, under `auto`, act per **Asking the User**.
 
 End Phase 3 with one line: `Phase 3: <N>/<N> changes implemented, <N> files touched.` Then
 go to Phase 4 — do not run the project's checks ad hoc as you go; Phase 4 selects them.
@@ -242,8 +247,8 @@ If any verification step fails:
 
 ### Ending the phase
 
-Phase 4 is over when every check the verification set selected is green. End it with one
-line naming every group, including the ones that did not run and why: `Phase 4: type-check
+Phase 4 is over when every check the verification set selected is green. End Phase 4 with
+one line naming every group, including the ones that did not run and why: `Phase 4: type-check
 ok, unit tests ok (<N> passed), build ok, lint not configured — observation skipped.`
 
 Then stop. Do not re-run the whole suite on top of the selected set, do not add a check
@@ -285,16 +290,13 @@ a subtle simplification turns into a refactor nobody reviewed.
 Take the changed test files from the working tree, per **Phase 2 → Create branch**.
 Skip this phase only when that set carries no test file.
 
-Otherwise dispatch a plain subagent and have it invoke `tests-audit` over those files. Its
-brief is the changed test paths and the code under test and nothing else — not the plan,
-not what you were trying to do: its gate asks which promise each test pins and what
-dumbest implementation still passes it, and your justification is the one thing that would
-let a weak test through. Where the host has no subagent facility, run it inline under the
-same restriction. `tests-audit` is a skill, not an agent type, so the subagent is a general
-worker that loads it; asking the host for an agent named after the skill fails. It runs
-**before** the advisor round for the reason Phase 4.4 does, and it earns its place there by
-running the suite — order dependence and flakiness are invisible to anyone reading only
-the diff.
+When that set is non-empty, dispatch one general subagent that loads `tests-audit` over
+those files — `tests-audit` is a skill, not an agent type. Its brief is the changed test
+paths and the code under test and nothing else — not the plan, not what you were trying to
+do, since your justification is the one thing that would let a weak test through. Where the
+host has no subagent facility, run it inline under the same restriction. It runs **before**
+the advisor round for the reason Phase 4.4 does, and it runs the suite — order dependence
+and flakiness are invisible in a diff.
 
 `tests-audit` reports and never edits, so applying its verdicts is this phase's job.
 `references/tests-audit-pass.md` has which verdicts to apply against a test this branch
@@ -322,9 +324,8 @@ candidate approaches and has nothing to say about whether a finished diff is cor
 ### Freeze the diff first
 
 Every reviewer must see the same change set. Before dispatching, delete the cruft listed
-under Phase 5 → Remove cruft — the snapshot stages everything, so scratch files and
-screenshots would otherwise be baked in where Phase 5's untracked-file check can no longer
-see them.
+under Phase 5 → Remove cruft — the snapshot stages everything, and a baked-in scratch file
+is invisible to Phase 5's untracked check.
 
 Then, if the tree is dirty, take a snapshot per **Phase 3** — `issue-flow` with intent
 `"snapshot"`.
@@ -334,9 +335,8 @@ the reviewers re-review the diff they already saw. Round 2 and later also pass
 `--mode simple` with the previous round's snapshot as the base, so the reviewers attack
 the fix rather than re-reading the whole branch to check a two-line change.
 
-Carry your own list of findings you accepted rather than fixed. The reviewers are blind to
-previous rounds by design, so an accepted decision comes back every round — recognizing it
-is your job, not theirs.
+Carry your own list of findings you accepted rather than fixed: the reviewers are blind to
+previous rounds by design, so recognizing a repeat is your job.
 
 ### Run the review
 
@@ -345,10 +345,8 @@ recorded in Phase 2 — it resolves as a rev where a branch name may not. It dis
 reviewers, re-attacks its own findings — verification is on by default for a `--base` run
 — and returns what survives. It changes nothing.
 
-Pass **no other context**. Not the Phase 2 plan, not the Risks/decisions section, not a
-summary of what you were trying to do, not the previous round's findings or how you
-triaged them. The skill's entire value is that its reviewers are blind to your reasoning;
-handing it a summary destroys that.
+Pass **no other context** — not the plan, not the Risks section, not a summary of intent,
+not the previous round's findings or triage. Its value is reviewers blind to your reasoning.
 
 If `changes-review` is not installed, note that in the Phase 6 summary, skip this phase,
 and go to Phase 5. Do not hand-roll a reviewer round in its place.
@@ -385,9 +383,8 @@ Run a second round if **any** of these hold:
 - You rejected any intent-reviewer finding
 - You rejected more than half of all findings
 
-The last two matter because rejects do not change the diff, so a wrongly rejected bug is
-invisible to a size-based trigger. A high reject rate is the signal that the implementer
-is grading itself generously.
+The last two exist because a wrongly rejected bug does not change the diff, so no
+size-based trigger sees it.
 
 Otherwise stop at one round. **Hard cap: two rounds.** If round 2 surfaces another large
 batch, do not run a third — apply the clear fixes, list the rest as Notes, and let the PR
@@ -404,16 +401,10 @@ what a further round would attack is not a state — either run it or go to Phas
 
 Invoke `code-cleanup --comments-only`, scoped to the change — it removes comments that
 restate the code, compacts genuine gotchas to a line or two, and surfaces design rationale
-for the body. This is the step that stops verbose AI commentary from reaching the commit.
-
-`--comments-only` is deliberate — **no code changes at commit time.** Any simplification
-opportunity belongs to Phase 4.6, where it was reviewed. Carry suggested refactors into
-the Phase 6 summary as Notes; do not apply them here.
-
-Its **Suggested for commit message** section is an *input* to the commit body — it answers
-why the code is built the way it is, which is the first thing the body has to establish.
-Pass it along under Commit below; `issue-flow` folds it into that paragraph rather than
-tacking it on at the end.
+for the commit body. `--comments-only` is deliberate — **no code changes at commit time**;
+a simplification found here is a Note for Phase 6, not work, because it would ship
+unreviewed. Its **Suggested for commit message** section is an input to the commit body —
+pass it along under Commit below.
 
 If `code-cleanup` is not installed, do the comment pass inline: delete comments that
 narrate what the code already says, that repeat what a nearby comment carries, or that
@@ -440,12 +431,9 @@ commit, writes the subject and body, and reports the result. It owns the subject
 the body, and the squash rules for every `wip:` snapshot Phase 4.6 created — do not
 restate any of them here, and do not run the git commands yourself.
 
-Pass along, as context for the commit body:
-
-- The issue title and number, so the subject can be built.
-- The design rationale `code-cleanup` pulled out of the source, if any — that text is why
-  the comment pass could delete it, and it answers the body's first question. It is not a
-  block to append at the end.
+Pass along, as context for the commit body: the issue title and number, and the design
+rationale `code-cleanup` pulled out of the source — it belongs in the body's *why*
+paragraph, not appended at the end.
 
 Capture the short SHA and subject from Step 3's report for the Phase 6 summary. If Step 3
 comes back with a dirty tree or more than one commit, re-invoke it rather than fixing the
@@ -459,7 +447,15 @@ asks — no push, no pull request.
 
 Print the summary `references/report-format.md` specifies — what changed, what was
 verified, what the tests audit moved, what the advisors found, and the commit. That file
-carries the shape and a filled-in example of it.
+carries the shape and a full example; the fragment that is most often wrong is this one:
+
+```text
+**Not applied**
+- Note: out of scope — the same clamp exists in `Popover.tsx`, untouched by this issue
+  > `Popover.tsx:88` repeats the clamped-rect bug this change fixes in `Tooltip`.
+- Reject: the reviewer could not see `ResizeObserver` is installed by `useAnchorRect`
+  > The rect is never recomputed on resize, so the flip is stale after a window resize.
+```
 
 Never omit a Reject: a rejected finding the user never sees is the one failure mode this
 whole phase is built to prevent, and Phase 4.6 requires the reviewer's own wording.
@@ -482,17 +478,13 @@ Route via `issue-flow`:
 | Nothing    | Stop — commit stays local                     | —                          |
 
 **The merge is not part of the endgame invocation.** `PR + merge` opens the pull request,
-hands to Phase 7, and merges only after the automated reviewers have had their window.
-Asking `issue-flow` for `"push, PR, and merge"` in one intent merges past them. Let it
-handle the per-step questions it already owns — squash confirmation, reviewer selection,
-merge pre-checks — and do not duplicate those prompts here.
+hands to Phase 7, and merges only after the automated reviewers have had their window; a
+single `"push, PR, and merge"` intent merges past them. `issue-flow` owns its per-step
+questions — squash confirmation, reviewer selection, merge pre-checks — do not repeat them.
 
-### Do not stop at "PR created"
-
-Both PR endgames end with a mergeability verdict, not just a PR URL. `issue-flow` Step 5
-produces a `Mergeable:` line — report it. Do not claim a pull request is ready without it,
-and if it comes back `CONFLICTING` the flow is not done: rebase, force-push, re-check,
-report the resolved state. Neither path is finished at Step 5; both continue into Phase 7.
+Both PR endgames continue into Phase 7 and end with `issue-flow` Step 5's `Mergeable:`
+line, not a PR URL. `CONFLICTING` means the flow is not done: rebase, force-push, re-check,
+report the resolved state.
 
 End Phase 6 with one line: `Phase 6: <endgame chosen> — PR #<M>, Mergeable: <state>.`
 
@@ -501,29 +493,23 @@ End Phase 6 with one line: `Phase 6: <endgame chosen> — PR #<M>, Mergeable: <s
 Runs on both PR endgames. Skipped for `Push only` and `Nothing`.
 
 **Detect, then decide whether waiting buys anything.** A bot is *expected* when the pull
-request's timeline records a bot `review_requested` event, and it has *reported* when its
+request's timeline records a bot `review_requested` event, and has *reported* when its
 review appears against the current head SHA. A review already in is worked on either
-endgame; only `PR + merge` ever polls for one that is not.
-
-**Report what was observed, never absence you inferred.** `No automated reviewers` is a
-claim about the repository that no query supports; "no bot review was requested on this
-pull request, checked at `<time>`" is a fact about a durable event log.
+endgame; only `PR + merge` polls for one that is not. Report what the queries showed, with
+the time checked — never `No automated reviewers`, which no query supports.
 `references/review-feedback.md` has both queries, the decision table, the bot-matching
-rule, the budget, the one question no API can answer, and what would disprove any of it.
+rule, and the budget.
 
-Then invoke `pr-review <N> --fix`, which owns the step: author-side standing, verifying
-each claim's premise separately from its conclusion, the six verdicts, the reply, the
-resolve. Do not re-triage its findings or restate its rules. On `PR + merge` add `--auto`
-— which posts unattended on bot-rooted threads only, holding any human thread as an
-unsent draft — plus the instruction to publish nothing until the fixes are pushed, since
-a reply naming a landed fix is false the moment it posts otherwise and its thread is then
-resolved on a claim that never became true. The order is fix, check, push, publish.
+Then invoke `pr-review <N> --fix`, which owns the step — standing, verifying each claim,
+the six verdicts, the reply, the resolve. Do not re-triage its findings. On `PR + merge`
+add `--auto`, which posts unattended on bot-rooted threads only and holds human threads as
+unsent drafts, plus the instruction to publish nothing until the fixes are pushed — a reply
+naming an unpushed fix is false when it posts. The order is fix, check, push, publish.
 
-Code that `--fix` applied is uncommitted work on the squashed commit. It runs the
-project's checks per fix, so re-run only the wider Phase 4 set once over the final tree,
-then invoke `issue-flow` with intent `"amend and push #<N>"`, keeping the message
-verbatim. Skip the amend when nothing changed: an all-`reject` round would force-push an
-identical tree, re-trigger CI and the reviewers, and buy a second round for nothing.
+Code that `--fix` applied is uncommitted work on the squashed commit. It ran the project's
+checks per fix, so re-run the wider Phase 4 set once over the final tree, then invoke
+`issue-flow` with intent `"amend and push #<N>"`, message verbatim. Skip the amend when
+nothing changed: force-pushing an identical tree re-triggers CI and the reviewers for nothing.
 
 After the push, run both detection queries again against the new head, per
 `references/review-feedback.md` → **Rounds**. Run this phase at most **twice**.
@@ -533,8 +519,12 @@ After the push, run both detection queries again against the new head, per
 On `PR + merge` only. Before the merge intent, invoke `issue-flow` with intent `"create an
 issue"` for each `defer` in `pr-review`'s report, and put the numbers in the report.
 Choosing `PR + merge` is the approval — this is the one mutation with no gate of its own.
-`references/review-feedback.md` → **Filing the deferrals** has what goes in each issue, why
-filing any earlier is impossible, and what to do when the host cannot reach `issue-flow`.
+Under `auto`, the Phase 6 Notes are filed the same way — but first invoke `doubt` on the
+Note set and file only the claims it rules as holding; a Note that fell is dropped from the
+filing with its verdict kept in the report. Without `doubt`, file nothing and report the
+Notes as unfiled. `references/review-feedback.md` → **Filing the
+deferrals** has what goes in each issue, why filing any earlier is impossible, how Notes
+are grouped, and what to do when the host cannot reach `issue-flow`.
 
 ### Report and close
 
@@ -543,16 +533,15 @@ what the fixes changed, because the merge ships code the Phase 6 summary did not
 — then close the endgame:
 
 - **PR + merge** — invoke `issue-flow` with intent `"merge #<N>"`, once no reviewer is
-  left unresolved. That is this phase's half of the gate; Step 6 supplies the other half
-  by waiting on CI. A bot that timed out counts as unresolved: report it and leave the
-  pull request open rather than merging through it. A human thread held for a person does **not** block
-  the merge — it can never be resolved, so waiting on it has no achievable meaning.
+  left unresolved; its Step 6 waits on CI. A bot that timed out counts as unresolved:
+  report it and leave the pull request open. A human thread held for a person does **not**
+  block the merge — it can never be resolved by this run.
 - **PR only** — print the open-thread state and stop.
 
 If `pr-review` is not installed, list the open threads with their authors and claims and
-stop there. Do not hand-roll replies: this skill carries no verification discipline for
-someone else's claim, and an unverified rejection posted in public cannot be taken back.
+stop there. Do not hand-roll replies: an unverified rejection posted in public cannot be
+taken back.
 
 End Phase 7 with one line: `Phase 7: <N> threads — <N> fixed, <N> rejected, <N> discuss,
-<N> deferred (filed #<...>); merged | left open (<reason>).` Then stop. Do not open a
+<N> deferred, <N> notes (filed #<...>); merged | left open (<reason>).` Then stop. Do not open a
 third round, and do not re-review the diff after the merge — the run is over.
