@@ -60,8 +60,8 @@ The mechanism is the payload. A correct account of *what* something does, with n
 
 Lead with the concrete result — the resolved value, the captured output, the observed behavior.
 Walk the mechanism that produces it one step at a time, using the real symbols from the code rather
-than stand-ins. Say why it is built that way, where that is not obvious. Land the consequence in
-one sentence.
+than stand-ins — pseudocode is one. Say why it is built that way, where that is not obvious.
+Land the consequence in one sentence.
 
 That is an arc, not a template. Skip any part the subject does not have, and let a one-line
 question have a one-line answer.
@@ -91,6 +91,7 @@ Each move fires on its own trigger. Where none applies, write prose.
 | You have real output | Paste it in a fenced block, unedited — never describe what a compiler, command, or test would say |
 | An expression is dense | Follow it with one plain sentence restating it |
 | One exact token carries the bug | Annotate that token inline, inside the code block |
+| The step turns on where a name sits in a nesting spread across files — a component tree, a middleware chain, a call stack | A plain-text tree of the real names, indented by depth: the path from the root to the node the step turns on, the siblings it is compared against, and that node marked inline |
 | A fix | The declaration before and the declaration after, and nothing else from the diff |
 | Control crosses several components, threads, or processes | Number the steps in execution order — see **Go Linear** |
 | The answer has genuinely separate parts | Give each a header written as a claim or a question, not a noun |
@@ -161,6 +162,14 @@ fuel valve, that fills the cylinder, that fires.
 
 - Fix one scenario at the top and carry it unchanged to the end — real host names, real config,
   real values. Never switch examples mid-walk.
+- Where three or more components, threads, or processes each own a step and the walk runs past six
+  steps, put one map between the scenario and step 1, and only one per answer. Lanes are the real
+  names — `console.example.com`, `handshake thread`, not `Client` and `Server`. One arrow per
+  crossing, labelled with the number of the step it starts and the call it carries. The map says
+  where a step happens, never what it finds — no verdicts, no branch labels, or it becomes a second
+  walk. Draw it as a Mermaid `sequenceDiagram` in pi, which renders one, and as a plain-text lane
+  diagram everywhere else, where the fenced source is what the reader gets;
+  `references/worked-examples.md` has one.
 - Number the steps in the order execution reaches them, one thing per step. Title each step with
   what happens in it, not what it is about. **Pick The Move** applies per step, not per answer — one
   step may carry annotated code and the next pasted output.

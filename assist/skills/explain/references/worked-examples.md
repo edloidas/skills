@@ -99,6 +99,19 @@ The setup, fixed for the whole walk: your app is served at `https://api.example.
 UI at `https://console.example.com`, and the app's config has one line —
 `cors.origin = https://console.example.com`.
 
+```text
+  browser           controller          handshake thread
+     │                   │                      │
+  1  │─── upgrade ──────▶│                      │
+     │                   │ 2 controller runs    │
+     │                   │ 3 validator built    │
+     │                   │ 4 function kept      │
+  5  │                   │─── test(origin) ────▶│
+     │                   │                      │ 6 which check runs
+     │                   │                      │ 7 your function answers
+  8  │◀──────────── socket opens ───────────────│
+```
+
 **Step 1 — The browser opens the socket.** Your UI runs `new WebSocket('wss://api.example.com/ws')`.
 The browser attaches a header you cannot remove or change: `Origin: https://console.example.com`.
 
@@ -139,4 +152,6 @@ HTML page your controller never sees.
 top and carried through all eight steps. Steps numbered in execution order, each titled with what
 happens in it. `predicate` became "the function", `captured by closure` became "worked out while
 the request still exists", `falls through` became "reaches". The trap is called out in the step it
-happens in, not warned about above. Longer than the first pass, not shorter.
+happens in, not warned about above. Longer than the first pass, not shorter. Three lanes and three
+arrows for eight steps: the map puts steps 2–4 on the controller and 6–7 on the handshake thread,
+and says nothing about what step 6 decides.
