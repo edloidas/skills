@@ -183,11 +183,10 @@ that does not exist yet.
 
 **Notes, under `auto` only.** An attended run leaves Notes in the Phase 6 summary for the
 user to decide on. Unattended, nobody reads them until the run is over, so they are filed
-here alongside the deferrals — after `doubt` has ruled on the set. `doubt` returns one of
-five verdicts per claim: it holds → file; holds only in a narrower case → file with that
-narrowing in the body; true but not worth the fix, falls, or nobody can settle it → leave
-in the report with the verdict, file nothing. Notes
-that name the same file or the same mechanism go into one issue; the rest get one each.
+here alongside the deferrals, subject to the bar Phase 7 states. `doubt` rules first:
+*falls*, *nobody can settle it*, and *true but not worth the fix* are dropped; *holds only
+in a narrower case* is filed with that narrowing in the body. The rest stay in the report.
+Notes naming the same file or mechanism go into one issue; the rest get one each.
 Body: the Note quoted verbatim in a blockquote, `doubt`'s verdict, the pull request
 number, and the reviewer that raised it.
 

@@ -11,20 +11,23 @@ commit being built.
 
 ## Which verdicts to apply
 
-| Verdict | On a test this branch wrote | On a pre-existing test |
-| ------- | --------------------------- | ---------------------- |
-| Keep | Nothing | Nothing |
-| Tighten | Apply — sharpen the assert, drop the mock round-trip | Note only |
-| Rewrite | Apply — as written it pins nothing | Note only |
-| Delete | Delete it, and say so in the Phase 6 summary | Note only |
+| Verdict | Test this branch wrote | Pre-existing test it modified | Other pre-existing test |
+| ------- | ---------------------- | ----------------------------- | ----------------------- |
+| Keep | Nothing | Nothing | Nothing |
+| Tighten | Apply — sharpen the assert, drop the mock round-trip | Apply | Apply when the fix is a line or two; otherwise Note |
+| Rewrite | Apply — as written it pins nothing | Apply | Note only |
+| Delete | Delete it, and say so in the Phase 6 summary | Note only | Note only |
 
-A verdict on a test this branch did not write is not this issue's work: carry it into
-the Phase 6 summary as a Note. The one exception is a pre-existing test this branch
-modified — you already own those lines, so its verdicts apply in full.
+**Deleting a pre-existing test is never this issue's work**, even one this branch edited —
+a test the issue enumerated is one the user expects to still exist. Carry it as a Note.
 
-**A Delete is not a coverage regression.** A test that passes for the wrong reason
-protects nothing, and keeping it because a percentage would move is the failure mode
-`tests-audit` exists to name. Report the deletion rather than defending the number.
+**A small Tighten beside it is worth taking**: a line or two, and it strengthens an oracle
+rather than removing one. Holding it back files an issue nobody wants to read.
+
+**A Delete is not a coverage regression.** A test *this branch wrote* that passes for the
+wrong reason protects nothing, and keeping it because a percentage would move is the
+failure mode `tests-audit` exists to name. Report the deletion rather than defending the
+number.
 
 ## Re-running the suite
 

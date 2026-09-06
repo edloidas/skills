@@ -64,8 +64,8 @@ required" kind — invoke `consilium` with the decision and its candidates, take
 recommendation, and record it in the Phase 6 summary as `Decided unattended: <choice> —
 <one-line reason>`; without `consilium`, stop as an attended run would. A blocker no
 decision resolves — missing credentials, a service down, an open blocking issue — still
-stops the run. Notes are filed as issues, per Phase 7 → **File the deferrals before
-merging**, instead of waiting for a reader who is not there.
+stops the run. Notes are filed only where Phase 7's bar admits them — see Phase 7 →
+**File the deferrals before merging**.
 
 ### Delegating to Other Skills
 
@@ -300,8 +300,8 @@ and flakiness are invisible in a diff.
 
 `tests-audit` reports and never edits, so applying its verdicts is this phase's job.
 `references/tests-audit-pass.md` has which verdicts to apply against a test this branch
-wrote versus one it merely lives beside, and the gate to run inline when the skill is
-not installed.
+wrote, one it modified, and one it merely lives beside, and the gate to run inline when
+the skill is not installed.
 
 The rule that never bends: a tightened assert that now fails is either the defect the
 loose one was hiding — fix it, that is the payoff — or a bad tightening, in which case
@@ -309,7 +309,8 @@ revert that assert. Never loosen it back to make the suite green.
 
 End Phase 4.5 with one line: `Phase 4.5: <N> tests audited — <N> tightened, <N> rewritten,
 <N> deleted, <N> noted.` Then stop. Do not widen the audit to tests this branch never
-touched; a verdict on one of those is a Note for Phase 6, not work for this issue.
+touched — a verdict on one of those is a Note for Phase 6, not work for this issue, with
+the single exception the reference's Tighten row names.
 
 ## Phase 4.6: Advisor Round
 
@@ -519,12 +520,12 @@ After the push, run both detection queries again against the new head, per
 On `PR + merge` only. Before the merge intent, invoke `issue-flow` with intent `"create an
 issue"` for each `defer` in `pr-review`'s report, and put the numbers in the report.
 Choosing `PR + merge` is the approval — this is the one mutation with no gate of its own.
-Under `auto`, the Phase 6 Notes are filed the same way — but first invoke `doubt` on the
-Note set and file only the claims it rules as holding; a Note that fell is dropped from the
-filing with its verdict kept in the report. Without `doubt`, file nothing and report the
-Notes as unfiled. `references/review-feedback.md` → **Filing the
-deferrals** has what goes in each issue, why filing any earlier is impossible, how Notes
-are grouped, and what to do when the host cannot reach `issue-flow`.
+Phase 6 Notes are filed under `auto` only, and then only where a Note is a confirmed
+defect, a regression, or absent test coverage for shipped behaviour — being true is not the
+bar. `doubt` rules on the set first; without `doubt`, file nothing. An attended run files
+no Note at all: they stay in the report for the user. `references/review-feedback.md` →
+**Filing the deferrals** has what goes in each issue, why filing any earlier is impossible,
+how Notes are grouped, and what to do when the host cannot reach `issue-flow`.
 
 ### Report and close
 

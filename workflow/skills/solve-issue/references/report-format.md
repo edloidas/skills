@@ -17,7 +17,7 @@ Print this shape, omitting rows that do not apply:
 - observation: skipped (not behavioral) | reproduced | refuted | unverified (<reason>)
 
 **Tests**
-- N audited — N tightened, N rewritten, N deleted
+- N audited — N tightened, N rewritten, N deleted, N noted
 - <one line per test changed by the audit>
 
 **Advisors** (N round(s))
@@ -39,6 +39,11 @@ applied** when there is nothing in it.
 The blockquote under **Not applied** is not decoration. Reproduce the finding in the
 reviewer's own words, unedited; if you shorten it, say how many lines you cut and from
 where. The user grades the rejection, and a paraphrase is the implementer grading itself.
+
+**Not applied is a record to be graded, not a backlog proposal.** List the entries flat, in
+the order found. Do not rank them, single any out, or close the report by offering to file
+them — Phase 7's bar already decides what becomes an issue. A report ending in a pitch
+turns finished work back into pending work.
 
 ### A filled-in summary
 
@@ -86,6 +91,7 @@ Phase 7 appends to the summary above rather than reprinting it:
 - N threads — N fixed, N rejected, N discuss, N deferred
 - <one line per thread acted on>
 - Deferred to: #<issue> — <claim>   (merge path only; `—` when nothing was deferred)
+- Notes filed: #<issue> — <claim>   (`auto` merge path only; `—` on an attended run)
 - Shipped after the summary above: <files and one line each, or `nothing`>
 - Held unsent: <human thread, and the draft reply composed for it>
 ```
