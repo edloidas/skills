@@ -15,7 +15,7 @@
 // Usage: node tsconfig-check.mjs [tsconfig path] [--json] [--tsc <path>]
 
 import { execFileSync } from 'node:child_process'
-import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs'
+import { existsSync, readFileSync, readdirSync, realpathSync, statSync } from 'node:fs'
 import { dirname, isAbsolute, join, relative, resolve } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 
@@ -598,4 +598,8 @@ function main() {
 }
 
 // Guarded so the helpers above can be imported by tests without running the audit.
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) main()
+// import.meta.url is realpath'd by the loader while argv[1] is the path as typed, so both
+// sides are resolved: unequal strings for the same file would silently skip the audit and
+// exit 0, which reads as a clean report. Skills are installed by symlink.
+const invokedAs = process.argv[1] ? realpathSync(process.argv[1]) : null
+if (invokedAs && import.meta.url === pathToFileURL(invokedAs).href) main()
