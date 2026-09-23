@@ -9,10 +9,11 @@ description: >
   publishes to the author, gated on demonstrated evidence. Every phase is configurable.
 when_to_use: >
   Before committing, when a change should be attacked rather than assessed, or as the find
-  step behind a fix pass or a PR review.
+  step behind a fix pass or a PR review. Answering the threads already on a pull request is
+  pr-review's job, not this one.
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
-allowed-tools: Bash(git:*) Bash(gh:*) Read Glob Grep Task Skill
+allowed-tools: Bash(git:*) Bash(gh issue view:*) Bash(gh pr view:*) Bash(gh pr comment:*) Bash(gh api:*) Bash(gh --version) Read Glob Grep Task Skill
 argument-hint: "[--base <branch> | --uncommitted | --commit <sha>] [--issue <N>] [--mode <simple|standard|deep>] [--no-external] [--no-lens] [--comment | --review] [--draft]"
 metadata:
   author: edloidas
@@ -61,13 +62,12 @@ because those two scale together — there is no useful run with four reviewers 
 
 | Mode | Reviewers | Verification |
 | ---- | --------- | ------------ |
-| `simple` | 2 — cold and intent; the external leg is dropped first, since it is the one that cannot read the repo | `reachability` only |
-| `standard` | 3 — cold, intent, external | all three lenses |
-| `deep` | 4 — two cold on different models, intent, external | all three lenses, the killed claims too, and a synthesis critic on the assembled report |
+| `simple` | 2 — cold and intent, or cold alone with no requirement; the external leg is dropped first, since it is the one that cannot read the repo | `reachability` only |
+| `standard` | 3 — cold, intent, external; 2 with no requirement | all three lenses |
+| `deep` | 4 — two cold on different models, intent, external; 3 with no requirement | all three lenses, and a synthesis critic on the assembled report |
 
-With no requirement resolved, `simple` is one reviewer, `standard` is two and `deep` is three — the
-intent reviewer needs something to check against. Verification always runs; the mode sets its depth, not whether it
-happens, and it roughly doubles the run, which is why the default follows the scope.
+Verification always runs; the mode sets its depth, not whether it happens, and it roughly doubles
+the run, which is why the default follows the scope.
 
 A late round in a fix loop is a `simple` run over the fix: small diff, spec settled two rounds ago,
 and reachability is the lens that still changes the outcome. A whole branch reviewed cold is
@@ -93,8 +93,8 @@ rather than re-reviewing a whole branch to check a two-line change. It also has 
 of findings it consciously accepted: reviewers here are blind to previous rounds by design, so an
 accepted decision is found again every round and only the caller can recognize it.
 
-Done means: the report is printed, and with `--comment` or `--review`, published once the Phase 8
-gate is answered.
+Done means: the report is printed and, under `--comment` or `--review`, Phase 8 has posted it,
+held it under `--draft`, or had it declined — or a stop from Phase 1 or **Error handling** printed.
 
 ## Phase 1: Resolve scope
 
@@ -347,8 +347,8 @@ leading with the wrong half instead of the durable one, ranking that contradicts
 clause still riding along, a decision filed as a defect, and at most one area nobody covered. It
 cannot add findings.
 
-Apply what it returns, or say why not, then go to the report. One critique per run: do not dispatch a
-second critic on the revised assembly. It reads a report rather than a repository, so it is the
+Apply what it returns, or say why not, and print one line: `Synthesis critique: 3 points, 2 applied,
+1 declined (ranking kept).` One critique per run: do not dispatch a second critic on the revision. It reads a report rather than a repository, so it is the
 cheapest agent in the run — and the only one that sees the findings as a set.
 
 ## Report
@@ -511,6 +511,7 @@ array — no line anchors and no method narrative, per the reference.
 | Situation | Action |
 | --------- | ------ |
 | No changes in scope | Print `Nothing to review.` and stop |
+| `--issue <N>` does not resolve | Print the `gh` error and stop — a requirement the caller named is not one to guess past |
 | A verification lens fails | Apply the merge rule with the lenses that returned, say which is missing |
 | A reviewer stalls or returns nothing | Relaunch it once with a narrowed file list and a stated tool budget — not the same prompt again. A reviewer that goes quiet on a wide diff is usually still reading it |
 | A native reviewer returns nothing usable | Report the remaining reviewers, name the gap |

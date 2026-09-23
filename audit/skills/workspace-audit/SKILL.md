@@ -11,7 +11,7 @@ when_to_use: >
   Turborepo or Nx.
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
-allowed-tools: Bash(pnpm:*) Bash(npm:*) Bash(node:*) Bash(npx:*) Bash(turbo:*) Read Glob Grep
+allowed-tools: Bash(pnpm dedupe --check) Bash(pnpm -r ls:*) Bash(turbo run build --dry-run:*) Bash(npx syncpack list-mismatches:*) Bash(npx madge --circular:*) Read Glob Grep
 ---
 
 # Workspace Audit (pnpm 10+)
@@ -30,24 +30,23 @@ Scoped to pnpm 10+ deliberately: catalogs, `allowBuilds`, `minimumReleaseAge` an
 pnpm's own fields, and none of it transfers to npm, yarn or bun. On a repo whose lockfile is
 `package-lock.json`, `yarn.lock` or `bun.lock`, say so and stop rather than translating the advice.
 
-Trigger phrases: "workspace audit", "monorepo", "pnpm workspace", "workspaces"
-
 ## Workflow
 
 Done means: the Step 11 report is printed, with every step either reported or listed under
-**Not checked**.
+**Not checked** — or Step 1 printed `Not a pnpm workspace` and stopped.
+
+Steps 2–10 each close with one line carrying their counts, such as `Step 5: 6 shared deps, 1
+hardcoded, catalogMode unset.` A step with nothing to check says why in that line.
 
 ### Step 1: Identify Workspace Type
 
-```bash
-cat pnpm-workspace.yaml 2>/dev/null
-cat package.json | jq '.packageManager, .engines'
-ls -la nx.json turbo.json 2>/dev/null
-```
+Glob the repo root for `pnpm-lock.yaml`, `package-lock.json`, `yarn.lock`, `bun.lock`, `nx.json`,
+and `turbo.json`. If no `pnpm-lock.yaml` exists, print `Not a pnpm workspace — <lockfile> found.`
+and stop.
 
-Check the `packageManager` field — it tells you the exact pnpm version. Audit advice below assumes pnpm 10+; call out version-gated settings when the project is on an older minor.
-
-If no `pnpm-lock.yaml` exists, print `Not a pnpm workspace — <lockfile> found.` and stop.
+Read `pnpm-workspace.yaml` and the root `package.json`. The `packageManager` field gives the exact
+pnpm version; `engines` may pin it too. Audit advice below assumes pnpm 10+; call out version-gated
+settings when the project is on an older minor.
 
 Start a **not-checked list** here and carry it to Step 11. Every step below that cannot run goes
 in it with its reason: an absent `.npmrc` or `turbo.json`, a `pnpm` binary too old for a
@@ -87,10 +86,8 @@ packages:
 **Audit:** flag a hardcoded version (`"^1.0.0"`) on an *internal* package — it should be
 `workspace:*`. Third-party deps are Step 5's rule, not this one.
 
-```bash
-# Find all package.json files and check for org-scoped internal refs
-fd -t f 'package.json' packages apps | xargs grep -l '@myorg/'
-```
+Grep every `package.json` under the `packages:` globs for the workspace's own scope (`"@myorg/`),
+and flag each hit whose range does not start with `workspace:`.
 
 ### Step 4: Check Dependency Hoisting
 
@@ -315,10 +312,9 @@ npx madge --circular packages/*/src
 ```
 
 #### Stale catalog entries
-Set `cleanupUnusedCatalogs: true` in `pnpm-workspace.yaml`, or run:
-```bash
-pnpm install  # removes stale entries if cleanupUnusedCatalogs is enabled
-```
+For each key under `catalog:` and each named catalog, grep the workspace's `package.json` files for
+`"<key>": "catalog:`. A key nothing references is stale. Recommend `cleanupUnusedCatalogs: true`,
+which prunes such keys on the user's next install — the audit does not run that install.
 
 ### Step 11: Generate Report
 
