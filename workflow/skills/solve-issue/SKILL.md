@@ -109,6 +109,9 @@ visible per item — never a single opaque "implementing" step.
 | 6     | Summary + choose endgame          | Always — unless `auto` (takes Option 1) |
 | 7     | Review feedback, then merge       | Through `pr-review`'s own gate          |
 
+Done means: the endgame picked in Phase 6 has reached its **Then** column — merged, `Mergeable:`
+reported, pushed, or left local — or a gate is waiting on the user.
+
 ## Phase 0: Resolve Issue
 
 If `$ARGUMENTS` holds an issue number or GitHub issue URL, use it and skip to Phase 1.

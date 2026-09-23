@@ -82,6 +82,8 @@ with a number.
 
 ## Workflow
 
+Done means: every file in scope has been through Phase 3.5 and the Phase 4 report is printed.
+
 ### Phase 1: Scope
 
 **Step 1: Find project guidelines.** Check for comment/doc conventions in:

@@ -63,6 +63,9 @@ neither, ask the same question in normal chat as a numbered list of 2–5 option
 recommended first, one short line of description each — and wait for the user to reply
 with a number.
 
+Done means: a **Phase 6** stop condition holds and the report is printed, or a gate is waiting on
+the user.
+
 ## Phase 0: Where to start
 
 A bare invocation looks at what just happened before it spends a review.

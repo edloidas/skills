@@ -62,6 +62,9 @@ Org-level policies, SSO, and GitHub Enterprise controls are out of scope.
 
 ## Workflow
 
+Done means: every Step 1–7 item is applied, already in place, or deferred with its reason and exact
+command in the Step 8 report — or a gate is waiting on the user.
+
 ### Step 0: Inventory Before Touching Anything
 
 Run the read-only sweep and build a diff of *already set* vs *to apply*. Never apply blind

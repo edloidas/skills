@@ -123,6 +123,10 @@ When invoked without arguments, use the state detected above:
 
 When the user says "full flow" or asks to go from issue to merge, run all steps sequentially. Otherwise, start at the detected step and ask whether to continue to the next step after each one completes.
 
+Done means: every step the intent named has printed its report, or a gate is waiting on the user.
+A step's `Then stop` ends the run only where the intent ends; a step the intent still names runs in
+the same turn.
+
 ## Conventions
 
 Read the target repo's CLAUDE.md for project-specific formatting. Use these defaults when no override is found:

@@ -72,6 +72,8 @@ When VP is detected, do not try to "improve" the repo by replacing VP-native app
 
 ## Workflow
 
+Done means: the Step 9 report, or `Scripts Audit: clean`, is printed.
+
 ### Step 1: Load Minimal Manifest Context
 
 Read `scripts` plus only the manifest fields that affect script expectations:

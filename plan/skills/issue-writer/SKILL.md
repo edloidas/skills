@@ -40,6 +40,9 @@ A request naming an existing issue — "update issue #123", "edit that issue", "
 body", or a bare "update the issue" pointing at one created earlier in this session — runs
 the **Update Workflow**. Everything else runs the drafting **Workflow** below.
 
+Done means: the drafted title and body are presented (Step 6), or the approved update is on GitHub
+— or a question is waiting on the user.
+
 > For **creating** new issues on GitHub, use `issue-flow` when that skill is
 > available. Otherwise use this skill to prepare the title and body, then
 > create the issue with the available GitHub tooling.

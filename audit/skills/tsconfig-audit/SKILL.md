@@ -71,6 +71,9 @@ with a number.
 
 ## Workflow
 
+Done means: the Step 5 report is printed and Step 6 has reported what it applied and what
+verification said — or its question is waiting on the user.
+
 ### Step 1: Find the configs
 
 Unless the user named one, list the candidates before auditing anything:

@@ -32,6 +32,10 @@ neither, ask the same question in normal chat as a numbered list of 2–5 option
 recommended first, one short line of description each — and wait for the user to reply
 with a number.
 
+Done means: no conflicted path remains, the rebase or merge has continued to completion,
+Verification has run, and the final report is printed — or unresolved conflicts are reported, or a
+gate is waiting on the user.
+
 ## Entry Point Detection
 
 Determine mode from arguments:

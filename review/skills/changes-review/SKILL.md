@@ -93,6 +93,9 @@ rather than re-reviewing a whole branch to check a two-line change. It also has 
 of findings it consciously accepted: reviewers here are blind to previous rounds by design, so an
 accepted decision is found again every round and only the caller can recognize it.
 
+Done means: the report is printed, and with `--comment` or `--review`, published once the Phase 8
+gate is answered.
+
 ## Phase 1: Resolve scope
 
 Resolve the diff and the file list once, up front. Every reviewer sees the identical change set.

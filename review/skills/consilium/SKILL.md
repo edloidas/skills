@@ -122,6 +122,8 @@ Stated as intent, since the roster changes and each host names its own models:
 
 The report says which kind of diversity the run actually got.
 
+Done means: the Phase 6 report is presented.
+
 ## Phase 1: Frame
 
 No agents yet. Establish, in the orchestrator's own words:

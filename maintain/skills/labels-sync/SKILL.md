@@ -47,6 +47,9 @@ with a number.
 
 ## Execution Steps
 
+Done means: in check and get mode, the Step 5 results are presented; in sync mode, Step 7 has
+reported — or the Step 6 gate is waiting on the user.
+
 ### Step 1: Determine Intent
 
 Match the arguments or the conversation against one of three modes:

@@ -63,6 +63,8 @@ with a number.
 Questions occur at **Step 0** (ambiguous conventions) and **Step 7** (release approval). Neither
 is skippable on your own judgement: ask, and wait for the reply before continuing.
 
+Done means: Step 9 has reported the pushed release, or a gate is waiting on the user.
+
 ## Release Workflow
 
 Follow these steps in order. Create an in-memory plan at the start.

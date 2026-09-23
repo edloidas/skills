@@ -34,6 +34,9 @@ Trigger phrases: "workspace audit", "monorepo", "pnpm workspace", "workspaces"
 
 ## Workflow
 
+Done means: the Step 11 report is printed, with every step either reported or listed under
+**Not checked**.
+
 ### Step 1: Identify Workspace Type
 
 ```bash
