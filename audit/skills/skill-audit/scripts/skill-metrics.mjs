@@ -324,7 +324,6 @@ const skills = skillDirs.map((dir) => {
 
   // Fences and the widest inline block, so "reference material inlined in the body"
   // can be judged against a number instead of a feeling.
-  const untaggedFences = [];
   const fenceSpans = [];
   const tableSpans = [];
   let fenceOpen = null;
@@ -334,7 +333,6 @@ const skills = skillDirs.map((dir) => {
     if (fence) {
       if (fenceOpen === null) {
         fenceOpen = index;
-        if (!fence[2].trim()) untaggedFences.push(index + 1 + bodyOffset);
       } else {
         fenceSpans.push({ line: fenceOpen + 1 + bodyOffset, length: index - fenceOpen + 1 });
         fenceOpen = null;
@@ -495,7 +493,7 @@ const skills = skillDirs.map((dir) => {
     body: {
       lines: lines.length,
       chars: body.length,
-      tokenEstimate: Math.round(body.length / 4),
+      tokenEstimate: Math.floor(Buffer.byteLength(body, 'utf8') / 4),
       largestBlock: largestBlock ?? null,
       longestProseRun: proseRun,
     },
@@ -507,7 +505,6 @@ const skills = skillDirs.map((dir) => {
     bundled,
     orphans,
     nestedRefs,
-    untaggedFences,
     headingSkips,
     hostMechanismHits,
     askUserQuestion: {
@@ -591,7 +588,6 @@ for (const s of skills) {
   out.push(`bundled: ${s.bundled.length ? s.bundled.join(', ') : none}`);
   out.push(`unreachable bundled files: ${s.orphans.length ? s.orphans.join(', ') : none}`);
   out.push(`references pointing at other references: ${s.nestedRefs.length ? s.nestedRefs.join(', ') : none}`);
-  out.push(`untagged code fences: ${s.untaggedFences.length ? s.untaggedFences.map((l) => `L${l}`).join(', ') : none}`);
   out.push(`heading level skips: ${s.headingSkips.length ? s.headingSkips.join(', ') : none}`);
   out.push(`AskUserQuestion: ${describeAsk(s.askUserQuestion)}`);
   out.push(

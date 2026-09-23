@@ -99,7 +99,7 @@ Resolve `<owner>/<repo>` via `gh repo view --json nameWithOwner --jq .nameWithOw
 3. `allowed_actions` — informational. `"all"` is common; `"selected"` is appropriate for high-security repos.
 4. Branch protection rulesets — the default branch and every active release-source branch (e.g., `x.y` version branches) must be covered by rules for `deletion`, `non_fast_forward`, `required_status_checks`, and ideally `required_linear_history`.
 5. PR approval rule — `required_approving_review_count >= 1` for multi-contributor repos. Flag the Dependabot interaction (see ruleset-splitting pattern in the checklist).
-6. Tag protection rulesets — if the release workflow triggers on `v*` tags, there MUST be a tag ruleset blocking `creation`, `update`, and `deletion` on `refs/tags/v*`, with bypass limited to Admins.
+6. Tag protection rulesets — if the release workflow triggers on `v*` tags, there has to be a tag ruleset blocking `creation`, `update`, and `deletion` on `refs/tags/v*`, with bypass limited to Admins.
 7. Secret scanning + push protection — enabled where the plan supports it.
 8. Dependabot security updates, private vulnerability reporting, CodeQL default setup — enabled where the plan supports them. **High** if `SECURITY.md` advertises private vulnerability reporting while the API reports it disabled.
 9. Deploy secrets reachable from arbitrary branches — deploy-provider credentials stored as repository-level secrets while a broad `push:`-triggered workflow references them. Critical for production targets. Remediation order matters (environment created before the workflow references it; secrets are write-only; repo-level copies deleted last) — follow checklist item 10 exactly.

@@ -264,9 +264,11 @@ Skills using `AskUserQuestion` must follow these rules:
 #### The canonical `Asking the User` section
 
 Any skill declaring a non-Claude host and asking a question carries exactly one section,
-worded **verbatim** as below. It sits immediately before the skill's first procedural
-section — `## Workflow`, `## Phase 0`, `## Execution Steps`, whichever the skill uses —
-at `##`, or `###` where the skill nests its conventions.
+worded **verbatim** as below. The single source of the wording is
+`audit/skills/skill-audit/references/asking-the-user.md`, so the rule travels into repos
+without this file; the block here is a copy for reading. It sits immediately before the
+skill's first procedural section — `## Workflow`, `## Phase 0`, `## Execution Steps`,
+whichever the skill uses — at `##`, or `###` where the skill nests its conventions.
 
 ```markdown
 ## Asking the User
@@ -280,8 +282,10 @@ with a number.
 
 Copy it; do not paraphrase it. Fourteen skills each carried their own wording of this rule
 before it was unified, which made a reader unable to tell a deliberate variation from
-drift. `skill-metrics.mjs` reports whether a skill has the canonical section, ad-hoc
-wording, or none.
+drift. `validate-skills.sh` hard-fails an asking skill — `AskUserQuestion` in
+`allowed-tools`, an `Asking the User` heading, or a `per **Asking the User**` call site —
+whose first paragraph under that heading differs from the reference file, whitespace
+collapsed. Change the wording there first, then here and in every skill, in one change.
 
 **Call sites do not re-explain the fallback.** They say `Ask, per **Asking the User**:`
 followed by the options, and nothing more. A skill may add one extra paragraph under the
@@ -421,6 +425,13 @@ The 500-line body cap is mechanical, so it lives in `validate-skills.sh` rather 
 | ----- | --------- | --- |
 | `plan/skills/issue-flow` | 1000 | **Sanctioned.** It owns every git and `gh` write in the issue pipeline — base detection, the fork point, the squash rules, the force-push lease. That concentration is the seam that let `solve-issue` and `changes-review` become portable, and splitting it would put the same rules in two files, which this repo treats as the drift mechanism. Its size is the cost of being the single writer. |
 | `workflow/skills/solve-issue` | 550 | At 537 after the prompting-standard pass added a stop sentence and a named end-of-phase line to every phase, paid for by cutting the 21-row Error Handling table and the trailing `## Scope` recap and moving the deferral block into `references/review-feedback.md`. Raised from 540 to 550 deliberately, because three lines of headroom made every subsequent edit a trim-or-nothing choice on an 11-phase orchestrator that is still growing. The 13 lines now free are for the phases the auditors named — Phase 0 has no counted closing line, and the Phase 6 summary has no worked fragment in the body — not for general expansion. |
+
+The ~5000-token cap is enforced the same way, estimated as body bytes / 4, because the
+line cap alone let a body grow sideways — `changes-review` sat at 499 lines and ~7.3k
+tokens. `BODY_TOKEN_BUDGETS` carries `issue-flow` and `solve-issue` for the reasons above,
+and four skills grandfathered at their size when the cap arrived: `changes-review` 7500,
+`code-cleanup` 6500, `security-audit` 5700, `consilium` 5300. Those four ceilings stop
+growth and sanction nothing; lower a row whenever its skill is trimmed.
 
 A budget is a per-skill ceiling, not an exemption — a budgeted skill that grows past its
 allowance still fails, so a deliberate size cannot drift into an accidental one. Adding a
@@ -657,7 +668,7 @@ another:
 
 | Checker | Owns | Failure |
 | ------- | ---- | ------- |
-| `.github/scripts/validate-skills.sh` | Marketplace and plugin manifests, canonical layout, per-skill frontmatter rules, dangling bundled paths, Claude-only mechanisms in a portable skill, shouty emphasis and calibration adverbs (see [Writing a Skill Body](#writing-a-skill-body)) | Hard, fails CI; behavioural-style words warn only |
+| `.github/scripts/validate-skills.sh` | Marketplace and plugin manifests, canonical layout, per-skill frontmatter rules, body line and token ceilings, dangling bundled paths, Claude-only mechanisms in a portable skill, the verbatim `Asking the User` section, shouty emphasis in the body and in `references/*prompt*.md` fences, and calibration adverbs (see [Writing a Skill Body](#writing-a-skill-body)) | Hard, fails CI; behavioural-style words warn only |
 | `scripts/validate-codex.sh` | Codex catalog, `compatibility` agreement, `agents/openai.yaml`, host subset rule | Hard, fails CI |
 | `tests/run.sh` | What a bundled script actually returns — exit codes, chosen branch, parsed output, refusals | Hard, fails CI |
 | `skill-audit` | Discovery, instruction quality, context cost, portability, safety, layer discipline | Scored 1-5, PASS / FAIL |
@@ -711,6 +722,11 @@ Two conventions matter:
 
 Scripts whose whole body is a `gh` call are deliberately untested — the stub would assert
 the stub. Cover logic, refusals, and parsing.
+
+The per-skill rules in `validate-skills.sh` are tested too, in `tests/github/`.
+`validate-skills.sh --skill <dir>` runs only those rules against one skill directory — no
+marketplace, manifests, or README — which is what lets a case build a fixture skill in its
+sandbox. A new per-skill rule gets a failing and a passing case there.
 
 **The suite runs on both axes.** The `test-scripts` job is a matrix over `ubuntu-latest`
 and `macos-latest`, so the bash 3.2 and BSD-userland targets above are verified rather

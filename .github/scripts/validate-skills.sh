@@ -203,6 +203,23 @@ BODY_LINE_CAP=500
 BODY_LINE_BUDGETS="plan/skills/issue-flow=1000
 workflow/skills/solve-issue=550"
 
+# The line cap alone let a body grow sideways: changes-review sat at 499 lines and
+# ~7.3k tokens. Estimated as bytes / 4, the same heuristic skill-metrics.mjs prints.
+# The last four rows are grandfathered at their size when this cap arrived — the
+# ceiling stops growth, it does not sanction the size.
+BODY_TOKEN_CAP=5000
+BODY_TOKEN_BUDGETS="plan/skills/issue-flow=13000
+workflow/skills/solve-issue=7500
+review/skills/changes-review=7500
+review/skills/code-cleanup=6500
+audit/skills/security-audit=5700
+review/skills/consilium=5300"
+
+# Skills that answer outward-facing correspondence and refuse structured-choice
+# prompting on purpose; each carries its own `Asking the User` section saying so.
+ASK_REFUSAL_EXEMPT="review/skills/pr-review
+review/skills/changes-review"
+
 # Lines after the closing frontmatter delimiter.
 #
 # Only the first two `---` lines are delimiters. Skipping every one of them — as this
@@ -216,17 +233,65 @@ body_line_count() {
   ' "$1/SKILL.md" | wc -l | tr -d ' '
 }
 
-# The ceiling for one skill: its budgeted allowance, or the default cap.
-body_line_budget() {
-  local path="$1" row
+body_token_estimate() {
+  awk 'BEGIN { delimiter_count = 0 }
+    delimiter_count < 2 && $0 == "---" { delimiter_count++; next }
+    delimiter_count >= 2 { print }
+  ' "$1/SKILL.md" | LC_ALL=C wc -c | awk '{ print int($1 / 4) }'
+}
+
+# The ceiling for one skill from a `path=value` table, or the default cap.
+budget_for() {
+  local path="$1" table="$2" default="$3" row
   while IFS= read -r row; do
     case "$row" in
       "$path="*) printf '%s' "${row#*=}"; return ;;
     esac
   done <<EOF
-$BODY_LINE_BUDGETS
+$table
 EOF
-  printf '%s' "$BODY_LINE_CAP"
+  printf '%s' "$default"
+}
+
+body_line_budget() {
+  budget_for "$1" "$BODY_LINE_BUDGETS" "$BODY_LINE_CAP"
+}
+
+in_list() {
+  local path="$1" list="$2" row
+  while IFS= read -r row; do
+    [ "$row" = "$path" ] && return 0
+  done <<EOF
+$list
+EOF
+  return 1
+}
+
+# Every line of a dispatched prompt file, fences included, with inline code spans and
+# double-quoted phrases removed. In these files the fenced block *is* the prompt a worker
+# reads, so body_prose's fence skip would exempt exactly the text that matters most.
+prompt_prose() {
+  awk '{
+    line = $0
+    gsub(/`[^`]*`/, " ", line)
+    gsub(/"[^"]*"/, " ", line)
+    print NR ":" line
+  }' "$1"
+}
+
+# The canonical section's paragraph, whitespace-collapsed. It lives inside skill-audit
+# so the rule travels with the skill into repos that have no copy of this CLAUDE.md.
+CANONICAL_ASK_FILE="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)/audit/skills/skill-audit/references/asking-the-user.md"
+
+collapse_ws() {
+  tr '\n' ' ' | tr -s ' \t' ' ' | sed -E 's/^ //; s/ $//'
+}
+
+# The first paragraph under a `## Asking the User` or `### Asking the User` heading.
+# `###?` rather than an interval: BSD awk does not honour `{2,3}`.
+ask_section_text() {
+  awk 'f && NF { print; seen = 1; next } f && seen { exit } /^###? Asking the User$/ { f = 1 }' \
+    "$1" | collapse_ws
 }
 
 # Reads a single frontmatter scalar, joining YAML folded/literal continuation lines
@@ -271,8 +336,8 @@ frontmatter_scalar() {
 validate_skill_content() {
   local skill_dir="$1"
   local skill_name="$2"
-  local declared_name description when_to_use combined ref body_lines body_budget
-  local rule label pattern hit key field match
+  local declared_name description when_to_use combined ref body_lines body_tokens body_budget
+  local rule label pattern hit key field match canonical
 
   if [ "$(head -n 1 "$skill_dir/SKILL.md")" != "---" ]; then
     error "Skill '$skill_name': SKILL.md does not open with a YAML frontmatter block"
@@ -318,6 +383,12 @@ validate_skill_content() {
     else
       error "Skill '$skill_name': body is $body_lines lines; its budgeted allowance is $body_budget. Trim it, or raise the budget deliberately"
     fi
+  fi
+
+  body_tokens=$(body_token_estimate "$skill_dir")
+  body_budget=$(budget_for "$skill_dir" "$BODY_TOKEN_BUDGETS" "$BODY_TOKEN_CAP")
+  if [ "$body_tokens" -gt "$body_budget" ]; then
+    error "Skill '$skill_name': body is ~$body_tokens tokens (bytes / 4); the ceiling is $body_budget. Move reference material into references/, or add a budgeted allowance in validate-skills.sh with a reason in CLAUDE.md"
   fi
 
   # An unterminated fence swallows every instruction after it into a code block, so the
@@ -411,6 +482,37 @@ INNER
 $SHOUTY_PATTERNS
 EOF
 
+  while IFS= read -r md_file; do
+    [ -f "$md_file" ] || continue
+    while IFS= read -r rule; do
+      [ -n "$rule" ] || continue
+      label="${rule%%|*}"
+      pattern="${rule#*|}"
+      while IFS= read -r hit; do
+        [ -n "$hit" ] || continue
+        error "Skill '$skill_name': $label at ${md_file#"$skill_dir"/}:${hit%%:*} — a dispatched prompt is read by a worker with nothing else to go on, and capitals there skew it the same way. Keep the instruction and add the one-line reason it matters"
+      done <<INNER
+$(prompt_prose "$md_file" | grep -E "$pattern" || true)
+INNER
+    done <<RULES
+$SHOUTY_PATTERNS
+RULES
+  done <<EOF
+$(find "$skill_dir/references" -name '*prompt*.md' -type f 2>/dev/null | sort)
+EOF
+
+  if skill_declares_non_claude_host "$skill_dir" && ! in_list "$skill_dir" "$ASK_REFUSAL_EXEMPT"; then
+    if frontmatter_scalar "$skill_dir" "allowed-tools" | grep -q 'AskUserQuestion' \
+      || grep -qE -e '^###? Asking the User$' -e 'per \*\*Asking the User\*\*' "$skill_dir/SKILL.md"; then
+      canonical=$(ask_section_text "$CANONICAL_ASK_FILE" 2>/dev/null || true)
+      if [ -z "$canonical" ]; then
+        error "Skill '$skill_name': asks the user, but the canonical section could not be read from $CANONICAL_ASK_FILE"
+      elif [ "$(ask_section_text "$skill_dir/SKILL.md")" != "$canonical" ]; then
+        error "Skill '$skill_name': asks the user but its 'Asking the User' section is missing or differs from the canonical wording in audit/skills/skill-audit/references/asking-the-user.md. Copy it verbatim; do not paraphrase it"
+      fi
+    fi
+  fi
+
   while IFS= read -r rule; do
     [ -n "$rule" ] || continue
     label="${rule%%|*}"
@@ -459,6 +561,17 @@ EOF
 $(grep -ohE '(^|[^A-Za-z0-9._/-])(references|scripts|assets)/[A-Za-z0-9._/-]+' "$skill_dir/SKILL.md" | sed -E 's/^[^A-Za-z]//; s/\.$//' | sort -u)
 EOF
 }
+
+# `--skill <dir> [<dir> ...]` runs only the per-skill rules — no marketplace, plugin
+# manifests, or README — so tests can point it at a fixture skill.
+if [ "${1:-}" = "--skill" ]; then
+  shift
+  for skill_dir in "$@"; do
+    skill_dir=${skill_dir%/}
+    validate_skill_content "$skill_dir" "$(basename "$skill_dir")"
+  done
+  exit "$errors"
+fi
 
 require_jq
 
