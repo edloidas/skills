@@ -1,17 +1,23 @@
 #!/bin/bash
 # project-status.sh
 # Change an issue's status in a GitHub Projects V2 board.
-# Usage: project-status.sh <issue-number> <status>
+# Usage: project-status.sh [--repo <owner>/<repo>] <issue-number> <status>
 #
 # Finds the issue's project, discovers the Status field, and updates via GraphQL.
 
 set -e
 
+REPO=""
+if [[ "${1:-}" = "--repo" ]]; then
+  REPO="$2"
+  shift 2
+fi
+
 ISSUE_NUMBER="$1"
 TARGET_STATUS="$2"
 
 if [[ -z "$ISSUE_NUMBER" || -z "$TARGET_STATUS" ]]; then
-  echo "Usage: project-status.sh <issue-number> <status>"
+  echo "Usage: project-status.sh [--repo <owner>/<repo>] <issue-number> <status>"
   exit 1
 fi
 
@@ -24,7 +30,9 @@ if [[ -z "$GH_TOKEN" ]]; then
   exit 1
 fi
 
-REPO=$(gh repo view --json nameWithOwner -q '.nameWithOwner' 2>/dev/null)
+if [[ -z "$REPO" ]]; then
+  REPO=$(gh repo view --json nameWithOwner -q '.nameWithOwner' 2>/dev/null)
+fi
 OWNER=$(echo "$REPO" | cut -d/ -f1)
 NAME=$(echo "$REPO" | cut -d/ -f2)
 

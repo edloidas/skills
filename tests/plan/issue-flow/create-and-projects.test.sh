@@ -86,7 +86,7 @@ echo "unexpected gh: $*" >&2
 exit 1
 EOF
 
-  run bash "$(script "$CREATE_ISSUE")" --started-at 2000-01-01T00:00:00Z -- \
+  run bash "$(script "$CREATE_ISSUE")" --started-at 2000-01-01T00:00:00Z --no-project -- \
     --title "Fix the bug" --body-file body.md --repo ed/repo --type Task
 
   assert_eq 0 "$STATUS" "exit status"
@@ -114,11 +114,108 @@ echo "unexpected gh: $*" >&2
 exit 1
 EOF
 
-  run bash "$(script "$CREATE_ISSUE")" --started-at 2000-01-01T00:00:00Z -- \
+  run bash "$(script "$CREATE_ISSUE")" --started-at 2000-01-01T00:00:00Z --no-project -- \
     --title "Fix the bug" --body-file body.md --repo ed/repo --type Task
 
   assert_eq 1 "$STATUS" "exit status"
   assert_contains "$STDERR" "Do not retry without manual reconciliation" "error"
+  assert_eq 1 "$(wc -l < "$SANDBOX/issue-create.calls" | tr -d ' ')" "create invocations"
+}
+
+test_create_issue_refuses_without_project_decision() {
+  stub gh <<'EOF'
+printf '%s\n' "$*" >> "$SANDBOX/gh.calls"
+exit 0
+EOF
+
+  run bash "$(script "$CREATE_ISSUE")" -- --title "Fix the bug" --body-file body.md --type Task
+
+  assert_eq 2 "$STATUS" "exit status"
+  assert_contains "$STDERR" "--no-project" "names the missing decision"
+  assert_eq 0 "$(cat "$SANDBOX/gh.calls" 2>/dev/null | wc -l | tr -d ' ')" "gh invocations"
+}
+
+test_create_issue_refuses_missing_type_when_repo_has_types() {
+  stub gh <<'EOF'
+if [ "$1" = "api" ] && [ "$2" = "graphql" ]; then
+  printf '%s\n' '{"data":{"repository":{"isInOrganization":true,"issueTypes":{"nodes":[{"name":"Task"},{"name":"User Story"}]}}}}'
+  exit 0
+fi
+if [ "$1" = "issue" ] && [ "$2" = "create" ]; then
+  printf '%s\n' "$*" >> "$SANDBOX/issue-create.calls"
+  exit 0
+fi
+echo "unexpected gh: $*" >&2
+exit 1
+EOF
+
+  run bash "$(script "$CREATE_ISSUE")" --no-project -- --title "Fix the bug" --body-file body.md --repo org/repo
+
+  assert_eq 2 "$STATUS" "exit status"
+  assert_contains "$STDERR" "  User Story" "lists each type whole"
+  assert_eq 0 "$(cat "$SANDBOX/issue-create.calls" 2>/dev/null | wc -l | tr -d ' ')" "create invocations"
+}
+
+stub_create_and_project_gh() {
+  local add_result="$1"
+  stub gh <<EOF
+if [ "\$1" = "issue" ] && [ "\$2" = "create" ]; then
+  printf '%s\n' "\$*" >> "\$SANDBOX/issue-create.calls"
+  echo 'https://github.com/ed/other/issues/12'
+  exit 0
+fi
+if [ "\$1" = "auth" ] && [ "\$2" = "token" ]; then
+  echo '$(long_token)'
+  exit 0
+fi
+if [ "\$1" = "repo" ] && [ "\$2" = "view" ]; then
+  echo 'ed/cwd-repo'
+  exit 0
+fi
+if [ "\$1" = "api" ] && [ "\$2" = "graphql" ]; then
+  printf '%s\n' "\$*" >> "\$SANDBOX/graphql.calls"
+  case "\$*" in
+    *'issue(number:'*)
+      echo 'ISSUE_node'
+      exit 0
+      ;;
+    *'repositoryOwner(login:'*)
+      printf '%s\n' '{"data":{"repository":{"projectsV2":{"nodes":[]}},"repositoryOwner":{"projectsV2":{"nodes":[{"id":"PVT_a","title":"Board A"}]}}}}'
+      exit 0
+      ;;
+    *'addProjectV2ItemById'*)
+      echo '$add_result'
+      exit 0
+      ;;
+  esac
+fi
+echo "unexpected gh: \$*" >&2
+exit 1
+EOF
+}
+
+test_create_issue_adds_to_project_in_the_created_issues_repo() {
+  stub_create_and_project_gh PVI_item
+
+  run bash "$(script "$CREATE_ISSUE")" --project "Board A" -- \
+    --title "Fix the bug" --body-file body.md --repo ed/other --type Task
+
+  assert_eq 0 "$STATUS" "exit status"
+  assert_eq "https://github.com/ed/other/issues/12" "$STDOUT" "stdout carries only the URL"
+  assert_contains "$STDERR" "SUCCESS: Issue #12 added to 'Board A'" "project output"
+  assert_contains "$(cat "$SANDBOX/graphql.calls")" 'name: "other"' "issue looked up in its own repo"
+  assert_not_contains "$(cat "$SANDBOX/graphql.calls")" "cwd-repo" "cwd repo never used"
+}
+
+test_create_issue_failed_project_add_exits_3_without_recreating() {
+  stub_create_and_project_gh null
+
+  run bash "$(script "$CREATE_ISSUE")" --project "Board A" -- \
+    --title "Fix the bug" --body-file body.md --repo ed/other --type Task
+
+  assert_eq 3 "$STATUS" "exit status"
+  assert_eq "https://github.com/ed/other/issues/12" "$STDOUT" "created URL still reported"
+  assert_contains "$STDERR" "do not create it again" "no-retry instruction"
   assert_eq 1 "$(wc -l < "$SANDBOX/issue-create.calls" | tr -d ' ')" "create invocations"
 }
 

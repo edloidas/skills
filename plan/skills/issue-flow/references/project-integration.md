@@ -23,7 +23,11 @@ GitHub Projects V2 API requires a token with `read:project` scope. The internal 
 
 ### Adding Issues to Projects
 
-`add-to-project.sh <issue-number> <project-title> [status]`
+`create-issue.sh` adds every `--project` itself, right after creating the issue, and passes the
+created issue's repository through `--repo` — so an issue created with `--repo` elsewhere is looked
+up there, not in the current directory's repository.
+
+`add-to-project.sh [--repo <owner>/<repo>] <issue-number> <project-title> [status]`
 
 - Searches repo-level projects first, then org-level
 - Case-insensitive project title matching
@@ -31,7 +35,7 @@ GitHub Projects V2 API requires a token with `read:project` scope. The internal 
 
 ### Updating Project Status
 
-`project-status.sh <issue-number> <status>`
+`project-status.sh [--repo <owner>/<repo>] <issue-number> <status>`
 
 - Finds the issue's associated project automatically
 - Discovers the Status field via GraphQL introspection

@@ -1,16 +1,22 @@
 #!/bin/bash
 # add-to-project.sh
 # Add an issue to a GitHub Projects V2 board with an optional initial status.
-# Usage: add-to-project.sh <issue-number> <project-title> [status]
+# Usage: add-to-project.sh [--repo <owner>/<repo>] <issue-number> <project-title> [status]
 
 set -e
+
+REPO=""
+if [[ "${1:-}" = "--repo" ]]; then
+  REPO="$2"
+  shift 2
+fi
 
 ISSUE_NUMBER="$1"
 PROJECT_TITLE="$2"
 INITIAL_STATUS="$3"
 
 if [[ -z "$ISSUE_NUMBER" || -z "$PROJECT_TITLE" ]]; then
-  echo "Usage: add-to-project.sh <issue-number> <project-title> [status]"
+  echo "Usage: add-to-project.sh [--repo <owner>/<repo>] <issue-number> <project-title> [status]"
   exit 1
 fi
 
@@ -23,7 +29,9 @@ if [[ -z "$GH_TOKEN" ]]; then
   exit 1
 fi
 
-REPO=$(gh repo view --json nameWithOwner -q '.nameWithOwner' 2>/dev/null)
+if [[ -z "$REPO" ]]; then
+  REPO=$(gh repo view --json nameWithOwner -q '.nameWithOwner' 2>/dev/null)
+fi
 OWNER=$(echo "$REPO" | cut -d/ -f1)
 NAME=$(echo "$REPO" | cut -d/ -f2)
 
@@ -111,5 +119,5 @@ echo "SUCCESS: Issue #$ISSUE_NUMBER added to '$PROJECT_TITLE'"
 # Optionally set initial status
 if [[ -n "$INITIAL_STATUS" ]]; then
   echo "Setting status to '$INITIAL_STATUS'..."
-  bash "$SCRIPT_DIR/project-status.sh" "$ISSUE_NUMBER" "$INITIAL_STATUS"
+  bash "$SCRIPT_DIR/project-status.sh" --repo "$REPO" "$ISSUE_NUMBER" "$INITIAL_STATUS"
 fi

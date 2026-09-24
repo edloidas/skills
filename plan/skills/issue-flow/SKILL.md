@@ -71,11 +71,11 @@ bash "<skill-dir>/scripts/repo-ownership.sh" [<owner>/<repo>]
 bash "<skill-dir>/scripts/pr-reviewers.sh" [<owner>/<repo>] [<limit>]
 bash "<skill-dir>/scripts/issue-assignees.sh" [<owner>/<repo>] [<limit>]
 bash "<skill-dir>/scripts/issue-types.sh" [<owner>/<repo>]
-bash "<skill-dir>/scripts/create-issue.sh" -- --title "<title>" --body-file <path> [...]
-bash "<skill-dir>/scripts/add-to-project.sh" <issue-number> <project-title> [status]
+bash "<skill-dir>/scripts/create-issue.sh" (--project "<title>"... | --no-project) -- --title "<title>" --body-file <path> [...]
+bash "<skill-dir>/scripts/add-to-project.sh" [--repo <owner>/<repo>] <issue-number> <project-title> [status]
 bash "<skill-dir>/scripts/get-issue-projects.sh" <issue-number>
 bash "<skill-dir>/scripts/suggest-projects.sh" [<owner>/<repo>]
-bash "<skill-dir>/scripts/project-status.sh" <issue-number> <status>
+bash "<skill-dir>/scripts/project-status.sh" [--repo <owner>/<repo>] <issue-number> <status>
 ```
 
 ## Step Router
@@ -283,11 +283,16 @@ bash "<skill-dir>/scripts/issue-types.sh"
 - Empty output → the repo has no assignable issue types. This is the normal answer for a
   personal repo. Skip silently.
 
+The wrapper runs the same probe when `--type` is absent and refuses to create, listing the
+types, if any exist.
+
 Do **not** probe with the REST `repos/<owner>/<repo>/issue-types` catalog: it can list type names for a personal repository even though GraphQL `repository.issueTypes` is `null`, and `gh issue create --type` will fail after creating the issue. Do **not** probe with `gh issue create --type bug --dry-run`; there is no `--dry-run` flag.
 
 ### Project
 
-If creating a child of an existing parent (linked, attached, or sub-issue of #N), follow **## Project Inheritance From Parent** instead.
+Decide this before creating: the wrapper refuses without `--project "<title>"` (repeatable) or `--no-project`, and adds the issue to each project itself.
+
+If the new issue is a child of, or a follow-up to, an existing issue, follow **## Project Inheritance From Parent** instead.
 
 Otherwise, rank candidates via `suggest-projects.sh` (output: `<bucket>\t<id>\t<title>\t<note>` per row; `USED` = projects from your recent issues, `RELATED` = other active projects):
 
@@ -295,7 +300,7 @@ Otherwise, rank candidates via `suggest-projects.sh` (output: `<bucket>\t<id>\t<
 bash "<skill-dir>/scripts/suggest-projects.sh"
 ```
 
-Compose `AskUserQuestion`: slot 1 (Recommended) = first row, slots 2–4 = next rows, with `<note>` as each option's description. Backfill the last slot with "No project" when fewer than 4 rows exist; skip silently when zero rows. On selection, run `add-to-project.sh <issue-number> "<project-title>"`.
+Compose `AskUserQuestion`: slot 1 (Recommended) = first row, slots 2–4 = next rows, with `<note>` as each option's description. Backfill the last slot with "No project" when fewer than 4 rows exist. Pass the selection as `--project "<project-title>"`; "No project", zero rows, or Projects V2 unavailable is `--no-project`.
 
 ### Milestone
 
@@ -332,8 +337,10 @@ Assign via `--milestone "<title>"` in the create-wrapper command.
 Use the `<TMPDIR>` from the parallel setup batch. Write the issue body to `<TMPDIR>/body.md` with the host's file-write tool, then create the issue through the wrapper:
 
 ```bash
-bash "<skill-dir>/scripts/create-issue.sh" -- --title "<title>" --body-file <TMPDIR>/body.md --label "<label>" --assignee "<assignee>" [--type "<name>"] [--milestone "<name>"]
+bash "<skill-dir>/scripts/create-issue.sh" (--project "<title>"... | --no-project) -- --title "<title>" --body-file <TMPDIR>/body.md --label "<label>" --assignee "<assignee>" [--type "<name>"] [--milestone "<name>"]
 ```
+
+Exit `2` means nothing was created — supply the missing decision and run it again. Exit `3` means the issue exists (its URL is on stdout) but a project add failed: add it with the `add-to-project.sh` command the error names, never by creating again.
 
 The wrapper runs `gh issue create` once. If `gh` returns nonzero after creating the issue, it checks recent issues by exact title, current author, and the creation window; when exactly one match exists, reuse that URL and continue. If it exits nonzero, stop and reconcile manually. Do not retry issue creation until that reconciliation finds no created issue.
 
@@ -342,7 +349,7 @@ When creating multiple issues, use unique filenames per issue: `<TMPDIR>/<slug>-
 **Media the body references.** Where the body carries a local image or video path — a screenshot of the bug, a mockup — pass it through the wrapper once per file. Alt text follows the path after a `#`, on images only: a video renders as a player and cannot carry any, so a `#` on one is a mistake.
 
 ```bash
-bash "<skill-dir>/scripts/create-issue.sh" -- --title "<title>" --body-file <TMPDIR>/body.md --attach "<path>#<alt text>"
+bash "<skill-dir>/scripts/create-issue.sh" --project "<project>" -- --title "<title>" --body-file <TMPDIR>/body.md --attach "<path>#<alt text>"
 ```
 
 `gh` uploads the file and rewrites that path in place, so the image lands where the body put it. A path passed without being referenced is appended to the end of the issue instead. Needs `gh` 2.99.0 or newer and does not work on GitHub Enterprise Server: check `gh --version` first, and where either is missing, create the issue with the image reference stripped from the body and report that it could not be uploaded.
@@ -385,11 +392,11 @@ gh api repos/<owner>/<repo>/issues/<parent_number>/sub_issues --jq '.[].number'
 
 Print one line: `Linked <N> sub-issues to #<parent>`.
 
-When a **newly created** issue is being linked as a child of an existing parent, also follow **## Project Inheritance From Parent** so the child lands on the same project board(s) as the parent.
+When a new issue will be linked as a child of an existing parent, resolve its projects via **## Project Inheritance From Parent** before creating it, so the child lands on the same project board(s) as the parent.
 
 ## Project Inheritance From Parent
 
-When a new issue is being created as a child of an existing parent (sub-issue link, "attach to #N", "linked to #N"), inherit the parent's project membership instead of using the generic Project picker.
+When a new issue is being created as a child of an existing parent (sub-issue link, "attach to #N", "linked to #N"), or as a follow-up filed while working on #N (the `issue-<N>` branch is checked out, or a caller names the issue it is working on), inherit #N's project membership instead of using the generic Project picker. Below, "parent" means #N in both cases.
 
 Fetch the parent's projects (output: `<id>\t<title>`):
 
@@ -406,7 +413,7 @@ Apply based on count:
   2. "Pick individually" — follow-up yes/no per project
   3. "Skip projects"
 
-Run `add-to-project.sh <child_number> "<title>"` sequentially per selected project (parallel calls hit Projects V2 rate limits).
+Pass each selected project as its own `--project "<title>"` to the create wrapper; "Skip projects" is `--no-project`.
 
 When linking many children to the same parent (see **## Batch Issue Creation**), fetch the parent's projects once and reuse the decision for every child — do not prompt per child.
 
@@ -449,11 +456,15 @@ When the user asks to create multiple issues at once (e.g., an epic with child i
 1. Resolve `<TMPDIR>` once via `mktemp -d`
 2. Create the parent/epic issue first (if applicable)
 3. Write all child issue body files with unique slugs: `<TMPDIR>/<slug>-body.md`
-4. Create all child issues in parallel (one create-wrapper call per issue) — apply **### Assignment Defaults** once and reuse the same assignee for every issue in the batch, including the parent. Do not prompt per issue.
+4. Create the child issues sequentially — the exception to running independent calls in parallel, because the wrapper adds to projects as it creates and parallel Projects V2 calls hit rate limits. On exit `3`, add that issue with the command the error names and continue with the next child. Resolve the project set once: via **## Project Inheritance From Parent** when children are linked to an **existing** parent, otherwise via **### Project**. Apply **### Assignment Defaults** once and reuse the same assignee for every issue in the batch, including the parent. Do not prompt per issue.
+   ```bash
+   for slug in <slug1> <slug2> <slug3>; do
+     bash "<skill-dir>/scripts/create-issue.sh" --project "<project>" -- --title "<title for $slug>" --body-file <TMPDIR>/$slug-body.md --label "<label>" --assignee "<assignee>" [--type "<name>"]
+   done
+   ```
 5. Batch-link sub-issues to parent (if applicable) — use the for loop from **## Sub-Issues**
-6. Add all issues to project sequentially — run `add-to-project.sh` in a for loop, one at a time (parallel calls cause API rate-limit failures and require retries). When children are linked to an **existing** parent, resolve the project set via **## Project Inheritance From Parent** instead of asking generically.
-7. Ask about initial project status (e.g., "Backlog", "Current Sprint") via `AskUserQuestion` — then batch-update via `project-status.sh`
-8. Print a summary table at the end instead of per-issue Step 1 reports
+6. Ask about initial project status (e.g., "Backlog", "Current Sprint") via `AskUserQuestion` — then batch-update via `project-status.sh`
+7. Print a summary table at the end instead of per-issue Step 1 reports
 
 ### Summary Table Format
 
