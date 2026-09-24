@@ -109,8 +109,12 @@ visible per item — never a single opaque "implementing" step.
 | 6     | Summary + choose endgame          | Always — unless `auto` (takes Option 1) |
 | 7     | Review feedback, then merge       | Through `pr-review`'s own gate          |
 
-Done means: the endgame picked in Phase 6 has reached its **Then** column — merged, `Mergeable:`
-reported, pushed, or left local — or a gate is waiting on the user.
+Done means, attended: the endgame picked in Phase 6 has reached its **Then** column — merged,
+`Mergeable:` reported, pushed, or left local — or a gate is waiting on the user. Under `auto`,
+which gates nothing past Phase 0: the pull request is merged, or left open with the reason
+Phase 7 names. A blocker the report names also ends a run, and nothing else does: a phase's
+closing line is a status note printed in the same message as the next phase's first action,
+and a phase's `Then stop.` bounds that phase's work, not the run.
 
 ## Phase 0: Resolve Issue
 
@@ -123,7 +127,8 @@ If it carries no number, ask, per **Asking the User**:
 
 - Option 1 → invoke `issue-flow` with intent `"pick an issue"`. Its Step 0 ranks the
   backlog, lets the user choose, and chains into `issue-analyze` on the selection —
-  continue from Phase 2 with the number and the analysis it returns. `None` picked, or a
+  apply Phase 1's stop conditions to the analysis it returns and print Phase 1's closing
+  line, then continue from Phase 2 with it. `None` picked, or a
   short-circuit branch carrying no issue number, ends the run — stop and say which, since
   Phase 5 commits under the issue title.
 - Option 2 → print `Re-run with an issue number, e.g. /solve-issue 42.` and stop.
@@ -145,8 +150,10 @@ Stop conditions from the analyzer:
 - Issue is assigned to another user (`> Note:` line) → continue, but flag the
   condition in the final summary.
 
-End Phase 1 with one line: `Phase 1: #<N> "<title>" — <N> tasks, <N> blockers.` Then go to
-Phase 2. Nothing is edited before the plan is printed.
+End Phase 1 with one line that carries the run's finish line:
+`Phase 1: #<N> "<title>" — <N> tasks, <N> blockers. Finish: merged PR | Phase 6 endgame's Then column.`
+— the first under `auto`, the second attended. Then go to Phase 2. Nothing is edited before
+the plan is printed.
 
 ## Phase 2: Plan
 
