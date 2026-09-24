@@ -88,6 +88,14 @@ grep -rn "mockRejectedValue\|thenThrow" --include="*.test.*" --include="*Test.ja
 # sensitive. Names that promise a specific character, then check the literal with od -c
 grep -rniE "no.?break|nbsp|zero.?width|\bBOM\b|tab|indent|escap|newline|unicode|utf" \
   --include="*.test.*" --include="*Test.java"
+
+# Test-only seams (3.7): suspect exports outside tests, then who else imports each one
+rg -n "export (const|function|class) (_\w+|\w*(ForTests?|Testing|Internal)\w*)" \
+  --glob '!*.test.*' --glob '!*.spec.*'
+rg -n "@VisibleForTesting" --glob "*.java"
+# once per symbol the two lines above surface; only the defining file listed → lead
+rg -lw "<symbol>" --glob '!*.test.*' --glob '!*.spec.*' --glob '!**/__tests__/**' \
+  --glob '!**/src/test/**'
 ```
 
 ## 2b. Dynamic checks
@@ -205,10 +213,17 @@ Record the mutation strings verbatim. A matrix nobody can reproduce is worth wha
 
 For each test in scope, answer the Five-Question Gate (SKILL.md) and tag catalog hits.
 
-Two resolution rules before the shortcuts:
+Resolution rules before the shortcuts:
 
 - **Shortcuts never override the gate.** Before any Delete, run question 1 — if the test's
   intent names a real, otherwise-untested promise, the verdict upgrades to Rewrite.
+- **Before a Delete, find out why the test exists** when the code, its callers, the docs,
+  and the neighbouring tests do not say. `git log -S '<test name>' --oneline -- <file>` finds
+  the commit that added it. `git show <sha>` settles whether it fixed a bug: the same commit
+  changes production code the test exercises, or its message names a bug or links an issue.
+  Then the test is a regression guard and the verdict becomes Rewrite (rename to the rule,
+  3.1) unless another test catches the same bug.
+  Skip it when the gate already settled the verdict — trivia, rot, a measured duplicate.
 - **When several shortcuts match one test**, resolve by contract: no unique contract pinned →
   Delete beats Tighten; real contract anchored to a mock or implementation → Rewrite beats
   Tighten. Tighten is only for tests already pointed at the right contract.
@@ -248,6 +263,9 @@ Shortcuts that usually settle a verdict fast:
 - Red only under a combination of mutations, sole cover of neither mechanism → 1.15,
   **Delete**. Sole cover of one → **Keep**; the redundancy belongs to the other mechanism.
 - Asserts an acknowledged-wrong value → 1.7, **Surface separately** (it's a bug report).
+- Reaches the SUT through an export or hook no production code imports → 3.7, **Rewrite**
+  through the real entry point; **Delete** with the code when the code has no production
+  caller, naming the production deletion.
 
 ## 4. Verdicts and severity
 
@@ -401,6 +419,12 @@ relocated the theater; a mutation that reddens some other test instead means one
 is misnamed, and one that reddens many is 3.6 measured rather than guessed. For broader
 checks on critical modules, suggest mutation tooling (Stryker for TS/JS, PIT for Java) — but
 the manual spot-check is mandatory either way.
+
+A **regression test** — written or rewritten for a known bug — must also go red on the actual
+pre-fix code, not only on a mutation: run it against the fix commit's parent in a temporary
+worktree, confirm it fails on the rule the bug broke rather than on setup, then
+`git worktree remove --force` it — whether the run passed, failed, or was interrupted — before
+touching anything else. A regression test that never failed on the bug proves the fixture, not the fix.
 
 Report what changed grouped by verdict, with before/after test counts and any bugs the
 tightened asserts exposed.

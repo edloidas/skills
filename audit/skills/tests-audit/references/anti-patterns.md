@@ -181,7 +181,11 @@ build-verification job rather than faking it locally; a slow truth beats a fast 
 **Not this:** *drift tests* comparing two independently maintained sources — a generated file
 against its origin, docs against exports, a lockfile against a manifest. The detection grep
 fires on them because they read a config or a package manifest, but Arrange writes nothing
-that Assert reads: two authors do, and the test exists precisely because they diverge.
+that Assert reads: two authors do, and the test exists precisely because they diverge. Nor
+a source check whose text *is* the contract — a user-facing config key, a CLI flag's spelling,
+an emitted byte sequence, a published path — where it is the cheapest guard that reaches it.
+It fails when the contract changes and survives renaming every identifier around it; if an
+identifier rename breaks it, it is the second shape above after all.
 
 ### 1.10 Error test that can pass without an error
 
@@ -573,3 +577,31 @@ contract of their own; drop the rest **opportunistically** when next touching th
 Deterministic redundant tests are cheap — a dedicated cleanup pass to lower a test count
 costs more review than it returns, and this is never an audit's headline finding. Say so
 explicitly in the report so nobody reads "redundant" as "urgent".
+
+### 3.7 Test-only production seam
+
+```ts
+// src/session.ts
+export function __resetCacheForTests() { cache.clear(); }   // no production caller
+export const _internal = { parseToken };                   // imported only by session.test.ts
+```
+
+**Mechanism:** production code carries an export, flag, wrapper, or injection hook whose only
+callers are tests. Production pays for it — public surface, a branch that never runs outside
+the suite, a symbol nobody dares delete — and the test it serves pins a private path instead
+of the contract, so it is usually 2.1 or 2.2 as well. The far end is a production function
+with no production caller at all: dead code kept alive by its own tests, which report it as
+covered.
+
+**Detect:** list the importers of each suspect export — underscore-prefixed, `ForTest`,
+`internal`, `@VisibleForTesting`. If every importer besides the defining file is a test, it
+is a lead (commands in `audit-procedure.md` §2).
+
+**Fix:** test through the real entry point and drop the seam. Where the code has no
+production caller, the code goes with its tests — name that production deletion in the
+report, since it is the verdict's real payoff. A reset hook for module-level state is design
+feedback (the state wants an owner instance); report it on the module rather than refactoring.
+
+**Not this:** a seam production also uses — a constructor parameter or injected clock that
+production code passes or defaults — which is the boundary discipline the double policy asks
+for. Nor a testing API a package ships to its consumers on purpose.

@@ -11,7 +11,7 @@ when_to_use: >
   catching bugs.
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
-allowed-tools: Read Grep Glob Bash(grep:*) Bash(rg:*) Bash(fd:*) Bash(cat:*) Bash(wc:*) Bash(xargs:*) Bash(od:*) Bash(git diff:*) Bash(mktemp:*) Bash(cp:*)
+allowed-tools: Read Grep Glob Bash(grep:*) Bash(rg:*) Bash(fd:*) Bash(cat:*) Bash(wc:*) Bash(xargs:*) Bash(od:*) Bash(git diff:*) Bash(git log:*) Bash(git show:*) Bash(mktemp:*) Bash(cp:*)
 argument-hint: "[files | dir]"
 ---
 
@@ -116,7 +116,8 @@ The most-violated rule in real suites, so it gets its own section:
    reading the neighbouring tests the diff never touched.
    End with one line: `Scope: 24 of 96 test files (sampled) · vitest 3, wdio 9`.
 2. **Mechanical scan** for grep-able smells (weak asserts, sleeps, `.skip`/`@Disabled`,
-   `.only`, loops in test bodies, mock round-trips, catch-only error tests) — commands in
+   `.only`, loops in test bodies, mock round-trips, catch-only error tests, exports only tests
+   import) — commands in
    `references/audit-procedure.md`. End with one line: `Scan: 31 leads across 12 files`.
 3. **Dynamic checks**: the baseline run, the shuffled repeat run, and the coverage run.
    Isolation, flakiness, and runtime don't grep — a green shuffled run is evidence no static
@@ -186,6 +187,7 @@ apply it, and do not start a second audit pass.
 | Test asserts an acknowledged-wrong value ("should be 4, left as is") | Report separately: that's a bug, not a test defect |
 | `.skip` / `@Disabled` / commented-out for months | Delete (git remembers) — Rewrite if its intent names an uncovered promise |
 | Getters, framework wiring, generated code under test | Delete — cost > 0, information = 0 |
+| Export, flag, or hook in production code that only tests import | Rewrite through the real entry point; Delete with the code if nothing in production calls it |
 
 Full catalog with mechanisms, detection, and worked fixes: `references/anti-patterns.md`.
 
