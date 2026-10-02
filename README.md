@@ -10,14 +10,14 @@
 
 <p align="center">
   <img src="https://img.shields.io/github/v/tag/edloidas/skills?style=flat-square&color=FD3DB5&label=release" alt="Release">
-  <img src="https://img.shields.io/badge/skills-38-FD3DB5?style=flat-square" alt="38 skills">
+  <img src="https://img.shields.io/badge/skills-39-FD3DB5?style=flat-square" alt="39 skills">
   <img src="https://img.shields.io/badge/agents-4-FD3DB5?style=flat-square" alt="4 agents">
   <img src="https://img.shields.io/badge/license-MIT-FD3DB5?style=flat-square" alt="MIT license">
 </p>
 
 ---
 
-38 skills for planning, building, reviewing, auditing, maintaining, and shipping software —
+39 skills for planning, building, reviewing, auditing, maintaining, and shipping software —
 written once and distributed to [Claude Code](https://docs.anthropic.com/en/docs/claude-code),
 [Codex](https://developers.openai.com/codex), [OpenCode](https://opencode.ai), and
 [pi](https://pi.dev), following the [Agent Skills specification](https://agentskills.io/specification).
@@ -27,7 +27,7 @@ it. Nothing runs in the background, nothing is injected into every prompt.
 
 | Group | What it covers | Skills |
 | ----- | -------------- | -----: |
-| [plan](#plan) | Issue drafting, scope analysis, backlog triage, full issue lifecycle | 3 |
+| [plan](#plan) | Issue drafting, scope analysis, next-issue picks, full issue lifecycle | 4 |
 | [build](#build) | Conflict resolution, commits, findings fixes, live probes | 5 |
 | [review](#review) | Adversarial change review, cleanup, claim verification, approach boards, PR feedback, spec extraction | 6 |
 | [audit](#audit) | CI, scripts, security, skills, workspace, tsconfig, Three.js, React, tests | 9 |
@@ -262,16 +262,18 @@ Every skill below runs on Claude Code, Codex, OpenCode, and pi, with one excepti
 
 Issue drafting, analysis, and the full issue lifecycle.
 
-`issue-flow` owns every git and GitHub write in the pipeline — picking the next issue,
-creating it, branching, snapshots, commits, squashing, pushes, PRs, merges. Skills that
+`issue-flow` owns every git and GitHub write in the pipeline — creating the issue, branching, snapshots, commits, squashing, pushes, PRs, merges. Skills that
 orchestrate the pipeline (`solve-issue`) delegate those actions to it instead of
 reimplementing them, so the commit subject format and the squash rules live in one place.
+`next-issue` owns choosing what to work on; it is not in the `/` menu and runs on its own
+when you ask what is next.
 
 | Skill | Description |
 | ----- | ----------- |
 | [issue-writer](./plan/skills/issue-writer/) | Draft and update well-structured GitHub issues |
 | [issue-analyze](./plan/skills/issue-analyze/) | Analyze issue scope and produce an implementation task list |
 | [issue-flow](./plan/skills/issue-flow/) | Full issue lifecycle: pick, create, branch, commit, push, PR, merge |
+| [next-issue](./plan/skills/next-issue/) | Recommend the next issues to work on, with type, size, fit, and what blocks the rest |
 
 ### Build
 

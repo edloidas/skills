@@ -15,7 +15,7 @@ when_to_use: >
   first.
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
-allowed-tools: Bash(git diff:*) Bash(git status:*) Bash(git log:*) Bash(gh pr view:*) Bash(gh api:*) Bash(sleep:*) Bash(jq:*) Bash(rm:*) Bash(ls:*) Read Edit Write Glob Grep Task Skill AskUserQuestion
+allowed-tools: Bash(bash:*) Bash(git diff:*) Bash(git status:*) Bash(git log:*) Bash(gh pr view:*) Bash(gh api:*) Bash(sleep:*) Bash(jq:*) Bash(rm:*) Bash(ls:*) Read Edit Write Glob Grep Task Skill AskUserQuestion
 argument-hint: "[issue-number] [auto] [slices]"
 metadata:
   author: edloidas
@@ -53,7 +53,7 @@ neither, ask the same question in normal chat as a numbered list of 2–5 option
 recommended first, one short line of description each — and wait for the user to reply
 with a number.
 
-Every gate defaults to proceeding, so a host that cannot prompt still completes the flow;
+Every gate but Phase 1's existing-work check defaults to proceeding, so a host that cannot prompt still completes the flow;
 **Flow Overview** lists which phases ask. A `Stop` option exits the run cleanly, leaving
 local state as it stands. `auto` in `$ARGUMENTS` is an unattended run: take the
 `(Recommended)` option at every gate, the Phase 6 endgame and the Phase 7 seam question
@@ -108,7 +108,7 @@ Phases 6–7 run once, after the last. Every `issue-flow` intent sent in slice m
 | Phase | Step                              | Asks user?                              |
 | ----- | --------------------------------- | --------------------------------------- |
 | 0     | Resolve issue number              | Only if `$ARGUMENTS` is empty           |
-| 1     | Analyze via `issue-analyze`       | No                                      |
+| 1     | Existing-work check, then analyze | Only if the issue already has work      |
 | 2     | Plan + create branch              | Only if plan is genuinely uncertain     |
 | 3     | Implement                         | Only on hard blockers                   |
 | 4     | Verify (checks + optional probe)  | Only to opt into a live observation     |
@@ -136,10 +136,11 @@ If it carries no number, ask, per **Asking the User**:
 - **Option 2** — header `Manual`, label `Stop and ask` — `Exit so you can re-run with an explicit issue number.`
 
 - Option 1 → invoke `issue-flow` with intent `"pick an issue"`. Its Step 0 ranks the
-  backlog, lets the user choose, and chains into `issue-analyze` on the selection —
-  apply Phase 1's stop conditions to the analysis it returns and print Phase 1's closing
-  line, then continue from Phase 2 with it. `None` picked, or a
-  short-circuit branch carrying no issue number, ends the run — stop and say which, since
+  backlog through `next-issue`, lets the user choose, and chains into `issue-analyze` on
+  the selection — run Phase 1's existing-work check on the pick, apply Phase 1's stop
+  conditions to the analysis it returns, and print
+  Phase 1's closing line, then continue from Phase 2 with it. `None` picked, or a report
+  with no entry to pick, ends the run — stop and say which, since
   Phase 5 commits under the issue title.
 - Option 2 → print `Re-run with an issue number, e.g. /solve-issue 42.` and stop.
 
@@ -148,6 +149,9 @@ Two preconditions stop the run before anything else: `gh` unauthenticated, which
 with `Not inside a git repository.`
 
 ## Phase 1: Analyze
+
+First run the existing-work check in `references/existing-work.md`; it goes on, asks, or
+ends the run before anything is spent on `<N>`.
 
 Invoke `issue-analyze` on `<N>`. Do not duplicate its work inline — capture the Scope
 Analysis and Implementation Tasks it emits. It is a prerequisite, not a nice-to-have: it
@@ -161,7 +165,7 @@ Stop conditions from the analyzer:
   condition in the final summary.
 
 End Phase 1 with one line that carries the run's finish line:
-`Phase 1: #<N> "<title>" — <N> tasks, <N> blockers. Finish: merged PR | Phase 6 endgame's Then column.`
+`Phase 1: #<N> "<title>" — <N> tasks, <N> blockers, existing work <verdict>. Finish: merged PR | Phase 6 endgame's Then column.`
 — the first under `auto`, the second attended. Then go to Phase 2. Nothing is edited before
 the plan is printed.
 
@@ -227,8 +231,7 @@ go to Phase 4 — do not run the project's checks ad hoc as you go; Phase 4 sele
 
 ## Phase 4: Verify
 
-Detect the verification set from `package.json` + repo conventions. Do not
-skip verification on "simple" changes.
+Detect the verification set from `package.json` + repo conventions.
 
 ### Choosing what to run
 
@@ -262,8 +265,7 @@ If any verification step fails:
 
 1. Go back to Phase 3, fix the cause, and re-run **only** the failing check.
 2. If the same check fails twice after two fix attempts, stop and hand back to the user
-   with the failure output. Do not proceed past Phase 4 with failing verification. Do not
-   rationalize skipping it.
+   with the failure output. Do not proceed past Phase 4 with failing verification.
 
 ### Ending the phase
 
@@ -427,10 +429,8 @@ a simplification found here is a Note for Phase 6, not work, because it would sh
 unreviewed. Its **Suggested for commit message** section is an input to the commit body —
 pass it along under Commit below.
 
-If `code-cleanup` is not installed, do the comment pass inline: delete comments that
-narrate what the code already says, that repeat what a nearby comment carries, or that
-point at an issue or PR instead of stating the fact. Keep non-obvious gotchas at one to
-two lines. Leave documentation comments and `HACK`/`FIXME`/`TODO` markers alone.
+If `code-cleanup` is not installed, delete comments that restate the code or a nearby
+comment; leave documentation comments and `HACK`/`FIXME`/`TODO` markers alone.
 
 ### Remove cruft
 

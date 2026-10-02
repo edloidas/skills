@@ -6,7 +6,7 @@ description: >
   branch detection (main/master/epic-*), and compact step reports. Supports entering at any
   step.
 when_to_use: >
-  On "which issue should I work on", "create an issue", "start work on #N", "commit this",
+  On "pick an issue", "create an issue", "start work on #N", "commit this",
   "open a PR", or "merge that PR" — and for any single step of the issue pipeline.
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
@@ -20,7 +20,7 @@ metadata:
 
 Manages the full GitHub issue lifecycle: select → issue → branch → commits → PR → merge → close. Supports entering at any step and advancing forward. Reads the target repo's CLAUDE.md for project-specific conventions.
 
-Mutation class: **writes and pushes, and writes to external services (GitHub)** — branch creation, snapshots, commits, squashing, pushes, PRs, merges. This skill owns every one of them, plus issue selection. Skills that orchestrate the pipeline (`solve-issue`) delegate those actions here rather than reimplementing them, so the commit subject format and the squash rules exist in exactly one place.
+Mutation class: **writes and pushes, and writes to external services (GitHub)** — branch creation, snapshots, commits, squashing, pushes, PRs, merges. This skill owns every one of them; `next-issue` owns ranking. Skills that orchestrate the pipeline (`solve-issue`) delegate those actions here rather than reimplementing them, so the commit subject format and the squash rules exist in exactly one place.
 
 ## Bundled Scripts
 
@@ -191,27 +191,24 @@ An explicit instruction always wins — "assign to @octocat", "leave it unassign
 Use when no issue number was given and the intent is to work on something — "what's
 next", "pick an issue", or a bare work intent with nothing to work on named.
 
-Validate the environment and resolve the repo first:
+Invoke the `next-issue` skill, passing on any narrowing the user stated ("something
+small", "a bug"). It checks the repo and auth, ranks the backlog, and prints its report;
+Step 0 owns only the question after it. If `next-issue` cannot be chained, ask the user
+for an issue number — do not rank the backlog here.
 
-```bash
-bash "<skill-dir>/scripts/check-env.sh"
-gh repo view --json nameWithOwner --jq '.nameWithOwner'
-gh api user --jq .login
-```
+With no entry above **Not now**, stop. Otherwise ask, per **Asking the User**,
+one option per such entry in report order, at most three, then `None`:
 
-If `gh repo view` fails, stop: `Not inside a GitHub repository.`
+- **Header**: `Issue #<N>`, or `#<N>` past four digits
+- **Label**: the title, cut to five words; a `Recommended` entry gets `(Recommended)`
+- **Description**: the entry's tag line, then its `Why:` line
+- **`None`**: `Skip issue selection`
 
-Then run the ranking pipeline in `references/issue-selection.md`. It reads local git
-state, plan files, open PRs, and the backlog, ranks candidates into five tiers, and
-presents up to four picks via `AskUserQuestion`. Every command it runs is a read — Step
-0 never writes.
+On a pick, invoke `issue-analyze` on `<N>` with no summary first; if it cannot be chained,
+print the number, title, and `Why:` line. Continue to Step 2 only when the caller's intent
+named it; otherwise stop after the analysis. Step 0 only reads.
 
-On selection it hands off to the `issue-analyze` skill for the full implementation
-analysis. Continue to Step 2 with the selected number when the flow is meant to keep
-going; stop after the analysis when the user only asked what to work on next.
-
-If the user picks `None`, stop — do not fall through to Step 1 and create an issue
-nobody asked for.
+On `None`, stop — do not fall through to Step 1 and create an issue nobody asked for.
 
 ## Step 1: Create Issue
 
