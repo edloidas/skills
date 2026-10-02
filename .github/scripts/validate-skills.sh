@@ -208,8 +208,8 @@ workflow/skills/solve-issue=550"
 # The last four rows are grandfathered at their size when this cap arrived — the
 # ceiling stops growth, it does not sanction the size.
 BODY_TOKEN_CAP=5000
-BODY_TOKEN_BUDGETS="plan/skills/issue-flow=13000
-workflow/skills/solve-issue=7500
+BODY_TOKEN_BUDGETS="plan/skills/issue-flow=13400
+workflow/skills/solve-issue=7650
 review/skills/changes-review=7500
 review/skills/code-cleanup=6500
 audit/skills/security-audit=5700

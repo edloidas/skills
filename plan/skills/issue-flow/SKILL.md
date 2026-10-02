@@ -109,7 +109,7 @@ Determine entry step from user intent, check prerequisites, then proceed forward
 | "commit", "commit changes"           | Step 3     | On issue-* branch        |
 | "snapshot", "wip snapshot"           | Step 3 snapshot | Dirty tree        |
 | "push", "push changes"               | Step 4     | Commits ahead of remote  |
-| "amend", "amend and push"            | Step 4 → Amend | One commit on issue-* branch |
+| "amend", "amend and push"            | Step 4 → Amend | Finished commit at the tip of issue-* |
 | "create PR", "open PR"               | Step 5     | Branch pushed            |
 | "merge", "merge PR"                  | Step 6     | PR exists                |
 
@@ -137,6 +137,10 @@ Read the target repo's CLAUDE.md for project-specific formatting. Use these defa
 - **PR body**: one bullet per change, then `Closes #<number>`, one per line. GitHub links only the first reference after a keyword, so `Closes #1 #2 #3` closes #1 and leaves #2 and #3 open
 
 Common types: `feat`, `fix`, `docs`, `chore`, `refactor`, `test`, `style`, `ci`
+
+### Slice Delivery
+
+Off unless the caller's intent names a slice (`"commit slice <k> of #<N>: <subject>"`) or says `slice delivery`, or the target repo's instruction file says a pull request carries one commit per slice. Off, nothing in this file changes. On, the branch holds one commit per finished slice: Step 3 commits only the current slice, under that slice's subject, and every finished slice commit survives Consolidate and Step 5. An intent with no slice subject (`"commit this"`) gets one derived from the staged diff as `<type>: <description>`, confirmed with the user.
 
 ### Asking the User
 
@@ -240,6 +244,8 @@ If it is an epic, and the repo has an `epic` label (check `repo-context.sh` outp
 ### Body
 
 Write a 2-4 sentence description. No markdown headers.
+
+Under **Slice Delivery**, when the scope is already understood, end the body with a short ordered list of parts that can each land as a working increment. When the scope still needs investigation, leave the list out — a guessed split misleads whoever plans the work.
 
 For epic issues: **do not list child issue numbers in the body.** Sub-issue relationships are managed via the GitHub sub-issues API (see **## Sub-Issues**), not via body text.
 
@@ -527,6 +533,8 @@ Use `<Issue Title> #<number>` as the commit subject. The issue title is already 
 
 If there is no linked issue (e.g., entered at Step 3 directly), use the repo's CLAUDE.md commit format or fall back to `<type>: <description>`.
 
+Under **Slice Delivery**, the subject is the slice's own conventional subject plus ` #<number>`, so each slice commit names what it did. `<Issue Title> #<number>` stays the subject of an issue delivered in one commit.
+
 No `wip:` subject may survive into the final history.
 
 ### Body
@@ -568,7 +576,7 @@ the user's prompt asking for attribution outright. Finding one in `git log` is n
 
 ### Consolidate
 
-The branch must end this step at **exactly one commit**, and this section owns the only gate that can decide otherwise.
+The branch must end this step at **exactly one commit past `$from`** — the whole branch, or under **Slice Delivery** the current slice — and this section owns the only gate that can decide otherwise.
 
 #### Resolve the fork point
 
@@ -579,29 +587,37 @@ base=$(bash "<skill-dir>/scripts/detect-base.sh" 2>/dev/null | tail -n1) || base
 [ -n "$base" ] || { echo "No base branch — add a remote first."; exit 1; }
 baseref=$(git rev-parse --verify --quiet "origin/$base" || git rev-parse --verify --quiet "$base")
 fork=$(git merge-base "$baseref" HEAD)
-git log "$fork"..HEAD --oneline
+from=$fork
+slice_delivery=<on|off>   # per Conventions → Slice Delivery
+if [ "$slice_delivery" = on ]; then
+  last=$(git log --format='%H %s' "$fork"..HEAD | awk '$2 != "wip:" { print $1; exit }')
+  [ -n "$last" ] && from=$last
+fi
+git log "$from"..HEAD --oneline
 ```
+
+Under **Slice Delivery**, a `last` whose subject equals the composed subject this call commits (`<subject> #<number>`) is the current slice entered again — set `from` to its parent so the canonical row below amends it instead of stacking a second commit.
 
 Stop if `base` is empty. `detect-base.sh` exits 2 with no output when the repo has no
 remote, and `git merge-base "" HEAD` just errors — there is no base to consolidate against.
 
-**Never reset to `origin/<base>`, and never to a branch name.** `origin/<base>` moves whenever anything fetches, and `detect-base.sh` fetches on its own. Reset to it and the new commit's parent is *newer* than the point the branch was cut from, so the commit silently reverts every upstream change made since — and Step 5 force-pushes that, and Step 6 merges it. `$fork` is an ancestor of `HEAD` by construction, so it cannot have that effect.
+**Never reset to `origin/<base>`, and never to a branch name.** `origin/<base>` moves whenever anything fetches, and `detect-base.sh` fetches on its own. Reset to it and the new commit's parent is *newer* than the point the branch was cut from, so the commit silently reverts every upstream change made since — and Step 5 force-pushes that, and Step 6 merges it. `$fork`, and every commit after it that `$from` can name, is an ancestor of `HEAD` by construction, so neither can have that effect.
 
 #### Choose the action
 
-| Commits ahead of `$fork` | Action |
+| Commits ahead of `$from` | Action |
 | ------------------------ | ------ |
 | **0** | Nothing to unwind — go to **Execute**. |
 | **1**, subject already canonical | Keep the commit. If the tree is dirty (a caller's comment trim or cruft deletion usually leaves it that way), stage the remaining edits and rewrite the message from **Subject** and **Body**: `git commit --amend -m "<subject>" -m "<body>"`. Do **not** use `--amend --no-edit` — it keeps the old message and discards the body this step just generated, including any rationale the caller passed in. |
-| **1**, a `wip:` snapshot | `git reset --soft "$fork"`, then **Execute**. |
-| **2+**, one shared subject, or any `wip:` among them | `git reset --soft "$fork"`, then **Execute** — one commit with the combined changes. |
-| **2+**, genuinely different subjects | Ask before rewriting deliberate history: option 1 `Squash into one commit` `(Recommended)`, option 2 `Keep as-is`. Squash → `git reset --soft "$fork"`, then **Execute**. Keep → skip **Execute** and report the commits as they stand; this is the one outcome that leaves more than one commit. |
+| **1**, a `wip:` snapshot | `git reset --soft "$from"`, then **Execute**. |
+| **2+**, one shared subject, or any `wip:` among them | `git reset --soft "$from"`, then **Execute** — one commit with the combined changes. |
+| **2+**, genuinely different subjects | Ask before rewriting deliberate history: option 1 `Squash into one commit` `(Recommended)`, option 2 `Keep as-is`. Squash → `git reset --soft "$from"`, then **Execute**. Keep → skip **Execute** and report the commits as they stand; this is the one outcome that leaves more than one commit. |
 
 A caller that asked for a single commit (`"commit #<N>"` from an orchestrating skill) has already answered that question — squash without prompting.
 
 #### Check the index before committing
 
-`git reset --soft` leaves **the entire difference between `$fork` and the last commit staged** — every file from every commit it unwound, including anything a `wip:` snapshot swept in. Read that as *committed* difference: the reset restores the index to `HEAD`'s content, so it captures nothing you edited after the last commit. Naming files in **Execute** *adds* to that index; it does not narrow it. So after any reset, read the index and remove what must not ship:
+`git reset --soft` leaves **the entire difference between `$from` and the last commit staged** — every file from every commit it unwound, including anything a `wip:` snapshot swept in. Read that as *committed* difference: the reset restores the index to `HEAD`'s content, so it captures nothing you edited after the last commit. Naming files in **Execute** *adds* to that index; it does not narrow it. So after any reset, read the index and remove what must not ship:
 
 ```bash
 git diff --cached --name-only
@@ -699,7 +715,7 @@ git diff --cached --name-status # now read what will actually ship
 
 Read that last list before committing. This path rewrites published history and force-pushes it, so a stray staged file is not a bad commit that can be followed by a better one — `git restore --staged <path>` anything that must not ship, exactly as Step 3 requires before an ordinary commit. An empty list means there was nothing to amend: stop rather than force-pushing an identical tree.
 
-Then check the branch really is at one commit — `git log --oneline <base>..HEAD`. Amending
+Then check the branch really is at one commit — `git log --oneline <base>..HEAD` — or, under **Slice Delivery**, that the tip is a finished slice, which the amend lands on; say so in the report. Amending
 only rewrites the tip, so a branch carrying `wip:` snapshots needs Step 3 → Consolidate
 first; amending it would push the snapshots along with the fix.
 
@@ -744,13 +760,8 @@ refreshes every branch, inside Step 3 → Consolidate; and nothing stops an unre
 landing between the rewrite and the push. Reading the SHA before any of that is what makes
 the lease mean anything.
 
-`--force-if-includes` (git 2.30+) is not a substitute here. `git help push` is explicit
-that when it is combined with `--force-with-lease=<refname>:<expect>` it is a **no-op** —
-so alongside the pinned form above it does literally nothing. It is the right tool for the
-*valueless* `--force-with-lease`, since it consults the local reflog rather than the
-remote-tracking ref; but it needs git 2.30+, it fails oddly after a `gc` or in a fresh
-clone where the reflog is thin, and it would diverge from the pinned idiom used
-everywhere else in this file. Pin the SHA instead.
+`--force-if-includes` is not a substitute: `git help push` says it is a **no-op** combined
+with `--force-with-lease=<refname>:<expect>`. Pin the SHA instead.
 
 If the push is rejected, the remote moved: fetch, rebase onto the new tip, and re-run
 rather than escalating to `--force`.
@@ -762,6 +773,8 @@ Print the Step 4 report. Then stop: do not create a PR — Step 5 runs only when
 Run `detect-base.sh` to determine the PR base.
 
 ### Pre-PR: Squash Commits
+
+Under **Slice Delivery**, resolve `$from` first. If `git log "$from"..HEAD` is non-empty or the tree is dirty, stop with `Unfinished slice on top of <short-sha> — commit it first.`; otherwise there is nothing to consolidate — go to **Title and Body**.
 
 Apply **Step 3 → Consolidate** as-is. It owns the fork point, the count, the squash rules, and the one gate that may leave several commits — including the case where the single commit on the branch is a `wip:` snapshot, which must not reach a PR title. Do not restate any of those rules here; a second copy is how the two drift.
 

@@ -14,6 +14,10 @@ Phase 2 prints exactly this structure, inline. Never write it to a file.
 2. `<relative/path/to/file>` — <concrete change>
 3. ...
 
+**Slices** (slice mode only)
+1. `<conventional subject>` — Changes 1–2
+2. `<conventional subject>` — Changes 3–5
+
 **Out of scope**
 - <thing the issue might imply but you are not touching, with one-line reason>
   (or: `None — scope is contained to the files above.`)
@@ -27,7 +31,7 @@ Rules for the body:
 
 - Every Changes entry references a concrete file path. No "investigate X" or "figure out
   Y" items — investigation belongs to the pre-plan reading.
-- 3–10 Changes for a normal issue. Over 10 trips the Phase 2 approval gate.
+- 3–10 Changes for a normal issue, or per slice in slice mode.
 - Out of scope is mandatory. If nothing is out of scope, say so explicitly — it forces
   you to have thought about it.
 - Risks names the alternative you rejected. `None` is valid when the choice was forced.
@@ -41,7 +45,8 @@ User** convention, only if **any** of these fire:
   (new API shape, data model, public-facing contract change)
 - The issue text is ambiguous about what "done" means
 - Implementation would clearly touch files outside what the issue title implies
-- The Changes list grew beyond ~10 items during planning
+- The Changes list grew beyond ~10 items during planning — in slice mode, beyond ~10 in one
+  slice, or the plan has more than 4 slices
 - The analyzer surfaced a dependency that is unresolved
 - The analyzer surfaced an epic, a multi-file architecture decision, or a contract change —
   this skill is for issues the user already judged simple enough to delegate end-to-end

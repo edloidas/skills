@@ -1,10 +1,11 @@
 ---
 name: solve-issue
 description: >
-  End-to-end GitHub issue workflow: analyze the issue, plan and implement, verify with
-  available tests/build/lint and an optional live observation, simplify, audit the tests it
-  added, attack the change with parallel adversarial reviewers and fix what they find, trim
-  comments and artifacts, then choose a push / PR / merge endgame — holding the merge while
+  End-to-end GitHub issue workflow, whole or slice by slice with one commit each: analyze
+  the issue, plan and implement, verify with available tests/build/lint and an optional live
+  observation, simplify, audit the tests it added, attack the change with parallel
+  adversarial reviewers and fix what they find, trim comments and artifacts, then choose a
+  push / PR / merge endgame — holding the merge while
   Copilot and other automated reviewers report, and answering and resolving their threads.
   The lifecycle's git and GitHub writes are delegated to `issue-flow`, the review threads to
   `pr-review`.
@@ -15,7 +16,7 @@ when_to_use: >
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
 allowed-tools: Bash(git diff:*) Bash(git status:*) Bash(git log:*) Bash(gh pr view:*) Bash(gh api:*) Bash(sleep:*) Bash(jq:*) Bash(rm:*) Bash(ls:*) Read Edit Write Glob Grep Task Skill AskUserQuestion
-argument-hint: "[issue-number] [auto]"
+argument-hint: "[issue-number] [auto] [slices]"
 metadata:
   author: edloidas
 ---
@@ -93,6 +94,15 @@ entries as you go. Where it does not, keep the printed numbered Changes list as 
 tracker and state which item you are on before starting it. Either way, progress is
 visible per item — never a single opaque "implementing" step.
 
+### Slices
+
+Slice mode is on when `$ARGUMENTS` carries `slices`, or the repo's instruction file says a
+pull request carries one commit per slice — `issue-flow`'s **Slice Delivery** switch. Off,
+the issue is one slice and every phase runs as written. On, Phases 2–5 follow
+`references/slices.md`: Phase 2 plans the slices, Phases 3–5 run once per slice, and
+Phases 6–7 run once, after the last. Every `issue-flow` intent sent in slice mode ends with
+` (slice delivery)`, so its later steps keep the slice commits.
+
 ## Flow Overview
 
 | Phase | Step                              | Asks user?                              |
@@ -105,7 +115,7 @@ visible per item — never a single opaque "implementing" step.
 | 4.4   | Subtle simplification pass        | No                                      |
 | 4.5   | Tests audit (only if tests moved) | No                                      |
 | 4.6   | Advisor round(s) + apply fixes    | No                                      |
-| 5     | Comment cleanup + commit          | No                                      |
+| 5     | Comment cleanup + commit          | Slice mode, attended: after each slice  |
 | 6     | Summary + choose endgame          | Always — unless `auto` (takes Option 1) |
 | 7     | Review feedback, then merge       | Through `pr-review`'s own gate          |
 
@@ -198,7 +208,7 @@ Do not detect the base yourself; `issue-flow` owns it and handles the `epic-*` c
 Entered on an existing branch with no Step 2 report, ask `issue-flow` for the fork point.
 
 End Phase 2 with one line: `Phase 2: branch issue-<N> off <base>, fork <sha>, <N> changes
-planned.`
+planned, slices: <N> | off.`
 
 ## Phase 3: Implement
 
@@ -437,8 +447,9 @@ staged, and that every intended deletion shows up.
 
 ### Commit
 
-Invoke `issue-flow` with intent `"commit #<N>"`. Its Step 3 squashes the branch to one
-commit, writes the subject and body, and reports the result. It owns the subject format,
+Invoke `issue-flow` with intent `"commit #<N>"` — in slice mode `"commit slice <k> of #<N>:
+<subject>"`. Its Step 3 squashes the branch, or the current slice, to one commit, writes
+the subject and body, and reports the result. It owns the subject format,
 the body, and the squash rules for every `wip:` snapshot Phase 4.6 created — do not
 restate any of them here, and do not run the git commands yourself.
 
@@ -447,7 +458,7 @@ rationale `code-cleanup` pulled out of the source — it belongs in the body's *
 paragraph, not appended at the end.
 
 Capture the short SHA and subject from Step 3's report for the Phase 6 summary. If Step 3
-comes back with a dirty tree or more than one commit, re-invoke it rather than fixing the
+comes back with a dirty tree or more than one commit past the last finished slice, re-invoke it rather than fixing the
 history here. The endgame pushes the commit, not the working copy.
 
 End Phase 5 with one line: `Phase 5: <N> comments trimmed, <N> cruft files removed,

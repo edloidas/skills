@@ -414,7 +414,8 @@ Functional checklist, not micromanagement:
 - Clear about WHAT needs to be done
 - Context for WHY
 - Code snippets for complex patterns
-- Logical order
+- Logical order — in a repo whose instruction file asks for one commit per slice, and only
+  when the scope is settled, order it as working increments that can each land on their own
 
 ### UI Behavior (If applicable)
 Expected user interactions:

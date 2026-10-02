@@ -428,8 +428,12 @@ The 500-line body cap is mechanical, so it lives in `validate-skills.sh` rather 
 
 The ~5000-token cap is enforced the same way, estimated as body bytes / 4, because the
 line cap alone let a body grow sideways — `changes-review` sat at 499 lines and ~7.3k
-tokens. `BODY_TOKEN_BUDGETS` carries `issue-flow` and `solve-issue` for the reasons above,
-and four skills grandfathered at their size when the cap arrived: `changes-review` 7500,
+tokens. `BODY_TOKEN_BUDGETS` carries `issue-flow` (13400) and `solve-issue` (7650) for the
+reasons above. Both were raised from 13000 and 7500 when slice delivery arrived: the
+per-slice reset point belongs in `issue-flow`'s Consolidate, the one owner of the squash
+rules, and `solve-issue` keeps only the switch and its call sites in the body, with the
+loop itself in `references/slices.md`. It also carries four skills grandfathered at their
+size when the cap arrived: `changes-review` 7500,
 `code-cleanup` 6500, `security-audit` 5700, `consilium` 5300. Those four ceilings stop
 growth and sanction nothing; lower a row whenever its skill is trimmed.
 
