@@ -77,6 +77,14 @@ the three `require()` call sites in `scripts/` all have ESM equivalents.
 pin only moves this to the next upgrade.
 ```
 
+## A Consilium Report
+
+When the message being reworked is a report from `review:consilium`, the rework is that report's concise form, not
+the shape above: an `Options` list, best first, each option in one or two plain sentences led by a
+verdict tag (*recommended*, *the move for later*, *not yet*, *out*); then `Needs your call` with the
+open questions and what each flips; then `Fix soon, whatever you pick` if a fact applies to every
+option; then the pick, last. Rejected options stay, one line each — here they are what the user judges.
+
 ## Keep And Cut
 
 Keep decisions already made with their one-line reason, numbers, filenames, commands, versions,

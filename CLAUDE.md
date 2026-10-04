@@ -432,10 +432,10 @@ tokens. `BODY_TOKEN_BUDGETS` carries `issue-flow` (13400) and `solve-issue` (765
 reasons above. Both were raised from 13000 and 7500 when slice delivery arrived: the
 per-slice reset point belongs in `issue-flow`'s Consolidate, the one owner of the squash
 rules, and `solve-issue` keeps only the switch and its call sites in the body, with the
-loop itself in `references/slices.md`. It also carries four skills grandfathered at their
-size when the cap arrived: `changes-review` 7500,
-`code-cleanup` 6500, `security-audit` 5700, `consilium` 5300. Those four ceilings stop
-growth and sanction nothing; lower a row whenever its skill is trimmed.
+loop itself in `references/slices.md`. It also carries three skills grandfathered at their
+size when the cap arrived: `changes-review` 7500, `code-cleanup` 6500, `security-audit` 5700.
+Those ceilings stop growth and sanction nothing; lower a row whenever its skill is trimmed, and
+delete it once the skill fits the cap — `consilium` left the table that way.
 
 A budget is a per-skill ceiling, not an exemption — a budgeted skill that grows past its
 allowance still fails, so a deliberate size cannot drift into an accidental one. Adding a
@@ -777,8 +777,7 @@ Claude-only unless its workflow changes:
 `review/skills/consilium` was Claude-only for the same reasons and is now portable. It stopped
 being a review skill: it is an approach board that takes a problem or a decision, generates
 candidate approaches from independent seats, and ranks them. Making it portable was mostly
-subtraction — dispatch is stated as intent, model choice as intent and depth as a budget rather
-than a turn count, its outside seat runs through `outsider` instead of a private `codex exec`
+subtraction — dispatch is stated as intent, model choice as intent, its outside seat runs through `outsider` instead of a private `codex exec`
 wrapper, and the temp files that forced `${CLAUDE_SESSION_ID}` are gone entirely because the
 candidate set travels in the dispatched prompt and `outsider` owns the one file that still hits
 disk.

@@ -77,16 +77,16 @@ test_body_over_token_cap_fails() {
 }
 
 test_budgeted_skill_inside_its_ceiling_passes() {
-  long_body 180 | make_skill review/skills/consilium "$portable"
-  validate review/skills/consilium
+  long_body 190 | make_skill audit/skills/security-audit "$portable"
+  validate audit/skills/security-audit
   assert_eq 0 "$STATUS" "exit status"
 }
 
 test_budgeted_skill_past_its_ceiling_fails() {
-  long_body 200 | make_skill review/skills/consilium "$portable"
-  validate review/skills/consilium
+  long_body 210 | make_skill audit/skills/security-audit "$portable"
+  validate audit/skills/security-audit
   assert_eq 1 "$STATUS" "exit status"
-  assert_contains "$STDERR" "the ceiling is 5300" "error output"
+  assert_contains "$STDERR" "the ceiling is 5700" "error output"
 }
 
 # -------------------------------------------------------- dispatched prompts --

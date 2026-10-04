@@ -308,19 +308,21 @@ posture step decides whether answering is even its business before it decides wh
 verifies a claim's premise separately from its conclusion, because bot reviewers get the premise wrong
 far more often than the conclusion, and it changes no code unless asked.
 
-`consilium` is not a review skill. It takes a problem or a decision, not a diff: three seats generate
-candidate approaches — one of them an agent outside this process, with none of the conversation's
-context — and three attack the candidate set comparatively, then the surviving objections are verified
-before anything is ranked. An approach already on the table enters as one candidate among several
-rather than as the subject of an audit. It is the most expensive skill in the collection; spend it on
-decisions that are expensive to reverse.
+`consilium` is not a review skill. It takes a problem or a decision, not a diff: up to four seats
+generate candidate approaches — one of them the simplest thing that could work, one an agent outside
+this process with none of the conversation's context — and two attack the set comparatively, then two
+verification lenses rule on every objection, refuting only on evidence, before anything is ranked.
+The current state is always a candidate, a hedged rule becomes an open question rather than a
+candidate to rank, and an approach already on the table is withheld from the generators and enters as
+one candidate among several. It reports a full ranking by default and a concise one on `short`. It is
+the most expensive skill in the collection; spend it on decisions that are expensive to reverse.
 
 `doubt` is the cheap half of that idea. It takes a set of claims that already exists — findings, a
 plan, an analysis, a reviewer's objection — and rules on each one with two seats that never see the
 reasoning behind them: one cold, one an agent outside the process. Its verdicts separate a claim
 that is wrong from one that is true only in a narrower case, and both from one that is true and
 still not worth acting on, so a seat that wants a trivial finding dropped never has to argue it is
-false. Upholding the claim set is a normal outcome. Two agents rather than nine is the point: it is
+false. Upholding the claim set is a normal outcome. Two agents rather than eight is the point: it is
 affordable enough to fire before you contradict a reviewer, before a comment is published, or once
 before fixes start.
 

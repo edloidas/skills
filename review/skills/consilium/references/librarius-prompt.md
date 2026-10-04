@@ -31,48 +31,63 @@ useful; an invented library is worse than silence.
 
 ## Output
 
-### Existing Solutions
+Records only, each in its own fenced block, keys in this order, no prose between them.
+
+One record per existing solution or pattern you found:
 
 ```
-N. <name> — <what it is> (<maturity: mature | active | stagnant | abandoned>)
-   Covers: <which part of this decision it answers>
-   Assumes: <what it requires of its caller>
-   Adopting it commits you to: <the real cost>
-   Source: <URL or documentation reference>
+prior-art: <name — library, standard, platform feature, or pattern>
+what: <what it is, one line>
+maturity: mature | active | stagnant | abandoned
+covers: <which part of this decision it answers>
+commits-you-to: <the dependency, data shape, or cadence adopting it brings>
+chosen-by: <named systems that use it, or none>
+source: <URL or documentation reference>
+verified: yes | no
 ```
 
-### What Comparable Systems Chose
-
-One short paragraph per pattern, naming actual systems. Where they converged, say so and say why.
-Where they split, name both camps and the trade-off that separates them.
-
-### Ruled Out By Prior Art
+One record per approach the ecosystem tried and abandoned:
 
 ```
-N. <approach> — tried and abandoned by <who>, because <stated reason>. Source: <reference>
+abandoned: <approach>
+by: <who>
+because: <their stated reason>
+source: <reference>
 ```
 
-### As a Candidate
-
-If an existing solution is strong enough to be a candidate approach in its own right, state it as one:
+Where an existing solution is strong enough to be a candidate in its own right, state it as one:
 
 ```
-### Candidate: Adopt <name>
-
-**Summary**: one line.
-**How it works**: how it slots into this decision.
-**What it buys**: what you stop having to build.
-**What it costs**: the dependency, the assumptions, the ceiling.
-**What it forecloses**: what becomes hard once you are inside its model.
-**Reversibility**: cheap | moderate | expensive — and what leaving it takes.
+id: L1
+candidate: Adopt <name>
+core: <where the complexity lives, and what this gives up — one line>
+how: <how it slots into this decision>
+touches: <files, modules, or surfaces it changes>
+buys: <what you stop having to build>
+costs: <the dependency, its assumptions, its ceiling>
+forecloses: <what becomes hard once you are inside its model>
+exit: cheap | moderate | expensive
+exit-how: <what leaving it takes>
+rejects-assumption: none | <the frame assumption it rejects>
+constraint-check: ok | violates: <constraint>
+ceiling: none | <when this stops being enough>
+source: <URL or documentation reference>
+verified: yes | no
 ```
 
-### Unverified
+Side records where you have them — `flag:` + `text:`, and `question:` + `changes:` (which candidate
+wins or drops out depending on the answer).
 
-Anything you could not check, and what you would need to check it.
+Footer, last, always:
 
-If prior art turns up nothing relevant, output exactly: `No relevant prior art found.` and say where
-you looked.
+```
+read: <sources you opened>
+unverified: <what you could not check, and what checking it would need — or none>
+end: <N> prior-art, <N> abandoned, <N> candidates
+```
+
+If prior art turns up nothing relevant, the footer says `end: 0 prior-art, 0 abandoned, 0 candidates`
+and `read:` lists where you looked.
 
 ## The Decision
 

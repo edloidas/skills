@@ -32,7 +32,7 @@ question. Two seats, one verdict each, no ranking and no fixes.
 The premise is `changes-review`'s: whoever produced a claim wants it accepted, and a seat that reads
 their reasoning inherits it. So the seats get the propositions and nothing else.
 
-Two agents against consilium's seven to nine. That is the point — cheap enough to fire automatically.
+Two agents against consilium's seven or eight. That is the point — cheap enough to fire automatically.
 
 ## When to Use
 
