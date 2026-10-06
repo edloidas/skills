@@ -391,7 +391,8 @@ toward dismissal is real:
 - **A Reject must name the specific context the reviewer lacked** — the file it could not
   see, the invariant it did not know. "I don't think that's right" is not a rejection.
 - **Rejects survive verbatim.** Phase 6 carries the reviewer's own wording, not your
-  paraphrase of it. The user grades the rejection, not your summary.
+  paraphrase of it. The user grades the rejection, not your summary. Under `auto` no user
+  does, so `doubt` grades it first — `references/review-feedback.md` → **Doubting Rejects**.
 
 Apply the Fix items, then re-run the Phase 4 checks the fixes could plausibly break.
 Verification must be green again before continuing. If a check the fixes broke still fails

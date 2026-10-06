@@ -164,6 +164,26 @@ that is this flow's job, not its. The same applies to `defer`: a claim deferred 
 1 already has an issue filed against it, so carry the issue number forward and reference
 it rather than filing a duplicate.
 
+## Doubting Rejects
+
+Phase 4.6, under `auto` only. Once per round, after the Fix / Note / Reject split and before
+the Round 2 triggers are counted, invoke `doubt` on that round's Rejects. Each claim is the
+reviewer's finding, verbatim, with the files it names — never your reason for rejecting it,
+which is the reasoning `doubt` must not see.
+
+| `doubt` on the finding | The Reject becomes |
+| ---------------------- | ------------------ |
+| *holds* | Fix |
+| *holds only in a narrower case* | Fix, scoped to that case |
+| *nobody can settle it* | Fix — uncertainty defaults to Fix |
+| *true but not worth the fix* | Note |
+| *falls* | Reject, standing, with `doubt`'s verdict beside it |
+
+The Round 2 triggers and the closing line count the Rejects that stand. The Phase 6 summary
+lists every converted one as `Overturned by doubt: <finding> -> Fix | Note`, so no Reject
+disappears from the report. Without `doubt`, the Rejects stand and the summary says
+`doubt` was unavailable.
+
 ## Filing the deferrals
 
 On `PR + merge` only, and before the merge intent. One `issue-flow` `"create an issue"`

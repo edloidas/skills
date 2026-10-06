@@ -323,8 +323,10 @@ reasoning behind them: one cold, one an agent outside the process. Its verdicts 
 that is wrong from one that is true only in a narrower case, and both from one that is true and
 still not worth acting on, so a seat that wants a trivial finding dropped never has to argue it is
 false. Upholding the claim set is a normal outcome. Two agents rather than eight is the point: it is
-affordable enough to fire before you contradict a reviewer, before a comment is published, or once
-before fixes start.
+affordable enough to fire before you contradict a reviewer, before a comment is published, once
+before fixes start, or when an agent is about to make a call the user would normally make and the
+user is not there. The report groups claims by what to do with them and ends on a short
+recommendation of what to do next.
 
 | Skill | Description |
 | ----- | ----------- |
