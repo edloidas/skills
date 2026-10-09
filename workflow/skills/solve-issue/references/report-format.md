@@ -10,6 +10,9 @@ Print this shape, omitting rows that do not apply:
 **Changed**
 - <bullet per logical change>
 
+**Related work**
+- <Skip | Prepare | Correct from the plan, one line each, with its source issue>
+
 **Verified**
 - type-check: ok
 - unit tests: ok (N passed)
@@ -34,7 +37,9 @@ Print this shape, omitting rows that do not apply:
 
 Omit the **Advisors** detail lines when the reviewers came back clean — a single
 `no findings` line is enough. Omit **Tests** when Phase 4.5 was skipped, and **Not
-applied** when there is nothing in it.
+applied** when there is nothing in it, and **Related work** when the plan had none. Related
+work is the record of where the commit departs from the issue text, so a Skip or Correct
+the plan made is never left out of it.
 
 The blockquote under **Not applied** is not decoration. Reproduce the finding in the
 reviewer's own words, unedited; if you shorten it, say how many lines you cut and from
@@ -53,6 +58,11 @@ turns finished work back into pending work.
 **Changed**
 - `src/ui/Tooltip.tsx` — flip placement when the measured rect leaves the viewport
 - `src/ui/useAnchorRect.ts` — return the raw rect instead of a clamped one
+
+**Related work**
+- Skip: `Popover` placement — #413 owns it
+- Prepare: exported `resolvePlacement(rect, viewport)` — for #415
+- Correct: resolves once after first paint, per a comment on #412, not on every scroll
 
 **Verified**
 - type-check: ok

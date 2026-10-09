@@ -18,6 +18,12 @@ Phase 2 prints exactly this structure, inline. Never write it to a file.
 1. `<conventional subject>` — Changes 1–2
 2. `<conventional subject>` — Changes 3–5
 
+**Related work** (only when the analysis has a Related Work section)
+- Part of #<P> — next open: #<S>, #<S>
+- Skip: <scope item> — #<M> owns it
+- Prepare: <field, export, or shape> — Change <k>, for #<K>
+- Correct: following #<P> | the comment by @<user> over the issue text on <point>
+
 **Out of scope**
 - <thing the issue might imply but you are not touching, with one-line reason>
   (or: `None — scope is contained to the files above.`)
@@ -35,6 +41,13 @@ Rules for the body:
 - Out of scope is mandatory. If nothing is out of scope, say so explicitly — it forces
   you to have thought about it.
 - Risks names the alternative you rejected. `None` is valid when the choice was forced.
+- Related work carries every Skip, Prepare, and Correct the analysis derived, each with
+  its source issue, so the user sees every way the plan departs from the issue text. A
+  Skip also appears under Out of scope.
+- A Prepare is a Changes entry in a file the plan already touches. One that needs a new
+  file, or more than the interface the other issue consumes, is dropped and named under
+  Out of scope instead: building the next issue's work here is scope creep on an issue
+  judged simple.
 
 ## When to pause for approval
 
@@ -48,8 +61,11 @@ User** convention, only if **any** of these fire:
 - The Changes list grew beyond ~10 items during planning — in slice mode, beyond ~10 in one
   slice, or the plan has more than 4 slices
 - The analyzer surfaced a dependency that is unresolved
+- A Skip drops something the issue explicitly asks for, or a Correct changes what "done"
+  means — the plan no longer delivers the issue as written
 - The analyzer surfaced an epic, a multi-file architecture decision, or a contract change —
-  this skill is for issues the user already judged simple enough to delegate end-to-end
+  this skill is for issues the user already judged simple enough to delegate end-to-end.
+  An issue that merely has a parent epic is not this condition
 
 Then ask one focused question and wait for the reply:
 

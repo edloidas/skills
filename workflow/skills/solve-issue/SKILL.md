@@ -23,8 +23,7 @@ metadata:
 
 # Solve Issue
 
-Runs the full issue workflow in one command; **Flow Overview** below is the phase list.
-Designed for issues the user already judged simple. When uncertainty appears, pause and
+Runs the full issue workflow in one command. Designed for issues the user already judged simple. When uncertainty appears, pause and
 ask — or, under `auto`, decide through a board (**Asking the User**).
 
 **Mutation class: writes to external services.** It edits the working tree, and through
@@ -154,7 +153,7 @@ First run the existing-work check in `references/existing-work.md`; it goes on, 
 ends the run before anything is spent on `<N>`.
 
 Invoke `issue-analyze` on `<N>`. Do not duplicate its work inline — capture the Scope
-Analysis and Implementation Tasks it emits. It is a prerequisite, not a nice-to-have: it
+Analysis, Related Work, and Implementation Tasks it emits. It is a prerequisite, not a nice-to-have: it
 resolves the issue title this flow commits under, and the blockers Phase 1 stops on.
 
 Stop conditions from the analyzer:
@@ -165,7 +164,7 @@ Stop conditions from the analyzer:
   condition in the final summary.
 
 End Phase 1 with one line that carries the run's finish line:
-`Phase 1: #<N> "<title>" — <N> tasks, <N> blockers, existing work <verdict>. Finish: merged PR | Phase 6 endgame's Then column.`
+`Phase 1: #<N> "<title>" — <N> tasks, <N> blockers, <N> related consequences, existing work <verdict>. Finish: merged PR | Phase 6 endgame's Then column.`
 — the first under `auto`, the second attended. Then go to Phase 2. Nothing is edited before
 the plan is printed.
 
@@ -404,7 +403,7 @@ Run a second round if **any** of these hold:
 
 - The fixes touched a file that was not in the round-1 diff
 - The fixes changed more than ~30% of the round-1 changed-line count
-- You rejected any intent-reviewer finding
+- You rejected any intent-reviewer finding other than one asking for a planned Skip
 - You rejected more than half of all findings
 
 The last two exist because a wrongly rejected bug does not change the diff, so no

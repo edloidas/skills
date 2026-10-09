@@ -271,7 +271,7 @@ when you ask what is next.
 | Skill | Description |
 | ----- | ----------- |
 | [issue-writer](./plan/skills/issue-writer/) | Draft and update well-structured GitHub issues |
-| [issue-analyze](./plan/skills/issue-analyze/) | Analyze issue scope and produce an implementation task list |
+| [issue-analyze](./plan/skills/issue-analyze/) | Analyze issue scope against its parent, siblings, and dependencies, and produce an implementation task list |
 | [issue-flow](./plan/skills/issue-flow/) | Full issue lifecycle: pick, create, branch, commit, push, PR, merge |
 | [next-issue](./plan/skills/next-issue/) | Recommend the next issues to work on, with type, size, fit, and what blocks the rest |
 
