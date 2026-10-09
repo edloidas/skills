@@ -110,6 +110,23 @@ test_only_fixes_recommend_patch() {
   assert_contains "$(recommendation)" "PATCH bump" "recommendation"
 }
 
+test_a_hash_spelling_a_keyword_is_not_counted() {
+  pkg_repo 1.2.3
+  git tag -a v1.2.3 -m "Release v1.2.3"
+  commit "fix: correct the thing" a.txt
+  local tries=0
+  until git log --oneline -1 | cut -d' ' -f1 | grep -q add; do
+    tries=$((tries + 1))
+    [ "$tries" -le 20000 ] || fail "no short hash containing 'add' within 20000 amends"
+    FIXTURE_CLOCK=$((FIXTURE_CLOCK + 1))
+    _git_dates
+    git commit --quiet --amend --no-edit
+  done
+  analyze
+  assert_eq 0 "$(summary_of Features)" "feature count"
+  assert_contains "$(recommendation)" "PATCH bump" "recommendation"
+}
+
 test_only_refactors_recommend_patch() {
   pkg_repo 1.2.3
   git tag -a v1.2.3 -m "Release v1.2.3"

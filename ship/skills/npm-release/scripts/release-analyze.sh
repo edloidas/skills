@@ -75,11 +75,11 @@ git diff "$LAST_TAG"..HEAD --stat
 echo ""
 
 # Analyze commit types
-FEAT_COUNT=$(git log "$LAST_TAG"..HEAD --oneline | grep -i -E "(feat|feature|add)" | wc -l | tr -d ' ')
-FIX_COUNT=$(git log "$LAST_TAG"..HEAD --oneline | grep -i -E "(fix|bug)" | wc -l | tr -d ' ')
-REFACTOR_COUNT=$(git log "$LAST_TAG"..HEAD --oneline | grep -i -E "(refactor|refact)" | wc -l | tr -d ' ')
-DOCS_COUNT=$(git log "$LAST_TAG"..HEAD --oneline | grep -i -E "(doc|docs)" | wc -l | tr -d ' ')
-BREAKING_COUNT=$(git log "$LAST_TAG"..HEAD --oneline | grep -i -E "(breaking|break)" | wc -l | tr -d ' ')
+FEAT_COUNT=$(git log "$LAST_TAG"..HEAD --format=%s | grep -i -E "(feat|feature|add)" | wc -l | tr -d ' ')
+FIX_COUNT=$(git log "$LAST_TAG"..HEAD --format=%s | grep -i -E "(fix|bug)" | wc -l | tr -d ' ')
+REFACTOR_COUNT=$(git log "$LAST_TAG"..HEAD --format=%s | grep -i -E "(refactor|refact)" | wc -l | tr -d ' ')
+DOCS_COUNT=$(git log "$LAST_TAG"..HEAD --format=%s | grep -i -E "(doc|docs)" | wc -l | tr -d ' ')
+BREAKING_COUNT=$(git log "$LAST_TAG"..HEAD --format=%s | grep -i -E "(breaking|break)" | wc -l | tr -d ' ')
 
 echo "=== Change Summary ==="
 echo "Features: $FEAT_COUNT"

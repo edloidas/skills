@@ -33,6 +33,7 @@ _git_dates() {
 init_repo() {
   local dir="${1:-repo}" branch="${2:-main}"
   git_env
+  _git_dates
   mkdir -p "$dir"
   git -C "$dir" init --quiet
   git -C "$dir" symbolic-ref HEAD "refs/heads/$branch"
