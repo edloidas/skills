@@ -8,7 +8,8 @@ description: >
   resolves. Changes no code unless asked.
 when_to_use: >
   When a pull request needs reviewing, when PR feedback needs addressing or answering, when
-  Copilot or other bot comments need dealing with, or on "what is still open on this PR".
+  Copilot or other bot comments need dealing with, or on "what is still open on this PR". Not for
+  the whole queue of pull requests waiting on you — that is pr-triage.
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
 allowed-tools: Bash(git:*) Bash(gh:*) Bash(pnpm:*) Bash(npm:*) Read Glob Grep Edit Task Skill

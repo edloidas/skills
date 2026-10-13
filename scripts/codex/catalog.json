@@ -267,6 +267,7 @@
         "automation"
       ],
       "skills": [
+        "workflow/skills/pr-triage",
         "workflow/skills/solve-issue"
       ]
     }

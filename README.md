@@ -10,14 +10,14 @@
 
 <p align="center">
   <img src="https://img.shields.io/github/v/tag/edloidas/skills?style=flat-square&color=FD3DB5&label=release" alt="Release">
-  <img src="https://img.shields.io/badge/skills-39-FD3DB5?style=flat-square" alt="39 skills">
+  <img src="https://img.shields.io/badge/skills-40-FD3DB5?style=flat-square" alt="40 skills">
   <img src="https://img.shields.io/badge/agents-4-FD3DB5?style=flat-square" alt="4 agents">
   <img src="https://img.shields.io/badge/license-MIT-FD3DB5?style=flat-square" alt="MIT license">
 </p>
 
 ---
 
-39 skills for planning, building, reviewing, auditing, maintaining, and shipping software —
+40 skills for planning, building, reviewing, auditing, maintaining, and shipping software —
 written once and distributed to [Claude Code](https://docs.anthropic.com/en/docs/claude-code),
 [Codex](https://developers.openai.com/codex), [OpenCode](https://opencode.ai), and
 [pi](https://pi.dev), following the [Agent Skills specification](https://agentskills.io/specification).
@@ -36,7 +36,7 @@ it. Nothing runs in the background, nothing is injected into every prompt.
 | [assist](#assist) | Explanations, external opinions, design discussion, handoffs, restatement | 5 |
 | [write](#write) | Markdown, READMEs, repository documentation | 1 |
 | [obsidian](#obsidian) | Working documents in an Obsidian vault | 1 |
-| [workflow](#workflow) | End-to-end issue workflow | 1 |
+| [workflow](#workflow) | End-to-end issue workflow, review queue | 2 |
 
 ## Installation
 
@@ -419,6 +419,7 @@ End-to-end workflows that orchestrate multiple skills into a single command.
 | Skill | Description |
 | ----- | ----------- |
 | [solve-issue](./workflow/skills/solve-issue/) | Full issue workflow: analyze, plan, implement, verify, audit tests, review, ship via `issue-flow`, then answer the PR's automated reviewers |
+| [pr-triage](./workflow/skills/pr-triage/) | Whole review queue in one run: triage every pull request waiting on you, verify findings with blind judges, then approve, merge, fold small fixes, request changes, or deep-review by tier; lists your own PRs by state; scope to `current` repo, `assigned` or `created`; `recheck` picks up author updates |
 
 ## Skill Structure
 
