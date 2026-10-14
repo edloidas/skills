@@ -1,6 +1,6 @@
 {
   "name": "workflow",
-  "version": "5.15.0",
+  "version": "5.16.0",
   "description": "End-to-end workflows: one issue from analysis to merge, a batch of work orchestrated through subagents, and the review queue",
   "author": {
     "name": "Mikita Taukachou",
