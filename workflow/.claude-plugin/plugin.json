@@ -1,7 +1,7 @@
 {
   "name": "workflow",
   "version": "5.16.0",
-  "description": "End-to-end workflows: one issue from analysis to merge, a batch of work orchestrated through subagents, and the review queue",
+  "description": "End-to-end workflows: one issue from analysis to merge, a batch of work orchestrated through subagents, the review queue, and the issue backlog",
   "author": {
     "name": "Mikita Taukachou",
     "url": "https://edloidas.io"

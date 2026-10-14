@@ -1,0 +1,6 @@
+interface:
+  display_name: "Issue Triage"
+  short_description: "Triage the open issue backlog and close, fix or backlog it behind one plan."
+  default_prompt: "Use $issue-triage to go through the open issues in this repository — find what is done, obsolete, duplicate or mislabeled, and propose one plan to close, fix, or backlog them."
+policy:
+  allow_implicit_invocation: false

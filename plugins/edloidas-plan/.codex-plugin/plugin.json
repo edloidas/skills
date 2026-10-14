@@ -1,7 +1,7 @@
 {
   "name": "edloidas-plan",
   "version": "5.16.0",
-  "description": "A Codex-safe planning bundle for issue drafting, scope analysis, backlog triage, and the full issue lifecycle.",
+  "description": "A Codex-safe planning bundle for issue drafting, scope analysis, picking the next issue, and the full issue lifecycle.",
   "author": {
     "name": "Mikita Taukachou",
     "url": "https://edloidas.io"

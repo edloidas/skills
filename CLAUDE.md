@@ -85,7 +85,7 @@ paths, deliberately outside every skill and every distribution tree — see
 - `assist/` — External opinion, design discussion, assistance, handoffs, and plain restatement tools (5 skills)
 - `write/` — Markdown, README, and repository documentation writing (1 skill)
 - `obsidian/` — Obsidian vault organization and working document management (1 skill)
-- `workflow/` — End-to-end workflows that orchestrate multiple skills (3 skills)
+- `workflow/` — End-to-end workflows that orchestrate multiple skills (4 skills)
 
 Wrapper plugin names and display names for Codex:
 - `plugins/edloidas-plan/` → `edloidas-plan` / `Edloidas Plan`
