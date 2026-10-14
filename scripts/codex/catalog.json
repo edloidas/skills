@@ -253,9 +253,9 @@
       "group": "workflow",
       "name": "edloidas-workflow",
       "displayName": "Edloidas Workflow",
-      "description": "A Codex-safe end-to-end workflow bundle that takes a GitHub issue from analysis to merged.",
-      "shortDescription": "End-to-end issue workflow in one command.",
-      "longDescription": "Install the workflow bundle from edloidas/skills to take a GitHub issue end to end from Codex — analyze, plan, implement, verify, adversarially review, clean up, commit, and ship.",
+      "description": "A Codex-safe workflow bundle: take a GitHub issue from analysis to merged, orchestrate a batch of issues and pull requests through subagents, or triage a review queue.",
+      "shortDescription": "End-to-end issue workflow, orchestration, and review triage.",
+      "longDescription": "Install the workflow bundle from edloidas/skills to take a GitHub issue end to end from Codex — analyze, plan, implement, verify, adversarially review, clean up, commit, and ship — to coordinate many issues and pull requests through worker subagents, or to triage the pull requests waiting on you.",
       "category": "Coding",
       "websiteURL": "https://github.com/edloidas/skills",
       "keywords": [
@@ -267,6 +267,7 @@
         "automation"
       ],
       "skills": [
+        "workflow/skills/orchestrate",
         "workflow/skills/pr-triage",
         "workflow/skills/solve-issue"
       ]

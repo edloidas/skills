@@ -111,7 +111,7 @@
     {
       "name": "workflow",
       "source": "./workflow",
-      "description": "End-to-end issue workflows that orchestrate analysis, planning, implementation, verification, and shipping",
+      "description": "End-to-end workflows: one issue from analysis to merge, a batch of work orchestrated through subagents, and the review queue",
       "version": "5.15.0",
       "author": {
         "name": "Mikita Taukachou",

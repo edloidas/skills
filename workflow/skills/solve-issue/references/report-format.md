@@ -96,9 +96,10 @@ Phase 7 appends to the summary above rather than reprinting it:
 
 ```text
 **Review feedback** (N round(s))
-- <bot> — reported | timed out after <budget> | still pending (not waited on)
+- <bot> — reported | silent after <budget>, skipped
   | none requested on this PR (timeline checked <time>)
 - N threads — N fixed, N rejected, N discuss, N deferred
+- Re-requested: <who, or none>
 - <one line per thread acted on>
 - Deferred to: #<issue> — <claim>   (merge path only; `—` when nothing was deferred)
 - Notes filed: #<issue> — <claim>   (`auto` merge path only; `—` on an attended run)
@@ -118,6 +119,6 @@ The **Shipped after the summary** line is not optional when it is non-empty. Pha
 printed a summary of the commit, and any fix applied here changes what merges — a merge
 whose content the user never saw described is the thing that line exists to prevent.
 
-A reviewer that timed out is still listed. So is a thread `pr-review` left open because
+A bot skipped after its budget is still listed. So is a thread `pr-review` left open because
 its verdict was `discuss` — a decision waiting on a person is the one thing in this
 report that has to survive the run ending.

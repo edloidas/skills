@@ -29,7 +29,7 @@ comment per finding, a body, and a verdict.
 **Your branch.** You are the author. Work the threads people and bots left: decide whether answering
 is even your business, check whether the claim is true, then reply and close what is finished.
 
-**Mutation class**: writes to external services. Reviews, replies and resolutions go to GitHub behind
+**Mutation class**: writes to external services. Reviews, replies, resolutions and review re-requests go to GitHub behind
 a confirmation gate; local files change only under `--fix`. The skill **verifies before it speaks**,
 and its default output is an action report plus whatever it posted.
 
@@ -101,8 +101,7 @@ ashklianko.` If no pull request resolves, say so and stop.
 
 One query, up front, per `references/fetching.md`. It carries the thread and comment ids that
 replying and resolving need, the `__typename` that decides bot from human, and `originalLine` for
-outdated threads. Read that file before writing the query — the previous version of this skill could
-not reply or resolve at all, because it fetched neither id.
+outdated threads. Read that file before writing the query.
 
 Do not filter resolved threads out of the fetch. Filter in Phase 3.
 
@@ -158,7 +157,7 @@ answered on reasoning. Then move to the verdicts; do not start fixing here.
 
 ## Phase 5: Verdict
 
-Six, replacing the old `fix` / `skip` pair:
+Six:
 
 | Verdict | When |
 | ------- | ---- |
@@ -248,6 +247,21 @@ whatever the target repository's instruction file says.
 Resolve only what `references/answering.md` permits: never a human-rooted thread, never a `discuss`.
 Check `viewerCanUpdate` before attempting.
 
+**Ask for the next look — author mode.** Once the replies are posted and the head holds every fix
+they name — `git rev-parse HEAD` equals the fetched `headRefOid`, and `git status` is clean —
+re-request review. The requests are shown with the replies at the confirmation; `--auto` covers
+the bot one only.
+
+- **Each human whose thread you answered with a pushed fix** — `gh api -X POST
+  repos/<owner>/<repo>/pulls/<N>/requested_reviewers -f 'reviewers[]=<login>'`. Not for a thread
+  answered only with `reject` or `discuss`, and not while that human's reply is a held draft.
+- **A bot whose review is already on this pull request** (`pulls/<N>/reviews`), when the fixes
+  change code — logic, tests, an interface, configuration — not only formatting, comments, names,
+  or docs. For Copilot: `gh pr edit <N> --add-reviewer copilot-pull-request-reviewer`.
+
+Fixes not on the head yet: list the requests under `Re-request:` as pending, for whoever pushes. A
+request GitHub refuses is reported, not retried.
+
 Once what was approved has gone out, print what was sent and stop. Do not re-read the pull request
 for a second pass, do not answer a thread the standing table left alone, and do not follow a posted
 reply with an unasked fix.
@@ -268,6 +282,7 @@ Held: <what awaits your confirmation, what --fix would have changed, and any hum
 
 Verdict: <APPROVE | COMMENT | REQUEST_CHANGES, or the replies and resolves> — <one clause of why>
 Posted: <what actually went out, the pending review's URL under --draft, or nothing yet>
+Re-request: <who was asked for another look, who waits on a push, or none>
 ```
 
 **The verdict goes last, on its own line.** It is the one thing the reader is looking for, and a
@@ -311,6 +326,7 @@ r1907, to anna, awaiting your go-ahead:
 
 Verdict: 3 replies posted, 3 threads resolved; anna's thread held. No suggestions withheld.
 Posted: replies on r1902, r1903, r1904 — nothing on r1907 yet.
+Re-request: copilot — r1904's fix changed the status writer.
 ```
 
 Reviewer mode under `--draft` reports the same shape, with the verdict recommended rather than set:

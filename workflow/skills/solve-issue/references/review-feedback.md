@@ -19,9 +19,10 @@ gh api --paginate "repos/{owner}/{repo}/issues/<N>/timeline" \
              | {login: .requested_reviewer.login, at: .created_at}]'
 ```
 
-Non-empty → a bot was asked, and `created_at` says when. Empty → **no automated reviewer
-has been requested on this pull request**. That is an observation about a durable event
-log, not an inference from a snapshot, which is what makes it safe to report.
+Non-empty → a bot was asked, and `created_at` says when. Empty, once the attach window
+below has passed → **no automated reviewer has been requested on this pull request**. That
+is an observation about a durable event log, not an inference from a snapshot, which is
+what makes it safe to report.
 
 ## Question 2 — has it reported on *this* head?
 
@@ -54,10 +55,10 @@ detection, and why no login match is needed.
 
 | Bot requested (Q1) | Bot review at head (Q2) | Meaning | Action |
 | --- | --- | --- | --- |
-| yes | no | Asked, has not reported on this head | **Wait** |
+| yes | no | Asked, has not reported on this head | **Wait**, within the budget |
 | yes | yes | Reported on this head | Go straight to `pr-review` |
 | no | yes | Reported without a recorded request | Work it — and see the disproof below |
-| no | no | Nobody has been asked | **No wait.** On `PR + merge`, offer the seam below |
+| no | no | Nobody has been asked — once the attach window has passed | **No wait** — see **No bot attached** |
 
 A requested **human** reviewer is never a reason to wait. People answer in hours or days,
 and this flow does not hold a branch open for that. Comments a human has *already* left
@@ -84,7 +85,7 @@ first thing to suspect.
 The report says what was checked and when:
 
 > No automated reviewer was requested on this pull request (timeline checked at 14:02Z);
-> none had reported by 14:12Z.
+> none was attached by 14:03Z; merged when CI passed.
 
 Never `No automated reviewers`. The old wording asserted a property of the repository
 from a query that could not see one; the sentence above asserts only what was read.
@@ -101,53 +102,58 @@ from a query that could not see one; the sentence above asserts only what was re
 - **`.github/` app config, or the repository's other pull requests.** Not evidence about
   this one.
 
-## The budget — `PR + merge` only
+## The attach window
 
-`PR only` never polls. Nothing downstream consumes the answer there, so a bot still
-pending is reported as pending and the flow stops. Q1 and Q2 still run once: a review
-that has *already* landed is worked, and that is the highest-value thing two free queries
-can buy.
+A repository that attaches Copilot automatically does so a few seconds after the pull
+request opens, so Q1 read at once can say `no` for a bot that is about to be asked. Until
+one minute after the pull request was created (`gh pr view <N> --json createdAt`), a `no`
+is not an answer: re-run Q1 about every 15 seconds and decide when it turns `yes` or the
+minute is up. The same window applies after every force-push in **Rounds**.
 
-On `PR + merge`, when Q1 says a bot was asked and Q2 says it has not reported: ten
-minutes from the request event, polled about every 30 seconds. **Exit when Q2 returns
-non-zero.** A timeout is not a resolution — report which bot never answered and leave the
-pull request open rather than merging through it.
+This flow requests no bot up front. It waits for one the repository attached, or that the
+user or the repository's instruction file asked for. Re-requests after substantive fixes
+belong to `pr-review`.
 
-Never extend the budget because a review "should" be coming, and never read silence as
-approval. An incomplete review is not permission to proceed, which is the whole reason
-this phase sits before the merge.
+## The budget — both endgames
+
+When Q1 says a bot was asked and Q2 says it has not reported: five minutes from the
+request event, polled about every 30 seconds. **Exit when Q2 returns non-zero**, then work
+its review. Wait with repeated short checks that keep the turn alive; a background wait
+that ends the turn hands the pull request back with nobody watching it.
+
+A bot still silent at five minutes is skipped, not waited out. On `PR + merge` the merge
+goes ahead; on `PR only` the flow stops. Either way the report names the bot and the
+times: `Copilot requested 14:02Z, no review by 14:07Z — merged without it.` A review that
+lands later is a new round for whoever picks the pull request up, not a reason to hold
+this one.
+
+Never extend the budget because a review "should" be coming.
 
 ### Overlap the wait on the merge path
 
 `issue-flow` Step 6 waits on CI before it merges, and CI on a real repository outlasts a
-bot review. So poll **while CI is running** and invoke Step 6 once the poll resolves: its
-own wait then returns almost immediately, and the added cost is `max(bot, CI)` rather
-than `bot + CI` — for a pipeline of more than a few minutes, nothing at all.
+bot review. So poll **while CI is running**; Step 6 is still invoked only after the
+review is worked and the deferrals are filed, but its own CI wait then returns almost
+immediately. The added cost is `max(bot, CI)` rather than `bot + CI` — except on a round
+whose fixes were pushed, which restarts CI.
 
-## The one thing no API can see
+## No bot attached
 
-Q1 reads `no` both when a repository has no automated reviewer and when a human is about
-to assign one by hand and has not yet. No endpoint can separate those: the difference is
-intent in a person's head. On `PR + merge` with `no / no`, ask, per **Asking the User**:
-
-- **Option 1** — header `Merge now`, label `Merge without review` `(Recommended)` — `No automated reviewer was requested. Merge once CI is green.`
-- **Option 2** — header `Assign`, label `Pause, I'll assign one` — `Hold here. Assign a reviewer, then say go — I'll re-check the timeline and wait for the review.`
-
-On resume, re-run Q1 rather than trusting the answer: a request that was never actually
-made leaves no event, and holding the merge for a review nobody asked for is the same
-failure in the other direction. If no new event appears, say so and re-ask.
-
-On `auto`, or where the host cannot prompt, take Option 1. **Never default an unattended
-run to waiting** — on a repository with no automated reviewer that turns every `PR + merge`
-into a permanently unmerged branch, which is a worse outcome than merging without a review
-nobody was ever going to give.
+Q1 reads `no` both when a repository has no automated reviewer and when a person is about
+to assign one by hand. No endpoint separates those, and this flow does not wait on intent:
+with `no / no` once the attach window has passed, `PR + merge` merges when CI is green and
+`PR only` stops. **Never default to waiting** — on a repository with no automated reviewer
+that turns every run into a permanently unmerged branch. A person who wants a bot's review
+asks for it before the run, and the request then shows on the timeline.
 
 ## Rounds
 
 After the amend and force-push, run Q1 and Q2 again against the **new** head.
 
-- A new `review_requested` event later than the push → a review is coming; wait.
-- No new event → nothing was re-triggered; proceed. A repository that re-requests
+- A new `review_requested` event later than the push → a review is coming; wait, with a
+  fresh five-minute budget.
+- No new event once the attach window after the push has passed → nothing was
+  re-triggered; proceed. A repository that re-requests
   automatically and one where a human assigns by hand are told apart here by what the
   timeline records, not by an assumption about how the repository is configured.
 
