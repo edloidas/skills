@@ -5,9 +5,11 @@
 # Algorithm:
 #   1. Get default branch from GitHub (main/master)
 #   2. If current branch is a base-like branch (main/master/next/epic-*), use it directly
-#   3. If current branch is issue-*, find the epic-* branch it was cut from by
+#   3. If the branch records a stack parent (git config branch.<name>.issueFlowBase,
+#      written by issue-flow Step 2) that is still on the remote, use it
+#   4. If current branch is issue-*, find the epic-* branch it was cut from by
 #      ordering fork points by ancestry, with the default branch as the floor
-#   4. If no epic beats the default branch, use the default branch
+#   5. If no epic beats the default branch, use the default branch
 #
 # Limitation: when two epic branches share the exact same fork point, git cannot
 # tell which one the branch was cut from. The first enumerated wins.
@@ -49,6 +51,28 @@ if [[ "$CURRENT_BRANCH" == "main" || "$CURRENT_BRANCH" == "master" || "$CURRENT_
   echo "Using current branch as base: $CURRENT_BRANCH" >&2
   echo "$CURRENT_BRANCH"
   exit 0
+fi
+
+# A stacked branch records its parent. It wins while the parent is on the remote;
+# once the parent merges and its branch is deleted, GitHub retargets the PR and
+# detection falls through. ls-remote, not a fetch: a fetch does not prune, so a
+# deleted parent would still look present.
+# An unreachable origin trusts the record rather than demoting the base, since the
+# next write after a wrong answer is a squash and a force-push.
+if [[ -n "$CURRENT_BRANCH" ]]; then
+  STACK_BASE=$(git config --get "branch.$CURRENT_BRANCH.issueFlowBase" 2>/dev/null) || STACK_BASE=""
+  if [[ -n "$STACK_BASE" ]]; then
+    RC=0
+    git ls-remote --exit-code --heads origin "refs/heads/$STACK_BASE" > /dev/null 2>&1 || RC=$?
+    if [[ "$RC" != 2 ]]; then
+      [[ "$RC" == 0 ]] && git fetch --quiet origin "$STACK_BASE" 2>/dev/null || true
+      [[ "$RC" == 0 ]] || echo "Cannot reach origin; trusting the recorded stack base" >&2
+      echo "Using recorded stack base: $STACK_BASE" >&2
+      echo "$STACK_BASE"
+      exit 0
+    fi
+    echo "Recorded stack base $STACK_BASE is not on the remote; detecting instead" >&2
+  fi
 fi
 
 # If on an issue-* branch, find the epic-* branch it was cut from.

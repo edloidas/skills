@@ -284,7 +284,9 @@ on a unit, the first included; at most three, and a unit still short after the t
 A `blocked` unit stops the queue under `sequential` and `stack`, since later units build on it —
 brief the user. Under `parallel` the others continue.
 
-Record the outcome, the evidence and the `reuse:` facts in the run state. End Phase 4 for each
+When a unit rewrote or merged a branch that others are stacked on, dispatch an own-PR unit to sync
+each of them, bottom of the stack first. Record the outcome, the evidence and the `reuse:` facts in
+the run state. End Phase 4 for each
 unit with one line: `<unit>: <done | sent on | blocked> — <evidence>.` Then Phase 6 for a done
 unit; nothing else follows a hand-back.
 

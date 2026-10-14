@@ -423,13 +423,14 @@ The 500-line body cap is mechanical, so it lives in `validate-skills.sh` rather 
 
 | Skill | Allowance | Why |
 | ----- | --------- | --- |
-| `plan/skills/issue-flow` | 1000 | **Sanctioned.** It owns every git and `gh` write in the issue pipeline — base detection, the fork point, the squash rules, the force-push lease. That concentration is the seam that let `solve-issue` and `changes-review` become portable, and splitting it would put the same rules in two files, which this repo treats as the drift mechanism. Its size is the cost of being the single writer. |
+| `plan/skills/issue-flow` | 1010 | **Sanctioned.** It owns every git and `gh` write in the issue pipeline — base detection, the fork point, the squash rules, the force-push lease. That concentration is the seam that let `solve-issue` and `changes-review` become portable, and splitting it would put the same rules in two files, which this repo treats as the drift mechanism. Its size is the cost of being the single writer. Raised from 1000 when stacked pull requests arrived: a branch's named parent is recorded in Step 2, the one place branches are created, and the squash, rebase and PR base follow it through `stack-sync.sh`; the procedure lives in `references/stacking.md`, the body keeps one pointer per call site. |
 | `workflow/skills/solve-issue` | 550 | At 537 after the prompting-standard pass added a stop sentence and a named end-of-phase line to every phase, paid for by cutting the 21-row Error Handling table and the trailing `## Scope` recap and moving the deferral block into `references/review-feedback.md`. Raised from 540 to 550 deliberately, because three lines of headroom made every subsequent edit a trim-or-nothing choice on an 11-phase orchestrator that is still growing. The 13 lines now free are for the phases the auditors named — Phase 0 has no counted closing line, and the Phase 6 summary has no worked fragment in the body — not for general expansion. |
 
 The ~5000-token cap is enforced the same way, estimated as body bytes / 4, because the
 line cap alone let a body grow sideways — `changes-review` sat at 499 lines and ~7.3k
-tokens. `BODY_TOKEN_BUDGETS` carries `issue-flow` (13400) and `solve-issue` (7650) for the
-reasons above. Both were raised from 13000 and 7500 when slice delivery arrived: the
+tokens. `BODY_TOKEN_BUDGETS` carries `issue-flow` (13600) and `solve-issue` (7650) for the
+reasons above. Both were raised from 13000 and 7500 when slice delivery arrived, and
+`issue-flow` again from 13400 for the stacked-parent record: the
 per-slice reset point belongs in `issue-flow`'s Consolidate, the one owner of the squash
 rules, and `solve-issue` keeps only the switch and its call sites in the body, with the
 loop itself in `references/slices.md`. It also carries three skills grandfathered at their

@@ -193,7 +193,8 @@ and the shape of the one question to ask when any of them fires.
 A dirty working tree on the base branch stops the run here: `Uncommitted changes on base
 branch — resolve first.`
 
-Otherwise invoke `issue-flow` with intent `"start work on #<N>"`. That runs its Step 2,
+Otherwise invoke `issue-flow` with intent `"start work on #<N>"` — `from <branch>` when the
+user named a base. That runs its Step 2,
 which checks out `issue-<N>` off the correct base branch and updates the project board to
 "In Progress" when available. If `issue-<N>` already exists, let `issue-flow` handle the
 switch-vs-recreate prompt.
@@ -207,7 +208,7 @@ form is `git diff --name-only <fork>` plus `git ls-files --others --exclude-stan
 stated once here. Snapshots are optional until Phase 4.6, so without one `HEAD` still *is*
 the fork and that range is empty while the changes sit unstaged.
 
-Do not detect the base yourself; `issue-flow` owns it and handles the `epic-*` cases.
+Do not detect the base yourself; `issue-flow` owns it.
 Entered on an existing branch with no Step 2 report, ask `issue-flow` for the fork point.
 
 End Phase 2 with one line: `Phase 2: branch issue-<N> off <base>, fork <sha>, <N> changes

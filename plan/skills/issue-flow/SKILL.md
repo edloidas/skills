@@ -29,7 +29,8 @@ Located in `scripts/` relative to this skill:
 | Script                     | Purpose                                         |
 | -------------------------- | ----------------------------------------------- |
 | `check-env.sh`             | Validate git repo, gh CLI, jq, authentication   |
-| `detect-base.sh`           | Detect base branch name (main/master/next/epic-*) |
+| `detect-base.sh`           | Detect base branch name (main/master/next/epic-*, or a recorded stack parent) |
+| `stack-sync.sh`            | Keep a stacked branch on its parent; print its fork point |
 | `repo-context.sh`          | Fetch labels, collaborators, projects           |
 | `repo-ownership.sh`        | Classify repo as personal / org / external      |
 | `pr-reviewers.sh`          | Rank top PR reviewers by recent review activity |
@@ -482,7 +483,9 @@ Omit the Milestone column if no milestone was assigned to any issue.
 
 ## Step 2: Create Branch
 
-Run `detect-base.sh` to find the correct base branch.
+Run `detect-base.sh` to find the correct base branch — unless the user named one, as a stacked
+pull request does ("start work on #N from issue-41"). Then `<base>` is that branch, and
+`references/stacking.md` → **Step 2** owns its checks and the record it leaves.
 
 If the working tree is dirty (full flow from uncommitted changes):
 
@@ -577,7 +580,9 @@ The branch must end this step at **exactly one commit past `$from`** — the who
 
 #### Resolve the fork point
 
-Count and reset must use the **same** ref, and it must be an ancestor of `HEAD`. Resolve it once:
+Count and reset must use the **same** ref, and it must be an ancestor of `HEAD`. Resolve it once.
+On a stacked branch (`branch.<current>.issueFlowBase` set), run `stack-sync.sh` first, stop on a
+non-zero exit per `references/stacking.md`, and take `base` and `fork` from its `BASE=` and `FORK=`:
 
 ```bash
 base=$(bash "<skill-dir>/scripts/detect-base.sh" 2>/dev/null | tail -n1) || base=""
@@ -675,7 +680,7 @@ Snapshots are not final commits. A later Step 3 run squashes them away via
 
 ## Step 4: Push
 
-Push the branch to remote:
+On a stacked branch, run `stack-sync.sh` first, per `references/stacking.md`. Push the branch to remote:
 
 ```bash
 git push -u origin issue-<number>
@@ -684,7 +689,8 @@ git push -u origin issue-<number>
 ### Rebase if needed
 
 If push fails because the remote has diverged, or if the user asks to rebase — capture the
-remote tip **first**, per [Leasing a force-push](#leasing-a-force-push):
+remote tip **first**, per [Leasing a force-push](#leasing-a-force-push). On a stacked branch
+`stack-sync.sh` does the rebase instead (`references/stacking.md`):
 
 ```bash
 before=$(git rev-parse "origin/issue-<number>" 2>/dev/null || true)
@@ -885,7 +891,7 @@ echo "$state"
 | Result | Action |
 | ------ | ------ |
 | `MERGEABLE` | Report `Mergeable: yes` on the Step 5 report and continue. |
-| `CONFLICTING` | Rebase onto base (`git fetch origin && git rebase origin/<base>`), force-push, re-run the poll. If conflicts are not mechanical, invoke the `resolve-conflicts` skill; if still unresolved, report `Mergeable: no — conflicts with <base>` and **stop before Step 6**. |
+| `CONFLICTING` | Rebase onto base (`git fetch origin && git rebase origin/<base>`; a stacked branch runs `stack-sync.sh`), force-push, re-run the poll. If conflicts are not mechanical, invoke the `resolve-conflicts` skill; if still unresolved, report `Mergeable: no — conflicts with <base>` and **stop before Step 6**. |
 | `UNKNOWN` after 3 polls | Report `Mergeable: unknown (GitHub still computing)`. Do not treat as failure. |
 
 `mergeStateStatus` adds context worth reporting when it is not `CLEAN`:
@@ -990,7 +996,7 @@ If conflicts appeared, rebase and re-run checks.
 gh pr merge --rebase --delete-branch
 ```
 
-`Closes #<number>` in the PR body auto-closes the issue when merging into the default branch. Only verify and manually close if the merge target is a non-default branch (e.g., epic-* or next):
+`Closes #<number>` in the PR body auto-closes the issue when merging into the default branch. Only verify and manually close if the merge target is a non-default branch (e.g., epic-*, next, or a stack parent):
 
 ```bash
 # Only run this if base branch is NOT the default branch

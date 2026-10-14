@@ -255,4 +255,60 @@ test_detached_head_falls_back_to_default_branch() {
   assert_eq main "$(last_line "$STDOUT")" "detected base"
 }
 
+# ------------------------------------------------------------- stacked bases --
+
+# issue-flow Step 2 records the parent of a stacked branch; without the record,
+# a branch cut from another issue branch would resolve to the default branch and
+# Consolidate would squash the parent's commits into this one.
+stacked_repo() {
+  base_repo main
+  git checkout --quiet -b issue-41
+  commit "parent issue work"
+  push_branch issue-41
+  git checkout --quiet -b issue-42
+  commit "stacked issue work"
+}
+
+test_recorded_stack_base_wins() {
+  stacked_repo
+  git config branch.issue-42.issueFlowBase issue-41
+  detect
+  assert_eq 0 "$STATUS" "exit status"
+  assert_eq issue-41 "$(last_line "$STDOUT")" "detected base"
+}
+
+test_stacked_branch_without_a_record_falls_to_the_default_branch() {
+  stacked_repo
+  detect
+  assert_eq main "$(last_line "$STDOUT")" "detected base"
+}
+
+test_recorded_base_gone_from_the_remote_falls_back() {
+  stacked_repo
+  git config branch.issue-42.issueFlowBase issue-41
+  git push --quiet origin --delete issue-41
+  detect
+  assert_eq 0 "$STATUS" "exit status"
+  assert_eq main "$(last_line "$STDOUT")" "detected base"
+  assert_contains "$STDERR" "not on the remote" "says why"
+}
+
+test_record_matches_the_exact_branch_not_a_suffix() {
+  stacked_repo
+  git push --quiet origin --delete issue-41
+  git push --quiet origin issue-41:refs/heads/feature/issue-41
+  git config branch.issue-42.issueFlowBase issue-41
+  detect
+  assert_eq main "$(last_line "$STDOUT")" "feature/issue-41 is not issue-41"
+}
+
+test_unreachable_origin_trusts_the_record() {
+  stacked_repo
+  git config branch.issue-42.issueFlowBase issue-41
+  git remote set-url origin "$SANDBOX/nowhere.git"
+  detect
+  assert_eq issue-41 "$(last_line "$STDOUT")" "record trusted"
+  assert_contains "$STDERR" "Cannot reach origin" "says why"
+}
+
 run_tests

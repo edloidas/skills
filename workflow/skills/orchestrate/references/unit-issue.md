@@ -29,7 +29,10 @@ If the host cannot invoke the skill, or refuses to, follow its phases by hand an
 phase you skipped or compressed.
 
 ## Git
-- Branch `<branch>` from `<base-ref>` (fetch first). The PR targets `<pr-base>`.
+- <sequential / parallel:> `issue-flow`, through `solve-issue`, picks the base: the default branch,
+  or the epic branch the work belongs to.
+- <stack:> Tell `solve-issue` the user named the base: `issue-<N>` starts from `<parent-branch>`
+  and its PR targets it. `issue-flow` records that parent, so its squash and PR base follow it.
 - One squashed commit, title `<commit title per the repo's convention> #<N>`. <co-author rule>.
 - PR: the user said "assign <logins>; <reviewers <logins> | no human reviewer>" — pass it to
   `issue-flow` as their instruction. Body: what and why, with `Closes #<N>` alone on the last line.

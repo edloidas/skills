@@ -9,8 +9,8 @@ every `<…>`; Phase 1 read the head branch, commit count and linked issue.
 You are a worker in an orchestrated run toward this goal: <the run's goal, one sentence>.
 Your unit: pull request #<M> in <owner/repo>, local clone <path>. Branch `<branch>`, base `<base>`,
 <issue #N | no linked issue>, <one commit | <K> commits>.
-<Nothing is stacked above this branch. | Branches stacked above it: <list> — rebase each onto the
-new head after you push, in order, and force-push each with --force-with-lease.>
+<Nothing is stacked above this branch. | Branches stacked above it: <list> — leave them alone;
+each gets its own worker to sync after you push.>
 Its state when you were sent:
 <the pr-state.sh output, pasted>
 
@@ -25,6 +25,9 @@ pushes to it meanwhile.
 - Fix CI: read the failing job's log, fix the cause, and say what it was.
 - Resolve the conflict: rebase onto `<base>`, resolve, re-run the checks.
 - Make this change: <the change, with file:line where known>.
+- Sync onto the parent: `<parent>` was rewritten or merged. Invoke `issue-flow` with "push #<N>";
+  its stacked-branch sync moves this branch onto the parent's new tip, or onto the default branch
+  once the parent merged, before it pushes.
 - Post these replies, which the user approved word for word: <thread URL — text, per thread>.
   Post each exactly as given, then re-request review from <logins>. Resolve none of them.
 - Wait for the review bot: <bot> was requested for head `<sha7>` at <time>. Wait until five
