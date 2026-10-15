@@ -84,8 +84,11 @@ bash <skill-dir>/scripts/fetch.sh --repo <owner/repo> --out <run dir> [--label <
 ```
 
 `epic <#N>` passes the epic and its sub-issue numbers as `--numbers`. The script writes
-`issues.json`, `refs.json` (every `#N` mentioned, resolved, `null` where it does not exist),
-`context.json` (labels and issue types) and `clusters.tsv`. It reads each issue's last 5 comments,
+`issues.json`, `refs.json` (every `#N`, `owner/repo#N` and issue or pull request URL mentioned,
+resolved; keyed `N` for this repository, `owner/repo#N` for another; `null` where it does not
+exist or cannot be read),
+`context.json` (labels and issue types), `clusters.tsv`, and `similar.tsv` (pairs whose titles share
+most words — duplicate candidates nobody linked). It reads each issue's last 5 comments,
 20 labels and 20 cross-references; a worker reads further with `gh issue view` when an issue has
 more. Then list the projects the issues are on
 and the board's enabled workflows with `gh project list --owner <owner>` and a `ProjectV2.workflows`
@@ -102,7 +105,8 @@ End with one line: `Backlog: 63 open in acme/api · 212 refs, 9 unresolved · 19
 
 Split `clusters.tsv` into work units. A cluster over 12 issues splits along its epics — each epic
 with its sub-issues — and what is left over by shared label. Small clusters and singletons fill
-breadth batches of at most 8 issues, never splitting a cluster. Closed issues that `issues.json`
+breadth batches of at most 8 issues, never splitting a cluster, and each `similar.tsv` pair goes
+into the same batch and theme, so whoever judges one sees the other. Closed issues that `issues.json`
 cross-references ride along as context members of the cluster that mentions them: read, never
 judged.
 
@@ -141,7 +145,8 @@ Do not write outward text yet. End with one line: `Depth: 41 judged in 5 themes 
 
 Send every load-bearing claim behind a close, a security verdict, an overturn, or a new issue to
 `doubt`, once for the run — split by theme above 25 claims. Pass the claims and the paths, never the
-reasoning. Ask for an outside-process judge for any claim about security, access or data loss.
+reasoning — but do pass the text of every issue, comment or document a claim cites, since an
+outside judge may run with no network and cannot fetch it. Ask for an outside-process judge for any claim about security, access or data loss.
 Where `doubt` is not installed, dispatch one judge per claim that sees only the claim and the code,
 with the same five verdicts, and name the degradation in the run line.
 

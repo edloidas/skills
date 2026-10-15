@@ -5,12 +5,16 @@
 #
 # Writes to <dir>:
 #   issues.json    one object per open issue in scope: body, labels, type, milestone, parent,
-#                  sub-issue counts, assignees, the last 5 comments, and cross-references
-#   refs.json      every #N mentioned in a body or comment, resolved: kind, state, close reason,
-#                  merged, author — null when the number does not exist
+#                  sub-issue counts, assignees, the last 5 comments, and cross-references keyed
+#                  as in refs.json
+#   refs.json      every reference in a body or comment — #N, owner/repo#N, or an issue or pull
+#                  request URL — and every cross-reference, resolved: kind, title, state, close reason, merged, author; null
+#                  when it does not exist. Keyed N here, owner/repo#N for another repository
+#   clusters.tsv   <cluster>\t<issue numbers>: issues joined by parent, cross-reference, mention,
+#                  or a shared reference to another repository
 #   context.json   the repository's labels and issue types
-#   clusters.tsv   <cluster>\t<issue numbers>: issues joined by parent, cross-reference or mention
-# Last stdout line: issues <n> refs <n> unresolved <n> clusters <n>
+#   similar.tsv    <a>\t<b>\t<score>: issues whose titles share most words, duplicate candidates
+# Last stdout line: issues <n> refs <n> unresolved <n> foreign <n> clusters <n> similar <n>
 # Read-only. Exit 1 on a gh or jq failure, 2 on bad arguments.
 
 set -euo pipefail
@@ -49,7 +53,7 @@ while :; do
         subIssuesSummary{total completed}
         comments(last:5){totalCount nodes{author{login} createdAt body}}
         timelineItems(itemTypes:[CROSS_REFERENCED_EVENT],last:20){nodes{... on CrossReferencedEvent{
-          source{__typename ... on Issue{number state} ... on PullRequest{number state}}}}}}}}}')" \
+          source{__typename ... on Issue{number state repository{nameWithOwner}} ... on PullRequest{number state repository{nameWithOwner}}}}}}}}}}')" \
     || die 1 "cannot read issues of $REPO"
   printf '%s' "$page" | jq -c '.data.repository.issues.nodes[]' >> "$OUT/pages.jsonl"
   [ "$(printf '%s' "$page" | jq -r '.data.repository.issues.pageInfo.hasNextPage')" = true ] || break
@@ -61,7 +65,8 @@ if [ -n "$OLDER" ]; then
   cutoff="$(date -u -d "-$OLDER days" +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || date -u -v-"$OLDER"d +%Y-%m-%dT%H:%M:%SZ)"
 fi
 
-jq -s --arg labels "$LABELS" --arg cutoff "$cutoff" --arg numbers "$NUMBERS" '
+SELF="$(printf '%s' "$REPO" | tr '[:upper:]' '[:lower:]')"
+jq -s --arg self "$SELF" --arg labels "$LABELS" --arg cutoff "$cutoff" --arg numbers "$NUMBERS" '
   ($labels | split(",") | map(select(length > 0))) as $want
   | ($numbers | split(",") | map(select(length > 0) | tonumber)) as $only
   | [ .[]
@@ -74,43 +79,59 @@ jq -s --arg labels "$LABELS" --arg cutoff "$cutoff" --arg numbers "$NUMBERS" '
           comments: { total: .comments.totalCount,
                       last: [.comments.nodes[] | {author: .author.login, createdAt, body}] },
           crossRefs: [.timelineItems.nodes[].source | select(. != null)
-                      | {number, kind: (if .__typename == "PullRequest" then "pr" else "issue" end), state}] } ]
+                      | {ref: (if (.repository.nameWithOwner | ascii_downcase) == $self then "\(.number)"
+                               else "\(.repository.nameWithOwner)#\(.number)" end),
+                         kind: (if .__typename == "PullRequest" then "pr" else "issue" end), state}] } ]
   | sort_by(.number)' "$OUT/pages.jsonl" > "$OUT/issues.json"
 rm -f "$OUT/pages.jsonl"
 
 # -------------------------------------------------------------------- refs --
 
-jq -r '.[] | .body, .comments.last[].body' "$OUT/issues.json" \
-  | grep -oE '(^|[^&A-Za-z0-9/])#[0-9]+' | grep -oE '[0-9]+' | sort -n | uniq > "$OUT/mentions.txt" || true
+# Every reference in a body or comment — `#N`, `owner/repo#N`, an issue or pull request URL — and
+# every cross-reference. One to this repository is keyed `N`; one to another `owner/repo#N`.
+REFS_JQ='
+  def refkeys($self):
+    def key($o; $r; $n): if ("\($o)/\($r)" | ascii_downcase) == $self then $n else "\($o)/\($r)#\($n)" end;
+    [ (scan("(?:^|[^&A-Za-z0-9/_.-])#([0-9]+)") | .[0]),
+      (scan("github\\.com/([A-Za-z0-9_.-]+)/([A-Za-z0-9_.-]+)/(?:issues|pull)/([0-9]+)") | key(.[0]; .[1]; .[2])),
+      (scan("(?:^|[^A-Za-z0-9_./-])([A-Za-z0-9_.-]+)/([A-Za-z0-9_.-]+)#([0-9]+)") | key(.[0]; .[1]; .[2])) ]
+    | unique;'
 
+jq -r --arg self "$SELF" "$REFS_JQ"' .[] | ((.body, .comments.last[].body) | refkeys($self)[]), .crossRefs[].ref' \
+  "$OUT/issues.json" | sort -u > "$OUT/mentions.txt"
+
+ISSUE_FIELDS='__typename ... on Issue{title state stateReason author{login}} ... on PullRequest{title state merged author{login}}'
 echo '{}' > "$OUT/refs.json"
-batch=""
+batch=""; keys=""
 resolve() {
   [ -n "$batch" ] || return 0
-  local q
-  q="query(\$o:String!,\$r:String!){repository(owner:\$o,name:\$r){$batch}}"
   # A number that does not exist makes GraphQL report an error and return null for that alias.
-  gh api graphql -f o="$OWNER" -f r="$NAME" -f query="$q" 2>/dev/null | jq -c '.data.repository // {}' > "$OUT/batch.json" || true
+  gh api graphql -f query="query{$batch}" 2>/dev/null | jq -c '.data // {}' > "$OUT/batch.json" || true
   [ -s "$OUT/batch.json" ] || echo '{}' > "$OUT/batch.json"
-  jq --slurpfile b "$OUT/batch.json" '. + ($b[0] | with_entries(.key |= ltrimstr("n")
-      | .value |= (if . == null then null
-                   else {kind: (if .__typename == "PullRequest" then "pr" else "issue" end), title, state,
-                         reason: (.stateReason // null), merged: (.merged // null), author: .author.login} end)))' \
+  jq --slurpfile b "$OUT/batch.json" --arg keys "$keys" '
+    ($keys | split(" ") | map(select(length > 0))) as $k
+    | . + ([range(0; $k | length) as $i
+            | ($b[0]["a\($i)"].issueOrPullRequest // null) as $v
+            | {key: $k[$i], value: (if $v == null then null
+                 else {kind: (if $v.__typename == "PullRequest" then "pr" else "issue" end), title: $v.title,
+                       state: $v.state, reason: ($v.stateReason // null), merged: ($v.merged // null),
+                       author: $v.author.login} end)}] | from_entries)' \
     "$OUT/refs.json" > "$OUT/refs.next" && mv "$OUT/refs.next" "$OUT/refs.json"
-  batch=""
+  batch=""; keys=""; count=0
 }
 count=0
-while IFS= read -r n; do
-  [ -n "$n" ] || continue
-  batch="$batch n$n: issueOrPullRequest(number:$n){__typename ... on Issue{title state stateReason author{login}} ... on PullRequest{title state merged author{login}}}"
+while IFS= read -r k; do
+  [ -n "$k" ] || continue
+  case "$k" in
+    *#*) repo="${k%#*}"; n="${k##*#}" ;;
+    *) repo="$REPO"; n="$k" ;;
+  esac
+  batch="$batch a$count: repository(owner:\"${repo%%/*}\",name:\"${repo#*/}\"){issueOrPullRequest(number:$n){$ISSUE_FIELDS}}"
+  keys="$keys $k"
   count=$((count + 1))
-  if [ $((count % 50)) -eq 0 ]; then resolve; fi
+  if [ "$count" -ge 50 ]; then resolve; fi
 done < "$OUT/mentions.txt"
 resolve
-# Mentions GraphQL did not return at all are unresolved too.
-jq -R -s --slurpfile r "$OUT/refs.json" 'split("\n") | map(select(length > 0)) as $all
-  | $r[0] + ([$all[] | select(. as $k | $r[0] | has($k) | not) | {key: ., value: null}] | from_entries)' \
-  "$OUT/mentions.txt" > "$OUT/refs.next" && mv "$OUT/refs.next" "$OUT/refs.json"
 rm -f "$OUT/mentions.txt" "$OUT/batch.json"
 
 # ----------------------------------------------------------------- context --
@@ -122,13 +143,17 @@ jq -n --argjson l "$labels" --argjson t "$types" '{labels: $l, types: $t}' > "$O
 
 # ---------------------------------------------------------------- clusters --
 
-# Edges between open issues in scope: parent, cross-reference, and a #N mention either way.
-jq -r --slurpfile all "$OUT/issues.json" '
+# Edges between open issues in scope: parent, cross-reference, a mention either way, and a
+# reference to the same issue in another repository.
+jq -r --arg self "$SELF" --slurpfile all "$OUT/issues.json" "$REFS_JQ"'
   ([$all[0][].number]) as $open
-  | .[] | .number as $a
-  | ( [.parent], [.crossRefs[] | select(.kind == "issue") | .number],
-      [(.body, .comments.last[].body) | scan("(?:^|[^&A-Za-z0-9/])#([0-9]+)") | .[0] | tonumber] )
-  | .[] | select(. != null and . != $a) | select(. as $b | $open | index($b)) | "\($a) \(.)"' \
+  | [ .[] | {n: .number, r: [(.body, .comments.last[].body) | refkeys($self)[]]} ] as $mentions
+  | ( .[] | .number as $a
+      | ( [.parent], [.crossRefs[] | select(.kind == "issue" and (.ref | test("^[0-9]+$"))) | .ref | tonumber],
+          [$mentions[] | select(.n == $a) | .r[] | select(test("^[0-9]+$")) | tonumber] )
+      | .[] | select(. != null and . != $a) | select(. as $b | $open | index($b)) | "\($a) \(.)" ),
+    ( [$mentions[] | .n as $n | .r[] | select(contains("#")) | {k: ., n: $n}] | group_by(.k)[]
+      | select(length > 1) | "\(.[0].n) \(.[1:][].n)" )' \
   "$OUT/issues.json" > "$OUT/edges.txt"
 
 jq -r '.[].number' "$OUT/issues.json" | awk -v edges="$OUT/edges.txt" '
@@ -144,4 +169,19 @@ jq -r '.[].number' "$OUT/issues.json" | awk -v edges="$OUT/edges.txt" '
   }' > "$OUT/clusters.tsv"
 rm -f "$OUT/edges.txt"
 
-echo "issues $(jq length "$OUT/issues.json") refs $(jq length "$OUT/refs.json") unresolved $(jq '[.[] | select(. == null)] | length' "$OUT/refs.json") clusters $(wc -l < "$OUT/clusters.tsv" | tr -d ' ')"
+# ----------------------------------------------------------------- similar --
+
+# Pairs whose titles share most of their words: duplicate candidates nobody linked. A hint for
+# batching, never an edge and never proof.
+jq -r '
+  def words: ascii_downcase | [scan("[a-z0-9]+") | select(length > 2)]
+    - ["the","and","for","not","with","when","from","after","before","should","does","into","that","this","can","cannot","doesn","don","are","its","while"]
+    | unique;
+  [.[] | {n: .number, w: (.title | words)} | select(.w | length >= 2)] as $t
+  | range(0; $t | length) as $i | range($i + 1; $t | length) as $j
+  | ($t[$i].w - ($t[$i].w - $t[$j].w) | length) as $shared
+  | ($shared / (($t[$i].w + $t[$j].w | unique) | length)) as $score
+  | select($shared >= 2 and $score >= 0.4)
+  | "\($t[$i].n)\t\($t[$j].n)\t\($score * 100 | floor)"' "$OUT/issues.json" > "$OUT/similar.tsv"
+
+echo "issues $(jq length "$OUT/issues.json") refs $(jq length "$OUT/refs.json") unresolved $(jq '[.[] | select(. == null)] | length' "$OUT/refs.json") foreign $(jq '[keys[] | select(contains("#"))] | length' "$OUT/refs.json") clusters $(wc -l < "$OUT/clusters.tsv" | tr -d ' ') similar $(wc -l < "$OUT/similar.tsv" | tr -d ' ')"

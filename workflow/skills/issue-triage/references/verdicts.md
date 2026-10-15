@@ -13,7 +13,7 @@ pass. The breadth and depth prompts point here; neither restates it.
 | `CLOSE-NOT-PLANNED` | Someone with the authority decided not to do it | A recorded decision by a maintainer — a comment, a decision issue, a roadmap — cited by link, or the user's answer at the gate | `STALE-ASK`; never the agent's own product call |
 | `KEEP` | Still valid, still wanted | Its premise checked at HEAD: references resolved, the gap or bug still present | — |
 | `BACKLOG` | Valid but not current work | As `KEEP` | — |
-| `STALE-ASK` | No proof it is dead, no recorded decision, no activity in 12 months | The owner it goes to, first match: assignee, the author if still a maintainer, the last maintainer who commented, CODEOWNERS for the paths it names | — |
+| `STALE-ASK` | No proof it is dead, no recorded decision, not updated in 12 months | The owner it goes to, first match: assignee, the author if still a maintainer, the last maintainer who commented, CODEOWNERS for the paths it names | — |
 | `NEEDS-DISCUSSION` | A question only people can settle, with the question written out | The question and who answers it | — |
 
 **The close bar.** An issue closes only when what it describes demonstrably no longer applies, and
@@ -60,7 +60,7 @@ to bottom; any matching row sends the issue to depth.
 | Breadth result | Why it cannot stand alone |
 | -------------- | ------------------------- |
 | Any `CLOSE-*` proposal | Every close needs the proof above, and a shallow pass misses live code and other issues |
-| Type Bug, or a security, auth, token, permission, leak or data-loss subject | A shallow pass downgrades severity it cannot see |
+| Bug as its type or a label, or a security, auth, token, permission, leak or data-loss subject | A shallow pass downgrades severity it cannot see |
 | Claims the issue is covered by, depends on, or conflicts with another issue | Only a pass that reads both can say so |
 | Claims code exists, moved, was removed, or is done | Needs the caller and the commit, not the name |
 | A reference `refs.json` marks missing, or a citation that does not match it | The claim rests on a fact that is not there |
