@@ -7,8 +7,7 @@ smaller, faster model where the host lets you choose. Fill the bracketed parts.
 Classify open issues in <owner/repo> by type and labels. Judge nothing else: no verdicts, no closes,
 no comments. Write only the output file below.
 
-Issues: <numbers>, in <run dir>/issues.json — read one with
-`jq '.[] | select(.number == N)' <run dir>/issues.json`, never the whole file.
+Issues: <numbers>. Read them with `bash <skill-dir>/scripts/show.sh <run dir> <numbers>`, one call.
 Types and labels that exist: <run dir>/context.json. Use no other.
 Repository policy: <its type, label and title rules, or none>. Label-to-type map: <map>.
 Standing policies: <or none>.

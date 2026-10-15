@@ -54,10 +54,10 @@ while :; do
   page="$(gh api graphql -f o="$OWNER" -f r="$NAME" ${cursor:+-f c="$cursor"} -f query='
     query($o:String!,$r:String!,$c:String){repository(owner:$o,name:$r){issues(states:OPEN,first:50,after:$c){
       pageInfo{hasNextPage endCursor}
-      nodes{number title body createdAt updatedAt author{login} assignees(first:5){nodes{login}}
+      nodes{number title body createdAt updatedAt author{login} authorAssociation assignees(first:5){nodes{login}}
         labels(first:20){nodes{name}} issueType{name} milestone{title} parent{number state}
         subIssuesSummary{total completed}
-        comments(last:5){totalCount nodes{author{login} createdAt body}}
+        comments(last:5){totalCount nodes{author{login} authorAssociation createdAt body}}
         timelineItems(itemTypes:[CROSS_REFERENCED_EVENT],last:20){nodes{... on CrossReferencedEvent{
           source{__typename ... on Issue{number state repository{nameWithOwner}} ... on PullRequest{number state repository{nameWithOwner}}}}}}}}}}')" \
     || die 1 "cannot read issues of $REPO"
@@ -80,11 +80,12 @@ jq -s --arg self "$SELF" --arg labels "$LABELS" --arg cutoff "$cutoff" --arg num
       | select([.labels.nodes[].name] as $have | all($want[]; . as $w | $have | index($w)))
       | select($cutoff == "" or .updatedAt < $cutoff)
       | { number, title, body: (.body // ""), createdAt, updatedAt, author: .author.login,
+          authorRole: .authorAssociation,
           assignees: [.assignees.nodes[].login], labels: [.labels.nodes[].name], type: .issueType.name,
           milestone: .milestone.title, parent: .parent.number, parentState: .parent.state,
           subIssues: .subIssuesSummary,
           comments: { total: .comments.totalCount,
-                      last: [.comments.nodes[] | {author: .author.login, createdAt, body}] },
+                      last: [.comments.nodes[] | {author: .author.login, role: .authorAssociation, createdAt, body}] },
           crossRefs: [.timelineItems.nodes[].source | select(. != null)
                       | {ref: (if (.repository.nameWithOwner | ascii_downcase) == $self then "\(.number)"
                                else "\(.repository.nameWithOwner)#\(.number)" end),

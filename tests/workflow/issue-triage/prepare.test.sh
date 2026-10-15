@@ -58,6 +58,17 @@ test_lint_derives_type_and_flags() {
   assert_eq '[null,["dead-ref 9","parent-closed #7","subissues-done 3"]]' "$(jq -c '."5" | [.type, .flags]' run/lint.json)" "type already right; reference, parent and sub-issue flags"
 }
 
+test_lint_names_the_owner_an_ask_goes_to() {
+  { issue 1 | jq '.assignees = ["as"] | .author = "m" | .authorRole = "MEMBER"'
+    issue 2 | jq '.author = "m" | .authorRole = "MEMBER"'
+    issue 3 | jq '.author = "ext" | .authorRole = "NONE" | .comments.last = [{author: "c1", role: "COLLABORATOR"}, {author: "c2", role: "NONE"}]'
+    issue 4 | jq '.author = "ext" | .authorRole = "CONTRIBUTOR"'; } | run_dir
+  run bash "$(script "$PREPARE")" lint run
+  assert_eq 0 "$STATUS" "exit: $STDERR"
+  assert_eq '["as","m","c1",null]' "$(jq -c '[."1".owner, ."2".owner, ."3".owner, ."4".owner]' run/lint.json)" \
+    "assignee, then a maintainer author, then the last maintainer who commented, else none"
+}
+
 test_manifest_maps_verdicts_and_lint() {
   { issue 1 '["Bug"]'; issue 2; issue 3; issue 4; } | run_dir
   echo '{"1":{"type":"Bug","flags":[]},"2":{"type":null,"flags":[]},"3":{"type":null,"flags":[]},"4":{"type":"Task","flags":[]}}' > run/lint.json

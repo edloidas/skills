@@ -10,7 +10,7 @@ The only home of the verdict set and the proof each one needs.
 | `CLOSE-NOT-PLANNED` | Someone with the authority decided against it | A recorded maintainer decision, cited by link, or the user's answer at the gate | `STALE-ASK`; never the agent's own product call |
 | `KEEP` | Valid and current: assigned, in an open milestone or sprint, or active in the last 6 months | Its premise checked at HEAD | — |
 | `BACKLOG` | Valid, but none of that | As `KEEP` | — |
-| `STALE-ASK` | No proof it is dead, no recorded decision, not updated in 12 months | Its owner, first match: assignee, the author if still a maintainer, the last maintainer who commented, CODEOWNERS | — |
+| `STALE-ASK` | No proof it is dead, no recorded decision, not updated in 12 months | Its owner: `lint.json` names one — assignee, else a maintainer author, else the last maintainer who commented; with none, CODEOWNERS or the question goes to the user | — |
 | `NEEDS-DISCUSSION` | Only people can settle it | The question and who answers it | — |
 
 **The close bar.** An issue closes only when what it describes demonstrably no longer applies and

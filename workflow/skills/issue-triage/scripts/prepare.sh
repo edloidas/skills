@@ -9,7 +9,10 @@
 #
 # themes   themes.tsv  <theme>\t<issue numbers>: clusters and similar.tsv pairs kept together, an
 #                      oversized group split by parent, packed up to --max issues per theme
-# lint     lint.json   {"<n>": {"type": <type its labels name, or null>, "flags": [...]}}: a label
+# lint     lint.json   {"<n>": {"type": <type its labels name, or null>, "owner": <login or null>,
+#                      "flags": [...]}}. Owner: the first assignee, else the author when a
+#                      maintainer (owner, member or collaborator), else the last maintainer among
+#                      the fetched comments. A label
 #                      names a type when it is the type's name or maps to it in --type-map. Flags:
 #                      no-type, type-conflict, stale, dead-ref <key>, parent-closed, subissues-done
 # manifest manifest.json from decisions.json (an array of decision objects, see
@@ -92,6 +95,9 @@ case "$CMD" in
           | ([$i.labels[] | ascii_downcase | $byname[.] // $mapped[.] // empty] | unique) as $named
           | { key: ($i.number | tostring),
               value: { type: (if ($named | length) == 1 and $i.type != $named[0] then $named[0] else null end),
+                       owner: ($i.assignees[0]
+                               // (if ($i.authorRole // "") | IN("OWNER","MEMBER","COLLABORATOR") then $i.author else null end)
+                               // ([$i.comments.last[] | select((.role // "") | IN("OWNER","MEMBER","COLLABORATOR")) | .author] | last)),
                        flags: [ (if ($types | length) > 0 and $i.type == null and ($named | length) == 0 then "no-type" else empty end),
                                 (if ($named | length) > 1 then "type-conflict \($named | join(","))" else empty end),
                                 (if $i.updatedAt < $cutoff then "stale" else empty end),
