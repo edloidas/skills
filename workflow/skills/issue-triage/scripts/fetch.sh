@@ -1,18 +1,18 @@
 #!/usr/bin/env bash
 # fetch.sh — read a repository's open issues once, resolve what they reference, and cluster them.
 #
-#   fetch.sh --repo <owner/repo> --out <dir> [--label <name>]... [--older-than <days>] [--numbers N,N]
+#   fetch.sh --repo <owner/repo> --out <dir> [--label <name>]... [--older-than <days>] [--numbers N,N] [--epic N]
 #
 # Writes to <dir>:
-#   issues.json    one object per open issue in scope: body, labels, type, milestone, parent,
-#                  sub-issue counts, assignees, the last 5 comments, and cross-references keyed
-#                  as in refs.json
+#   issues.json    one object per open issue in scope: body, labels, type, milestone, parent and
+#                  its state, sub-issue counts, assignees, the last 5 comments, cross-references,
+#                  and refs — every reference it makes, keyed as in refs.json
 #   refs.json      every reference in a body or comment — #N, owner/repo#N, or an issue or pull
 #                  request URL — and every cross-reference, resolved: kind, title, state, close reason, merged, author; null
 #                  when it does not exist. Keyed N here, owner/repo#N for another repository
 #   clusters.tsv   <cluster>\t<issue numbers>: issues joined by parent, cross-reference, mention,
 #                  or a shared reference to another repository
-#   context.json   the repository's labels and issue types
+#   context.json   the repository, its labels and issue types
 #   similar.tsv    <a>\t<b>\t<score>: issues whose titles share most words, duplicate candidates
 # Last stdout line: issues <n> refs <n> unresolved <n> foreign <n> clusters <n> similar <n>
 # Read-only. Exit 1 on a gh or jq failure, 2 on bad arguments.
@@ -21,7 +21,7 @@ set -euo pipefail
 
 die() { local code="$1"; shift; echo "fetch.sh: $*" >&2; exit "$code"; }
 
-REPO=""; OUT=""; LABELS=""; OLDER=""; NUMBERS=""
+REPO=""; OUT=""; LABELS=""; OLDER=""; NUMBERS=""; EPIC=""
 while [ $# -gt 0 ]; do
   case "$1" in
     --repo) REPO="${2:-}"; shift 2 ;;
@@ -29,6 +29,7 @@ while [ $# -gt 0 ]; do
     --label) LABELS="$LABELS${LABELS:+,}${2:-}"; shift 2 ;;
     --older-than) OLDER="${2:-}"; shift 2 ;;
     --numbers) NUMBERS="${2:-}"; shift 2 ;;
+    --epic) EPIC="${2:-}"; shift 2 ;;
     *) die 2 "unknown argument: $1" ;;
   esac
 done
@@ -37,8 +38,13 @@ printf '%s' "$REPO" | grep -qE '^[^/ ]+/[^/ ]+$' || die 2 "--repo owner/name is 
 [ -z "$OLDER" ] || printf '%s' "$OLDER" | grep -qE '^[0-9]+$' || die 2 "--older-than takes a number of days"
 command -v jq >/dev/null 2>&1 || die 1 "jq is required"
 command -v gh >/dev/null 2>&1 || die 1 "gh is required"
+[ -z "$EPIC" ] || printf '%s' "$EPIC" | grep -qE '^[0-9]+$' || die 2 "--epic takes an issue number"
 mkdir -p "$OUT"
 OWNER="${REPO%%/*}"; NAME="${REPO#*/}"
+if [ -n "$EPIC" ]; then
+  subs="$(gh api --paginate "repos/$REPO/issues/$EPIC/sub_issues" --jq '.[].number')" || die 1 "cannot read the sub-issues of #$EPIC"
+  NUMBERS="$NUMBERS${NUMBERS:+,}$EPIC$(printf '%s' "$subs" | tr '\n' ',' | sed 's/^/,/; s/,$//')"
+fi
 
 # ------------------------------------------------------------------ issues --
 
@@ -75,7 +81,8 @@ jq -s --arg self "$SELF" --arg labels "$LABELS" --arg cutoff "$cutoff" --arg num
       | select($cutoff == "" or .updatedAt < $cutoff)
       | { number, title, body: (.body // ""), createdAt, updatedAt, author: .author.login,
           assignees: [.assignees.nodes[].login], labels: [.labels.nodes[].name], type: .issueType.name,
-          milestone: .milestone.title, parent: .parent.number, subIssues: .subIssuesSummary,
+          milestone: .milestone.title, parent: .parent.number, parentState: .parent.state,
+          subIssues: .subIssuesSummary,
           comments: { total: .comments.totalCount,
                       last: [.comments.nodes[] | {author: .author.login, createdAt, body}] },
           crossRefs: [.timelineItems.nodes[].source | select(. != null)
@@ -133,13 +140,15 @@ while IFS= read -r k; do
 done < "$OUT/mentions.txt"
 resolve
 rm -f "$OUT/mentions.txt" "$OUT/batch.json"
+jq --arg self "$SELF" "$REFS_JQ"' map(.refs = ([(.body, .comments.last[].body) | refkeys($self)[]] + [.crossRefs[].ref] | unique))' \
+  "$OUT/issues.json" > "$OUT/issues.next" && mv "$OUT/issues.next" "$OUT/issues.json"
 
 # ----------------------------------------------------------------- context --
 
 labels="$(gh label list -R "$REPO" --limit 1000 --json name,description)" || die 1 "cannot list labels"
 types="$(gh api graphql -f o="$OWNER" -f r="$NAME" -f query='query($o:String!,$r:String!){repository(owner:$o,name:$r){issueTypes(first:50){nodes{name description}}}}' \
   --jq '[.data.repository.issueTypes.nodes[]?]' 2>/dev/null || echo '[]')"
-jq -n --argjson l "$labels" --argjson t "$types" '{labels: $l, types: $t}' > "$OUT/context.json"
+jq -n --arg repo "$REPO" --argjson l "$labels" --argjson t "$types" '{repo: $repo, labels: $l, types: $t}' > "$OUT/context.json"
 
 # ---------------------------------------------------------------- clusters --
 

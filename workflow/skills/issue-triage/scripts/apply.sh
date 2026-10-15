@@ -123,12 +123,14 @@ gh_write() {
 }
 
 fetch_issue() {
-  local n="$1" proj=""
+  local n="$1" proj="" fvar="" fdecl=""
   if [ "$HAS_PROJECT" = yes ]; then
     proj='projectItems(first:20){nodes{id project{number owner{... on Organization{login} ... on User{login}}} fieldValueByName(name:$f){... on ProjectV2ItemFieldSingleSelectValue{name}}}}'
+    fvar="f=$STATUS_FIELD"; fdecl=',$f:String!'
   fi
-  gh api graphql -F n="$n" -f o="$OWNER" -f r="$NAME" -f f="$STATUS_FIELD" -f query='
-    query($o:String!,$r:String!,$n:Int!,$f:String!){repository(owner:$o,name:$r){issue(number:$n){
+  # GraphQL rejects a declared variable the query does not use, so $f exists only with a project.
+  gh api graphql -F n="$n" -f o="$OWNER" -f r="$NAME" ${fvar:+-f "$fvar"} -f query='
+    query($o:String!,$r:String!,$n:Int!'"$fdecl"'){repository(owner:$o,name:$r){issue(number:$n){
       id number state stateReason duplicateOf{number} title body issueType{name}
       labels(first:100){nodes{name}} milestone{title} parent{number} comments(last:100){nodes{body}}
       '"$proj"'}}}' | jq --argjson pn "$(jq '.project.number // 0' "$MANIFEST")" --arg po "$(jq -r '.project.owner // ""' "$MANIFEST")" '

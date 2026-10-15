@@ -12,6 +12,7 @@ stub_gh() {
 args="$*"
 case "$args" in
   "label list"*) echo '[{"name":"Bug","description":""}]'; exit 0 ;;
+  "api --paginate repos/o/r/issues/1/sub_issues"*) printf '2\n3\n'; exit 0 ;;
   "api graphql"*issueTypes*) echo '[{"name":"Task","description":""}]'; exit 0 ;;
   "api graphql"*issueOrPullRequest*)
     # Answer each alias from refs.fixture, one "owner/repo#N <json>" line per known reference.
@@ -108,6 +109,8 @@ test_label_and_number_scope() {
   assert_eq "1 3" "$(jq -r '[.[].number] | join(" ")' out/issues.json)" "label scope"
   run bash "$(script "$FETCH")" --repo o/r --out out --numbers 2,3
   assert_eq "2 3" "$(jq -r '[.[].number] | join(" ")' out/issues.json)" "number scope"
+  run bash "$(script "$FETCH")" --repo o/r --out out --epic 1
+  assert_eq "1 2 3" "$(jq -r '[.[].number] | join(" ")' out/issues.json)" "the epic and its sub-issues"
 }
 
 test_refuses_bad_arguments() {

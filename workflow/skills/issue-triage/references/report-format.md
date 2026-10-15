@@ -1,14 +1,15 @@
 # Report format
 
 Every gate and the final report use one skeleton. The gate report shows what will happen; the final
-report shows what did, with links. SKILL.md carries a filled-in gate report.
+report shows what did, with links. A `metadata` run has only *Keep, with fixes*, *Needs your call*
+and *Plan*.
 
 ## Skeleton
 
 ```markdown
 ## Issue triage · <n> open issues in <owner/repo>
 
-Run: <Phase 0–4 counts, one line each phase's end line already printed, joined with " · ">
+Run: <the end lines of Phases 0–2, joined with " · ">
 
 ### Close (<n>)
 | Issue | Reason | Why | Comment |
@@ -51,7 +52,7 @@ The same skeleton, with each row's outcome — `CLOSED (not planned)`, `UPDATED`
 ````markdown
 ## Issue triage · 63 open issues in acme/api · done
 
-Run: 63 fetched · 212 refs, 9 unresolved · 19 clusters · breadth 41 routed · depth 9 overturned of 41 · 24 claims: 16 hold, 3 narrower, 4 fall, 1 unproven · you changed 5 rows
+Run: 63 open · 212 refs, 9 unresolved · 7 themes · 27 close · 44 claims: 38 hold, 3 narrower, 2 unproven, 1 falls · you changed 5 rows
 
 ### Closed (27)
 | Issue | Reason | Why |

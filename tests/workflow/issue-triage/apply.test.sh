@@ -35,6 +35,7 @@ case "$args" in
   "api graphql"*repositoryOwner*) cat project.json; exit 0 ;;
   "api graphql"*)
     n="$(printf '%s' "$args" | sed -n 's/.*-F n=\([0-9]*\).*/\1/p')"
+    printf '%s\n' "$args" >> reads.calls
     cat "live/$n.json"; exit 0 ;;
   "issue view"*"--json state"*)
     n="$(printf '%s' "$args" | awk '{print $3}')"
@@ -125,6 +126,14 @@ test_writes_run_in_a_fixed_order_with_close_before_status() {
 1	comment
 1	close
 1	status" "$(plan_ops)" "op order"
+}
+
+test_without_a_project_the_read_declares_no_status_variable() {
+  fixtures
+  live 1 OPEN
+  printf '{"version":1,"repo":"o/r","marker":"t1","issues":[{"number":1,"type":"Bug"}]}' > manifest.json
+  assert_eq "1	type" "$(plan_ops)" "plans the type"
+  assert_eq 0 "$(grep -c 'String!,\$f\|\$f:String' reads.calls)" "no unused \$f, which GitHub rejects"
 }
 
 test_live_state_that_already_matches_plans_nothing() {
