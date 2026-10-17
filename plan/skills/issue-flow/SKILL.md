@@ -423,7 +423,7 @@ When linking many children to the same parent (see **## Batch Issue Creation**),
 
 ## Blocked-By
 
-Use when child issues have dependencies between them — e.g., issue B cannot start until issue A is done. Requires GraphQL **node IDs** (not issue numbers or integer IDs) — see `references/github-relationships.md`. Use the `<owner>/<repo>` value from `repo-context.sh` — it is the line *after* the `=== Repository ===` header, not the first line of output.
+Use when child issues have dependencies between them — e.g., issue B cannot start until issue A is done. Requires GraphQL **node IDs** (not issue numbers or integer IDs) — see `references/github-relationships.md`. Take `<owner>/<repo>` as **## Sub-Issues** does.
 
 ### Procedure
 
@@ -487,15 +487,19 @@ Run `detect-base.sh` to find the correct base branch — unless the user named o
 pull request does ("start work on #N from issue-41"). Then `<base>` is that branch, and
 `references/stacking.md` → **Step 2** owns its checks and the record it leaves.
 
-If the working tree is dirty (full flow from uncommitted changes):
+A dirty tree in the full flow from uncommitted changes is the work itself. Carry it over — checkout and pull would fail on it, and you're already on the base:
 
 ```bash
 git checkout -b issue-<number>
 ```
 
-Changes carry over to the new branch automatically. Skip checkout and pull — pulling on a dirty tree fails, and you're already on the base.
+A dirty tree the caller asked to stash (`"start work on #N, stash local changes"`) is not the work. Stash it under the current branch the Step Router read, then take the clean path:
 
-If the working tree is clean (entered at Step 2 directly, e.g. "start work on #N"):
+```bash
+git stash push -u -m "issue-<number>: <current-branch> WIP"
+```
+
+A clean tree (entered at Step 2 directly, e.g. "start work on #N"):
 
 ```bash
 git checkout <base> && git pull origin <base>
@@ -824,7 +828,7 @@ bash "<skill-dir>/scripts/pr-reviewers.sh"
 
 Output: `<user>\t<count>` per row, up to 3 rows (excludes self and bots; counts both reviews submitted and review-requests received across the last 100 PRs in any state).
 
-- **0 results**: skip the prompt entirely and create the PR without `--reviewer`. Do **not** fall back to the generic `repo-context.sh` collaborator list — repo members with zero review history are not real reviewer candidates, and inventing labels like "Frequent collaborator" misleads the user.
+- **0 results**: skip the prompt entirely and create the PR without `--reviewer` — no collaborator-list fallback, for the reason Step 1 gives.
 - **1+ results**: compose `AskUserQuestion`:
   1. First result (Recommended), description: `"<count> review events across the last 100 PRs"`
   2. Second result (if any), description: `"<count> review events across the last 100 PRs"`
@@ -850,7 +854,7 @@ There is no branch of this step that produces zero assignees. If a reviewer prom
 
 ### Create
 
-Write the PR body to `<TMPDIR>/pr-body.md` with the host's file-write tool, then create the PR with `--body-file`. Replace `<TMPDIR>` with the literal absolute path — do not use `TMPDIR=` as an env var prefix.
+Write the PR body to `<TMPDIR>/pr-body.md` with the host's file-write tool, then create the PR with `--body-file`, spelling `<TMPDIR>` out as Step 1 does (`mktemp -d` if this flow has none yet).
 
 With a reviewer (pass `--assignee` once per assignee):
 
@@ -864,7 +868,7 @@ Without a reviewer (or self-review):
 gh pr create --title "<title>" --body-file <TMPDIR>/pr-body.md --base <base> --assignee @me
 ```
 
-Do not use `--body "$(cat <<'EOF'...)"` — the `$()` command substitution makes the command unmatchable against any pre-approval rule, so hosts that gate shell commands re-prompt every time.
+Never `--body "$(cat <<'EOF'...)"`, for the reason Step 1 gives.
 
 No media goes in a PR body, even though `gh pr create` accepts `--attach`. A PR body is read at merge time and again in release notes, where a screenshot of the old behaviour is describing something that no longer exists. The before-state belongs on the issue; an after-state, if it is worth showing at all, belongs in a comment on the PR.
 
@@ -995,6 +999,8 @@ If conflicts appeared, rebase and re-run checks.
 ```bash
 gh pr merge --rebase --delete-branch
 ```
+
+If Step 2 stashed and the merge left you on the branch its message names, pop that entry by message from `git stash list` — never a bare `stash@{0}`. On any other branch, or when the pop conflicts, leave it and add `Stashed:` to the report.
 
 `Closes #<number>` in the PR body auto-closes the issue when merging into the default branch. Only verify and manually close if the merge target is a non-default branch (e.g., epic-*, next, or a stack parent):
 

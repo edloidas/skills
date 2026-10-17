@@ -33,11 +33,12 @@ Print this shape, omitting rows that do not apply:
   > <the finding, quoted verbatim in the reviewer's own words>
 
 **Commit** `<short-sha>` <subject>
+**Stashed** `<stash message>` — not restored; `git stash list` finds it
 ```
 
 Omit the **Advisors** detail lines when the reviewers came back clean — a single
-`no findings` line is enough. Omit **Tests** when Phase 4.5 was skipped, and **Not
-applied** when there is nothing in it, and **Related work** when the plan had none. Related
+`no findings` line is enough. Omit **Tests** when Phase 4.5 was skipped, **Stashed** when Step 6 restored the stash or
+none was taken, and **Not applied** when there is nothing in it, and **Related work** when the plan had none. Related
 work is the record of where the commit departs from the issue text, so a Skip or Correct
 the plan made is never left out of it.
 

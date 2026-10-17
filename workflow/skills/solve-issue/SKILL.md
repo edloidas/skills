@@ -108,7 +108,7 @@ Phases 6–7 run once, after the last. Every `issue-flow` intent sent in slice m
 | ----- | --------------------------------- | --------------------------------------- |
 | 0     | Resolve issue number              | Only if `$ARGUMENTS` is empty           |
 | 1     | Existing-work check, then analyze | Only if the issue already has work      |
-| 2     | Plan + create branch              | Only if plan is genuinely uncertain     |
+| 2     | Create branch, then plan          | On a dirty base, or an uncertain plan   |
 | 3     | Implement                         | Only on hard blockers                   |
 | 4     | Verify (checks + optional probe)  | Only to opt into a live observation     |
 | 4.4   | Subtle simplification pass        | No                                      |
@@ -170,6 +170,30 @@ the plan is printed.
 
 ## Phase 2: Plan
 
+### Create branch
+
+Branch first, so the plan reads the pulled base; `issue-flow` owns the base. Invoke it with
+intent `"start work on #<N>"` — `from <branch>` when the user named a base. Its Step 2
+pulls the base, checks out `issue-<N>`, and moves the board to "In Progress"; an existing
+`issue-<N>` gets its switch-vs-recreate prompt.
+
+Record the `Fork:` SHA from its Step 2 report — later phases scope verification by it and
+pass it to the reviewers. Use `Fork:`, not `Base:`: a SHA always resolves, a remote-only
+branch name does not.
+
+**Every phase that scopes by the fork reads the working tree, never `<fork>..HEAD`.** The
+form is `git diff --name-only <fork>` plus `git ls-files --others --exclude-standard`.
+Snapshots are optional until Phase 4.6, so without one `HEAD` still *is* the fork and
+that range is empty while the changes sit unstaged.
+
+Uncommitted changes on the base may be the user's start on this issue. Attended, ask
+`Stash` `(Recommended)` or `Stop`; under `auto`, stash. Stashing adds `, stash local
+changes` to the intent, and Phase 6 names any stash Step 6 did not restore.
+
+Entered on an existing branch with no Step 2 report, ask `issue-flow` for the fork point.
+
+### Draft
+
 Before drafting, list every file the Changes list will name plus its immediate callers,
 and open all of them in one batch. A plan naming a file nobody read is a guess. Do **not**
 edit anything yet.
@@ -187,29 +211,6 @@ Default: proceed to Phase 3 immediately after printing the plan. The printed pla
 checkpoint, and the user can interrupt if they disagree — do **not** ask for approval on a
 simple issue. `references/plan-format.md` lists the conditions that override that default
 and the shape of the one question to ask when any of them fires.
-
-### Create branch
-
-A dirty working tree on the base branch stops the run here: `Uncommitted changes on base
-branch — resolve first.`
-
-Otherwise invoke `issue-flow` with intent `"start work on #<N>"` — `from <branch>` when the
-user named a base. That runs its Step 2,
-which checks out `issue-<N>` off the correct base branch and updates the project board to
-"In Progress" when available. If `issue-<N>` already exists, let `issue-flow` handle the
-switch-vs-recreate prompt.
-
-Record the `Fork:` SHA from its Step 2 report — later phases scope verification by it and
-pass it to the reviewers. Use `Fork:`, not `Base:`: a branch name that exists only on the
-remote fails `git diff` with `unknown revision`, a SHA always resolves.
-
-**Every phase that scopes by the fork reads the working tree, never `<fork>..HEAD`.** The
-form is `git diff --name-only <fork>` plus `git ls-files --others --exclude-standard`,
-stated once here. Snapshots are optional until Phase 4.6, so without one `HEAD` still *is*
-the fork and that range is empty while the changes sit unstaged.
-
-Do not detect the base yourself; `issue-flow` owns it.
-Entered on an existing branch with no Step 2 report, ask `issue-flow` for the fork point.
 
 End Phase 2 with one line: `Phase 2: branch issue-<N> off <base>, fork <sha>, <N> changes
 planned, slices: <N> | off.`

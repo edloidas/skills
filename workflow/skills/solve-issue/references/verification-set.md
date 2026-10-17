@@ -18,6 +18,10 @@ Pick the runner from the lockfile:
 - `yarn.lock` → `yarn <script>`
 - else → `npm run <script>`
 
+When the lockfile is newer than `node_modules`, install first (`pnpm install`, `bun
+install`, `yarn`, `npm install`) — stale dependencies fail checks in code this branch never
+touched. A failed install stops Phase 4 like a failing check.
+
 A repo with no `package.json` declares its checks somewhere else — a `Makefile`, a task
 runner, a CI workflow. Read what the repo actually declares rather than assuming a
 JavaScript project.

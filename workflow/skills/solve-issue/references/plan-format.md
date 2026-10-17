@@ -71,4 +71,4 @@ Then ask one focused question and wait for the reply:
 
 - **Option 1** — header `<=12 chars>`, label `<proposed plan name>` `(Recommended)` — `<one-line reason>`
 - **Option 2** — header `<=12 chars>`, label `<alternative>` — `<one-line reason>`
-- **Option 3** — header `Stop`, label `Exit without implementing` — `Leave the branch unstarted.`
+- **Option 3** — header `Stop`, label `Exit without implementing` — `Stop at the plan; the branch stays, with no commits.`
