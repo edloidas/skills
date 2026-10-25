@@ -112,6 +112,16 @@ gh api repos/<owner>/<repo>/pulls/<N>/reviews --method POST --input review.json
 
 - A follow-up after the reviewer already requested changes is a `COMMENT` review: the request
   stands, and a second `REQUEST_CHANGES` adds nothing.
+- Withdrawing that request without approving is a dismissal of the review, then the `COMMENT`.
+  A row that softens a block says which it does — keep the request, or dismiss it — and a gate
+  offering to soften one offers both:
+
+  ```bash
+  gh api repos/<owner>/<repo>/pulls/<N>/reviews/<review id>/dismissals --method PUT \
+    -f event=DISMISS -f message="<one line: what changed>"
+  ```
+
+  Branch protection can restrict who may dismiss; a refusal is reported on the row, not retried.
 - Reply inside an existing thread with
   `gh api repos/<owner>/<repo>/pulls/<N>/comments/<comment id>/replies -F body=@reply.md`.
   Resolve only the reviewer's own threads, and only when fixed.
