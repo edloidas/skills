@@ -148,7 +148,7 @@ Each seat rules on every proposition, from a closed vocabulary:
 | Verdict | Use when | Must carry |
 | ------- | -------- | ---------- |
 | `HOLDS` | True, and worth acting on | The evidence |
-| `NARROWER` | True only under a condition the claim did not state | The condition |
+| `NARROWER` | True only under a condition the claim did not state | The condition, and whether it was seen to hold or is assumed |
 | `BELOW BAR` | True, and not worth acting on — the fix costs more than it buys | What acting costs, what it buys |
 | `FALLS` | Wrong, unreachable, or attacking something that is not there | What the claimant missed |
 | `UNPROVEN` | Undemonstrable either way from what is available | What evidence would settle it |

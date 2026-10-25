@@ -12,7 +12,8 @@ Clone: <path>, remote <remote>, recorded branch <branch>. Lease: <yours | none>.
 operation follows <skill-dir>/references/local-repos.md. Your reviewers read through refs; only
 you take the checkout, to run tools, and only when the lease is yours.
 Already established (do not redo): <triage result, verified findings, published reviews and
-their links>.
+their links>. A condition a finding rests on that nobody showed to hold is not established:
+check it, and drop or re-rate the finding on what you find.
 Decisions the reviewer made: <list, e.g. "release order is not our concern">.
 Reference architecture: <a sibling repository whose layering this one follows, or none>.
 
@@ -23,7 +24,9 @@ none sees another's conclusions. If the host has no subagent facility, or you ca
 from here, run each job inline in turn.
 
 A. Correctness — logic, edge cases, races, error paths, contract changes for callers, data
-   shape changes on the wire.
+   shape changes on the wire. A finding about network reach, RBAC or tenancy cites the
+   configuration that sets it — this repository's manifests, a sibling clone, or
+   `gh search code --owner <owner>` — or is a question, not a finding.
 B. Architecture, judged against the repository's documented rules (its instruction files,
    rules directories, boundary-check configuration) first and the reference architecture
    second — is each function, type, store and constant in the layer and module it belongs to;
