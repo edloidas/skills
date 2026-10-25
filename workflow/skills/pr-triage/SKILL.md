@@ -25,10 +25,10 @@ metadata:
 
 Needs `gh` (authenticated) and `jq`.
 
-**Mutation class: writes to external services.** It approves, requests changes, comments,
-replies in and resolves the reviewer's own threads, merges when authorized, closes and reopens a
-pull request to clear stale mergeability, raises points in other repositories, and amends an
-author's last commit and force-pushes it with a lease. Every one of those is a row in a plan the
+**Mutation class: writes to external services.** It approves, requests changes and dismisses its
+own requests, comments, replies in and resolves the reviewer's own threads, merges when authorized,
+closes and reopens a pull request to clear stale mergeability, raises points in other repositories,
+and amends an author's last commit and force-pushes it with a lease. Every one of those is a row in a plan the
 reviewer approved at a gate — Phase 3, Phase 4 or Phase 6; nothing is written from a gate that has
 not been answered. `allowed-tools` pre-approves `gh` and `git`, so those gates are the only check
 before a write. Locally it creates `triage/<N>` and `fold/<N>` branches and, before any gate, runs a
