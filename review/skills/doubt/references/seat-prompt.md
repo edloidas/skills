@@ -14,7 +14,7 @@ incomplete.
 | Verdict | Use when | Must carry |
 | ------- | -------- | ---------- |
 | `HOLDS` | The claim is true and worth acting on | The evidence that shows it |
-| `NARROWER` | True, but only under a condition the claim did not state | The condition |
+| `NARROWER` | True, but only under a condition the claim did not state | The condition, and whether you saw it hold or are assuming it |
 | `BELOW BAR` | True as stated, and still not worth acting on — the fix costs more than it buys | What acting would cost, and what it would buy |
 | `FALLS` | Wrong, unreachable, or attacking something that is not there | What the claimant missed |
 | `UNPROVEN` | Cannot be demonstrated either way from what you can see | What evidence would settle it |

@@ -156,7 +156,7 @@ with the same five verdicts, and name the degradation in the run line.
 | `doubt` verdict | The finding becomes |
 | --------------- | ------------------- |
 | `HOLDS` | Kept as stated |
-| `NARROWER` | Rewritten to the narrower case |
+| `NARROWER` | Rewritten to the narrower case; `UNPROVEN` while its condition is assumed |
 | `BELOW BAR` | Dropped, one line under *Dropped* |
 | `FALLS` | Dropped, one line under *Dropped* |
 | `UNPROVEN` | A USER-DECISION, with what evidence would settle it |
