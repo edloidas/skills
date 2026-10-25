@@ -23,8 +23,6 @@ metadata:
 
 # PR Triage
 
-Takes the reviewer's whole queue from "what is waiting" to every pull request either merged,
-approved, sent back with requested changes, or held on a decision only the reviewer can make.
 Needs `gh` (authenticated) and `jq`.
 
 **Mutation class: writes to external services.** It approves, requests changes, comments,
@@ -172,8 +170,9 @@ Every surviving finding carries one resolution, set by the triage prompt
 
 | Resolution | Means |
 | ---------- | ----- |
-| AUTO-FIX | A small, certain change inside the pull request's own scope, written out exactly |
-| REQUEST-CHANGES | Only the author can fix it |
+| AUTO-FIX | A small, certain fix of a defect inside the pull request's own scope, written out exactly |
+| REQUEST-CHANGES | A defect you would not merge without, that only the author can fix |
+| SUGGEST | The author's own call — wording, UX, naming, scope — or a defect you would merge with; never folded or blocking |
 | USER-DECISION | A call only the reviewer can make, with its options. It has a *safe default* when one option leaves nothing to undo whichever way the reviewer later answers — typically "accept the change as written" under a standing policy |
 | DROP | Not worth raising; one line under *Dropped* |
 
@@ -188,11 +187,12 @@ default as `Assumed:`.
 | A USER-DECISION item with no safe default | `HOLD`; the decision becomes one of this gate's questions |
 | Any REQUEST-CHANGES item | `REQUEST_CHANGES` with the listed points |
 | Only AUTO-FIX items, a clean clone recorded in Phase 0, and the head in the base repository or editable by maintainers | `FOLD` (amend <author>'s last commit, force-push with lease to <branch>), `APPROVE` — and `MERGE` with `merge` |
-| Only AUTO-FIX items, otherwise | `COMMENT` with the fixes as suggestions |
+| Only AUTO-FIX and SUGGEST items, otherwise | `COMMENT` with them as suggestions |
 | Nothing left | `APPROVE` — and `MERGE` with `merge` |
 
-The action markers are defined in `references/report-format.md`. A plan row also lists any
-close-and-reopen it may need and any point it will raise in another repository.
+A reviewer who asked for a comment gets a `COMMENT` row; a plan that would differ asks. The action
+markers are defined in `references/report-format.md`. A plan row also lists any close-and-reopen it
+may need and any point it will raise in another repository.
 
 Show the gate report (**Report**), then ask, per **Asking the User**, together with the report's
 *Needs your call* questions — at most four in all:
