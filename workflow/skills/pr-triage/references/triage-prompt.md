@@ -45,7 +45,9 @@ DOES: <what the change does for a user or a caller, in one or two sentences a re
 FINDINGS:
 - [<blocker|major|minor|nit>] <file:line> — <what goes wrong and for whom, in plain words> — evidence: <what you
   read or ran> — confidence: high|medium|low — resolution: AUTO-FIX <exact change> |
-  REQUEST-CHANGES | USER-DECISION <options> | DROP
+  REQUEST-CHANGES | SUGGEST | USER-DECISION <options> | DROP
+  AUTO-FIX and REQUEST-CHANGES are for defects only. Wording, UX, naming and scope are the
+  author's call: SUGGEST, whoever drafted the alternative.
 OPEN THREADS: <count, and any by the reviewer still unanswered>
 NOT VERIFIED: <checks not run, behaviour not observed>
 STATE: <clone back on <branch>, clean | what is left and why>

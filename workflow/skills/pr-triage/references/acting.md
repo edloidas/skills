@@ -49,10 +49,10 @@ gh pr merge <N> -R <repo> --<squash|rebase|merge> --match-head-commit <full head
 
 ## Fold small fixes and approve
 
-Only for AUTO-FIX items — small, certain, inside the change's own scope — and only when the
-repository has a clean clone (`local-repos.md`), the head branch lives in the base repository or
-`gh pr view <N> -R <repo> --json maintainerCanModify` is true, and the head branch does not
-require signed commits — amending drops the author's signature:
+Only for AUTO-FIX items — small, certain fixes of a defect, inside the change's own scope, never a
+SUGGEST item — and only when the repository has a clean clone (`local-repos.md`), the head branch
+lives in the base repository or `gh pr view <N> -R <repo> --json maintainerCanModify` is true, and
+the head branch does not require signed commits — amending drops the author's signature:
 
 ```bash
 gh api repos/<owner>/<repo>/branches/<head-branch>/protection/required_signatures --jq .enabled   # 404: no rule; 403: unknown, do not fold
