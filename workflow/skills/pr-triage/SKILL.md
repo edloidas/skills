@@ -74,9 +74,9 @@ with a number.
 Questions are batched: one gate per phase, at most four questions per gate. The one exception is
 Phase 4, which asks once per deep-reviewed pull request, because each answer rests on a report the
 reviewer has to read first. A policy the reviewer states in an answer — "we only support current
-models", "release order is not our concern" — applies to every later pull request in the run and
-is passed into every later prompt as a *standing policy*; it is written to durable notes only when
-the reviewer asks.
+models", "release order is not our concern" — is a *standing policy*: passed into every later
+prompt, and applied to every row not yet written, earlier pull requests' included. It is written
+to durable notes only when the reviewer asks.
 
 **The gate approves the points, not the words.** This deliberately replaces `changes-review`'s
 verbatim-text gate for this skill: each plan row lists the points a review will make, the answer
