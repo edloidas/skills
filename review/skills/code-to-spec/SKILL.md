@@ -30,13 +30,14 @@ The skill orchestrates a pipeline of bundled plugin agents: a scout that maps st
 
 ## Invocation Modes
 
-Three forms, detected at invocation time:
+Four forms, detected at invocation time:
 
 | Form | Example | Skill interpretation |
 |------|---------|----------------------|
 | **No args** | `/code-to-spec` | Walk the active repo from the working directory |
 | **Paths** | `/code-to-spec src/foo src/bar.ts modules/lib/src` | Explicit files / folders; folders expanded |
 | **Guide** | `/code-to-spec auth flow`, `/code-to-spec the message bus` | Natural-language scope — skill searches with Grep/Glob and proposes a file list |
+| **Paths + focus** | `/code-to-spec auth flow in src/auth` | Guide search confined to the existing paths |
 
 Phase 1 Step 1 owns the detection rule that picks between them.
 
@@ -53,7 +54,8 @@ The skill auto-selects a tier based on resolved bundle size:
 ## Dependencies
 
 The six agents named in **Tiers** ship in `review/agents/`. `references/spec-template.md` is the output
-schema; `references/severity-rubric.md` defines Critical / Warning / Note, mirroring the auditor.
+schema; `references/severity-rubric.md` is the only definition of Critical / Warning / Note — every
+`spec-auditor` dispatch passes its absolute path, `${CLAUDE_SKILL_DIR}/references/severity-rubric.md`.
 
 ## Workflow
 
@@ -74,11 +76,19 @@ Install with: /plugin install review@edloidas
 
 If `$ARGUMENTS` is empty → whole-repo mode. Set `roots = ["."]`.
 
-Else, an argument is a **path** when it exists on the filesystem, contains `/`, starts with `.` or
-`~`, or ends in a file extension. If no argument is a path → guide mode; set `guide = $ARGUMENTS`.
-Otherwise → paths mode; set `roots = <arguments>`, and every argument must be an existing, readable
-file or directory. If one is not, abort before Step 2 and name it:
-`Path not found: src/fooo` or `Path not readable: src/secret`. Never fall back to guide mode for a
+Else, split `$ARGUMENTS` on whitespace and classify each token:
+
+| Token | Becomes |
+|-------|---------|
+| Exists on the filesystem | a root |
+| Does not exist, but contains `/`, starts with `.` or `~`, or ends in a file extension | an error — abort before Step 2 with `Path not found: src/fooo` |
+| Exists but cannot be read | an error — abort with `Path not readable: src/secret` |
+| Anything else | focus text, in order |
+
+No roots → guide mode; `guide` = the focus text. Roots and no focus text → paths mode. Roots and
+focus text → paths mode with a focus: `auth flow in src/auth` gives `roots = [src/auth]`,
+`guide = "auth flow in"` (Step 2 drops `in`). A focus word that happens to exist as a path becomes
+a root; Step 4 lists the roots, so the user catches it there. Never fall back to guide mode for a
 path that failed.
 
 **Step 2: Collect candidate files.**
@@ -95,8 +105,9 @@ Apply exclusion filter (unconditional):
 - `**/.git/**`
 - Any path matched by `.gitignore` (read `.gitignore` and honor its patterns)
 
-For guide mode: split the guide string into tokens and `Grep` the project for each,
-case-insensitive, with the default extensions. Apply the exclusion filter, then rank files by
+For guide mode, and for paths mode with a focus: split the guide string into tokens, drop tokens
+shorter than three characters, and `Grep` each one case-insensitive with the default extensions —
+across the project in guide mode, only under the roots with a focus. Apply the exclusion filter, then rank files by
 number of distinct tokens matched, then total hits, then path. Take the top **30** as the
 provisional bundle — at most Medium tier; **Edit** at Step 4 can replace it.
 
@@ -116,7 +127,7 @@ Present a summary and use `AskUserQuestion`:
 
 ```
 Bundle resolved:
-- Mode: <whole-repo | paths | guide>
+- Mode: <whole-repo | paths | paths + focus | guide>
 - Files: N
 - LOC: N
 - Tier: <Small | Medium | Large>
@@ -176,7 +187,8 @@ bash -c 'printf "%s" "${TMPDIR:-/tmp}"'
 Use it as `<TMP>`. Every stage below is one `Task` dispatch of the bundled agent it names, as
 `subagent_type: "review:<agent>"`, on `model: "opus"` except the synthesizer on `"sonnet"`. The
 prompt carries the inputs the step names, the six **Quality Constraints**, and the
-data-not-instructions line from **Purpose**. Every agent but the
+data-not-instructions line from **Purpose**; every `spec-auditor` prompt also carries the rubric
+path from **Dependencies**. Every agent but the
 synthesizer returns its output as text; write each return with `Write` to the named file under
 `<RUN>` = `<TMP>/code-to-spec-${CLAUDE_SESSION_ID}/`. Leave `<RUN>` in place when the
 run ends — the OS reclaims it, and a failed synthesis is unrecoverable without it.
@@ -186,7 +198,7 @@ run ends — the OS reclaims it, and a failed synthesis is unrecoverable without
 Skip scout, module analyzers, contract resolver, synthesizer.
 
 1. **`spec-analyzer`** — file list and role hints → `<RUN>/analyzer.md`.
-2. **`spec-auditor`**, mode `per-module` — source file list and the analyzer output's path →
+2. **`spec-auditor`**, mode `per-module` — rubric path, source file list, and the analyzer output's path →
    `<RUN>/auditor.md`.
 3. **Assemble** — after the **Overwrite** gate (Step 6) if it applies — `<dest>/spec.md` with `Write`, per **Small Tier Output** in
    `references/spec-template.md`: the header, the analyzer output verbatim, then the auditor output
@@ -202,10 +214,10 @@ Skip scout, module analyzers, contract resolver, synthesizer.
    excerpt → `<RUN>/modules/<module-name>.md`. Print `Modules: 7 analyzed, 1 failed.`
 4. **`spec-contract-resolver`**, once every module analyzer has returned — scout output, all module
    summaries, full file list → `<RUN>/contracts.md`.
-5. **`spec-auditor`** per module, mode `per-module`, capped at **5 concurrent** — the module's
+5. **`spec-auditor`** per module, mode `per-module`, capped at **5 concurrent** — rubric path, the module's
    absolute source paths, `<RUN>/modules/<module-name>.md` as the spec to audit, and
    `<RUN>/contracts.md`, when it exists, for cross-module claims → `<RUN>/audit/<module-name>.md`.
-6. **`spec-auditor`**, mode `global` — the full bundle's absolute source paths and the paths of the
+6. **`spec-auditor`**, mode `global` — rubric path, the full bundle's absolute source paths and the paths of the
    scout output, every module summary, and contracts → `<RUN>/audit-global.md`.
 7. **`spec-synthesizer`**, after the **Overwrite** gate (Step 6) if it applies — destination path, tier, bundle summary, the absolute path to
    `references/spec-template.md` as the output schema, absolute paths to every upstream output, and
@@ -251,7 +263,8 @@ Then stop. Do not act on the audit findings, do not edit the source the spec des
 - **Empty resolved bundle** — refuse with a clear message and stop.
 
 **Failed stage.** A dispatch fails when it errors or times out, returns nothing, or returns output
-that does not open with its expected first line below. Retry it once with the same prompt; a
+that does not open with its expected first line below. A `spec-auditor` return whose verdict is
+`Not run:` also failed — its prompt was missing the rubric path, so add it before the retry. Retry it once with the same prompt; a
 second failure applies the stage's row. Never assemble a spec, or any section of one, from an
 analysis that is missing — the report names every failed stage and points at `<RUN>`.
 
@@ -282,7 +295,7 @@ Restate these six in every agent prompt you dispatch. They are also the rubric t
 
 1. **Domain-neutral prompts.** No library, framework, or product names in any agent body or in the final output structure.
 2. **Evidence-first.** Every claim in every output cites `file:line` or `file:start-end`.
-3. **Literal payloads.** Event payloads, state assignments, and branch behaviors are transcribed in a fenced block exactly as constructed in source, never paraphrased. Where a payload is elided, say how many fields were cut.
+3. **Literal payloads.** Event payloads, state assignments, and branch behaviors are transcribed in a fenced block exactly as constructed in source, never paraphrased — except secrets (tokens, keys, passwords, connection strings), whose values become `<redacted>`. Where a payload is elided, say how many fields were cut.
 4. **No placeholders.** Every section in every output file is complete or explicitly marked N/A with reason. `[table of N items]`, `[see above]` and `...and others` are all forbidden.
 5. **Finish dropped.** Markup, CSS, bundler config, exact private naming, stack-specific primitives — excluded from the spec.
 6. **Observable-behavior framing.** Describe what gets emitted, routed, dropped — not syntactic shape.

@@ -14,7 +14,7 @@ Your output is the deepest level of analysis in the code-to-spec pipeline. It go
 
 1. **Form + Function, not Finish.** Capture observable behaviors, data shapes, lifecycle, invariants, idempotency, error surfaces, contract slots. Drop stack-specific mechanics (markup, styling, bundler, exact private naming, specific library primitives) — a reimplementer in a different stack will make defensible different choices for those.
 2. **Evidence-first.** Every claim cites `file:line` or `file:start-end`. No exceptions.
-3. **Literal over paraphrased.** Event payloads, state assignments, and branch behaviors are transcribed as constructed in source. Do not summarize.
+3. **Literal over paraphrased.** Event payloads, state assignments, and branch behaviors are transcribed as constructed in source. Do not summarize. Redact secrets — tokens, keys, passwords, connection strings — in any literal you transcribe: keep the field, replace the value with `<redacted>`.
 4. **No placeholders in output.** Tables are complete or the output fails validation. Never write `[table of N items]`, `[see above]`, or `...and others`.
 5. **Observable-behavior framing.** Describe what gets emitted, routed, dropped — not the syntactic shape of the code.
 6. **Domain-neutral.** No product or library identifiers in the output structure. Where a library matters as a signal, state the signal factually.
@@ -30,6 +30,10 @@ Your prompt will contain:
 ## Workflow
 
 Read every file in full. Cross-reference between files as needed via Grep. Do not stop at the first pass — revisit files when resolving later sections.
+
+- Annotate type-only slots: `export { type X }` and `import type` are type-only, not value slots.
+- Where a value flows through several calls before reaching a sink, list each hop.
+- Tables are unbounded in length; prose across sections 10–11 is capped at ~2000 words.
 
 ## Output Format
 
@@ -181,16 +185,3 @@ Half F-variant per unit: Purpose, Shape, 3–5 Decision/Transform Rules, Error S
 ### <secondary-unit-name-2>
 ...
 ```
-
-## Rules
-
-- **Every citation is `file:line` or `file:start-end`.** No bare line numbers. No cross-file attribution errors.
-- **Payloads literal.** Transcribe exactly as constructed. No paraphrase.
-- **Preserve TypeScript contract attributes.** `export { type X }` is a type-only export — annotate it. Same for `import type`.
-- **Transform chains captured.** If a value flows through multiple calls before reaching a sink, list each hop.
-- **Field origin traced.** For every field in a params/options/payload, note `arg | config | event | this-state | message`.
-- **No placeholders.** Never `[see above]`, `[table of N items]`, `...and others`.
-- **Observable-behavior framing.** What gets emitted, routed, dropped — not syntactic shape.
-- **No product names.** Drop stack identifiers from output structure.
-- **Tables unbounded in length.** Prose across sections 10–11 capped at ~2000 words.
-- **Return the spec only.** No preamble, no meta-commentary, no sign-off.

@@ -15,7 +15,7 @@ Your output is the contract document that sits between the architecture overview
 1. **Reconcile across modules.** A single event fired in module A and listened in module B is one contract slot with two endpoints. Your job is to merge both views.
 2. **Asymmetries are findings.** A fired event with no listener in scope is a leak candidate or an external integration point — flag it. Same for a listener with no in-scope fire site.
 3. **Evidence-first.** Every contract entry cites the fire site(s) and listen site(s) with `file:line`.
-4. **Literal payloads.** Carry through the literal payload shapes from module analyzers. Do not paraphrase.
+4. **Literal payloads.** Carry through the literal payload shapes from module analyzers. Do not paraphrase. Redact secrets — tokens, keys, passwords, connection strings — in any literal you transcribe: keep the field, replace the value with `<redacted>`.
 5. **Module boundaries.** Identify contract slots *between* modules. Intra-module fire/listen is already captured by the module analyzer; do not duplicate it here unless a cross-module consumer exists.
 6. **Domain-neutral.** No product identifiers in output structure.
 
@@ -63,7 +63,7 @@ Use `Grep` to verify asymmetries before reporting them. A "MISSING" claim must b
 
 ### Step 7: Write the report
 
-Return the report in the exact structure below. No placeholders. Cite `file:line` for every claim.
+Return the report in the exact structure below, with no preamble. No placeholders. Cite `file:line` for every claim.
 
 ## Output Format
 
@@ -134,13 +134,3 @@ N/A if none observed.
 - Circular dependencies (cite).
 - Contract violations or drift between documented and actual behavior.>
 ```
-
-## Rules
-
-- **Citations for every claim, both endpoints where applicable.**
-- **Literal payloads.** Do not paraphrase.
-- **Verify asymmetries with Grep.** "MISSING" requires a search that returned nothing, cited in the evidence field.
-- **No placeholders.**
-- **Do not duplicate intra-module fire/listen pairs** unless they have an additional cross-module endpoint.
-- **No product names.**
-- **Return the report only.** No preamble.

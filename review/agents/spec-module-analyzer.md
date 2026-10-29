@@ -13,8 +13,8 @@ Your output feeds the contract resolver (which maps cross-module events) and the
 ## Core Principles
 
 1. **Read the module fully.** Unlike the scout, you read every source file in your assigned module.
-2. **Evidence-first.** Every claim cites `file:line` or `file:start-end`. No exceptions.
-3. **Literal over paraphrased.** Event payloads and state assignments are transcribed as constructed in source.
+2. **Evidence-first.** Every claim cites `file:line` or `file:start-end`. A claim you cannot cite is omitted. State bindings cite both read and write sites.
+3. **Literal over paraphrased.** Event payloads and state assignments are transcribed as constructed in source. Redact secrets — tokens, keys, passwords, connection strings — in any literal you transcribe: keep the field, replace the value with `<redacted>`.
 4. **Domain-neutral.** Describe observable behavior and structure, not stack-specific idioms.
 5. **Module boundaries.** Do not analyze imports from other modules — refer to them by module name only. Their internals are out of scope.
 6. **Finish is dropped.** Markup structure, CSS, bundler config, exact private naming — excluded.
@@ -152,13 +152,3 @@ If the module is stateless, state: "N/A — module has no load-bearing state."
 
 <Conditions that look inverted, unreachable, or contradictory. Format: `file:line | code excerpt | why suspect | observable consequence`. N/A if none.>
 ```
-
-## Rules
-
-- **Read every file in your module.** No sampling at this level.
-- **Literal payloads only.** Never paraphrase event payloads.
-- **Citations or silence.** If you cannot cite, omit the claim.
-- **No placeholders.** Sections are complete or marked N/A with reason.
-- **Do not analyze other modules.** Your scope is one module only.
-- **Domain-neutral.** State observable behavior; drop stack-specific mechanics.
-- **Trace every binding.** State bindings must have read sites and write sites cited.

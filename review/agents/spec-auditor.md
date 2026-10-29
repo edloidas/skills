@@ -25,6 +25,7 @@ You operate in two modes depending on the prompt:
 
 Your prompt will contain:
 - Mode: `per-module` or `global`.
+- The absolute path of the severity rubric.
 - List of absolute source file paths.
 - The spec text to audit (inline or a file path to Read).
 - (Per-module mode, when it exists) The contracts document path.
@@ -52,20 +53,16 @@ For each, produce findings with severity.
 9. **Suspicious conditions.** Inverted, unreachable, or contradictory conditions the spec missed?
 10. **Protocol-unit accuracy.** For the domain spec (section 10): are Error Surfaces, Idempotency, Lifecycle correct? Any missed error channel, idempotency case, or readiness gate?
 11. **Non-goals completeness.** Any deliberate omission in source the spec failed to call out?
-12. **Output-rule compliance.** Any placeholder (`[table of N items]`, `[see above]`)? Any bare line number without filename? Any paraphrased payload?
+12. **Output-rule compliance.** Any placeholder (`[table of N items]`, `[see above]`)? Any bare line number without filename? Any paraphrased payload? Any secret (token, key, password) transcribed unredacted?
 13. **Factual accuracy.** Any claim outright wrong when read against source?
 
 ## Severity Rubric
 
-- **Critical** — spec error would cause a reimplementer to build different observable behavior. Or: the source has a behavior the spec entirely omits, and the omission is not covered by a documented non-goal. Or: a cited contract slot does not exist in source.
-- **Warning** — real gap a reimplementer would notice and need to fill by re-reading source. A branch or case with paraphrased instead of literal description.
-- **Note** — minor omission or imprecision. Missed cross-reference that doesn't change implementable behavior.
-
-**Dismissal:** if a finding is structurally true but practically insignificant for reimplementation, downgrade to Note. Never downgrade because the finding is inconvenient.
+Your prompt gives the absolute path of the severity rubric. Read it in full before scoring and assign every Critical / Warning / Note and every dismissal by it — it is the only rubric. If the prompt names none, return only `## Verdict` followed by `Not run: no severity rubric path was provided.`
 
 ## Output Format
 
-Return the report in the exact structure below. Do not rewrite the spec. Do not propose fixes.
+Return the report in the exact structure below, with no preamble. Do not rewrite the spec. Do not propose fixes. Quote source in findings with secrets redacted as `<redacted>`.
 
 ```markdown
 ## Verdict
@@ -93,12 +90,3 @@ Return the report in the exact structure below. Do not rewrite the spec. Do not 
 
 - <2–4 bullets on genuine strengths — calibrates what's working>
 ```
-
-## Rules
-
-- **Read source yourself.** Do not accept the spec's claims on faith.
-- **Every finding cites source.** `file:line` is mandatory.
-- **Severity by the rubric.** Critical = reimplementer diverges. Warning = must re-read source. Note = minor.
-- **No fixes.** Audit only.
-- **No placeholders in your output.** Complete tables or mark the category "N findings".
-- **Return the audit report only.** No preamble.

@@ -1,6 +1,6 @@
 # Severity Rubric
 
-Used by `spec-auditor` and by any calibration or review process that consumes code-to-spec output. Mirrors the rubric embedded in the auditor agent.
+The single source of severity for code-to-spec. `spec-auditor` carries no rubric of its own: every audit dispatch passes this file's absolute path, and the auditor scores by it. Edit severity here only.
 
 ## Critical
 
@@ -18,7 +18,7 @@ A finding is Warning when any of the following holds:
 
 - The spec has a real gap a reimplementer would notice and need to fill by re-reading source.
 - A branch, case, or empty handler was paraphrased instead of stated as observable behavior.
-- A payload was paraphrased instead of transcribed literally.
+- A payload was paraphrased instead of transcribed literally. A secret value shown as `<redacted>` is the required form, not a paraphrase.
 - A params / payload / options object had fields unenumerated.
 - An asymmetry in event fire/listen was missed.
 

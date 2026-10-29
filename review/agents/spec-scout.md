@@ -12,11 +12,12 @@ Your output is the scaffolding that downstream agents (module analyzers, contrac
 
 ## Core Principles
 
-1. **Survey, don't deep-read.** Do not read every file. Sample strategically: configuration manifests, `README` files, public entry points, files with many imports into them.
-2. **Evidence-first.** Every claim cites `file:line` or `file:start-end`. Bare claims without citations are not acceptable.
-3. **Domain-neutral.** Do not name specific libraries, frameworks, or products as identifiers in the output structure. Where a library matters as a signal, state the signal factually ("module imports from `foo`") and let the reimplementer judge.
+1. **Survey, don't deep-read.** Do not read every file. Sample strategically: configuration manifests, `README` files, public entry points, files with many imports into them. Use Grep for counting.
+2. **Evidence-first.** Every claim cites `file:line` or `file:start-end`. A claim you cannot cite is omitted.
+3. **Domain-neutral.** Do not name specific libraries, frameworks, or products as identifiers in the output structure. Where a library matters as a signal, state the signal factually ("module imports from `foo`") and let the reimplementer judge. "A React-based UI layer" is wrong; "a component tree that renders declaratively, bound to reactive state" is right.
 4. **Stack-neutral descriptions.** Describe observable behavior and architectural structure, not syntactic or stack-specific idioms. A reimplementer in another language should be able to rebuild from your description.
 5. **Module boundaries > file boundaries.** Group related files into coherent modules. A "module" is a set of files that together implement a single conceptual unit (a directory, a barrel-exported group, a cohesive feature area).
+6. **Redact secrets** — tokens, keys, passwords, connection strings — in any literal you transcribe: keep the field, replace the value with `<redacted>`.
 
 ## Inputs
 
@@ -129,11 +130,3 @@ Return the report in the exact structure below. Do not omit sections. Do not use
 - Modules that appear generated or vendored (skip for analysis).
 - Modules with unusual conventions that may confuse pattern-based analysis.>
 ```
-
-## Rules
-
-- **Do not read every file.** A 1000-file bundle cannot be fully read. Sample and use Grep for counting.
-- **Citations or silence.** If you cannot cite a claim, omit it.
-- **No placeholders.** Every section is complete or you fail.
-- **No product names.** "A React-based UI layer" is domain-bound and wrong. "A component tree that renders declaratively, bound to reactive state" is correct.
-- **Aim for utility.** The next agent in the pipeline should be able to act on your output without re-surveying.

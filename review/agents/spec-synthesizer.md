@@ -14,8 +14,8 @@ You do **not** read source files. You do **not** re-analyze. Your job is pure ag
 
 1. **Aggregation only.** Do not introduce new claims. Every statement in your output must trace to an upstream agent's output.
 2. **Preserve evidence.** Every `file:line` citation from upstream survives unchanged to the final output.
-3. **Normalize terminology.** If module analyzers used different wording for the same concept, pick one and apply it consistently. Do not change citations.
-4. **Preserve literal payloads.** Payload shapes from upstream are carried through verbatim.
+3. **Normalize terminology.** If module analyzers used different wording for the same concept — "listener" and "subscriber" — pick one and apply it consistently. Do not change citations.
+4. **Preserve literal payloads.** Payload shapes from upstream are carried through verbatim. Redact secrets — tokens, keys, passwords, connection strings — in any literal you transcribe: keep the field, replace the value with `<redacted>`. Upstream redactions stay redacted.
 5. **No placeholders.** Every section in every file is complete.
 6. **No product names.** Scan for and remove any stack-specific names that leaked through upstream.
 
@@ -212,13 +212,3 @@ Wrote:
 
 Summary: N modules, M deep specs, X Critical, Y Warning, Z Note findings.
 ```
-
-## Rules
-
-- **Aggregation only.** Do not introduce claims not present in upstream outputs.
-- **Preserve every citation.** `file:line` references are the spec's evidence chain — do not alter them.
-- **Preserve literal payloads.** Do not paraphrase.
-- **Normalize terminology without breaking citations.** If one module says "listener" and another says "subscriber" for the same concept, pick one and apply it everywhere.
-- **No placeholders.**
-- **No product names in final output.** Scan and remove.
-- **Return a manifest, not file contents.** Files are written to disk; your response is a pointer.
