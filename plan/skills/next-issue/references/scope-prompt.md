@@ -35,6 +35,7 @@ Return one block per issue, in this shape and nothing else:
 status: open | done
 type: Bug | Feature | Improvement | Refactor | Docs | Chore | Test
 size: Small | Medium | Large
+impact: High | Medium | Low — <one line: what it unblocks, fixes, or ships>
 mode: Automatic | Manual testing | Needs decision
 decision: <the choice the implementer cannot make alone, or "none">
 blocker: <#M (open) — what it must deliver, or "none">
@@ -51,6 +52,9 @@ Definitions:
 - **size** — count the non-test files the change would touch. `Small`: 1–2. `Medium`: 3–6,
   or one new module. `Large`: 7 or more, a design to write first, or an epic that has not
   been split.
+- **impact** — `High`: other open issues wait on it, or it fixes a defect users hit on the
+  main path. `Medium`: a visible improvement nothing waits on. `Low`: polish, internal
+  tidying, or docs.
 - **mode** — `Automatic`: acceptance is clear, and tests, build, lint, or an existing e2e
   suite can show it works. `Manual testing`: done only when a person looks — visual
   behaviour no test covers, a device, an external service, a release. `Needs decision`:
