@@ -3,6 +3,11 @@
 Dispatched once per pull request that Phase 4 sends to a deep review. The coordinator runs its own
 reviewers and publishes nothing. Fill the bracketed parts.
 
+Its result is one report message: its own section with the `REVIEW LIST` as its findings, a one-row
+summary table, and its questions last. `OUTCOME` is the proposed row — `APPROVE` is the approve
+row, with `MERGE` when the run has `merge`; `COMMENT` and `REQUEST_CHANGES` carry the
+`REVIEW LIST` as their points.
+
 ```
 Coordinate a deep review of one pull request for its reviewer, <reviewer login>. Analyse
 only: post, approve, resolve, push and merge nothing.
@@ -39,7 +44,8 @@ C. Types and style — wide types where literals or unions fit, casts that asser
    checks, readonly and exhaustiveness, dead branches, over-engineering.
 D. Cleanup — run the code-cleanup skill's criteria in report-only mode: comments that restate
    code, rationale repeated in several places, references that make a file unreadable on its
-   own, naming, convention mismatches. Edit nothing.
+   own, naming, convention mismatches; check these directly where that skill is not installed.
+   Edit nothing.
 E. Tests — run the tests-audit skill in report-only mode on the tests the change adds or
    alters, and list the behaviour the change leaves untested. Where that skill is not
    installed, flag tests that only assert their own mocks, assertions that cannot fail, and
@@ -60,11 +66,16 @@ Wait for every reviewer you dispatched; never write a verdict on one's behalf.
 
 Return, grouped Correctness / Architecture / Types & style / Cleanup / Tests / Server. Write
 every blocker and major in full — severity, file:line on the reviewed head, the defect, the
-concrete fix, the verdict — and group minors and nits one line each. Drop nothing to save space.
+concrete fix, the verdict, its origin read against the base (introduced | made-worse |
+pre-existing), and how it was confirmed (read | ran <command> | observed <where>) — and group
+minors and nits one line each. Drop nothing to save space. A pre-existing defect is a suggestion
+to fix here or file a follow-up, never a reason for REQUEST_CHANGES.
 Then:
 
 OUTCOME: APPROVE | COMMENT | REQUEST_CHANGES — <one clause>
 REVIEW LIST: <the short, author-facing list of points for the review, most severe first>
+CHECK BY HAND: <for a change to what a user sees or does: 2-4 steps that would show a
+  regression; otherwise "none">
 HEAD: <sha reviewed>
 RAN: <commands and results>   NOT VERIFIED: <what and why>
 STATE: <clone back on <branch>, clean | what is left>

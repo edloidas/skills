@@ -71,6 +71,7 @@ test_created_rows_have_no_verdict_and_count_since_my_latest_activity() {
   assert_eq "1" "$(field "$row" 7)" "only activity after my own latest comment"
   assert_eq "CHANGES_REQUESTED" "$(field "$row" 8)" "review decision"
   assert_eq "2" "$(field "$row" 9)" "unresolved threads"
+  assert_eq "needs-you" "$(field "$row" 14)" "changes requested on my own"
 }
 
 test_only_selects_the_searches() {
@@ -110,6 +111,22 @@ test_moved_compares_verdict_commit_with_head() {
   assert_eq "CHANGES_REQUESTED" "$(field "$(row_for 'o/r#2')" 5)" "verdict, not the later comment"
   assert_eq "-" "$(field "$(row_for 'o/r#3')" 6)" "never reviewed"
   assert_eq "none" "$(field "$(row_for 'o/r#3')" 5)" "no review state"
+  assert_eq "no-change" "$(field "$(row_for 'o/r#1')" 14)" "verdict stands, nothing since"
+  assert_eq "recheck" "$(field "$(row_for 'o/r#2')" 14)" "head moved since the verdict"
+  assert_eq "fresh" "$(field "$(row_for 'o/r#3')" 14)" "never reviewed"
+}
+
+test_set_rechecks_a_repeat_request_and_classifies_my_own() {
+  stub_gh_with_response
+  local asked ready waiting
+  asked="$(pr 1 o/r head1111111 ',"mine":{"nodes":[{"state":"APPROVED","submittedAt":"2026-10-08T10:00:00Z","commit":{"oid":"head1111111"}}]}')"
+  ready="$(pr 2 o/r head2222222 ',"author":{"login":"me"},"reviewDecision":"APPROVED"')"
+  waiting="$(pr 3 o/r head3333333 ',"author":{"login":"me"},"isDraft":true,"reviewDecision":"APPROVED"')"
+  respond "$asked" "$asked" "$ready,$waiting"
+  run bash "$(script "$QUEUE")"
+  assert_eq "recheck" "$(field "$(row_for 'o/r#1')" 14)" "requested again with nothing moved"
+  assert_eq "ready" "$(field "$(row_for 'o/r#2')" 14)" "approved, green, clean"
+  assert_eq "waiting" "$(field "$(row_for 'o/r#3')" 14)" "a draft waits"
 }
 
 test_others_counts_only_after_my_latest_review() {
@@ -119,6 +136,7 @@ test_others_counts_only_after_my_latest_review() {
   respond "" "$one"
   run bash "$(script "$QUEUE")"
   assert_eq "2" "$(field "$(row_for 'o/r#5')" 7)" "one later review and one later comment by others"
+  assert_eq "recheck" "$(field "$(row_for 'o/r#5')" 14)" "others commented since the verdict"
 }
 
 test_others_ignores_bots() {
@@ -142,7 +160,7 @@ test_missing_checks_and_tabs_in_title() {
   assert_eq "NONE" "$(field "$row" 10)" "no status rollup"
   assert_eq "UNKNOWN" "$(field "$row" 11)" "no merge state"
   assert_eq "ghost" "$(field "$row" 2)" "deleted author"
-  assert_eq "a b" "$(field "$row" 14)" "tab in title flattened"
+  assert_eq "a b" "$(field "$row" 15)" "tab in title flattened"
 }
 
 test_owner_scopes_every_search() {

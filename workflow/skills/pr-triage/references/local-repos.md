@@ -58,6 +58,9 @@ a fork's code is read, never executed. The holder:
    package manager rewriting the lockfile is the usual one.
 4. Returns to the recorded branch with a clean tree before releasing the lease, and reinstalls
    dependencies there when it installed different ones.
+5. Deletes `triage/<N>` once the checks, reproduction or analysis it was made for are done, with
+   `git branch -D triage/<N>`. Done is not approval: whatever the verdict, a later step that needs
+   the tree recreates the branch from `<remote>/pr/<N>` in one command.
 
 Leave the reviewer's own changes, stashes and branches exactly as found, and never create a
 worktree: the reviewer's clone is the only place work happens, so nothing is left behind in a
@@ -75,5 +78,18 @@ git rev-list --left-right --count <branch>...<remote>/pr/<N>
 ```
 
 A local branch behind or diverged from the pull request is listed under *Local* in the report,
-with the command that would update it, for the reviewer to run. The `triage/<N>` and `fold/<N>`
-branches are kept for later reads and listed there too.
+with the command that would update it, for the reviewer to run.
+
+## Cleanup
+
+A branch this skill created is deleted as soon as it holds nothing that is not already on a
+remote; the reviewer's own branches are never touched.
+
+| Branch or ref | Deleted when |
+| ------------- | ------------ |
+| `triage/<N>` | The lease holder releases the lease (step 5 above) |
+| `fold/<N>` | Its push landed, or the fold was abandoned and its fixes went into a comment |
+| `refs/remotes/<remote>/pr/<N>` | Its pull request's row has an outcome in the final report — `git update-ref -d` |
+
+A `fold/<N>` whose commits are on no remote — a push refused or not yet named in a reply — is kept,
+and the *Local* line names it with the reason. Otherwise that line says the branches were deleted.

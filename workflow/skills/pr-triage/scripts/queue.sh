@@ -25,6 +25,11 @@
 #   MERGE     mergeStateStatus (CLEAN, DIRTY, BLOCKED, UNSTABLE, UNKNOWN, ...)
 #   HEAD      first 9 characters of the head commit
 #   UPDATED   updatedAt, ISO 8601
+#   SET       where the row goes, first match wins. Not mine: fresh (never
+#             reviewed); recheck (MOVED yes, OTHERS above zero, or requested
+#             again); no-change. Mine: needs-you (CHANGES_REQUESTED, THREADS or
+#             OTHERS above zero, CI FAILURE, or MERGE DIRTY); ready (ready,
+#             APPROVED, CI SUCCESS, MERGE CLEAN); waiting
 #   TITLE     title
 #
 # A search that returns --limit results, or a pull request whose reviews,
@@ -126,7 +131,7 @@ printf '%s' "$RAW" | jq -r --argjson n "$LIMIT" '
     | "WARN: \(.repository.nameWithOwner)#\(.number) fills the fetched reviews, comments or threads; OTHERS or THREADS may be low")
 ' | sort -u >&2
 
-printf 'REF\tAUTHOR\tDRAFT\tWHY\tMINE\tMOVED\tOTHERS\tDECISION\tTHREADS\tCI\tMERGE\tHEAD\tUPDATED\tTITLE\n'
+printf 'REF\tAUTHOR\tDRAFT\tWHY\tMINE\tMOVED\tOTHERS\tDECISION\tTHREADS\tCI\tMERGE\tHEAD\tUPDATED\tSET\tTITLE\n'
 printf '%s' "$RAW" | jq -r --arg me "$ME" '
   def tagged($why): (.data[$why].nodes // []) | map(select(.number != null) | . + {why: $why});
   (tagged("requested") + tagged("reviewed") + tagged("created"))
@@ -147,6 +152,18 @@ printf '%s' "$RAW" | jq -r --arg me "$ME" '
   | ($activity
      | map(select(.who != $me and .who != null and (.bot | not) and ($since == null or .at > $since)))
      | length) as $others
+  | ((.reviewThreads.nodes // []) | map(select(.isResolved | not)) | length) as $threads
+  | (.reviewDecision // "NONE") as $decision
+  | (.commits.nodes[0].commit.statusCheckRollup.state // "NONE") as $ci
+  | (.mergeStateStatus // "UNKNOWN") as $merge
+  | (if $own then
+       (if $decision == "CHANGES_REQUESTED" or $threads > 0 or $others > 0
+           or $ci == "FAILURE" or $merge == "DIRTY" then "needs-you"
+        elif (.isDraft | not) and $decision == "APPROVED" and $ci == "SUCCESS" and $merge == "CLEAN" then "ready"
+        else "waiting" end)
+     elif $verdict == null then "fresh"
+     elif $verdict.commit.oid != .headRefOid or $others > 0 or (.why | test("requested")) then "recheck"
+     else "no-change" end) as $set
   | [
       "\(.repository.nameWithOwner)#\(.number)",
       (.author.login // "ghost"),
@@ -155,12 +172,13 @@ printf '%s' "$RAW" | jq -r --arg me "$ME" '
       (if $own then "-" else ($verdict.state // "none") end),
       (if $own or $verdict == null then "-" elif $verdict.commit.oid == .headRefOid then "no" else "yes" end),
       ($others | tostring),
-      (.reviewDecision // "NONE"),
-      ((.reviewThreads.nodes // []) | map(select(.isResolved | not)) | length | tostring),
-      (.commits.nodes[0].commit.statusCheckRollup.state // "NONE"),
-      (.mergeStateStatus // "UNKNOWN"),
+      $decision,
+      ($threads | tostring),
+      $ci,
+      $merge,
       (.headRefOid[0:9]),
       .updatedAt,
+      $set,
       (.title | gsub("[\t\n]"; " "))
     ]
   | @tsv
