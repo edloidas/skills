@@ -10,7 +10,7 @@ when_to_use: >
   agent", and when a fast independent perspective would settle something.
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
-allowed-tools: Bash(bash:*) Write(*/outsider-*)
+allowed-tools: Bash(bash *outsider/scripts/run-outsider.sh *) Bash(bash *outsider/scripts/resolve-tmp.sh) Write(*/outsider-*)
 argument-hint: "[review] [agent], or empty for ask mode"
 metadata:
   author: edloidas
@@ -23,9 +23,16 @@ metadata:
 Get a fast opinion from an agent CLI running outside this session. One reviewer, no synthesis step
 — a sanity check, not an exhaustive review. Use `review:consilium` when you want a board.
 
-This skill writes one temp file per run — the question — and nothing else. The responder is
-launched with read-only tool grants — a sandbox for codex, an allowlist for the others — listed with
-their known gaps in `references/agents.md`; `OUTSIDER_ARGS_<AGENT>` can widen them.
+Ask mode writes the question to one temp file, which is left in place. The script captures the
+agent's stdout and stderr in two more temp files — three for codex, which writes its answer to its
+own — and deletes them when the agent exits. The responder is launched in the current working
+directory with read-only tool grants — a sandbox for codex, an allowlist for the others — listed
+with their known gaps in `references/agents.md`; `OUTSIDER_ARGS_<AGENT>` can widen them. It can read
+any file there, not only what you send.
+
+The question or diff, and any file the responder reads, goes to that agent's vendor service — it
+leaves the machine. Keep secrets and credentials out of the question, and out of an uncommitted
+review, which sends untracked files whole.
 
 The value is structural: the responder shares none of this conversation's context and runs in its
 own process, usually on a different model family. Which vendor answers is incidental, which is why
@@ -88,7 +95,7 @@ and how to add an agent.
    ```
 
 4. **Run it**, after printing one line naming the agent that will answer and the wait —
-   `Asking codex (ask mode, up to 2 min).`
+   `Asking codex (ask mode, up to 5 min).`
 
    ```bash
    bash <skill-dir>/scripts/run-outsider.sh ask --host claude <TMP>/outsider-<ID>-question.md
@@ -135,16 +142,16 @@ response is not interpretable without knowing who gave it.
 - Lead with "Codex's take:", "From pi:", and so on, using the agent the script actually ran
 - Evaluate the findings against your own context rather than adopting them
 - Highlight agreements; flag disagreements and explain which side you land on and why
-- The responder only ever saw what you piped it. Discount findings that are really requests for
-  context it could not see
+- The responder saw what you piped it and whatever it chose to read in the working directory —
+  never this conversation. Discount findings that are really requests for context it did not have
 - Empty output means it had nothing to offer — say so and move on
 
 ```text
 Codex's take: it agrees the cache key is wrong and would key on tenant + URL,
 same as the fix on the branch.
 
-One disagreement: it wants `resolveTenant()` awaited at the call site. It could
-not see `src/router.ts`, where the await already happens — discounting that one.
+One disagreement: it wants `resolveTenant()` awaited at the call site. It did
+not open `src/router.ts`, where the await already happens — discounting that one.
 
 One thing it caught that I had not: the seeded test passes against the buggy
 key, so the case as written would not have failed before the fix.

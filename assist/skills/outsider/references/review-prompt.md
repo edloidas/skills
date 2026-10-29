@@ -1,6 +1,8 @@
 # Code Review
 
-Review the following code changes. You have no prior context; judge only what you see below.
+Review the following code changes. You share none of the author's context. You may read files in
+the working directory to check how the changed code is used, but read only — do not modify,
+create, or delete anything.
 
 ## What to Check
 

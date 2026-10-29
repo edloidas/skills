@@ -62,7 +62,7 @@ because those two scale together — there is no useful run with four reviewers 
 
 | Mode | Reviewers | Verification |
 | ---- | --------- | ------------ |
-| `simple` | 2 — cold and intent, or cold alone with no requirement; the external leg is dropped first, since it is the one that cannot read the repo | `reachability` only |
+| `simple` | 2 — cold and intent, or cold alone with no requirement; the external leg is dropped first, since it is the one that cannot run probes | `reachability` only |
 | `standard` | 3 — cold, intent, external; 2 with no requirement | all three lenses |
 | `deep` | 4 — two cold on different models, intent, external; 3 with no requirement | all three lenses, and a synthesis critic on the assembled report |
 
@@ -201,8 +201,8 @@ same contract as the native reviewers rather than outsider's default style revie
 or `--commit <sha>`. A different scope means Phase 4 dedupes two different change sets, which is
 worse than skipping this reviewer.
 
-This leg only ever gets a piped diff and cannot run probes, so it is structurally cold — good at
-internal contradictions in the diff, prone to asking for context it cannot see. Never upgrade its
+This leg gets the piped diff and read-only access to the repo, and cannot run probes — good at
+internal contradictions in the diff, prone to asking for context it did not open. Never upgrade its
 confidence to match a native reviewer's.
 
 ### Stack lenses (when the diff matches, unless `--no-lens`)
