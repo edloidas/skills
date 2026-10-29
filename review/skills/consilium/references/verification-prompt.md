@@ -54,7 +54,10 @@ You rule on evidence, not on how convincing the critic sounds.
   severity.
 - Severity moves down only under `narrowed`, and up only under `holds`, with the reason.
 
-Report every verdict at the confidence you hold it; the orchestrator filters.
+Report every verdict at the confidence you hold it, in its `confidence` key; the orchestrator filters.
+`high` — a file you read or a quoted candidate or frame line decides it. `medium` — evidence points
+one way but does not settle it. `low` — reasoning alone. On an `escapability` record, confidence is
+in the adjustment working at the stated cost.
 
 ## Rules
 
@@ -78,6 +81,7 @@ quote:
 > <the candidate or frame line the verdict turns on, verbatim; say how many words you cut and where — omit the block if none>
 severity: <before> -> <after> — <why, or "unchanged">
 survives-as: <for narrowed only — the part that stands>
+confidence: high | medium | low
 ```
 
 For `escapability`:
@@ -89,6 +93,7 @@ verdict: design-note | stands
 adjustment: <the specific change, or none>
 adjustment-cost: cheap | moderate | structural
 gives-up: <what the adjustment costs the candidate, or nothing>
+confidence: high | medium | low
 ```
 
 ```

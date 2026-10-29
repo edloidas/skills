@@ -214,7 +214,8 @@ Print `Consolidated: 17 raw -> 8 objections, 2 dropped, 3 preferences`.
 line** — never on reasoning alone. Severity moves down only under `narrowed`, and up only under `holds`. An objection the lens
 cannot settle stays at its severity, flagged `unknown`. `escapability` never kills: `design-note`
 keeps the objection on its candidate with the adjustment and its downside, and an adjusted candidate
-is ranked as adjusted.
+is ranked as adjusted. A low-confidence verdict is discounted before counting, per Step 1 of
+`references/synthesis-guide.md`.
 
 Print `Verification: 1 refuted, 2 narrowed, 3 design notes, 1 unknown, 3 stand`. One pass, then
 synthesize — no second round, and no objections of your own added at this stage.

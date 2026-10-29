@@ -21,8 +21,16 @@ Each objection has one `holds`-lens verdict and one `escapability`-lens verdict.
 - `unknown` keeps the critic's severity and is marked `(unsettled)`.
 - A verdict of `refuted` or `narrowed` without a `pointer` or `quote` breaks the evidence rule — treat
   it as `unknown`.
+- A `holds`-lens verdict at `confidence: low` that would remove or shrink an objection — `refuted` or
+  `narrowed` — is applied as `unknown`: the objection keeps the critic's severity, marked
+  `(unsettled)`. A low-confidence `holds` that raises severity is not applied; the critic's severity
+  stands. A low-confidence `design-note` is reported with the adjustment marked `(unconfirmed)`, and a
+  `Blocking` objection it answers still rules the candidate out in Step 3. A record with no
+  `confidence` key counts as `low`.
 - A `dropped` objection that the `holds` lens rules `holds` is reinstated and placed like any other;
-  one it rules `refuted` stays dropped and is not reported.
+  one it rules `refuted` stays dropped and is not reported. One ruled `unknown`, directly or through
+  the low-confidence discount, stays dropped and is listed under **Ruled out** as
+  `Dismissed (unsettled): <objection>`.
 
 ## Step 2: Separate What Holds for Every Option
 
@@ -106,8 +114,8 @@ Run: <generators> · <critics> · <N> options · <N> objections → <N> stand, <
 **C<n> · <name>** <— recommended, where applicable>
 - Buys: <specific advantage>
 - Costs: <effort, complexity, burden>
-- Against it — <severity>, <bearer>: <what stands>
-- Design notes: <adjustment · adjustment>
+- Against it — <severity>, <bearer>: <what stands> <(unsettled), when the lens could not settle it>
+- Design notes: <adjustment · adjustment> <(unconfirmed), on a low-confidence design note>
 
 ### Open questions
 - **Q1. <question>** Assumed: <answer>. → if not: <what flips>
