@@ -215,7 +215,8 @@ asked about again; a later change to it is a briefing.
 ## Phase 3: Dispatch
 
 Fill the unit's prompt from the plan and `notes.md` — its `reuse:` facts and every `standing:`
-line, verbatim — and dispatch it as one background worker. Mark it `running`.
+line, verbatim — append the block in `references/worker-rules.md`, and dispatch it as one
+background worker. Mark it `running`.
 
 | Branching | The next issue unit starts when |
 | --------- | ------------------------------- |
@@ -275,6 +276,11 @@ for i in $(seq 60); do v=$(bash <skill-dir>/scripts/pr-state.sh <M> | tail -n 1)
 An empty `v` means the script failed; run it once without the loop and read its error. Still
 `wait` after the hour is a stuck check: brief the user.
 
+**A refused write is a blocker, not a retry.** A report's `blocked: permission — <command>` marks
+the unit `blocked` with that line as `outcome`, goes into `notes.md` as `standing:`, and becomes a
+**Needs you** item with the exact command. No successor is sent for it until the user runs or
+allows it.
+
 **A worker that stops short gets a successor.** When the report's `Unfinished` is not "none", or
 the table above sends a unit on, dispatch the unit that finishes it — an own-PR unit when a PR
 exists, the same unit again with its resume line when none does. Before a second worker touches a
@@ -332,10 +338,11 @@ or `All <N> units reached their done state.`
 
 ## Phase 7: Final Report and Cleanup
 
-Print the final report in the shape of `references/report-format.md`: the goal and whether it
-holds, the unit table, the merge order, decisions made unattended, and one numbered **Needs you**
-list for the whole run. For a stack, say that each PR's closing keyword fires only once the stack
-reaches the default branch. Set `run.json` `status` to `closed`.
+First stop every background shell or process the run's workers left alive: each report's
+`Left running:` line, and anything the host still lists as running for this run.
+
+Print the final report in the shape of `references/report-format.md`, which owns its sections,
+including the processes stopped. Set `run.json` `status` to `closed`.
 
 Clean up only what this run created: parallel working copies and their local branches, once their
 PRs are merged or pushed. Leave the main working copy on the branch the next step needs — the top

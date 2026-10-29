@@ -25,10 +25,12 @@ reaches the default branch. Otherwise "independent", or the order a conflict for
 1. <the action, who can take it, and the command when there is one>
 
 Working copy: on `<branch>`. <Removed: <N> worktrees and their local branches. | Nothing to clean up.>
+Background processes: <stopped: <each, with the unit that started it> | none left running>. <Still running: <each, and why it could not be stopped>.>
 Run state: <path> (closed)
 ````
 
-A decision or review unit with no PR of its own takes one row with `—` in the PR columns and its
+A refused write's `blocked: permission — <command>` becomes its own **Needs you** item with that
+command, as in the example's item 1. A decision or review unit with no PR of its own takes one row with `—` in the PR columns and its
 outcome in **Notes**. Drop **Decided unattended** and **Filed during the run** when empty.
 **Needs you** is numbered so the user can answer by number; merge it from every summary in the
 run, drop what a later unit resolved, and order it by what blocks the most. An item that is a
@@ -58,5 +60,6 @@ choice gets a briefing, not a line.
 2. Live check on XP for both PRs: one pass on `main`, held until #18 lands.
 
 Working copy: on `main`. Removed: 2 worktrees and their local branches.
+Background processes: stopped: one CI-watch loop (#19).
 Run state: ~/.local/state/orchestrate/enonic-playground-grieg/20261013-1602/ (closed)
 ````

@@ -70,8 +70,6 @@ what you verified live and what you did not.
 
 ## Standing instructions
 <every `standing:` line of notes.md, verbatim>
-A permission refusal is final for this run: do not retry it another way, and do not ask anyone
-else to perform it. Report it.
 
 ## Report
 Hand back exactly these sections, in this order:
@@ -99,6 +97,8 @@ Put this before **Before you edit**, and replace `#<N>` throughout with "the iss
 File an issue in <owner/repo>: `<type>: <title>`. Body: the problem with file:line evidence, what
 is in scope, what is explicitly out of scope, and where it was found (<#N / PR #M>). Settled
 background, not to re-litigate: <decision and its reason>. Verify every claim in the code before
-writing it. Write the body to a file and check it is non-empty before `gh issue create
---body-file`. Assign <login>; link it to <parent> the way its siblings are linked.
+writing it. File it through `issue-flow`'s create step, never a raw `gh issue create`: that step
+sets the issue type and labels the repo offers. Choose both yourself from the options it lists
+rather than asking. An epic and its children, or any other issue you file, go through the same
+step. Assign <login>; link it to <parent> the way its siblings are linked.
 ````

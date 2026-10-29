@@ -48,7 +48,6 @@ report it. After the merge, check out `<default>` and pull.
 
 ## Standing instructions
 <every `standing:` line of notes.md, verbatim>
-A permission refusal is final for this run: do not retry it another way. Report it.
 
 ## Report
 1. Verdict: what the review bot and CI said, with the head commit they judged.
