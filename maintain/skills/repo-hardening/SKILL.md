@@ -9,7 +9,8 @@ description: >
 when_to_use: >
   On "harden this repo", "protect the main branch", "lock down releases or tags", "set up
   rulesets", "move deploy secrets into an environment", or "enable immutable releases", and
-  when bootstrapping security settings for a new repository or pipeline.
+  when bootstrapping security settings for a new repository or pipeline. With `check`, on
+  "what hardening is missing" — the same baseline, reported without writing.
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
 allowed-tools: Bash Read AskUserQuestion
@@ -60,8 +61,16 @@ neither, ask the same question in normal chat as a numbered list of 2–5 option
 recommended first, one short line of description each — and wait for the user to reply
 with a number.
 
-Before applying (after Step 0's inventory), confirm scope in one round:
+Before applying (after Step 0's inventory), confirm scope in one round. Open it with the
+writes Steps 1, 2 and 6 would make, one per line, leaving out what Step 0 found already set:
+each setting with its target value (`default_workflow_permissions -> read`,
+`secret_scanning_push_protection -> enabled`), and for Step 6 the files in `.github/workflows/`
+that zizmor fixes may edit plus the new `.github/workflows/check-workflows.yml`. Immutable
+releases are question 3's alone, and rulesets and environments are questions 1 and 2's. Then ask:
 
+0. **Baseline writes** — Apply all listed (recommended) / Settings only (Steps 1–2; no local
+   files written, Step 6 is reported as deferred) / Skip Steps 1, 2 and 6 (each listed item is
+   reported as deferred with its command; questions 1–3 still decide the rest).
 1. **Ruleset strictness** — Solo (admin bypass, 0 approvals; recommended for
    single-maintainer repos) / Team (no bypass, 1+ approvals) / Skip rulesets.
 2. **Deploy secrets** — Migrate to environment now (recommended; previews break) / Leave
@@ -77,11 +86,22 @@ rather than asking. Same for the workflow linter in Step 6: apply it if
 this round.
 
 Keep it to one round. If the repo has no deploy secrets and no releases, questions 2 and 3
-drop and only ruleset strictness is asked.
+drop; question 0 drops only when Steps 1, 2 and 6 have nothing to write. Steps 1, 2 and 6 run
+only for the writes question 0 approved.
+
+## Modes
+
+| Argument | Runs | Writes |
+| -------- | ---- | ------ |
+| `apply`, or none | Steps 0–8 | After the scope round, as each step states |
+| `check` | Step 0, then the Step 8 table with each item `already set`, `would apply` with its exact command, `manual`, or `not applicable`; the zizmor row reads `not run — apply mode only` | None — no scope round, only reads (`gh api` GETs, `ls`, `git rev-parse`, `git branch -r`), no file written |
+
+In `check` mode the run ends at that table. Do not offer to apply; the user re-invokes with
+`apply`. For a fuller read-only review with reasoning, `audit:security-audit` is the tool.
 
 ## Workflow
 
-Done means: every Step 1–7 item is applied, already in place, or deferred with its reason and exact
+Done means: in `check` mode, the Step 8 table; otherwise every Step 1–7 item is applied, already in place, or deferred with its reason and exact
 command in the Step 8 report — or a gate is waiting on the user.
 
 ### Step 0: Inventory Before Touching Anything
@@ -104,7 +124,7 @@ ls .github/workflows/ 2>/dev/null
 Present the diff and end the phase with one line carrying the counts:
 `Inventory: 5 already set, 6 to apply, 2 manual, 1 not applicable`.
 
-Then confirm scope per **Asking the User** and wait for the answer. Nothing in Steps 1-6 runs
+In `apply` mode, then confirm scope per **Asking the User** and wait for the answer. Nothing in Steps 1-6 runs
 while that round is open, and no step whose target state is already in place runs at all — those
 are reported as `already set`.
 
