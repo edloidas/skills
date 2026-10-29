@@ -25,7 +25,7 @@ Print this shape, omitting rows that do not apply:
 
 **Advisors** (N round(s))
 - cold (<model>) · intent (<model>) · external (<cli>|skipped)
-- N findings — N fixed, N noted, N rejected
+- N findings — N fixed, N filed, N declined, N blocked
 
 **Outcomes**
 | State | Finding | Where / why |
@@ -94,7 +94,7 @@ work back into pending work.
 
 **Advisors** (1 round)
 - cold · intent · external (codex)
-- 5 findings — 2 fixed, 2 noted, 1 rejected
+- 5 findings — 2 fixed, 0 filed, 2 declined, 1 blocked
 
 **Outcomes**
 | State | Finding | Where / why |
@@ -119,7 +119,7 @@ Phase 7 appends to the summary above rather than reprinting it:
 **Review feedback** (N round(s))
 - <bot> — reported | silent after <budget>, skipped
   | none requested on this PR (timeline checked <time>)
-- N threads — N fixed, N rejected, N discuss, N deferred
+- N threads — N fixed, N filed, N declined, N blocked
 - Re-requested: <who, or none>
 - Outcomes: one row per thread acted on, and one per Phase 6 row whose state changed —
   a `filed` Note gets its number — in the Phase 6 table's shape

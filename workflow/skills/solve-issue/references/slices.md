@@ -53,13 +53,14 @@ from the open one. Git history is the only record — never write a slice file.
 **Slice <k>/<total>** `<short-sha>` <subject>
 - Changed: <one line per logical change>
 - Verified: <groups, as Phase 4's closing line>
-- Advisors: <N> findings — <N> fixed, <N> noted, <N> rejected
-- Outcomes: <rows in the Phase 6 shape, reviewer's words verbatim>
+- Advisors: <N> findings — <N> fixed, <N> filed, <N> declined, <N> blocked
+- Outcomes: <rows in the Phase 6 shape, quoted as `report-format.md` requires>
+- Needs you: <each `blocked: decision`, as the question> | none
 - Next: <k+1> <subject> | none — Phase 6 next
 ```
 
 The Phase 6 summary then lists **Commits**, one `<short-sha> <subject>` line per slice, in
-place of the single **Commit** line, and carries every slice's Outcomes rows.
+place of the single **Commit** line, and carries every slice's Outcomes rows and Needs-you questions.
 
 ## Review feedback (Phase 7)
 

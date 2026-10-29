@@ -37,4 +37,5 @@ observe is marked unverified.
 3. Where any change belongs: keep as is / amend PR #<M> / new issue on <base> / nothing.
 4. The concrete change list, if any, and anything that needs a person's approval to run.
 5. Rejected: one line per candidate, with the reason — decisions only.
+6. Unfinished: anything of this unit left undone and why — or "none".
 ````

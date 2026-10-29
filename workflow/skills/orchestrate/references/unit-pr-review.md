@@ -22,4 +22,5 @@ not reply to any thread, and do not push to the author's branch.
 1. Pending review: URL, the recommended verdict, and how many inline comments.
 2. Findings: one line each — severity, the claim, file:line.
 3. What the review does not cover, and why.
+4. Unfinished: anything of this unit left undone and why — or "none".
 ````

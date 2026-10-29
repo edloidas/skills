@@ -406,8 +406,8 @@ size-based trigger sees it. Otherwise stop at one round. **Hard cap: two rounds.
 round 2 surfaces another large batch, do not run a third — apply the clear fixes and list
 the rest as Notes.
 
-End each round with one line: `Phase 4.6 round <N>: <N> findings — <N> fixed, <N> noted,
-<N> rejected.` A round ends only in one of three states: no findings, findings triaged
+End each round with one line: `Phase 4.6 round <N>: <N> findings — <N> fixed, <N> filed,
+<N> declined, <N> blocked.` A round ends only in one of three states: no findings, findings triaged
 with the Fix items applied and verification green, or the cap reached. A description of
 what a further round would attack is not a state — either run it or go to Phase 5.
 
@@ -488,7 +488,7 @@ Print the summary `references/report-format.md` specifies. The fragment most oft
 - blocked: decision — keep the 300 ms open delay on touch, which the issue never mentions?
 ```
 
-Every row Phase 4.6 → **Outcomes** produces is printed, a Reject in the reviewer's own words.
+Every row Phase 4.6 → **Outcomes** produces is printed, quoted as that reference requires.
 
 Then ask, per **Asking the User**:
 
@@ -567,6 +567,6 @@ If `pr-review` is not installed, list the open threads with their authors and cl
 stop there. Do not hand-roll replies: an unverified rejection posted in public cannot be
 taken back.
 
-End Phase 7 with one line: `Phase 7: <N> threads — <N> fixed, <N> rejected, <N> discuss,
-<N> deferred, <N> notes (filed #<...>); merged | left open (<reason>).` Then stop. Do not open a
+End Phase 7 with one line: `Phase 7: <N> threads — <N> fixed, <N> filed, <N> declined,
+<N> blocked; Notes filed #<...> | none; merged | left open (<reason>).` Then stop. Do not open a
 third round, and do not re-review the diff after the merge — the run is over.

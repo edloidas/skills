@@ -5,7 +5,8 @@ A reply is not a review. A review opens a subject; a reply closes one. `changes-
 here — most of it is about earning standing across a whole diff, and a thread reply has standing
 already: someone asked you a question.
 
-What carries over is the gate, restated here because a cross-skill reference path is not loadable.
+What carries over is that reference's gate, adapted below to a thread reply — this is the reply's
+own gate, not a copy of the review's.
 
 ## The gate
 
