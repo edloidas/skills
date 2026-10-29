@@ -16,7 +16,7 @@ when_to_use: >
   attacking a local diff, which is changes-review.
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
-allowed-tools: Bash(bash:*) Bash(git:*) Bash(gh:*) Bash(jq:*) Bash(pnpm:*) Bash(npm:*) Bash(yarn:*) Bash(./gradlew:*) Bash(make:*) Read Glob Grep Edit Write Task Skill AskUserQuestion
+allowed-tools: Bash(bash *pr-triage/scripts/queue.sh*) Bash(git:*) Bash(gh:*) Bash(jq:*) Bash(pnpm:*) Bash(npm:*) Bash(yarn:*) Bash(./gradlew:*) Bash(make:*) Read Glob Grep Edit Write Task Skill AskUserQuestion
 argument-hint: "[assigned|created] [current|repo <owner/repo>] [recheck] [merge] [short] [owner <login>] [<owner/repo#N> ...]"
 metadata:
   author: edloidas

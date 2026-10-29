@@ -18,7 +18,7 @@ when_to_use: >
   calls it, and a bare solve-issue reaches it through that step.
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
-allowed-tools: Bash(gh issue list:*) Bash(gh issue view:*) Bash(gh pr list:*) Bash(gh repo view:*) Bash(gh api:*) Bash(git log:*) Bash(git branch:*) Bash(git rev-parse:*) Read Glob Grep Agent
+allowed-tools: Bash(gh issue list:*) Bash(gh issue view:*) Bash(gh pr list:*) Bash(gh repo view:*) Bash(gh api user --jq .login) Bash(gh api repos/*/labels --paginate --jq *) Bash(gh api graphql -f query=*) Bash(git log:*) Bash(git branch:*) Bash(git rev-parse:*) Read Glob Grep Agent
 user-invocable: false
 metadata:
   author: edloidas

@@ -10,7 +10,7 @@ when_to_use: >
   "open a PR", or "merge that PR" — and for any single step of the issue pipeline.
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
-allowed-tools: Bash(gh:*) Bash(git:*) Bash(bash:*) Bash(mktemp:*) Read Write Glob Grep Skill AskUserQuestion
+allowed-tools: Bash(gh:*) Bash(git:*) Bash(bash *issue-flow/scripts/*) Bash(mktemp:*) Bash(timeout:*) Bash(gtimeout:*) Bash(sleep:*) Read Write Skill AskUserQuestion
 argument-hint: "[issue-number or description]"
 metadata:
   author: edloidas
