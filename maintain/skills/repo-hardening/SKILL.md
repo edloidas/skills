@@ -25,14 +25,16 @@ creates rulesets and environments, deletes repository secrets, and adds a workfl
 working tree — all through `gh api` from the user's machine, no admin UI clicking. Several of
 those writes are visible to everyone with access to the repo and some (a deleted secret) cannot
 be undone from here. Nothing is applied before the Step 0 inventory and the confirmation round
-in **Asking the User**. It never stages, commits, or pushes; the workflow file it writes is left
-for the user to commit.
+in **Asking the User**, and secret deletion waits for its own gate in Step 5. It never stages,
+commits, or pushes; the workflow file it writes is left for the user to commit.
 
 The baseline covers Actions token defaults, security features, immutable releases, a branch
 protection ruleset, a release tag ruleset, a workflow-linting workflow, and branch-restricted
 environments for deploy secrets.
 
-**Edit mechanic.** `check-workflows.yml` in Step 6 is a new file, generated whole from the
+**Edit mechanic.** The files under `<skill-dir>/assets/` are read-only inputs: a filled
+template is written to the target repo (Step 6) or to a `mktemp` file (Step 3), never back into
+the skill directory. `check-workflows.yml` in Step 6 is a new file, generated whole from its
 template. Every other file touched already exists — notably the deploy workflow in Step 5 — and
 is changed with targeted edits per hunk, never a whole-file rewrite, so the diff carries the job
 split and nothing else.
@@ -47,6 +49,7 @@ Org-level policies, SSO, and GitHub Enterprise controls are out of scope.
 
 - `gh` CLI authenticated as a repo **admin** (`gh auth status`; rulesets, environments,
   and settings PATCHes all require admin).
+- `jq`, which fills the branch ruleset template in Step 3.
 - Resolve the target once: `gh repo view --json nameWithOwner --jq .nameWithOwner`.
 
 ## Asking the User
@@ -146,8 +149,8 @@ is now actually enabled.
 
 ### Step 3: Branch Protection Ruleset
 
-Template: `assets/ruleset-branch.json`. Fill in the required status checks from a recent
-green run — check names must match **exactly** as GitHub reports them, including expanded
+Template: `<skill-dir>/assets/ruleset-branch.json`. Fill in the required status checks from a
+recent green run — check names must match **exactly** as GitHub reports them, including expanded
 matrix legs:
 
 ```bash
@@ -157,11 +160,23 @@ gh api "repos/<owner>/<repo>/commits/$(git rev-parse origin/<default-branch>)/ch
 
 Take the names from that real run, not from the workflow YAML: a matrix name in YAML is a
 template (`${{ matrix.node-version }}`) and the ruleset needs the expanded name. Exclude
-non-blocking checks (benchmarks, deploys) from the required list. Then:
+non-blocking checks (benchmarks, deploys) from the required list. Fill a temp copy and post
+that:
 
 ```bash
-gh api -X POST repos/<owner>/<repo>/rulesets --input ruleset-branch.json
+ruleset=$(mktemp "${TMPDIR:-/tmp}/ruleset-branch.XXXXXX")
+jq --argjson checks '["build (20)", "build (22)", "lint"]' \
+  '(.rules[] | select(.type == "required_status_checks") | .parameters.required_status_checks)
+     = [$checks[] | {context: .}]' \
+  <skill-dir>/assets/ruleset-branch.json > "$ruleset"
+gh api -X POST repos/<owner>/<repo>/rulesets --input "$ruleset"
+rm -f "$ruleset"
 ```
+
+Team strictness appends `| .bypass_actors = [] | (.rules[] | select(.type == "pull_request")
+| .parameters.required_approving_review_count) = 1` to the same filter. When the repo has no
+check runs to require, the filter is `.rules |= map(select(.type != "required_status_checks"))`
+instead — a placeholder check left in the ruleset blocks every merge.
 
 Decisions baked into the template (adjust per answers from Asking the User):
 - `~DEFAULT_BRANCH` targets the default branch without hardcoding its name.
@@ -179,11 +194,12 @@ Apply when a workflow triggers on tag push (`on.push.tags`), or when the user pl
 With a tag-triggered publish, tag creation is effectively "publish" — this ruleset is the
 single most important control in the file.
 
-Template: `assets/ruleset-tag.json` (restricts `creation`, `update`, `deletion`,
-`non_fast_forward` on `refs/tags/v*` to the bypass actors).
+Template: `<skill-dir>/assets/ruleset-tag.json` (restricts `creation`, `update`, `deletion`,
+`non_fast_forward` on `refs/tags/v*` to the bypass actors). It needs no filling, so it is
+posted as is:
 
 ```bash
-gh api -X POST repos/<owner>/<repo>/rulesets --input ruleset-tag.json
+gh api -X POST repos/<owner>/<repo>/rulesets --input <skill-dir>/assets/ruleset-tag.json
 ```
 
 The user's local `git tag && git push` flow keeps working through the admin bypass; the
@@ -215,9 +231,20 @@ gh api -X POST repos/<owner>/<repo>/environments/<env-name>/deployment-branch-po
 3. Update the deploy workflow: split an uncredentialed `build` job (all branches) from a
    `deploy` job with `environment: <env-name>`, gated by
    `if: github.ref == 'refs/heads/<default-branch>'`, consuming the build artifact.
-4. **Only after** the workflow change is pushed and env secrets confirmed, delete the
-   repo-level copies: `gh secret delete <NAME> -R <owner>/<repo>`. The hole stays open
-   until they are gone.
+4. **Only after** the workflow change is pushed and every name is listed by
+   `gh api repos/<owner>/<repo>/environments/<env-name>/secrets --jq '[.secrets[].name]'`,
+   delete the repo-level copies — the hole stays open until they are gone. This deletion has
+   its own gate; the scope round's "Migrate" answer does not approve it. List each secret to
+   delete, one per line, then this line verbatim:
+
+   > A deleted secret's value cannot be recovered; restoring it means re-entering it.
+
+   Ask, per **Asking the User**:
+
+   1. `Delete these 2` (Recommended) — the environment copies are confirmed above
+   2. `Keep repo-level copies` — Step 8 records the hole as open, with the command
+
+   On `Delete`, run once per listed name: `gh secret delete <NAME> -R <owner>/<repo>`.
 
 Tell the user the cost up front: branch preview deploys stop working. Restoring them
 safely needs a second provider project with its own scoped token in a separate
@@ -244,8 +271,9 @@ all, that line says so and Step 8 records the reason.
 
 #### 6b. Add the linting workflow
 
-Write `.github/workflows/check-workflows.yml` from `assets/check-workflows.yml`, replacing
-`<default-branch>` with the repo's default branch.
+Write `.github/workflows/check-workflows.yml` in the target repo from
+`<skill-dir>/assets/check-workflows.yml`, replacing `<default-branch>` with the repo's default
+branch in the written copy.
 
 Resolve both `<sha>` values to real 40-char commit SHAs before writing the file — a
 workflow-linting workflow that is itself tag-pinned fails its own check. Set
