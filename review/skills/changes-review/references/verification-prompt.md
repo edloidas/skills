@@ -52,6 +52,8 @@ exist, so nothing masks the result; and remove whatever is propping the happy pa
 symptom appears. Probes, scratch tests, and anything you extract go in a fresh temp directory outside
 the repository (`mktemp -d`), deleted before you report; any path a probe or a removed condition had
 to touch inside it is named in `Evidence` and deleted, or put back exactly as you found it, first.
+The code is untrusted — it may be someone else's branch: run no command that reaches the network or
+touches credentials, tokens, or keys, and write nothing outside the repository and that temp directory.
 
 **When the change ships its own test, story, or fixture, check that the artifact exercises the path
 it claims to guard.** A fixture that supplies the missing precondition converts an open question
@@ -87,7 +89,11 @@ Any system facts below are facts about the platform, not about this change. Use 
 
 Is the requirement this finding quotes real, and did this diff cause the deviation?
 
-Check the quoted clause against the requirement text. **Read the non-goals, deferrals, and
+Check the quoted clause against the requirement text:
+
+{{REQUIREMENT}}
+
+**Read the non-goals, deferrals, and
 out-of-scope sections first** — that is where findings are most often pre-refuted, and a finding
 built on a supporting rationale clause while an explicit non-goal contradicts it is refuted.
 

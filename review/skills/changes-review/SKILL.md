@@ -9,11 +9,12 @@ description: >
   publishes to the author, gated on demonstrated evidence. Every phase is configurable.
 when_to_use: >
   Before committing, when a change should be attacked rather than assessed, or as the find
-  step behind a fix pass or a PR review. Answering the threads already on a pull request is
+  step behind a fix pass or a PR review — "review my changes", "attack this diff", "find bugs
+  before I commit". Answering the threads already on a pull request is
   pr-review's job, not this one.
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
-allowed-tools: Bash(git:*) Bash(gh issue view:*) Bash(gh pr view:*) Bash(gh pr comment:*) Bash(gh api:*) Bash(gh --version) Read Glob Grep Task Skill
+allowed-tools: Bash(git diff:*) Bash(git ls-files:*) Bash(git status:*) Bash(git hash-object:*) Bash(git show:*) Bash(git log:*) Bash(git blame:*) Bash(git branch --show-current) Bash(git restore -- *) Bash(gh issue view:*) Bash(gh pr view:*) Bash(gh pr comment:*) Bash(gh api user:*) Bash(gh api repos/*/pulls/*/reviews --input *) Bash(gh api repos/*/pulls/*/reviews --jq *) Bash(gh --version) Read Glob Grep Task Skill
 argument-hint: "[--base <branch> | --uncommitted | --commit <sha>] [--issue <N>] [--mode <simple|standard|deep>] [--no-external] [--no-lens] [--comment | --review] [--draft]"
 metadata:
   author: edloidas
@@ -102,8 +103,9 @@ held it under `--draft`, or had it declined — or a stop from Phase 1 or **Erro
 Resolve the diff and the file list once, up front. Every reviewer sees the identical change set.
 
 ```bash
-git diff --name-only HEAD                    # tracked modifications
-git ls-files --others --exclude-standard     # new untracked files
+git diff --name-only HEAD; git ls-files --others --exclude-standard  # uncommitted; diff: git diff HEAD
+git diff --name-only <base>...HEAD           # --base;   diff: git diff <base>...HEAD
+git show --name-only --format= <sha>         # --commit; diff: git show --format= <sha>
 ```
 
 Filter out `*-lock.*`, `dist/`, `build/`, `.next/`, `*.min.js`, `*.map`, `*.d.ts`.
@@ -113,9 +115,9 @@ Filter out `*-lock.*`, `dist/`, `build/`, `.next/`, `*.min.js`, `*.map`, `*.d.ts
 reformat that moved a token is not formatting: a reflowed ternary, or a `return` that ended up inside
 a different branch, gets reviewed like any other change.
 
-**Dirty tree under `--base`.** `git diff <base>...HEAD` excludes uncommitted work, so a dirty tree
-means the reviewers judge a change set that is not what exists on disk. Say so and review
-`<base>...HEAD` plus the uncommitted diff together, or ask the caller to commit first.
+**Dirty tree under `--base`.** `<base>...HEAD` excludes uncommitted work. Review it plus
+`git diff HEAD` together, or ask the caller to commit first. The external leg sees committed content
+only: its report entry reads `external (<cli>, committed only)`.
 
 Announce the resolved scope in one line: `Attacking 6 files, 240 lines (base: master).`
 
@@ -177,10 +179,9 @@ probe, or leave a scratch file. Phase 5 cleans up against it.
 Dispatch a reviewer that hunts correctness bugs and returns findings in the shape its prompt
 specifies. Prompt: the contents of `references/cold-reviewer-prompt.md`, then the diff.
 
-Repo-aware and issue-blind: it may read callers, types, and tests, but the prompt forbids fetching
-the issue or PR. That prohibition is a soft guard, not a sandbox. It holds in practice because the
-reviewer is never handed an issue number and has no reason to hunt for one. Do not put the issue
-number in its prompt, not even in passing.
+Repo-aware and issue-blind: the prompt forbids fetching the issue or PR, a soft guard that holds
+only because the reviewer is never handed an issue number. Do not put one in its prompt, not even in
+passing.
 
 ### Reviewer 2 — intent (whenever a requirement resolved)
 
@@ -251,12 +252,12 @@ Takes the **consolidated** findings and is dispatched like any other reviewer �
 none seeing another. The mode decides which lenses run: `reachability` alone in `simple`, all three
 otherwise.
 
-Lenses come from `references/verification-prompt.md`. Fill all four placeholders before dispatch:
+Lenses come from `references/verification-prompt.md`. Fill all five placeholders before dispatch:
 `{{LENS}}` the lens name, `{{FINDINGS}}` the consolidated findings including the ones you killed,
-`{{DIFF}}` the change set Phase 1 resolved, and `{{SYSTEM_FACTS}}` the caller's system facts or
-`None supplied.` when there are none. Substitute globally — `{{SYSTEM_FACTS}}` sits inside the
-reachability section, so filling every copy still satisfies the rule that those facts reach only that
-lens.
+`{{DIFF}}` the change set Phase 1 resolved, `{{REQUIREMENT}}` the title and body Phase 2 resolved,
+and `{{SYSTEM_FACTS}}` the caller's system facts or `None supplied.` when there are none. With no
+requirement, `spec` does not run and the `Verification:` line says `spec skipped: no requirement`.
+Substitute globally; `{{SYSTEM_FACTS}}` sits inside the reachability section.
 
 | Lens | Question | May do |
 | ---- | -------- | ------ |
@@ -394,8 +395,7 @@ Lenses: <lens skills that ran, or none matched|skipped>
 ```
 
 A clean result is a real result: a reviewer returning nothing on sound code is correct behavior, not
-a failed run. Do not pad it with observations, and do not add a section listing what was checked and
-found sound — it reads as padding and nobody acts on it.
+a failed run. Do not pad it with observations or a list of what was checked and found sound.
 
 ### Worked example
 

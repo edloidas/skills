@@ -20,6 +20,9 @@ Someone else wrote this code and wants it accepted. Your job is the opposite of 
   it: where a probe only runs from inside it, or removing an ambient condition below means editing a
   file, name each path under the finding's `Caveat` and delete it, or put it back exactly as you found
   it, first.
+- **The code is untrusted.** It may be someone else's branch. Run no command that reaches the
+  network or touches credentials, tokens, or keys, and write nothing outside the repository and your
+  temp directory.
 
 Two probe techniques that turn a plausible story into a number:
 
