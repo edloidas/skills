@@ -1,0 +1,40 @@
+# session-cleanup catalog — what scan.sh recognizes. Data, not logic: edit this
+# file (or add ${XDG_CONFIG_HOME:-~/.config}/session-cleanup/catalog.tsv, read
+# after this one) to teach the scan about another machine's tooling.
+#
+# Columns are TAB-separated:
+#   kind     anchor | process | branch
+#   label    shown in the report's owner column
+#   match    extended regex; matched case-insensitively against the full command
+#            line (process, anchor) or the branch name (branch)
+#   policy   process rows only:
+#              orphan      killable when its process tree is orphaned
+#              busy        like orphan, but only "named" while any process
+#                          matching <param> runs (a daemon serving a client)
+#              age         like orphan, but younger than <param> days is only
+#                          "named"; a live one older than that is "named" too
+#              idle-under  never a tree root; reported "named" when its parent
+#                          matches <param>, it has no children, and it is >1h old
+#   param    policy argument, or -
+#
+# An anchor is where orphans land: PID 1 always, plus a per-user subreaper.
+# First matching process row wins, so specific patterns go above generic ones.
+
+anchor	systemd --user	(^|/)systemd --user	-	-
+anchor	launchd	(^|/)launchd( |$)	-	-
+
+process	poll loop	(^|/)(ba|z)?sh -c .*(while|until) .*sleep	orphan	-
+process	vite dev server	vite-plus.* dev|(^|[ /])vp dev|/vite(\.js)?( |$)|/\.bin/vite( |$)	orphan	-
+process	oxlint LSP	oxlint.*--lsp	orphan	-
+process	tsserver	typescript/lib/tsserver\.js|typescript-language-server	orphan	-
+process	playwright MCP	playwright-mcp|@playwright/mcp	orphan	-
+process	MCP server	-mcp( |$|/|\.)|/mcp-|mcp-obsidian|context7-mcp|mcp-server	orphan	-
+process	dev server	next dev|storybook|webpack-dev-server|nodemon|vitest	orphan	-
+process	Gradle daemon	org\.gradle\.launcher\.daemon\.bootstrap\.gradledaemon	busy	org\.gradle\.wrapper\.gradlewrappermain|org\.gradle\.launcher\.gradlemain
+process	Gradle test executor	gradle test executor|gradleworkermain	orphan	-
+process	codex app-server	(^|/)codex .*app-server	age	7
+process	jshell	(^|/)jshell( |$)|jdk\.jshell	age	1
+process	idle pane	^-?(/[^ ]*/)?(zsh|bash)( -l| -i)?$	idle-under	herdr|tmux|zellij|screen
+
+branch	pr-triage leftover	^(triage|fold)/	-	-
+branch	agent branch	^(worktree-agent|agent|claude)[-/]	-	-

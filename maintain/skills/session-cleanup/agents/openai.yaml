@@ -1,0 +1,6 @@
+interface:
+  display_name: "Session Cleanup"
+  short_description: "Memory report, then clean up leftover processes, worktrees, branches, and session files"
+  default_prompt: "Use $session-cleanup to report memory use and list what agent and dev sessions left behind — orphaned processes, leftover worktrees and merged branches, stale session files — then remove only what I approve."
+policy:
+  allow_implicit_invocation: false

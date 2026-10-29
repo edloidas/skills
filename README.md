@@ -31,7 +31,7 @@ it. Nothing runs in the background, nothing is injected into every prompt.
 | [build](#build) | Conflict resolution, commits, findings fixes, live probes | 5 |
 | [review](#review) | Adversarial change review, cleanup, claim verification, approach boards, PR feedback, spec extraction | 6 |
 | [audit](#audit) | CI, scripts, security, skills, workspace, tsconfig, Three.js, React, tests | 9 |
-| [maintain](#maintain) | Agent config, label and editor config sync, lint migration, repo hardening, process cleanup | 6 |
+| [maintain](#maintain) | Agent config, label and editor config sync, lint migration, repo hardening, session cleanup | 6 |
 | [ship](#ship) | npm releases | 1 |
 | [assist](#assist) | Explanations, external opinions, design discussion, handoffs, restatement | 5 |
 | [write](#write) | Markdown, READMEs, repository documentation | 1 |
@@ -361,7 +361,7 @@ stack lenses for `changes-review`.
 
 ### Maintain
 
-Agent instruction setup and drift check, label sync, lint migration, editor config sync, repo security hardening, and stale process cleanup.
+Agent instruction setup and drift check, label sync, lint migration, editor config sync, repo security hardening, and session cleanup.
 
 | Skill | Description |
 | ----- | ----------- |
@@ -370,7 +370,7 @@ Agent instruction setup and drift check, label sync, lint migration, editor conf
 | [editor-config](./maintain/skills/editor-config/) | Init or merge `.zed` / `.vscode` editor configs from a canonical set |
 | [lint-sync](./maintain/skills/lint-sync/) | Migrate ESLint and Prettier to Biome or Oxc, or modernize an existing config |
 | [repo-hardening](./maintain/skills/repo-hardening/) | Apply a GitHub security baseline: rulesets, Actions defaults, immutable releases, environments |
-| [stale-process-cleanup](./maintain/skills/stale-process-cleanup/) | Find and reap orphaned dev servers, LSP, and MCP processes |
+| [session-cleanup](./maintain/skills/session-cleanup/) | Memory report, then clean up leftover processes, worktrees, merged branches, and session files |
 
 ### Ship
 

@@ -158,7 +158,7 @@
         "maintain/skills/labels-sync",
         "maintain/skills/lint-sync",
         "maintain/skills/repo-hardening",
-        "maintain/skills/stale-process-cleanup"
+        "maintain/skills/session-cleanup"
       ]
     },
     {

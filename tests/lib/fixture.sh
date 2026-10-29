@@ -104,7 +104,8 @@ push_branch() {
 CORE_TOOLS="sh bash env printf true false expr test
 git jq sed awk grep cut tr head tail sort uniq wc
 cat ls mkdir rmdir rm mv cp ln readlink realpath dirname basename
-mktemp find xargs date seq sleep timeout gtimeout tee diff chmod stat touch"
+mktemp find xargs date seq sleep timeout gtimeout tee diff chmod stat touch
+du df"
 
 STUB_DIR=""
 CORE_BIN=""

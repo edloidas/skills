@@ -164,7 +164,11 @@ run_tests() {
       unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_OBJECT_DIRECTORY
       # OUTSIDER_* is configuration, and the environment outranks the config
       # file, so one exported by the developer would silently win.
-      for _leaked in $(env | sed -n 's/^\(OUTSIDER_[A-Za-z0-9_]*\)=.*/\1/p'); do
+      # SESSION_CLEANUP_* and the two dirs below are where session-cleanup
+      # looks for what it may delete.
+      unset XDG_STATE_HOME CLAUDE_CONFIG_DIR
+      for _leaked in $(env | sed -n -e 's/^\(OUTSIDER_[A-Za-z0-9_]*\)=.*/\1/p' \
+                                    -e 's/^\(SESSION_CLEANUP_[A-Za-z0-9_]*\)=.*/\1/p'); do
         unset "$_leaked"
       done
       # Fixtures anchor stub directories here rather than at $PWD, so a stub dir
