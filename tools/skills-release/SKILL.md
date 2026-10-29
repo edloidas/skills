@@ -9,7 +9,7 @@ when_to_use: >
   ordinary npm package, use npm-release instead.
 license: MIT
 compatibility: Claude Code
-allowed-tools: Bash Read Glob Task AskUserQuestion
+allowed-tools: Bash Read AskUserQuestion
 metadata:
   author: edloidas
 ---
@@ -17,7 +17,8 @@ metadata:
 # Skills Collection Release Workflow
 
 This skill **writes locally and pushes**. It rewrites every version-bearing manifest,
-regenerates the Codex wrapper layer, commits, creates a signed tag, and pushes both to GitHub —
+regenerates the Codex wrapper layer, commits, creates the tag (signed when signing is
+configured), pushes both to GitHub in one atomic push, and edits the published release notes —
 where the tag triggers the release workflow and publishes a GitHub Release that installers
 fetch. A pushed tag cannot be recalled. It does not publish to npm; `package.json` here is
 `private: true` and exists only as the pi manifest and a version anchor.
@@ -32,8 +33,10 @@ Helper scripts in `scripts/`, invoked below by path.
 | ------ | ---- | ------ |
 | `release-prepare.sh` | Validates git state, packaging state, and version consistency across the release files | Step 1 |
 | `release-analyze.sh` | Counts commits since the last tag by conventional type, detects removed or renamed skills, recommends a bump | Step 2 |
-| `release-bump.sh` | Rewrites the version files, regenerates the Codex wrappers, verifies, commits, and tags — no push | Step 4 |
-| `release-execute.sh` | The same flow **plus an unprompted push** | Never in this workflow — it clears the Step 5 gate; it exists for a non-interactive release the user asks for by name |
+| `release-bump.sh` | Rewrites the version files, regenerates the Codex wrappers, verifies, commits, tags, and verifies the tag — no push | Step 4 |
+| `release-push.sh` | Refuses unless the tag is annotated, at HEAD, and signed when signing is configured; pushes branch and tag with `--atomic`; confirms both on the remote | Step 6 |
+| `release-tag.sh` | Tag creation and verification, sourced by the two above | Never directly |
+| `release-execute.sh` | `release-bump.sh` then `release-push.sh` with **no gate between them** | Never in this workflow — it clears the Step 5 gate; it exists for a non-interactive release the user asks for by name |
 
 ## Release Workflow
 
@@ -73,10 +76,8 @@ file stats, and a bump recommendation.
 Trust the removal check over the commit subjects — v5.0.0 removed 17 skills under `refactor:`
 subjects and would have shipped as MINOR without it.
 
-When the script prints a **Skills Removed or Renamed** section, map old to new in the
-release notes before publishing. A rename is invisible to a user whose slash command
-stopped working, and reconstructing the mapping after the tag is published is the slow
-way to do it.
+When the script prints a **Skills Removed or Renamed** section, keep that list — Step 7 maps it
+into the release notes.
 
 ### Step 3: Confirm Version with User
 
@@ -119,10 +120,17 @@ If user selects **Cancel**, stop the workflow and leave the tree untouched.
 bash .claude/skills/skills-release/scripts/release-bump.sh {{VERSION}}
 ```
 
-The script rewrites every version file, regenerates the wrapper manifests, verifies each one
-landed on `{{VERSION}}`, stages them, commits as `Release v{{VERSION}}`, and creates the signed
-`v{{VERSION}}` tag. It does **not** push, and neither do you here — Step 5 gates that. It
-refuses a tag that already exists: delete the old tag or choose another version.
+Run it bare — never piped through `tail`, `head`, or any filter: a pipe reports the filter's
+exit status, which is how a GPG failure once went unseen and master was pushed without
+`v5.18.0`. The script rewrites every version file, regenerates the
+wrapper manifests, verifies each one landed on `{{VERSION}}`, stages them, commits as
+`Release v{{VERSION}}`, creates the `v{{VERSION}}` tag (signed when `user.signingkey` or
+`tag.gpgSign` is set), and verifies the tag. It does **not** push, and neither do you here —
+Step 5 gates that. It refuses a tag that already exists: delete the old tag or choose another
+version.
+
+A non-zero exit means stop. If the commit landed but the tag did not, the script prints the
+two recovery commands — show them to the user and run neither yourself.
 
 End the step with one line: `Bumped 24 manifests to 5.6.0, committed, tagged v5.6.0 (not pushed)`.
 
@@ -130,7 +138,10 @@ End the step with one line: `Bumped 24 manifests to 5.6.0, committed, tagged v5.
 
 Pushing the tag publishes the release and cannot be recalled: the tag drives the release
 workflow, and installers fetch the published GitHub Release. Show the version and the tag, and
-wait for approval.
+wait for approval. If Step 2 listed removed or renamed skills, also show the
+`## Removed or renamed skills` section Step 7 will put in the release notes — one line per
+skill, `old (group) -> new` or `old (group) -> removed`. Approving the push approves that notes
+edit, so draft it here, not after.
 
 **Use the AskUserQuestion tool:**
 
@@ -140,7 +151,7 @@ AskUserQuestion:
   header: "Push"
   options:
     - label: "Yes"
-      description: "Push commits and tag to remote"
+      description: "Push commit and tag atomically, then apply the shown release-notes mapping"
     - label: "No"
       description: "Keep local commit and tag, do not push"
 ```
@@ -156,23 +167,43 @@ If user selects **Other**, follow their instructions.
 
 ### Step 6: Push Release
 
-Only after user approves:
+Only after user approves, and bare — never piped through `tail`, `head`, or a filter:
 
 ```bash
-git push --follow-tags
+bash .claude/skills/skills-release/scripts/release-push.sh {{VERSION}}
 ```
 
-`--follow-tags` pushes the commit and the reachable annotated release tag together in one round-trip — avoids torn state and won't publish stale local tags the way `--tags` does.
+It re-verifies the tag, then runs `git push --atomic origin <branch> v{{VERSION}}`, so the
+remote takes both refs or neither. Do not substitute a plain `git push` or `--follow-tags`:
+neither refuses when the tag is missing. A non-zero exit means nothing was pushed — report the
+script's error line and stop.
 
-After pushing, get the remote URL and print:
+Then confirm the tag independently:
 
+```bash
+git ls-remote --tags origin v{{VERSION}}
 ```
-Release v{{VERSION}} pushed successfully.
-GitHub Releases: https://github.com/edloidas/skills/releases
-```
 
-Then stop. The release workflow runs on the tag from here — do not re-run it, do not create a
-follow-up version, and do not edit the published release unless asked.
+Empty output means the release did not publish, whatever the script printed — report that and
+stop. Otherwise end the step with one line:
+`Pushed master + v{{VERSION}} at a1b2c3d4e5f6; tag confirmed on origin`.
+
+### Step 7: Release Notes
+
+The release workflow creates the GitHub Release with `--generate-notes`. Generated notes list
+commits, not removed skills, and a rename is invisible to a user whose slash command stopped
+working. So:
+
+- **Step 2 printed no Skills Removed or Renamed section:** nothing to edit. End with
+  `Release notes: generated by the workflow, no mapping needed`.
+- **It did:** wait for the release workflow (`gh run watch` on the run for `v{{VERSION}}`), read
+  the generated body with `gh release view v{{VERSION}} --json body -q .body`, put the section
+  approved at Step 5 above it, and apply the result with
+  `gh release edit v{{VERSION}} --notes-file <file>`. End with
+  `Release notes: mapped 3 removed or renamed skills`.
+
+Then stop. Do not re-run the workflow, create a follow-up version, or edit the release further
+unless asked.
 
 ## Error Handling
 

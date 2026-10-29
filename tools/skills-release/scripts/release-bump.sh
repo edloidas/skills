@@ -7,6 +7,8 @@
 
 set -e
 
+. "$(dirname "$0")/release-tag.sh"
+
 VERSION="$1"
 
 if [[ -z "$VERSION" ]]; then
@@ -154,6 +156,6 @@ git add "${FILES_TO_STAGE[@]}"
 git commit -m "Release $TAG_NAME"
 echo "Committed: Release $TAG_NAME"
 
-# Create a signed annotated tag (-s implies -a; required for --follow-tags on push)
-git tag -s "$TAG_NAME" -m "Release $TAG_NAME"
-echo "Tagged: $TAG_NAME"
+create_release_tag "$TAG_NAME"
+verify_release_tag "$TAG_NAME"
+echo "Tagged: $TAG_NAME (not pushed)"
