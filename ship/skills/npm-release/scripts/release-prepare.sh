@@ -19,13 +19,43 @@ if [ ! -f "package.json" ]; then
   exit 1
 fi
 
-# Get current branch
+# The release branch is the repo's default branch, or one the user named with
+# --branch. Anything else is refused.
+RELEASE_BRANCH=""
+if [[ "$1" == "--branch" ]]; then
+  RELEASE_BRANCH="$2"
+  if [[ -z "$RELEASE_BRANCH" ]]; then
+    echo "ERROR: --branch needs a branch name"
+    exit 1
+  fi
+fi
+
+DEFAULT_BRANCH=$(git symbolic-ref --quiet --short refs/remotes/origin/HEAD 2>/dev/null | sed 's|^origin/||' || true)
+if [[ -z "$DEFAULT_BRANCH" ]] && command -v gh &> /dev/null; then
+  DEFAULT_BRANCH=$(gh repo view --json defaultBranchRef -q .defaultBranchRef.name 2>/dev/null || true)
+fi
+
 CURRENT_BRANCH=$(git branch --show-current)
 echo "Branch: $CURRENT_BRANCH"
+echo "Default branch: ${DEFAULT_BRANCH:-unknown}"
 
-# Check if we're on master or main
-if [[ "$CURRENT_BRANCH" != "master" ]] && [[ "$CURRENT_BRANCH" != "main" ]]; then
-  echo "ERROR: Not on master or main branch"
+if [[ -z "$CURRENT_BRANCH" ]]; then
+  echo "ERROR: Detached HEAD; check out the release branch first"
+  exit 1
+fi
+
+if [[ -n "$RELEASE_BRANCH" ]]; then
+  if [[ "$CURRENT_BRANCH" != "$RELEASE_BRANCH" ]]; then
+    echo "ERROR: On $CURRENT_BRANCH, but the named release branch is $RELEASE_BRANCH"
+    exit 1
+  fi
+elif [[ -z "$DEFAULT_BRANCH" ]]; then
+  echo "ERROR: Could not detect the default branch (no origin/HEAD, no gh)"
+  echo "       Run 'git remote set-head origin --auto', or pass --branch <name>"
+  exit 1
+elif [[ "$CURRENT_BRANCH" != "$DEFAULT_BRANCH" ]]; then
+  echo "ERROR: On $CURRENT_BRANCH, not the default branch $DEFAULT_BRANCH"
+  echo "       Releasing from another branch needs --branch $CURRENT_BRANCH, named by the user"
   exit 1
 fi
 

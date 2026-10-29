@@ -34,7 +34,7 @@ release scripts, use those instead of these.
 
 | Script | Does | Run at |
 | ------ | ---- | ------ |
-| `release-prepare.sh` | Checks branch and working tree, detects and prints the package manager, runs the dry-run release | Step 1 |
+| `release-prepare.sh` | Checks the branch is the repo's default (or the one passed as `--branch <name>`) and the tree is clean, detects and prints the package manager, runs the dry-run release | Step 1 |
 | `release-analyze.sh` | Finds the last tag, lists and classifies commits since it, prints file-change stats and a bump recommendation | Step 3 |
 | `release-execute.sh` | Reads the version from `package.json`, creates the tag if absent, **pushes** commits and tags, prints verification links | Step 8 only — it pushes, so never run it before the Step 7 approval |
 
@@ -76,7 +76,7 @@ Extract and apply whatever applies to this release:
 
 - **Release commit message format** — e.g. `chore: release v<version>` or a project-specific template. This overrides the default `Release v<version>` used in Step 5.
 - **Pre-release prerequisites** — e.g. updating `CHANGELOG.md` via a separate skill, regenerating docs, running a project-specific validation script. Run these **before** bumping the version so `release:dry` in Step 2 can gate on them.
-- **Branch policy** — some projects allow releases only from `master`, some from version branches (`x.y`), some restrict by environment.
+- **Branch policy** — the default is the repo's default branch, whatever it is called. Some projects release from version branches (`x.y`) or restrict by environment; a release branch other than the default must be named by the project docs or the user, and is passed to Step 1 as `--branch <name>`.
 - **Tag format** — default is `v<version>`. If the project documents something else, use it.
 - **Dist-tag policy** — how prerelease versions are routed (`alpha`/`beta`/`rc`/`next`).
 
@@ -89,7 +89,14 @@ End the step with one line naming what you found, defaults included:
 
 ```bash
 bash scripts/release-prepare.sh
+# or, for a release branch Step 0 or the user named:
+bash scripts/release-prepare.sh --branch <name>
 ```
+
+The script reads the default branch from `origin/HEAD`, then `gh repo view`, and refuses any
+other branch unless it was passed with `--branch`. It refuses too when neither source answers;
+the fix it prints is `git remote set-head origin --auto`. Never pass the current branch as
+`--branch` just to get past the check.
 
 Where the script cannot run, check by hand: `git branch --show-current` is the release branch
 and `git status --porcelain` is empty.
@@ -98,7 +105,7 @@ If the branch is wrong or the tree is dirty, name which in one line, suggest `gi
 or committing first, and stop there. Do not stash, commit, or switch branches yourself to clear
 the check.
 
-End the step with one line: `Pre-flight: branch master, tree clean, package manager pnpm`.
+End the step with one line: `Pre-flight: branch develop (default), tree clean, package manager pnpm`.
 
 ### Step 2: Validate Release Build
 

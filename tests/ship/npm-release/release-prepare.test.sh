@@ -13,7 +13,7 @@ prepare() {
 }
 
 # A clean package repo on `main`, with PATH isolated so no real package manager
-# leaks in.
+# or `gh` leaks in, and an origin whose HEAD names the branch as the default.
 pkg_repo() {
   local branch="${1:-main}"
   stub_path > /dev/null
@@ -25,6 +25,7 @@ pkg_repo() {
   printf '{"name":"demo","version":"1.2.3"}\n' > package.json
   git add package.json
   git commit --quiet --amend --no-edit
+  add_remote "$branch"
 }
 
 # A package manager that reports the dry-run outcome the case wants.
@@ -63,7 +64,7 @@ test_wrong_branch_exits_1() {
   stub_pm pnpm 0
   prepare
   assert_eq 1 "$STATUS" "exit status"
-  assert_contains "$STDOUT" "Not on master or main branch" "output"
+  assert_contains "$STDOUT" "On feature, not the default branch main" "output"
   assert_not_contains "$STDOUT" "dry-run invoked" "output"
 }
 
@@ -75,6 +76,66 @@ test_master_is_accepted() {
   assert_contains "$STDOUT" "Branch: master" "output"
 }
 
+# The default branch is whatever origin says, not a hardcoded master/main.
+test_a_develop_default_branch_is_accepted() {
+  pkg_repo develop
+  stub_pm pnpm 0
+  prepare
+  assert_eq 0 "$STATUS" "exit status"
+  assert_contains "$STDOUT" "Default branch: develop" "output"
+  assert_contains "$STDOUT" "dry-run invoked" "output"
+}
+
+# With a non-standard default, main is just another branch.
+test_main_is_refused_when_the_default_is_develop() {
+  pkg_repo develop
+  git checkout --quiet -b main
+  stub_pm pnpm 0
+  prepare
+  assert_eq 1 "$STATUS" "exit status"
+  assert_contains "$STDOUT" "On main, not the default branch develop" "output"
+  assert_not_contains "$STDOUT" "dry-run invoked" "output"
+}
+
+test_gh_supplies_the_default_branch_when_origin_head_is_unset() {
+  pkg_repo develop
+  git symbolic-ref --delete refs/remotes/origin/HEAD
+  stub_gh_default_branch develop
+  stub_pm pnpm 0
+  prepare
+  assert_eq 0 "$STATUS" "exit status"
+  assert_contains "$STDOUT" "Default branch: develop" "output"
+}
+
+test_undetectable_default_branch_exits_1() {
+  pkg_repo main
+  git symbolic-ref --delete refs/remotes/origin/HEAD
+  stub_pm pnpm 0
+  prepare
+  assert_eq 1 "$STATUS" "exit status"
+  assert_contains "$STDOUT" "Could not detect the default branch" "output"
+  assert_not_contains "$STDOUT" "dry-run invoked" "output"
+}
+
+test_a_named_release_branch_is_accepted() {
+  pkg_repo main
+  git checkout --quiet -b release-2.x
+  stub_pm pnpm 0
+  run bash "$(script "$PREPARE")" --branch release-2.x
+  assert_eq 0 "$STATUS" "exit status"
+  assert_contains "$STDOUT" "dry-run invoked" "output"
+}
+
+test_a_random_branch_is_refused_even_with_a_named_release_branch() {
+  pkg_repo main
+  git checkout --quiet -b scratch
+  stub_pm pnpm 0
+  run bash "$(script "$PREPARE")" --branch release-2.x
+  assert_eq 1 "$STATUS" "exit status"
+  assert_contains "$STDOUT" "On scratch, but the named release branch is release-2.x" "output"
+  assert_not_contains "$STDOUT" "dry-run invoked" "output"
+}
+
 # Detached HEAD has no branch name, so the branch check must refuse rather than
 # treat an empty name as acceptable.
 test_detached_head_exits_1() {
@@ -84,7 +145,7 @@ test_detached_head_exits_1() {
   stub_pm pnpm 0
   prepare
   assert_eq 1 "$STATUS" "exit status"
-  assert_contains "$STDOUT" "Not on master or main branch" "output"
+  assert_contains "$STDOUT" "Detached HEAD" "output"
 }
 
 test_uncommitted_changes_exit_1() {
