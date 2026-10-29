@@ -227,28 +227,26 @@ Run `detect-base.sh` to find the correct base branch — unless the user named o
 pull request does ("start work on #N from issue-41"). Then `<base>` is that branch, and
 `references/stacking.md` → **Step 2** owns its checks and the record it leaves.
 
-A dirty tree in the full flow from uncommitted changes is the work itself. Carry it over — checkout and pull would fail on it, and you're already on the base:
+If `issue-<number>` exists, settle it first, per **Asking the User**: "Switch to existing branch" (Recommended) or "Delete and create fresh" (`git branch -D`). Commits `git log --oneline issue-<number> --not --remotes` lists exist nowhere else: before deleting, name them and ask again — "Switch" (Recommended) or "Delete, losing <N> commits". A pre-chosen delete does not answer that; unattended, switch.
+
+A dirty tree in the full flow is the work itself. Carry it over — you're already on the base:
 
 ```bash
 git checkout -b issue-<number>
 ```
 
-A dirty tree the caller asked to stash (`"start work on #N, stash local changes"`) is not the work. Stash it, naming the branch the Step Router read, then take the clean path. Report `Stashed:` only if `git stash list` now shows the entry:
+A dirty tree the caller asked to stash (`"start work on #N, stash local changes"`) is not the work. Stash it, naming the branch you are on, then take the clean path. Report `Stashed:` only if `git stash list` shows it:
 
 ```bash
 git stash push -u -m "issue-<number> from <current-branch>"
 ```
 
-A clean tree (entered at Step 2 directly, e.g. "start work on #N"):
+A clean tree:
 
 ```bash
 git checkout <base> && git pull origin <base>
 git checkout -b issue-<number>
 ```
-
-If `issue-<number>` already exists, ask, per **Asking the User**:
-1. "Switch to existing branch" (Recommended)
-2. "Delete and create fresh"
 
 Update project status to "In Progress" (if project integration is available):
 
@@ -256,15 +254,14 @@ Update project status to "In Progress" (if project integration is available):
 bash "<skill-dir>/scripts/project-status.sh" <number> "In Progress"
 ```
 
-Resolve the fork point for the report, so callers never have to turn the base name back
-into a rev:
+Resolve the fork point for the report:
 
 ```bash
 baseref=$(git rev-parse --verify --quiet "origin/$base" || git rev-parse --verify --quiet "$base")
 git merge-base "$baseref" HEAD
 ```
 
-Print the Step 2 report, including both `Base:` and `Fork:`. Then stop: do not commit and do not start implementing — the branch is this step's whole deliverable.
+Print the Step 2 report with `Base:` and `Fork:`. Then stop: do not commit or start implementing.
 
 ## Step 3: Commit
 
