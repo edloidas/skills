@@ -200,16 +200,16 @@ Claude-only subagent field|subagent_type"
 # explicit ceiling below rather than a blanket exemption, so it cannot keep growing
 # unnoticed. Adding a row is a deliberate decision that needs a reason in CLAUDE.md.
 BODY_LINE_CAP=500
-BODY_LINE_BUDGETS="plan/skills/issue-flow=1010
-workflow/skills/solve-issue=550"
+BODY_LINE_BUDGETS="plan/skills/issue-flow=697
+workflow/skills/solve-issue=538"
 
 # The line cap alone let a body grow sideways: changes-review sat at 499 lines and
 # ~7.3k tokens. Estimated as bytes / 4, the same heuristic skill-metrics.mjs prints.
 # The last three rows are grandfathered at their size when this cap arrived — the
 # ceiling stops growth, it does not sanction the size.
 BODY_TOKEN_CAP=5000
-BODY_TOKEN_BUDGETS="plan/skills/issue-flow=13600
-workflow/skills/solve-issue=7650
+BODY_TOKEN_BUDGETS="plan/skills/issue-flow=9900
+workflow/skills/solve-issue=7410
 review/skills/changes-review=7500
 review/skills/code-cleanup=6500
 audit/skills/security-audit=5700"

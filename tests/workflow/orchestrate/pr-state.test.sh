@@ -531,4 +531,64 @@ test_head_commit_is_found_by_oid_not_position() {
   assert_contains "$STDOUT" "HEAD_MIN=10" "uses the head's own date"
 }
 
+# ------------------------------------------------------------------ wait --
+
+# sleep is stubbed to record each call, and, when $SANDBOX/pr.next.json exists,
+# to swap it in — the state GitHub shows by the next minute.
+stub_sleep() {
+  stub sleep <<EOF
+echo "\$*" >> "$SANDBOX/sleep.calls"
+[ -f "$SANDBOX/pr.next.json" ] && mv "$SANDBOX/pr.next.json" "$SANDBOX/pr.json"
+exit 0
+EOF
+}
+
+test_non_numeric_wait_is_a_usage_error() {
+  stub_gh
+  run bash "$(script "$PR_STATE")" 12 acme/widgets --wait x
+  assert_eq 2 "$STATUS" "exit status"
+}
+
+test_wait_returns_at_once_when_not_waiting() {
+  base_pr
+  stub_sleep
+  check 12 acme/widgets --wait 60
+  assert_eq 0 "$STATUS" "exit status"
+  assert_eq "VERDICT=done" "$(verdict)" "verdict"
+  assert_eq "" "$(cat "$SANDBOX/sleep.calls" 2>/dev/null)" "never slept"
+}
+
+test_wait_stops_when_the_verdict_changes() {
+  base_pr
+  stub_sleep
+  write_fixtures
+  cp "$SANDBOX/pr.json" "$SANDBOX/pr.next.json"
+  ROLLUP="$(check_run IN_PROGRESS null)"
+  check 12 acme/widgets --wait 60
+  assert_eq 0 "$STATUS" "exit status"
+  assert_eq "VERDICT=done" "$(verdict)" "verdict after CI passed"
+  assert_eq "60" "$(cat "$SANDBOX/sleep.calls")" "slept one minute, once"
+}
+
+test_wait_gives_up_after_the_minutes_given() {
+  base_pr
+  stub_sleep
+  ROLLUP="$(check_run IN_PROGRESS null)"
+  check 12 acme/widgets --wait 2
+  assert_eq 0 "$STATUS" "exit status"
+  assert_eq "VERDICT=wait" "$(verdict)" "still waiting"
+  assert_eq 2 "$(wc -l < "$SANDBOX/sleep.calls" | tr -d ' ')" "slept twice"
+  assert_contains "$STDOUT" "CI=pending" "prints the full last check"
+}
+
+test_wait_passes_a_failure_through() {
+  base_pr
+  stub_sleep
+  check 12 acme/widgets
+  rm "$SANDBOX/timeline.json"
+  run bash "$(script "$PR_STATE")" 12 acme/widgets --wait 5
+  assert_eq 1 "$STATUS" "exit status"
+  assert_contains "$STDERR" "timeline query" "names the failed query"
+}
+
 run_tests

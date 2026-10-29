@@ -67,9 +67,8 @@ neither, ask the same question in normal chat as a numbered list of 2–5 option
 recommended first, one short line of description each — and wait for the user to reply
 with a number.
 
-That prompt is only for a small situational question — which remote, which merge method. The
-plan is never offered as a choice, nor is a decision that needs context: those go under *Needs
-your call*, last in the report, and the reviewer writes what to do. A policy the reviewer states
+That prompt is only for a small situational question — which remote, which merge method; Phase 3
+says where the plan goes; a decision that needs context goes under the report's *Needs your call*. A policy the reviewer states
 in a reply — "release order is not our concern" — is a *standing policy*: passed into every later prompt, and applied to
 every row not yet written, earlier pull requests' included. It is written to durable notes only
 when the reviewer asks.

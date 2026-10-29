@@ -80,15 +80,7 @@ event log behaves everywhere else, but it was not watched happening. Round 2 lea
 — if a repository that visibly re-reviews shows no new event, this assumption is the
 first thing to suspect.
 
-### Never claim absence you did not observe
-
-The report says what was checked and when:
-
-> No automated reviewer was requested on this pull request (timeline checked at 14:02Z);
-> none was attached by 14:03Z; merged when CI passed.
-
-Never `No automated reviewers`. The old wording asserted a property of the repository
-from a query that could not see one; the sentence above asserts only what was read.
+The report says what was checked and when, worded per `references/report-format.md`.
 
 ## What not to look at
 
@@ -160,9 +152,7 @@ After the amend and force-push, run Q1 and Q2 again against the **new** head.
 Q2's `commit_id` filter is what keeps this honest: the round-1 review is pinned to the
 old head and cannot satisfy round 2.
 
-Run this phase at most **twice**. After the second round, list what is still open in the
-report; a third loop trades wall clock for findings the pull request's own reviewers can
-raise.
+After the second round — the cap the body sets — list what is still open in the report.
 
 Carry the verdicts `pr-review` reached in round 1 into the report. It is blind to
 previous rounds by design, so a claim it already rejected can come back — recognizing

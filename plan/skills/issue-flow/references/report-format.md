@@ -15,6 +15,19 @@ Labels: <labels> | Assignee: @<login> [| Milestone: <name>]
 
 Include `Milestone: <name>` only when a milestone was set.
 
+### Step 1: Batch Summary
+
+Replaces the per-issue Step 1 reports when issues are created in a batch:
+
+```
+| Issue | Title                   | Milestone   |
+| ----- | ----------------------- | ----------- |
+| [#10023](https://github.com/owner/repo/issues/10023) | AnchorDialog for Editor | Alpha (MVP) |
+| [#10024](https://github.com/owner/repo/issues/10024) | Toolbar refactor        | Alpha (MVP) |
+```
+
+Omit the Milestone column if no milestone was assigned to any issue.
+
 ### Step 2: Branch Created
 
 ```

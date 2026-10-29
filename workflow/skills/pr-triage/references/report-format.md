@@ -117,30 +117,24 @@ drop nobody can see reads as a finding nobody checked.
 
 ## A filled-in final report
 
-````markdown
-## PR triage · 3 PRs in 3 repositories
+Same shape and same three pull requests as the Phase 3 report example in SKILL.md's **Report**;
+only the parts that change are shown. The run line is replaced by what was done, each section's
+last line becomes `**Done:**`, the summary table's last column becomes the result, and the
+final-only lines close it before the questions:
 
+````markdown
 Run: Acted: 2 merged, 1 changes requested · outside judge: codex · every write named in a reply
 
-### [#686](https://github.com/enonic/app-ai-translator/pull/686) · [enonic/app-ai-translator](https://github.com/enonic/app-ai-translator) — Upgrade Gemini models
-**Does:** moves the translator's default model from `gemini-3.1-flash-lite`, which Google retires, to `gemini-3.5-flash-lite`. Two files, +5/−5.
-**Found:** nothing above minor.
+### [#686](https://github.com/enonic/app-ai-translator/pull/686) · … — Upgrade Gemini models
+…
 **Done:** `APPROVED` and `MERGED` (rebase) as 21cfe78.
 
-### [#11491](https://github.com/enonic/app-contentstudio/pull/11491) · [enonic/app-contentstudio](https://github.com/enonic/app-contentstudio) — Dependencies widget opens filter instead of item list on mobile
-**Does:** on mobile, "Show all incoming/outgoing dependencies" now opens the filtered item list with a removable dependency header instead of the filter panel. +908/−66, most of it tests.
-**Found:**
-- Nit — a double space in a class string, and a store imported past its module's public index (`SearchToggle.tsx:14`), which a refactor of that module would break silently. Both folded in.
-**Check by hand:** at a phone-width window, open any content's Dependencies widget and click "Show all outgoing"; the item list should open with a removable dependency header, and removing it should bring back the full list, not an empty one.
+### [#11491](https://github.com/enonic/app-contentstudio/pull/11491) · … — Dependencies widget opens filter instead of item list on mobile
+…
 **Done:** `FOLDED` into skjulestad's commit (96986601f, force-pushed with lease), `APPROVED`, `MERGED` (squash) as 9398d47.
-
-### [#2793](https://github.com/enonic/app-users/pull/2793) · [enonic/app-users](https://github.com/enonic/app-users) — ID provider mode in the Users and Groups sections
-**Does:** marks each ID provider as local, mixed, external or unavailable, and locks editing of users and groups that an external system owns — in the UI and with server-side write guards. +1283/−186.
-**Found:**
-- Blocker — a group key passed in the role list goes straight to XP's `addMembers`, which accepts any principal, so a user can be put into a locked provider's group past the guard. Outside judge; read in `user.source.ts:423` and XP's `AddMembersHandler`.
-- Major — the groups step offers every group and pins none when provider modes fail to load (`UserEditorDialogGroupsStep.tsx:25`); confirmed by two judges.
-- Minor, pre-existing — the group search ignores case for local providers only; read on the base at `GroupSearch.ts:61`. Suggested as a follow-up issue, not a blocker.
-**Done:** `CHANGES_REQUESTED`, 6 inline comments: https://github.com/enonic/app-users/pull/2793#pullrequestreview-5461908059
+### [#2793](https://github.com/enonic/app-users/pull/2793) · … — ID provider mode in the Users and Groups sections
+…
+**Done:** `CHANGES_REQUESTED`, 3 inline comments: https://github.com/enonic/app-users/pull/2793#pullrequestreview-5461908059
 
 | PR | Now | Result |
 | -- | --- | ------ |
@@ -149,14 +143,9 @@ Run: Acted: 2 merged, 1 changes requested · outside judge: codex · every write
 | [app-users#2793](https://github.com/enonic/app-users/pull/2793) | open, waits on the author | `CHANGES_REQUESTED` |
 
 Writes on others' branches: contentstudio#11491 — amended to 96986601f, force-pushed with lease.
-Not run: none. Rules broken: none.
+Not run: none.
+Rules broken: none.
 Local: 3 clones back on their branches; `triage/*` and `fold/*` deleted.
-
-### Needs your call
-
-**Q1. Should deleting users and groups also respect the provider mode?** [#2793](https://github.com/enonic/app-users/pull/2793), the delete action in the Users browse panel. The change locks editing of users and groups an external provider owns, but delete still works on them, so an admin can remove a user that the next sync recreates. The issue only talks about editing, and the review already sent does not mention delete.
-- **Leave delete as is** (my pick) — nothing more is posted; deleting a synced user is an admin's explicit act and the sync repairs it.
-- **Lock delete too** — one more `COMMENT` point for the author, linked to the review already sent.
 ````
 
 ## The concise form

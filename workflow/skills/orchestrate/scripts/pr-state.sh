@@ -1,5 +1,5 @@
 #!/bin/bash
-# pr-state.sh <pr-number> [<owner/repo>] [--budget <minutes>]
+# pr-state.sh <pr-number> [<owner/repo>] [--budget <minutes>] [--wait <minutes>]
 # Reduces a pull request's review state to a few lines, so an orchestrator can
 # poll it without reading reviews, threads, or check logs. Read-only gh queries.
 # Needs gh (authenticated) and jq.
@@ -33,19 +33,28 @@
 # act wins over wait, and CI pending wins over timeout: CI has no budget here.
 # STALE checks, and COMPLETED checks with no conclusion, are ignored.
 #
+# --wait <minutes> re-checks once a minute while the verdict is wait, for at most
+# that many minutes, and prints the last check. VERDICT=wait on return means the
+# wait ran out.
+#
 # Exit codes: 0 = answered, 1 = gh or jq failed, 2 = usage
 
 usage() {
-  echo "usage: pr-state.sh <pr-number> [<owner/repo>] [--budget <minutes>]" >&2
+  echo "usage: pr-state.sh <pr-number> [<owner/repo>] [--budget <minutes>] [--wait <minutes>]" >&2
   exit 2
 }
 
-N="" REPO="" BUDGET=5
+N="" REPO="" BUDGET=5 WAIT=""
 while [ $# -gt 0 ]; do
   case "$1" in
     --budget)
       BUDGET="${2:-}"
       case "$BUDGET" in '' | *[!0-9]*) usage ;; esac
+      shift 2
+      ;;
+    --wait)
+      WAIT="${2:-}"
+      case "$WAIT" in '' | *[!0-9]*) usage ;; esac
       shift 2
       ;;
     *)
@@ -76,6 +85,19 @@ case "$REPO" in
   */*) ;;
   *) usage ;;
 esac
+
+if [ -n "$WAIT" ]; then
+  waited=0
+  while :; do
+    out=$(bash "$0" "$N" "$REPO" --budget "$BUDGET") || exit $?
+    if [ "$(printf '%s\n' "$out" | tail -n 1)" != VERDICT=wait ] || [ "$waited" -ge "$WAIT" ]; then
+      printf '%s\n' "$out"
+      exit 0
+    fi
+    sleep 60
+    waited=$((waited + 1))
+  done
+fi
 
 fail() {
   echo "ERROR: $1 for #$N failed" >&2

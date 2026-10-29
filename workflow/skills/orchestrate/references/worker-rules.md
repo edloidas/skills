@@ -12,6 +12,5 @@ same rules about the processes it starts and the writes it is refused.
   `Left running: <each process you could not stop — its command and why>`, or `Left running: none`.
 - A write the host's permission layer refuses — a merge, a push, an issue edit, anything else — is
   final for this run. Do not retry it in another form and do not ask anyone else to run it. Report
-  it under Unfinished, or at the end where the report has no such section, as
-  `blocked: permission — <the exact refused command>`.
+  it under Unfinished as `blocked: permission — <the exact refused command>`.
 ````

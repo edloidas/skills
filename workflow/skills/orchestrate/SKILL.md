@@ -15,7 +15,7 @@ when_to_use: >
   alone, which is pr-triage.
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
-allowed-tools: Bash(bash:*) Bash(gh:*) Bash(git:*) Bash(jq:*) Bash(mkdir:*) Bash(date:*) Bash(sleep:*) Read Write Task Agent Skill AskUserQuestion
+allowed-tools: Bash(bash:*) Bash(gh:*) Bash(git:*) Bash(jq:*) Bash(mkdir:*) Bash(date:*) Read Write Task Agent Skill AskUserQuestion
 argument-hint: "[goal | #N | PR #N ...] [stack|parallel] [merge] [auto] [resume]"
 metadata:
   author: edloidas
@@ -75,10 +75,8 @@ A setting nothing states takes its default, and the plan marks it `(default)`.
 shows `sequential` + `merge` and says why. `parallel` is only for units that name disjoint files
 or that the request calls independent.
 
-**The review bot rule**, the same as `solve-issue`'s: wait for a bot only when one is attached —
-a minute after each push for it to attach, five more for it to review — then go on without it:
-merge on `merge`, stop on `pr`, and say so. Nobody waits for a bot that was never attached.
-`scripts/pr-state.sh` applies this rule; nothing else restates it.
+**The review bot rule** is `solve-issue`'s — wait only for an attached bot, a minute after each push
+for it to attach and five more to review, then go on without it and say so. `scripts/pr-state.sh` applies it.
 
 ## Run State
 
@@ -86,10 +84,8 @@ Two files, written by the coordinator only, in
 `${XDG_STATE_HOME:-$HOME/.local/state}/orchestrate/<owner>-<repo>/<run-id>/`, never in the repo.
 `<run-id>` is the start time, `date +%Y%m%d-%H%M`.
 
-- **`run.json`** — `status` (`open`, `closed`), `goal`, `settings`, and `units`: each with `id`,
-  `kind` (`issue`, `new-issue`, `own-pr`, `others-pr`, `decision`), `ref`, `endgame`, `status`
-  (`queued`, `running`, `pr-open`, `done`, `blocked`, `dropped`), `branch`, `pr`, `evidence`,
-  `attempts`, and a one-line `outcome`. Rewrite it whole at every dispatch and every hand-back,
+- **`run.json`** — the goal, the settings, and one entry per unit, with the fields
+  `references/run-state.md` lists. Rewrite it whole at every dispatch and every hand-back,
   before the next action. A unit becomes `done` only with evidence: a merge SHA, a pending review's
   URL, a decision's report, or the `pr-state.sh` line that showed it.
 - **`notes.md`** — append-only, one timestamped line per entry, each tagged: `goal:` as the user
@@ -267,14 +263,15 @@ The worker's **Held drafts** go to the user in the unit summary, verbatim, as on
 **Needs you** item. On the user's word, an own-PR unit posts exactly the approved replies,
 re-requests those reviewers, and resolves nothing they own.
 
-Poll every minute, as a background wait where the host offers one, for at most an hour:
+Poll as a background wait where the host offers one — the script re-checks every minute, for at
+most the minutes given:
 
 ```bash
-for i in $(seq 60); do v=$(bash <skill-dir>/scripts/pr-state.sh <M> | tail -n 1); [ "$v" != VERDICT=wait ] && break; sleep 60; done; echo "$v"
+bash <skill-dir>/scripts/pr-state.sh <M> --wait 60
 ```
 
-An empty `v` means the script failed; run it once without the loop and read its error. Still
-`wait` after the hour is a stuck check: brief the user.
+Still `VERDICT=wait` when it returns is a stuck check: brief the user. A non-zero exit is the
+script failing, not a stuck check: read its error.
 
 **A refused write is a blocker, not a retry.** A report's `blocked: permission — <command>` marks
 the unit `blocked` with that line as `outcome`, goes into `notes.md` as `standing:`, and becomes a

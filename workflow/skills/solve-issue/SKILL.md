@@ -86,12 +86,6 @@ are graceful — each call site names its inline fallback in two lines or less.
 Apply targeted edits per hunk; never rewrite a whole file to change part of it — in
 implementation, simplification, advisor fixes, the comment pass, and Phase 7 fixes alike.
 
-### Tracking Progress
-
-Where the host has a task list, put one entry per **Changes** item in it and update
-entries as you go. Where it does not, keep the printed numbered Changes list as the
-tracker and state which item you are on before starting it.
-
 ### Slices
 
 Slice mode is on when `$ARGUMENTS` carries `slices`, or the repo's instruction file says a
@@ -201,8 +195,8 @@ Then print the plan inline, in the exact structure `references/plan-format.md` s
 goal, numbered file-level Changes, explicit out-of-scope, risks or decisions. That file
 also carries the rules the body has to satisfy. **Never write a plan file.**
 
-After printing it, set up progress tracking per **Conventions → Tracking Progress** — one
-entry per Changes item.
+After printing it, track one entry per Changes item — in the host's task list where it has
+one, otherwise the printed list — marking each item started and done as it happens.
 
 ### When to pause for approval
 
@@ -216,8 +210,7 @@ planned, slices: <N> | off.`
 
 ## Phase 3: Implement
 
-Work through the tracked Changes items sequentially. Mark each one started when you begin
-it and done as soon as it is done — no batching.
+Work through the tracked Changes items sequentially.
 
 For a checkpoint mid-implementation, invoke `issue-flow` with intent `"snapshot"` — its
 Step 3 snapshot mode freezes the tree into a content-free `wip:` commit. Phase 5 squashes
@@ -253,11 +246,8 @@ log content, a golden result. Where the issue asked for a change of that kind, a
 - **Option 2** — header `Observe`, label `Run and observe` — `Run it the way this project declares and read the result.`
 
 The default is to skip: starting things is slow and leaves an artifact to clean up. On
-opt-in, invoke `live-probe` with the behavior the issue asked for; it reads the project's
-declared way to run and observe from the instruction layer first (`CLAUDE.md`, `AGENTS.md`,
-rules files), then the repo's declared commands, and reports `unverified` rather than
-inventing one. Where the host cannot chain
-skills, follow the same method inline.
+opt-in, invoke `live-probe` with the behavior the issue asked for; where it cannot be chained,
+run the way the instruction layer or the repo declares, or report `unverified`.
 
 ### On failure
 
@@ -360,9 +350,7 @@ rounds by design, so recognizing a repeat is your job.
 ### Run the review
 
 Invoke `changes-review` with `--base <fork>` and `--issue <N>`, using the `Fork:` SHA
-recorded in Phase 2 — it resolves as a rev where a branch name may not. It dispatches the
-reviewers, re-attacks its own findings — verification is on by default for a `--base` run
-— and returns what survives. It changes nothing.
+recorded in Phase 2. It returns the findings that survive and changes nothing.
 
 Pass **no other context** — not the plan, not the Risks section, not a summary of intent,
 not the previous round's findings or triage. Its value is reviewers blind to your reasoning.
@@ -456,10 +444,8 @@ staged, and that every intended deletion shows up.
 ### Commit
 
 Invoke `issue-flow` with intent `"commit #<N>"` — in slice mode `"commit slice <k> of #<N>:
-<subject>"`. Its Step 3 squashes the branch, or the current slice, to one commit, writes
-the subject and body, and reports the result. It owns the subject format,
-the body, and the squash rules for every `wip:` snapshot Phase 4.6 created — do not
-restate any of them here, and do not run the git commands yourself.
+<subject>"`. Its Step 3 squashes the branch, or the current slice, to one commit, including
+every `wip:` snapshot Phase 4.6 created, and reports the result.
 
 Pass along, as context for the commit body: the issue title and number, and the design
 rationale `code-cleanup` pulled out of the source — it belongs in the body's *why*
@@ -509,12 +495,10 @@ Route via `issue-flow`:
 
 **The merge is not part of the endgame invocation.** `PR + merge` opens the pull request,
 hands to Phase 7, and merges only after the automated reviewers have had their window; a
-single `"push, PR, and merge"` intent merges past them. `issue-flow` owns its per-step
-questions — squash confirmation, reviewer selection, merge pre-checks — do not repeat them.
+single `"push, PR, and merge"` intent merges past them.
 
 Both PR endgames continue into Phase 7 and end with `issue-flow` Step 5's `Mergeable:`
-line, not a PR URL. `CONFLICTING` means the flow is not done: rebase, force-push, re-check,
-report the resolved state.
+line, not a PR URL; a `no` there is not done — `issue-flow` Step 5's `CONFLICTING` row owns the fix.
 
 End Phase 6 with one line: `Phase 6: <endgame chosen> — PR #<M>, Mergeable: <state>.`
 
@@ -522,19 +506,13 @@ End Phase 6 with one line: `Phase 6: <endgame chosen> — PR #<M>, Mergeable: <s
 
 Runs on both PR endgames. Skipped for `Push only` and `Nothing`.
 
-**Detect, then decide whether waiting buys anything.** A bot is *expected* when the pull
-request's timeline records a bot `review_requested` event, and has *reported* when its
-review appears against the current head SHA. Both endgames wait up to five minutes for an
-attached bot, then go on without it. Report what the queries showed,
-with the time checked — never `No automated reviewers`, which no query supports.
-`references/review-feedback.md` has both queries, the attach window, the decision table,
-the bot-matching rule, and the budget.
+Decide whether to wait for an automated reviewer per `references/review-feedback.md` — its
+queries, attach window, decision table and budget — and report what was read, with the time.
 
 Then invoke `pr-review <N> --fix`, which owns the step — standing, verifying each claim,
 the six verdicts, the reply, the resolve. Do not re-triage its findings. Under `auto` or
-on `PR + merge` add `--auto`, which posts unattended on bot-rooted threads only and holds human threads as
-unsent drafts, plus the instruction to publish nothing until the fixes are pushed — a reply
-naming an unpushed fix is false when it posts. The order is fix, check, push, publish —
+on `PR + merge` add `--auto`, plus the instruction to publish nothing until the fixes are
+pushed — a reply naming an unpushed fix is false when it posts. The order is fix, check, push, publish —
 the replies and the re-requests `pr-review` lists.
 
 Code that `--fix` applied is uncommitted work on the squashed commit. It ran the project's

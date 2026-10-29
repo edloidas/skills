@@ -41,8 +41,8 @@ gh api repos/<owner>/<repo>/issues/<parent>/sub_issues --jq '.[].number'
 ## Parent of an Issue
 
 Prints the parent's number, or nothing when the issue has no parent. A follow-up filed while
-working on #N is linked to that parent with the **## Sub-Issues** procedure in `SKILL.md`, printing
-its `Linked` line; a `404` there means sub-issues are off — say so and leave it unlinked.
+working on #N is linked to that parent with the **Sub-Issues (REST API)** procedure above, printing
+the `Linked` line `references/creating-issues.md` → **Sub-Issues** names; a `404` there means sub-issues are off — say so and leave it unlinked.
 
 ```bash
 gh api graphql -f query='{

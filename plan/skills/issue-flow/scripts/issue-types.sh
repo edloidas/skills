@@ -2,6 +2,11 @@
 # issue-types.sh [<owner>/<repo>]
 # Print GitHub issue type names supported by this repository, one per line.
 # Empty output is a valid answer for repositories without issue types.
+#
+# Probe only through this GraphQL field, which `gh issue create --type` uses. The
+# REST `repos/<owner>/<repo>/issue-types` catalog can list names for a personal
+# repo whose GraphQL `repository.issueTypes` is null, so `--type` then fails after
+# the issue is created. `gh issue create` has no `--dry-run` to probe with either.
 
 set -e
 

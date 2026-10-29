@@ -52,7 +52,7 @@ baseref=$(git rev-parse --verify --quiet "origin/$base" || git rev-parse --verif
 ```
 
 It exits `2` when the repo has no remote, in which case there is no base to detect —
-stop and tell the user to add a remote rather than guessing `main`.
+Steps 2, 3, 5 and 6 stop on it and tell the user to add a remote rather than guessing `main`.
 
 The name can also be missing in the *other* direction: it scans local `epic-*` branches
 too, so the base may be a branch the remote has never seen. Anything that talks to the
@@ -62,22 +62,8 @@ with `Base branch <base> is not on the remote — push it first.` Detection is s
 to find it: falling back to the default branch would make Consolidate treat the whole
 epic as commits ahead and squash it.
 
-Run scripts from the skill directory:
-
-```bash
-bash "<skill-dir>/scripts/check-env.sh"
-bash "<skill-dir>/scripts/detect-base.sh"
-bash "<skill-dir>/scripts/repo-context.sh"
-bash "<skill-dir>/scripts/repo-ownership.sh" [<owner>/<repo>]
-bash "<skill-dir>/scripts/pr-reviewers.sh" [<owner>/<repo>] [<limit>]
-bash "<skill-dir>/scripts/issue-assignees.sh" [<owner>/<repo>] [<limit>]
-bash "<skill-dir>/scripts/issue-types.sh" [<owner>/<repo>]
-bash "<skill-dir>/scripts/create-issue.sh" (--project "<title>"... | --no-project) -- --title "<title>" --body-file <path> [...]
-bash "<skill-dir>/scripts/add-to-project.sh" [--repo <owner>/<repo>] <issue-number> <project-title> [status]
-bash "<skill-dir>/scripts/get-issue-projects.sh" <issue-number>
-bash "<skill-dir>/scripts/suggest-projects.sh" [<owner>/<repo>]
-bash "<skill-dir>/scripts/project-status.sh" [--repo <owner>/<repo>] <issue-number> <status>
-```
+Run scripts from the skill directory as `bash "<skill-dir>/scripts/<name>.sh"`; each call site
+gives its arguments.
 
 ## Step Router
 
@@ -101,11 +87,11 @@ Determine entry step from user intent, check prerequisites, then proceed forward
 | ------------------------------------ | ---------- | ------------------------ |
 | "what's next", "pick an issue", "which issue" | Step 0 | gh authenticated       |
 | Work intent with no issue number given | Step 0  | gh authenticated         |
-| No arguments / empty invocation      | Step 1     | Staged or changed files  |
-| "create issue", "new issue"          | Step 1     | gh authenticated         |
-| "create issue linked to #N", "create sub-issue of #N" | Step 1 + Project Inheritance | Parent #N exists |
-| "add sub-issues to #N", "link issues to #N" | Sub-issues | Parent issue exists |
-| "X blocks #N", "block #N with #M", "unblock #N" | Blocked-by | Both issues exist |
+| No arguments / empty invocation      | Step 1 (`references/creating-issues.md`) | Staged or changed files |
+| "create issue", "new issue", several issues at once | Step 1 (`references/creating-issues.md`; Batch for several) | gh authenticated |
+| "create issue linked to #N", "create sub-issue of #N" | Step 1 + Project Inheritance (`references/creating-issues.md`) | Parent #N exists |
+| "add sub-issues to #N", "link issues to #N" | Sub-Issues (`references/creating-issues.md`) | Parent issue exists |
+| "X blocks #N", "block #N with #M", "unblock #N" | Blocked-By (`references/creating-issues.md`) | Both issues exist |
 | "start work on #N", "branch for #N"  | Step 2     | Issue exists             |
 | "commit", "commit changes"           | Step 3     | On issue-* branch        |
 | "snapshot", "wip snapshot"           | Step 3 snapshot | Dirty tree        |
@@ -138,6 +124,16 @@ Read the target repo's CLAUDE.md for project-specific formatting. Use these defa
 - **PR body**: one bullet per change, then `Closes #<number>`, one per line. GitHub links only the first reference after a keyword, so `Closes #1 #2 #3` closes #1 and leaves #2 and #3 open
 
 Common types: `feat`, `fix`, `docs`, `chore`, `refactor`, `test`, `style`, `ci`
+
+### Temp Files and Command Shape
+
+Resolve one `<TMPDIR>` per flow with `mktemp -d` — at the first step that writes a file, if Step 1
+did not — and spell it as the literal absolute path in
+every command (e.g. `--body-file /var/folders/.../tmp.AbCdEf/body.md`). Do not set `TMPDIR=` as an
+env var prefix — that changes the command pattern and triggers permission prompts. Never pass a
+body as `--body "$(cat <<'EOF'...)"`: the `$()` makes the command unmatchable against any
+pre-approval rule, so hosts that gate shell commands re-prompt every time. Write a file and pass
+`--body-file`.
 
 ### Slice Delivery
 
@@ -180,12 +176,14 @@ bash "<skill-dir>/scripts/repo-ownership.sh"
 | `KIND`     | Meaning                            | Default behaviour                                                     |
 | ---------- | ---------------------------------- | --------------------------------------------------------------------- |
 | `personal` | Owned by the current user          | Assign the current user (`@me`) silently — do **not** prompt           |
-| `org`      | Owned by an organization           | Ask via `AskUserQuestion`; the current user is the recommended default |
+| `org`      | Owned by an organization           | Ask, per **Asking the User**; the current user is the recommended default |
 | `external` | Another user's personal repo       | Same as `org` — ask, current user recommended                          |
 
 In every case the fallback is the current user: if the user skips the question, the prompt cannot be shown, or `repo-ownership.sh` fails, assign `@me` rather than nothing.
 
 An explicit instruction always wins — "assign to @octocat", "leave it unassigned", or a reviewer/assignee rule in the target repo's CLAUDE.md overrides everything above, in personal repos too.
+
+People to offer come only from `issue-assignees.sh` and `pr-reviewers.sh`. When one returns nothing, offer no one else: the generic `repo-context.sh` collaborator list is repo members ranked by nothing meaningful, and inventing labels like "Frequent collaborator" misleads the user.
 
 ## Step 0: Select Issue
 
@@ -213,275 +211,14 @@ On `None`, stop — do not fall through to Step 1 and create an issue nobody ask
 
 ## Step 1: Create Issue
 
-Run these in parallel (they are independent):
-
-```bash
-# Parallel batch
-bash "<skill-dir>/scripts/check-env.sh"
-mktemp -d                                       # → save output as <TMPDIR>
-bash "<skill-dir>/scripts/repo-context.sh"
-bash "<skill-dir>/scripts/repo-ownership.sh"
-```
-
-Wait for all four before proceeding. `detect-base.sh` is not needed until Step 2.
-
-### Title
-
-Use conventional commit format: `<type>: <description>`. Defer to CLAUDE.md conventions if they differ.
-
-### Epic Detection
-
-Before writing the body or picking a label, determine if this is an **epic issue** — one that coordinates work without containing implementation itself. Signals:
-
-- User mentions "epic", "umbrella", "tracking issue", or "aggregated issue"
-- Issue groups multiple child issues or feature areas
-- No concrete implementation details — only scope or coordination
-
-If it is an epic, and the repo has an `epic` label (check `repo-context.sh` output), apply `epic` as the label without asking. Skip the normal type-based label inference. If `epic` label does not exist in the repo, fall through to normal label selection.
-
-### Body
-
-Write a 2-4 sentence description. No markdown headers.
-
-Under **Slice Delivery**, when the scope is already understood, end the body with a short ordered list of parts that can each land as a working increment. When the scope still needs investigation, leave the list out — a guessed split misleads whoever plans the work.
-
-For epic issues: **do not list child issue numbers in the body.** Sub-issue relationships are managed via the GitHub sub-issues API (see **## Sub-Issues**), not via body text.
-
-### Labels
-
-Auto-detect label from the issue type (e.g., `feat` → `feature` or `enhancement`). Match against labels fetched by `repo-context.sh`. Use `AskUserQuestion` to confirm with the user — show top 3 matching labels + "No label".
-
-### Assignee
-
-Follow **### Assignment Defaults**.
-
-**`KIND=personal`** — assign `@me` via `--assignee "@me"` without prompting. Skip `issue-assignees.sh` entirely.
-
-**`KIND=org` or `KIND=external`** — run `issue-assignees.sh` to find users with actual recent assignment activity:
-
-```bash
-bash "<skill-dir>/scripts/issue-assignees.sh"
-```
-
-Output: `<user>\t<count>` per row, up to 3 rows (excludes self and bots). Compose `AskUserQuestion`:
-
-1. `@me` (Recommended)
-2. First result, description: `"Assigned to <count> of last 100 issues"`
-3. Second result, description: `"Assigned to <count> of last 100 issues"`
-4. "No assignee"
-
-If `issue-assignees.sh` returns nothing, show only `@me` and "No assignee". Do **not** fall back to the generic `repo-context.sh` collaborator list — those are repo members ranked by nothing meaningful, and inventing labels like "Frequent collaborator" misleads the user.
-
-If the question is skipped or unanswered, default to `@me` — never create the issue with no assignee.
-
-### Type
-
-Issue types are an organization-level feature. Probe through the same GraphQL field `gh issue create` depends on:
-
-```bash
-bash "<skill-dir>/scripts/issue-types.sh"
-```
-
-- Names returned → map the conventional commit type onto the closest one and pass
-  `--type "<name>"` to the create wrapper.
-- Empty output → the repo has no assignable issue types. This is the normal answer for a
-  personal repo. Skip silently.
-
-The wrapper runs the same probe when `--type` is absent and refuses to create, listing the
-types, if any exist.
-
-Do **not** probe with the REST `repos/<owner>/<repo>/issue-types` catalog: it can list type names for a personal repository even though GraphQL `repository.issueTypes` is `null`, and `gh issue create --type` will fail after creating the issue. Do **not** probe with `gh issue create --type bug --dry-run`; there is no `--dry-run` flag.
-
-### Project
-
-Decide this before creating: the wrapper refuses without `--project "<title>"` (repeatable) or `--no-project`, and adds the issue to each project itself.
-
-If the new issue is a child of, or a follow-up to, an existing issue, follow **## Project Inheritance From Parent** instead.
-
-Otherwise, rank candidates via `suggest-projects.sh` (output: `<bucket>\t<id>\t<title>\t<note>` per row; `USED` = projects from your recent issues, `RELATED` = other active projects):
-
-```bash
-bash "<skill-dir>/scripts/suggest-projects.sh"
-```
-
-Compose `AskUserQuestion`: slot 1 (Recommended) = first row, slots 2–4 = next rows, with `<note>` as each option's description. Backfill the last slot with "No project" when fewer than 4 rows exist. Pass the selection as `--project "<project-title>"`; "No project", zero rows, or Projects V2 unavailable is `--no-project`.
-
-### Milestone
-
-**Trigger:** Check milestones when either:
-- The user explicitly asks to assign a milestone
-- The target repo's CLAUDE.md mentions milestones (any mention — section headers, instructions, config)
-
-If neither trigger matches, skip silently.
-
-**When triggered**, fetch open milestones:
-
-```bash
-gh api "repos/<owner>/<repo>/milestones?state=open" --jq '.[] | {number, title, state, open_issues, closed_issues, due_on}'
-```
-
-Then apply:
-- **0 milestones**: skip silently
-- **1 milestone**: assign automatically — inform the user which milestone was used
-- **2+ milestones**: use `AskUserQuestion` to pick one:
-
-```
-Which milestone for this issue?
-1. "<title1>" (Recommended) — X open / Y closed, due YYYY-MM-DD
-2. "<title2>" — X open / Y closed, due YYYY-MM-DD
-3. No milestone
-```
-
-Order by due date (soonest first). The first non-closed milestone is recommended.
-
-Assign via `--milestone "<title>"` in the create-wrapper command.
-
-### Create
-
-Use the `<TMPDIR>` from the parallel setup batch. Write the issue body to `<TMPDIR>/body.md` with the host's file-write tool, then create the issue through the wrapper:
-
-```bash
-bash "<skill-dir>/scripts/create-issue.sh" (--project "<title>"... | --no-project) -- --title "<title>" --body-file <TMPDIR>/body.md --label "<label>" --assignee "<assignee>" [--type "<name>"] [--milestone "<name>"]
-```
-
-Exit `2` means nothing was created — supply the missing decision and run it again. Exit `3` means the issue exists (its URL is on stdout) but a project add failed: add it with the `add-to-project.sh` command the error names, never by creating again.
-
-The wrapper runs `gh issue create` once. If `gh` returns nonzero after creating the issue, it checks recent issues by exact title, current author, and the creation window; when exactly one match exists, reuse that URL and continue. If it exits nonzero, stop and reconcile manually. Do not retry issue creation until that reconciliation finds no created issue.
-
-When creating multiple issues, use unique filenames per issue: `<TMPDIR>/<slug>-body.md` (e.g. `auth-body.md`, `settings-body.md`). Resolve `<TMPDIR>` once and reuse it for all issues.
-
-**Media the body references.** Where the body carries a local image or video path — a screenshot of the bug, a mockup — pass it through the wrapper once per file. Alt text follows the path after a `#`, on images only: a video renders as a player and cannot carry any, so a `#` on one is a mistake.
-
-```bash
-bash "<skill-dir>/scripts/create-issue.sh" --project "<project>" -- --title "<title>" --body-file <TMPDIR>/body.md --attach "<path>#<alt text>"
-```
-
-`gh` uploads the file and rewrites that path in place, so the image lands where the body put it. A path passed without being referenced is appended to the end of the issue instead. Needs `gh` 2.99.0 or newer and does not work on GitHub Enterprise Server: check `gh --version` first, and where either is missing, create the issue with the image reference stripped from the body and report that it could not be uploaded.
-
-**A failed upload does not fail the issue, and this wrapper hides that.** When some attachments upload and others do not, `gh` still creates the issue with the ones that worked, prints its URL to stdout, and exits nonzero. The wrapper reads that nonzero as "create failed", ignores the URL it was handed, finds the issue again by title, and reports `reusing <url>` — so the step succeeds while the published body still carries a local path that resolves to nothing. Confirm every referenced path exists before running the wrapper, and on a `reusing` warning open the issue and check each image rendered before printing the Step 1 report.
-
-**Important:** Replace `<TMPDIR>` with the literal absolute path in all commands (e.g. `--body-file /var/folders/.../issue-flow-AbCdEf/body.md`). Do not set `TMPDIR=` as an env var prefix on commands — that changes the command pattern and triggers permission prompts.
-
-Do not use `--body "$(cat <<'EOF'...)"` — the `$()` command substitution makes the command unmatchable against any pre-approval rule, so hosts that gate shell commands re-prompt every time.
-
-Print the Step 1 report (see `references/report-format.md`). Then stop: an issue exists and no branch does — Step 2 runs only when the intent named it or the user says to continue.
-
-### Sub-Issues (Optional)
-
-If the user mentioned other issue numbers to include in this aggregated issue, add them as sub-issues immediately after the parent is created — before printing the Step 1 report. See **## Sub-Issues** for the procedure.
-
-## Sub-Issues
-
-Use when an aggregated (parent) issue should group related child issues. Needs the **integer** `.id`, not the issue number — they are different things. See `references/github-relationships.md` for ID type details.
-
-### Procedure
-
-Fetch each child's integer ID, then POST it. Use the `<owner>/<repo>` value from `repo-context.sh` — it is the line *after* the `=== Repository ===` header, not the first line of output.
-
-```bash
-PARENT=<parent_number>
-for num in <child1> <child2> <child3>; do
-  id=$(gh api repos/<owner>/<repo>/issues/$num --jq '.id')
-  gh api repos/<owner>/<repo>/issues/$PARENT/sub_issues \
-    --method POST \
-    -F sub_issue_id="$id"
-done
-```
-
-`-F` (form field) is required — `-f` sends a string, causing `422`. The POST returns the parent issue object — parent title in response means success. Verify:
-
-```bash
-gh api repos/<owner>/<repo>/issues/<parent_number>/sub_issues --jq '.[].number'
-```
-
-Print one line: `Linked <N> sub-issues to #<parent>`.
-
-When a new issue will be linked as a child of an existing parent, resolve its projects via **## Project Inheritance From Parent** before creating it, so the child lands on the same project board(s) as the parent.
-
-A follow-up filed while working on #N (per **## Project Inheritance From Parent**) is linked by the Procedure above to #N's parent, if any — see `references/github-relationships.md` → **Parent of an Issue**.
-
-## Project Inheritance From Parent
-
-When a new issue is being created as a child of an existing parent (sub-issue link, "attach to #N", "linked to #N"), or as a follow-up filed while working on #N (the `issue-<N>` branch is checked out, or a caller names the issue it is working on), inherit #N's project membership instead of using the generic Project picker. Below, "parent" means #N in both cases.
-
-Fetch the parent's projects (output: `<id>\t<title>`):
-
-```bash
-bash "<skill-dir>/scripts/get-issue-projects.sh" <parent_number>
-```
-
-Apply based on count:
-
-- **0** — fall through to the generic Project subsection.
-- **1** — add automatically and tell the user which project was inherited.
-- **2+** — `AskUserQuestion`:
-  1. "Add to all <N> parent projects" (Recommended)
-  2. "Pick individually" — follow-up yes/no per project
-  3. "Skip projects"
-
-Pass each selected project as its own `--project "<title>"` to the create wrapper; "Skip projects" is `--no-project`.
-
-When linking many children to the same parent (see **## Batch Issue Creation**), fetch the parent's projects once and reuse the decision for every child — do not prompt per child.
-
-## Blocked-By
-
-Use when child issues have dependencies between them — e.g., issue B cannot start until issue A is done. Requires GraphQL **node IDs** (not issue numbers or integer IDs) — see `references/github-relationships.md`. Take `<owner>/<repo>` as **## Sub-Issues** does.
-
-### Procedure
-
-Step 1 — Fetch **node IDs** in one batch query:
-
-```bash
-gh api graphql -f query='{
-  repository(owner: "<owner>", name: "<repo>") {
-    a: issue(number: <blocking-num>) { id }
-    b: issue(number: <blocked-num>) { id }
-  }
-}'
-```
-
-Step 2 — Add relationship ("b is blocked by a"):
-
-```bash
-gh api graphql -f query='mutation {
-  addBlockedBy(input: {
-    issueId: "<node-id-of-b>",
-    blockingIssueId: "<node-id-of-a>"
-  }) { issue { number } blockingIssue { number } }
-}'
-```
-
-Use `removeBlockedBy` with the same signature to undo. See `references/github-relationships.md` for full details and ID type reference. Print one line per pair: `#<blocked> is now blocked by #<blocking>`.
-
-## Batch Issue Creation
-
-When the user asks to create multiple issues at once (e.g., an epic with child issues, or a set of related issues):
-
-### Workflow
-
-1. Resolve `<TMPDIR>` once via `mktemp -d`
-2. Create the parent/epic issue first (if applicable)
-3. Write all child issue body files with unique slugs: `<TMPDIR>/<slug>-body.md`
-4. Create the child issues sequentially — the exception to running independent calls in parallel, because the wrapper adds to projects as it creates and parallel Projects V2 calls hit rate limits. On exit `3`, add that issue with the command the error names and continue with the next child. Resolve the project set once: via **## Project Inheritance From Parent** when children are linked to an **existing** parent, otherwise via **### Project**. Apply **### Assignment Defaults** once and reuse the same assignee for every issue in the batch, including the parent. Do not prompt per issue.
-   ```bash
-   for slug in <slug1> <slug2> <slug3>; do
-     bash "<skill-dir>/scripts/create-issue.sh" --project "<project>" -- --title "<title for $slug>" --body-file <TMPDIR>/$slug-body.md --label "<label>" --assignee "<assignee>" [--type "<name>"]
-   done
-   ```
-5. Batch-link sub-issues to parent (if applicable) — use the for loop from **## Sub-Issues**
-6. Ask about initial project status (e.g., "Backlog", "Current Sprint") via `AskUserQuestion` — then batch-update via `project-status.sh`
-7. Print a summary table at the end instead of per-issue Step 1 reports
-
-### Summary Table Format
-
-```
-| Issue | Title                   | Milestone   |
-| ----- | ----------------------- | ----------- |
-| [#10023](https://github.com/owner/repo/issues/10023) | AnchorDialog for Editor | Alpha (MVP) |
-| [#10024](https://github.com/owner/repo/issues/10024) | Toolbar refactor        | Alpha (MVP) |
-```
-
-Omit the Milestone column if no milestone was assigned to any issue.
+Entered from the router's create rows — a new issue, a sub-issue or linked issue, sub-issue
+links, blocked-by links, and batch creation. Read `references/creating-issues.md` and follow
+the section for the intent: it owns the setup batch, title, epic detection, body, labels,
+assignee, type, project, milestone, the create wrapper and its exit codes, media, and the
+relationship paths.
+
+Print one report: the Step 1 report (`references/report-format.md`) for a created issue, the batch
+summary for a batch, or the one line **Sub-Issues** or **Blocked-By** names for a link. Then stop: no branch exists — Step 2 runs only when the intent named it or the user says to continue.
 
 ## Step 2: Create Branch
 
@@ -508,7 +245,7 @@ git checkout <base> && git pull origin <base>
 git checkout -b issue-<number>
 ```
 
-If `issue-<number>` already exists, use `AskUserQuestion`:
+If `issue-<number>` already exists, ask, per **Asking the User**:
 1. "Switch to existing branch" (Recommended)
 2. "Delete and create fresh"
 
@@ -599,9 +336,6 @@ git log "$from"..HEAD --oneline
 
 Under **Slice Delivery**, a `last` whose subject equals the composed subject this call commits (`<subject> #<number>`) is the current slice entered again — set `from` to its parent so the canonical row below amends it instead of stacking a second commit.
 
-Stop if `base` is empty. `detect-base.sh` exits 2 with no output when the repo has no
-remote, and `git merge-base "" HEAD` just errors — there is no base to consolidate against.
-
 **Never reset to `origin/<base>`, and never to a branch name.** `origin/<base>` moves whenever anything fetches, and `detect-base.sh` fetches on its own. Reset to it and the new commit's parent is *newer* than the point the branch was cut from, so the commit silently reverts every upstream change made since — and Step 5 force-pushes that, and Step 6 merges it. `$fork`, and every commit after it that `$from` can name, is an ancestor of `HEAD` by construction, so neither can have that effect.
 
 #### Choose the action
@@ -687,19 +421,13 @@ git push -u origin issue-<number>
 
 ### Rebase if needed
 
-If push fails because the remote has diverged, or if the user asks to rebase — capture the
-remote tip **first**, per [Leasing a force-push](#leasing-a-force-push). On a stacked branch
-`stack-sync.sh` does the rebase instead (`references/stacking.md`):
+If push fails because the remote has diverged, or if the user asks to rebase — capture
+`before` **first**, rebase, then push, both per [Leasing a force-push](#leasing-a-force-push).
+On a stacked branch `stack-sync.sh` does the rebase instead (`references/stacking.md`):
 
 ```bash
-before=$(git rev-parse "origin/issue-<number>" 2>/dev/null || true)
 git fetch origin <base>
 git rebase origin/<base>
-if [ -n "$before" ]; then
-  git push --force-with-lease="issue-<number>:$before"
-else
-  git push -u origin issue-<number>
-fi
 ```
 
 ### Amend
@@ -721,20 +449,15 @@ Then check the branch really is at one commit — `git log --oneline <base>..HEA
 only rewrites the tip, so a branch carrying `wip:` snapshots needs Step 3 → Consolidate
 first; amending it would push the snapshots along with the fix.
 
+Capture `before`, amend, then push, per [Leasing a force-push](#leasing-a-force-push):
+
 ```bash
-before=$(git rev-parse "origin/issue-<number>" 2>/dev/null || true)
 git commit --amend -m "<subject>" -m "<body>"
-if [ -n "$before" ]; then
-  git push --force-with-lease="issue-<number>:$before"
-else
-  git push -u origin issue-<number>
-fi
 ```
 
-Always pass the message. A bare `git commit --amend` opens `$EDITOR`, which hangs a
-non-interactive shell. Use `--no-edit` only when the existing message is being kept
-verbatim and nothing new needs to land in it — which is the case when the amend only
-folds in fixes and the subject and body still describe them.
+Never a bare `git commit --amend`: it opens `$EDITOR`, which hangs a non-interactive shell.
+`--no-edit` belongs here only — folding fixes the kept message already describes, which is what
+a caller's "message verbatim" means — and never in Consolidate, which writes a new body.
 
 Print the `Pushed (amended)` report.
 
@@ -746,24 +469,21 @@ Every force-push in this pipeline pins the SHA it expects the remote to be at, c
 ```bash
 before=$(git rev-parse "origin/issue-<number>" 2>/dev/null || true)
 # ... rebase, amend, or consolidate ...
-git push --force-with-lease="issue-<number>:$before"
+if [ -n "$before" ]; then
+  git push --force-with-lease="issue-<number>:$before"
+else
+  git push -u origin issue-<number>
+fi
 ```
 
-`rev-parse` is guarded because the branch may not be on the remote yet, and a bare
-`git rev-parse origin/issue-<number>` exits 128 with `unknown revision` — which under
-`set -e` aborts the step instead of pushing. An empty `$before` means there is nothing to
-lease against, so that case is a plain `git push -u origin issue-<number>`.
+`rev-parse` is guarded because the branch may not be on the remote yet: a bare one exits 128,
+which under `set -e` aborts the step instead of pushing. An empty `$before` has nothing to
+lease against, so it is a plain push.
 
-A bare `git push --force-with-lease` leases against `refs/remotes/origin/issue-<number>`.
-Any fetch that refreshes that ref makes the lease describe where the remote is *now*
-rather than where it was when you started — at which point it permits exactly the
-overwrite it exists to prevent. `detect-base.sh` runs a bare `git fetch origin`, which
-refreshes every branch, inside Step 3 → Consolidate; and nothing stops an unrelated fetch
-landing between the rewrite and the push. Reading the SHA before any of that is what makes
-the lease mean anything.
-
-`--force-if-includes` is not a substitute: `git help push` says it is a **no-op** combined
-with `--force-with-lease=<refname>:<expect>`. Pin the SHA instead.
+A bare `--force-with-lease` leases against `refs/remotes/origin/issue-<number>`, which any fetch
+refreshes — `detect-base.sh` runs one inside Consolidate — and a refreshed lease permits exactly
+the overwrite it exists to prevent. `--force-if-includes` is no substitute: `git help push` calls
+it a no-op with an explicit `<expect>`. Pin the SHA.
 
 If the push is rejected, the remote moved: fetch, rebase onto the new tip, and re-run
 rather than escalating to `--force`.
@@ -780,13 +500,7 @@ Under **Slice Delivery**, resolve `$from` first. If `git log "$from"..HEAD` is n
 
 Apply **Step 3 → Consolidate** as-is. It owns the fork point, the count, the squash rules, and the one gate that may leave several commits — including the case where the single commit on the branch is a `wip:` snapshot, which must not reach a PR title. Do not restate any of those rules here; a second copy is how the two drift.
 
-The only thing this step adds is that the branch is already on the remote, so the rewrite has to be force-pushed. Capture the remote tip **before** consolidating and lease against it explicitly, per [Leasing a force-push](#leasing-a-force-push):
-
-```bash
-before=$(git rev-parse "origin/issue-<number>")
-# ... apply Step 3 -> Consolidate ...
-git push --force-with-lease="issue-<number>:$before"
-```
+The only thing this step adds is that the branch is already on the remote, so the rewrite has to be force-pushed: capture `before` **before** consolidating, then push, per [Leasing a force-push](#leasing-a-force-push).
 
 This must happen before PR body generation, since consolidating changes the commit log.
 
@@ -823,8 +537,8 @@ bash "<skill-dir>/scripts/pr-reviewers.sh"
 
 Output: `<user>\t<count>` per row, up to 3 rows (excludes self and bots; counts reviews and review requests across the last 100 PRs in any state).
 
-- **0 results**: skip the prompt entirely and create the PR without `--reviewer` — no collaborator-list fallback, for the reason Step 1 gives.
-- **1+ results**: compose `AskUserQuestion`:
+- **0 results**: skip the prompt entirely and create the PR without `--reviewer` — no collaborator-list fallback, per **Assignment Defaults**.
+- **1+ results**: ask, per **Asking the User**:
   1. First result (Recommended), description: `"<count> review events across the last 100 PRs"`
   2. Second result (if any), description: `"<count> review events across the last 100 PRs"`
   3. "No reviewer"
@@ -839,23 +553,13 @@ e.g. creator `alice`, reviewers `octocat` and Copilot → Reviewers: `octocat`, 
 
 ### Create
 
-Write the PR body to `<TMPDIR>/pr-body.md` with the host's file-write tool, then create the PR with `--body-file`, spelling `<TMPDIR>` out as Step 1 does (`mktemp -d` if this flow has none yet).
-
-With reviewers — `--assignee` for `@me` and per human reviewer, `--reviewer` per reviewer:
+Write the PR body to `<TMPDIR>/pr-body.md` with the host's file-write tool, per **Temp Files and Command Shape**, then create the PR — `--assignee` for each human reviewer, `--reviewer` for every reviewer, both omitted with none:
 
 ```bash
-gh pr create --title "<title>" --body-file <TMPDIR>/pr-body.md --base <base> --assignee @me --assignee <reviewer> --reviewer <reviewer>
+gh pr create --title "<title>" --body-file <TMPDIR>/pr-body.md --base <base> --assignee @me [--assignee <reviewer>] [--reviewer <reviewer>]...
 ```
 
-Without a human reviewer:
-
-```bash
-gh pr create --title "<title>" --body-file <TMPDIR>/pr-body.md --base <base> --assignee @me
-```
-
-Never `--body "$(cat <<'EOF'...)"`, for the reason Step 1 gives.
-
-No media goes in a PR body, even though `gh pr create` accepts `--attach`. A PR body is read at merge time and again in release notes, where a screenshot of the old behaviour is describing something that no longer exists. The before-state belongs on the issue; an after-state, if it is worth showing at all, belongs in a comment on the PR.
+No media in a PR body, though `gh pr create` accepts `--attach`: release notes read it after the old behaviour is gone — the before-state belongs on the issue, an after-state in a PR comment.
 
 Update project status to "Review":
 
@@ -880,11 +584,11 @@ echo "$state"
 | Result | Action |
 | ------ | ------ |
 | `MERGEABLE` | Report `Mergeable: yes` on the Step 5 report and continue. |
-| `CONFLICTING` | Rebase onto base (`git fetch origin && git rebase origin/<base>`; a stacked branch runs `stack-sync.sh`), force-push, re-run the poll. If conflicts are not mechanical, invoke the `resolve-conflicts` skill; if still unresolved, report `Mergeable: no — conflicts with <base>` and **stop before Step 6**. |
+| `CONFLICTING` | **Rebase and re-check**: `git fetch origin && git rebase origin/<base>` (a stacked branch runs `stack-sync.sh`), force-push per [Leasing a force-push](#leasing-a-force-push), re-run the poll. If conflicts are not mechanical, invoke the `resolve-conflicts` skill; if still unresolved, report `Mergeable: no — conflicts with <base>` and **stop before Step 6**. |
 | `UNKNOWN` after 3 polls | Report `Mergeable: unknown (GitHub still computing)`. Do not treat as failure. |
 
 `mergeStateStatus` adds context worth reporting when it is not `CLEAN`:
-- `BEHIND` — base moved ahead; rebase and force-push.
+- `BEHIND` — base moved ahead; **Rebase and re-check**.
 - `BLOCKED` — branch protection or a required review is pending. Not a conflict; report it as-is.
 - `UNSTABLE` — checks are failing or still running.
 
@@ -907,13 +611,9 @@ If reviewer AND assignee are the current user (self-review), or user explicitly 
 
 ### Entering Step 6 at all
 
-**Step 6 runs only when merging was asked for.** Reaching Step 5 is not an invitation to
-merge — a caller whose intent was `"push and open PR for #<N>"` wants the flow to end at
-Step 5, and suggesting a merge there overrides a choice the user already made.
-
 Step 6 is entered on exactly three things: an intent naming the merge
 (`"merge #<N>"`, `"push, PR, and merge #<N>"`), the user answering the suggestion below,
-or the user asking to merge in conversation. Otherwise stop after Step 5.
+or the user asking to merge in conversation. Otherwise stop after Step 5 — never suggest a merge to an intent that ended there.
 
 ### Confirm exactly once
 
@@ -926,7 +626,7 @@ Classify the entry, then take one branch and skip the other.
 | **A full flow that entered at Step 1 and was never told what to do about merging** | Not yet confirmed. Print the pre-merge summary and suggest merging (below). |
 | **Direct entry at Step 6 by the user**, no earlier step in this flow | Not yet confirmed. Merging closes the PR and writes to the base branch. Print the pre-merge summary, show the PR number, the base branch, and the merge method, and wait for approval before merging. |
 
-When confirmation is still needed, ask via `AskUserQuestion`:
+When confirmation is still needed, ask, per **Asking the User**:
 1. "Merge now" (Recommended) — wait for checks and merge
 2. "Skip" — leave PR open, end flow
 
@@ -934,13 +634,6 @@ When confirmation is still needed, ask via `AskUserQuestion`:
 
 Either way the pre-merge summary is printed (see `references/report-format.md`) — it is
 the record of what is about to be merged, not the prompt itself.
-
-The suggestion branch additionally requires all of:
-- Issue assignee is the current user
-- PR assignee is the current user
-- No external human reviewer was set on the PR
-
-If any of those is false, the **Skip Condition** above already applies and Step 6 ends.
 
 ### Pre-checks
 
@@ -951,7 +644,7 @@ gh pr view <pr-number> --json state,mergeable
 ```
 
 - If PR is not open: report current state and **stop**.
-- If there are conflicts: rebase onto base, force-push, then continue to step 2.
+- If there are conflicts: **Rebase and re-check** (Step 5), then continue to step 2.
 
 2. Wait for CI checks with a 5-minute timeout (`timeout` on Linux, `gtimeout` from coreutils on macOS):
 
@@ -966,10 +659,10 @@ fi
 
 - Exit 0 (all passed/skipped) → proceed to step 3
 - Exit 1 (failure) → report failed checks, **stop**. Do not merge.
-- Exit 124 (timeout) → report timeout, ask user via `AskUserQuestion`:
-  1. "Merge anyway" — proceed to step 3; the merged report carries `Checks: not confirmed (watch timed out)`
+- Exit 124 (timeout) → report timeout, then ask, per **Asking the User** — a merge intent or an earlier merge confirmation does not answer this question, so an unattended caller takes option 1:
+  1. "Stop without merging" (Recommended) — leave the PR open, report `Checks: not confirmed (watch timed out)`, stop
   2. "Wait longer" — re-run the same timeout command
-  3. "Abort" — stop
+  3. "Merge anyway" — proceed to step 3; the merged report carries `Checks: not confirmed (watch timed out)`
 - Exit 127 (`gtimeout` missing) → report the missing timeout binary and **stop**.
 
 3. After checks pass, verify mergeability one more time:
@@ -978,7 +671,7 @@ fi
 gh pr view <pr-number> --json mergeable --jq '.mergeable'
 ```
 
-If conflicts appeared, rebase and re-run checks.
+If conflicts appeared, **Rebase and re-check**, then re-run step 2.
 
 ### Merge
 
@@ -1009,4 +702,3 @@ Print the Step 6 merged report.
 - **Projects V2 fails**: Warn once, then skip all project operations for the rest of the flow — the core lifecycle works without them. Carry `Project: skipped (Projects V2 unavailable)` on every later step report that would have updated the board. Token setup is in `references/project-integration.md`.
 - **Assignment rejected** (`gh` reports the assignee is not a valid collaborator): report which assignee was dropped, then continue. Do not abort the flow or retry with a different user.
 - **gh not authenticated**: Stop immediately, tell user to run `gh auth login`.
-- **No remote**: `detect-base.sh` exits 2 and there is no base branch. Steps 2, 3, 5, and 6 all depend on it, so stop at whichever of them was entered and tell the user to add a remote. Do not fall back to `main`.

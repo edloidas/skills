@@ -33,11 +33,10 @@ phase you skipped or compressed.
   or the epic branch the work belongs to.
 - <stack:> Tell `solve-issue` the user named the base: `issue-<N>` starts from `<parent-branch>`
   and its PR targets it. `issue-flow` records that parent, so its squash and PR base follow it.
-- One squashed commit, title `<commit title per the repo's convention> #<N>`. <co-author rule>.
+- <co-author rule>.
 - PR: the user said "assign <logins>; <reviewers <logins> | no human reviewer>" — pass it to
-  `issue-flow` as their instruction. Body: what and why, with `Closes #<N>` alone on the last line.
-- <Endgame merge only:> the user asked for this merge. If `issue-flow`'s CI wait runs out, do not
-  merge; report it.
+  `issue-flow` as their instruction.
+- <Endgame merge only:> the user asked for this merge.
 
 ## Review bot
 <one of:>

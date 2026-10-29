@@ -43,8 +43,8 @@ Read the repo instruction file first. `<check commands>` must all pass on the fi
 
 ## Merge <only when the endgame is merge — otherwise: "Do not merge.">
 When CI is green and no bot thread is unresolved, invoke `issue-flow` with "merge PR #<M>" — the
-user asked for it, so its reviewer skip does not apply. If its CI wait runs out, do not merge;
-report it. After the merge, check out `<default>` and pull.
+user asked for it, so its reviewer skip does not apply. After the merge, check out `<default>` and
+pull.
 
 ## Standing instructions
 <every `standing:` line of notes.md, verbatim>

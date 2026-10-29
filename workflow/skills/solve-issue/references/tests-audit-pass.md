@@ -2,13 +2,6 @@
 
 `tests-audit` reports and never edits, so Phase 4.5 applies its verdicts itself.
 
-## Scope
-
-Audit only the test files the branch added or modified, taken from the working tree by
-the rule Phase 2 → Create branch states. A suite-wide audit on an issue the user called
-simple returns a backlog nobody asked for, and every item in it is out of scope for the
-commit being built.
-
 ## Which verdicts to apply
 
 | Verdict | Test this branch wrote | Pre-existing test it modified | Other pre-existing test |
@@ -29,14 +22,8 @@ wrong reason protects nothing, and keeping it because a percentage would move is
 failure mode `tests-audit` exists to name. Report the deletion rather than defending the
 number.
 
-## Re-running the suite
-
-Re-run the unit test script after applying. A tightened assert that now fails is one of
-two things, and Phase 4.5 states the rule for telling them apart:
-
-- **The defect the loose assert was hiding.** Fix the code. This is the payoff.
-- **A bad tightening** — the assert now pins something the contract never promised.
-  Revert that one assert.
+Re-run the unit test script after applying; a tightened assert that now fails is handled
+by the rule Phase 4.5 states.
 
 ## When `tests-audit` is not installed
 
