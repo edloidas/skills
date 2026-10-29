@@ -41,6 +41,10 @@ if [[ -z "$DIAGNOSTICS_DIR" ]]; then
 fi
 mkdir -p "$DIAGNOSTICS_DIR" 2>/dev/null || true
 
+# Pinned: verified against the flags below and the diagnostics.json shape SKILL.md reads.
+# To bump, run the new version over a small React project and confirm both still hold.
+REACT_DOCTOR_VERSION="0.9.18"
+
 PROBE_TIMEOUT=60
 RUN_TIMEOUT=180
 
@@ -78,11 +82,11 @@ if [[ -x "$PROJECT_DIR/node_modules/.bin/react-doctor" ]]; then
 elif command -v react-doctor &>/dev/null; then
   RUNNER=(react-doctor)
 elif command -v bunx &>/dev/null; then
-  RUNNER=(bunx react-doctor@latest)
+  RUNNER=(bunx "react-doctor@$REACT_DOCTOR_VERSION")
 elif command -v pnpm &>/dev/null; then
-  RUNNER=(pnpm dlx react-doctor@latest)
+  RUNNER=(pnpm dlx "react-doctor@$REACT_DOCTOR_VERSION")
 elif command -v npx &>/dev/null; then
-  RUNNER=(npx --yes react-doctor@latest)
+  RUNNER=(npx --yes "react-doctor@$REACT_DOCTOR_VERSION")
 else
   echo "SKIPPED: no react-doctor binary and no bunx/pnpm/npx to fetch one." > "$OUTPUT_FILE"
   exit 3

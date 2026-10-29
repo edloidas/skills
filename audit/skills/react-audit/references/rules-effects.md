@@ -1,7 +1,7 @@
 # useEffect Anti-Patterns
 
-The 14 useEffect anti-patterns from react.dev's "You Might Not Need an Effect", plus common
-pitfalls from "Synchronizing with Effects".
+16 useEffect anti-patterns: those from react.dev's "You Might Not Need an Effect", common
+pitfalls from "Synchronizing with Effects", and two React 19 patterns (#15, #16).
 
 **Check the compiler first.** If the project enables the React Compiler — `babel-plugin-react-compiler`
 in the Babel config, `reactCompiler: true` in `next.config`, or the compiler plugin in the Vite/RSbuild
