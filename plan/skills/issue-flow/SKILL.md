@@ -493,10 +493,10 @@ A dirty tree in the full flow from uncommitted changes is the work itself. Carry
 git checkout -b issue-<number>
 ```
 
-A dirty tree the caller asked to stash (`"start work on #N, stash local changes"`) is not the work. Stash it under the current branch the Step Router read, then take the clean path:
+A dirty tree the caller asked to stash (`"start work on #N, stash local changes"`) is not the work. Stash it, naming the branch the Step Router read, then take the clean path. Report `Stashed:` only if `git stash list` now shows the entry:
 
 ```bash
-git stash push -u -m "issue-<number>: <current-branch> WIP"
+git stash push -u -m "issue-<number> from <current-branch>"
 ```
 
 A clean tree (entered at Step 2 directly, e.g. "start work on #N"):
@@ -543,17 +543,13 @@ No `wip:` subject may survive into the final history.
 
 ### Body
 
-Invoke the `commit-summary` skill to generate the commit body. It weighs the change and
-either derives a body from the code — what the running code does that forced the change,
-which call paths reach it, what breaks on update, when it broke, what was deliberately left
-alone — or returns two to three lines for a mechanical or generated change.
+Invoke the `commit-summary` skill to generate the commit body.
 
-If the host cannot invoke another skill, or `commit-summary` is not installed, do the same inline:
-derive when the change alters behaviour, a contract, a public type, or a default, or fixes a defect;
-otherwise write two or three past-tense lines and stop. To derive, answer in blank-line-separated
-paragraphs wrapped at 80, dropping any with no real answer — what the running code does that forces
-the change, which call paths reach it, how it failed observably, what breaks on update, what the
-tests pin. Cite a hash only if a command returned it in this session.
+If the host cannot invoke another skill, or `commit-summary` is not installed, do the same inline.
+For a change to behaviour, a contract, a public type, or a default, or a defect fix, answer in
+blank-line-separated paragraphs wrapped at 80 — what forces the change, which call paths reach it,
+how it failed, what breaks on update, what the tests pin — dropping any with no real answer.
+Otherwise write two or three past-tense lines. Cite a hash only if a command returned it here.
 
 When the caller supplies design rationale pulled out of source comments (the `code-cleanup`
 skill produces this), it answers the first question — fold it into that paragraph. It is not
@@ -915,6 +911,7 @@ Determine the current user: `gh api user --jq .login`. If the PR reviewer OR ass
 
 ```
 PR #<number> is ready for review by @<reviewer> (mergeable: <state from Step 5>). Merge skipped — awaiting external review.
+Stashed: <stash message>        (only when the entry below exists)
 ```
 
 If reviewer AND assignee are the current user (self-review), or user explicitly asked to merge, proceed below.
@@ -1000,7 +997,7 @@ If conflicts appeared, rebase and re-run checks.
 gh pr merge --rebase --delete-branch
 ```
 
-If Step 2 stashed and the merge left you on the branch its message names, pop that entry by message from `git stash list` — never a bare `stash@{0}`. On any other branch, or when the pop conflicts, leave it and add `Stashed:` to the report.
+Find Step 2's stash in `git stash list` by its `issue-<number> from <current-branch>` message — a fresh invocation has no other record of it. If the merge left you on that `<current-branch>`, run `git stash pop "stash@{<n>}"` with `<n>` from the entry's line — never a bare `stash@{0}`. On any other branch, leave it. A conflicted pop keeps the entry: stop, list the conflicted files, and never reset. Both add `Stashed:` to the report.
 
 `Closes #<number>` in the PR body auto-closes the issue when merging into the default branch. Only verify and manually close if the merge target is a non-default branch (e.g., epic-*, next, or a stack parent):
 

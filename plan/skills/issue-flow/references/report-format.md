@@ -20,7 +20,7 @@ Include `Milestone: <name>` only when a milestone was set.
 ```
 ### [2] Branch Created
 Branch: issue-<number> | Base: <base-branch> | Fork: <short-sha>
-Stashed: <stash message>        ← only when the caller asked for a stash
+Stashed: <stash message>        (only when the stash took an entry)
 ```
 
 `Base:` is a branch **name**; `Fork:` is the merge-base SHA the branch was cut from.
@@ -113,7 +113,7 @@ Print before running `gh pr checks --watch`. After checks pass, print the merged
 PR #<pr-number> merged into <base>
 Branch issue-<number> deleted
 Issue #<number> closed
-Stashed: <stash message>        ← only when the Step 2 stash was not restored
+Stashed: <stash message>        (only when the Step 2 stash was not restored)
 ```
 
 ## Rules

@@ -165,30 +165,30 @@ Stop conditions from the analyzer:
 
 End Phase 1 with one line that carries the run's finish line:
 `Phase 1: #<N> "<title>" — <N> tasks, <N> blockers, <N> related consequences, existing work <verdict>. Finish: merged PR | Phase 6 endgame's Then column.`
-— the first under `auto`, the second attended. Then go to Phase 2. Nothing is edited before
+— the first under `auto`, the second attended. Then go to Phase 2. No file is edited before
 the plan is printed.
 
 ## Phase 2: Plan
 
 ### Create branch
 
-Branch first, so the plan reads the pulled base; `issue-flow` owns the base. Invoke it with
-intent `"start work on #<N>"` — `from <branch>` when the user named a base. Its Step 2
-pulls the base, checks out `issue-<N>`, and moves the board to "In Progress"; an existing
-`issue-<N>` gets its switch-vs-recreate prompt.
+Branch first, so the plan reads the pulled base; `issue-flow` owns the base.
 
-Record the `Fork:` SHA from its Step 2 report — later phases scope verification by it and
-pass it to the reviewers. Use `Fork:`, not `Base:`: a SHA always resolves, a remote-only
-branch name does not.
+1. Run `git status --short`. Uncommitted changes on the base may be the user's start on
+   this issue: attended, ask `Stash` `(Recommended)` or `Stop`; under `auto`, stash.
+2. Invoke `issue-flow` with intent `"start work on #<N>"` — `from <branch>` when the user
+   named a base, `, stash local changes` when stashing. Its Step 2 pulls the base, checks
+   out `issue-<N>`, and moves the board to "In Progress"; an existing `issue-<N>` gets its
+   switch-vs-recreate prompt.
+3. Record `Fork:` and any `Stashed:` from its Step 2 report. Later phases scope by
+   `Fork:` and pass it to the reviewers — not `Base:`, which may exist only on the remote.
+   A recorded stash is named on every line that ends the run: a stop, a hand-back, or
+   the final report.
 
 **Every phase that scopes by the fork reads the working tree, never `<fork>..HEAD`.** The
 form is `git diff --name-only <fork>` plus `git ls-files --others --exclude-standard`.
 Snapshots are optional until Phase 4.6, so without one `HEAD` still *is* the fork and
 that range is empty while the changes sit unstaged.
-
-Uncommitted changes on the base may be the user's start on this issue. Attended, ask
-`Stash` `(Recommended)` or `Stop`; under `auto`, stash. Stashing adds `, stash local
-changes` to the intent, and Phase 6 names any stash Step 6 did not restore.
 
 Entered on an existing branch with no Step 2 report, ask `issue-flow` for the fork point.
 
@@ -257,7 +257,7 @@ The default is to skip: starting things is slow and leaves an artifact to clean 
 opt-in, invoke `live-probe` with the behavior the issue asked for; it reads the project's
 declared way to run and observe from the instruction layer first (`CLAUDE.md`, `AGENTS.md`,
 rules files), then the repo's declared commands, and reports `unverified` rather than
-inventing one. Expect **one** such tool, not a matched pair. Where the host cannot chain
+inventing one. Where the host cannot chain
 skills, follow the same method inline.
 
 ### On failure
@@ -313,7 +313,7 @@ a subtle simplification turns into a refactor nobody reviewed.
 Take the changed test files from the working tree, per **Phase 2 → Create branch**.
 Skip this phase only when that set carries no test file.
 
-When that set is non-empty, dispatch one general subagent that loads `tests-audit` over
+When that set is non-empty, dispatch one subagent that loads `tests-audit` over
 those files — `tests-audit` is a skill, not an agent type. Its brief is the changed test
 paths and the code under test and nothing else — not the plan, not what you were trying to
 do, since your justification is the one thing that would let a weak test through. Where the

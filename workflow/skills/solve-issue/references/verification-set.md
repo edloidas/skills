@@ -18,9 +18,16 @@ Pick the runner from the lockfile:
 - `yarn.lock` → `yarn <script>`
 - else → `npm run <script>`
 
-When the lockfile is newer than `node_modules`, install first (`pnpm install`, `bun
-install`, `yarn`, `npm install`) — stale dependencies fail checks in code this branch never
-touched. A failed install stops Phase 4 like a failing check.
+Install first when `node_modules` is missing, or when the lockfile is newer than the
+install marker the package manager wrote inside it — `.package-lock.json` (npm),
+`.modules.yaml` (pnpm), `.yarn-state.yml` (Yarn 2+), `.yarn-integrity` (Yarn 1), or the
+`node_modules` directory itself where there is none. Stale dependencies fail checks in code
+this branch never touched. Use the form that cannot rewrite the lockfile: `pnpm install
+--frozen-lockfile`, `bun install --frozen-lockfile`, `yarn install --immutable` when
+`.yarnrc.yml` exists (Yarn 2+), else `yarn install --frozen-lockfile`, `npm ci` — plain
+`npm install` when there is no lockfile at all. A failed install is not a code defect, so
+it skips Phase 3: stop and hand back with its output. Name the install in the Phase 4
+closing line.
 
 A repo with no `package.json` declares its checks somewhere else — a `Makefile`, a task
 runner, a CI workflow. Read what the repo actually declares rather than assuming a

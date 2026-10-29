@@ -33,14 +33,19 @@ Print this shape, omitting rows that do not apply:
   > <the finding, quoted verbatim in the reviewer's own words>
 
 **Commit** `<short-sha>` <subject>
-**Stashed** `<stash message>` — not restored; `git stash list` finds it
+**Stashed** `<stash message>` — in `git stash list`
 ```
 
-Omit the **Advisors** detail lines when the reviewers came back clean — a single
-`no findings` line is enough. Omit **Tests** when Phase 4.5 was skipped, **Stashed** when Step 6 restored the stash or
-none was taken, and **Not applied** when there is nothing in it, and **Related work** when the plan had none. Related
-work is the record of where the commit departs from the issue text, so a Skip or Correct
-the plan made is never left out of it.
+Omit, when they do not apply:
+
+- the **Advisors** detail lines when the reviewers came back clean — a single
+  `no findings` line is enough
+- **Tests** when Phase 4.5 was skipped
+- **Not applied** when there is nothing in it
+- **Related work** when the plan had none — it is the record of where the commit departs
+  from the issue text, so a Skip or Correct the plan made is never left out of it
+- **Stashed** when Phase 2 took no stash. The summary prints before any merge, so the row
+  never claims a restore; on the merge path the line after the merge settles it
 
 The blockquote under **Not applied** is not decoration. Reproduce the finding in the
 reviewer's own words, unedited; if you shorten it, say how many lines you cut and from
@@ -89,6 +94,7 @@ turns finished work back into pending work.
   > The rect is never recomputed on resize, so the flip is stale after a window resize.
 
 **Commit** `a3f91c2` fix: flip tooltip placement at the viewport edge #412
+**Stashed** `issue-412 from master` — in `git stash list`
 ```
 
 ## Phase 7 block
@@ -107,6 +113,11 @@ Phase 7 appends to the summary above rather than reprinting it:
 - Shipped after the summary above: <files and one line each, or `nothing`>
 - Held unsent: <human thread, and the draft reply composed for it>
 ```
+
+When Phase 2 took a stash and the merge ran, print one more line after `issue-flow`'s
+Step 6 report: `Stash: restored` when that report has no `Stashed:` line, otherwise
+`Stash: still in git stash list (<other branch | conflict>)`. A run that did not merge
+prints nothing here — the Phase 6 row already says where the stash is.
 
 The reviewer line reports **what was read, not what exists**. "None requested on this PR"
 with the time it was checked is a fact about the timeline; `No automated reviewers` is a
