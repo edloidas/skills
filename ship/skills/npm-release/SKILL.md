@@ -28,20 +28,22 @@ lockfile whose tool is missing is an error; never switch managers to get past it
 
 ## Bundled Scripts
 
-Three helper bash scripts in `scripts/`, executed from the skill directory. They work with any
-pnpm/bun/npm project and need no project-specific setup. If the project already ships its own
-release scripts, use those instead of these.
+Three helper bash scripts in this skill's `scripts/` directory. Run them from the project root
+— they read `./package.json` and the current repo — and call them by path, with `<skill-dir>`
+replaced by this skill's absolute directory. They work with any pnpm/bun/npm project and need no
+project-specific setup. If the project already ships its own release scripts, use those instead
+of these.
 
 | Script | Does | Run at |
 | ------ | ---- | ------ |
 | `release-prepare.sh` | Checks the branch is the repo's default (or the one passed as `--branch <name>`) and the tree is clean, detects and prints the package manager, runs the dry-run release | Step 1 |
 | `release-analyze.sh` | Finds the last tag, lists and classifies commits since it, prints file-change stats and a bump recommendation | Step 3 |
-| `release-execute.sh` | Reads the version from `package.json`, creates the tag if absent, **pushes** commits and tags, prints verification links | Step 8 only — it pushes, so never run it before the Step 7 approval |
+| `release-execute.sh` | Reads the version from `package.json`, re-checks the branch and a clean tree, creates the tag if absent or verifies the existing one, **pushes** branch and tag atomically to the branch's upstream remote (else `origin`), confirms both on the remote | Step 8 only — it pushes, so never run it before the Step 7 approval |
 
 ```bash
-bash scripts/release-prepare.sh
-bash scripts/release-analyze.sh
-bash scripts/release-execute.sh
+bash <skill-dir>/scripts/release-prepare.sh
+bash <skill-dir>/scripts/release-analyze.sh
+bash <skill-dir>/scripts/release-execute.sh
 ```
 
 Prerequisites: `jq` installed (used by `release-analyze.sh` and `release-execute.sh`), and a git
@@ -88,14 +90,15 @@ End the step with one line naming what you found, defaults included:
 ### Step 1: Pre-flight Checks
 
 ```bash
-bash scripts/release-prepare.sh
+bash <skill-dir>/scripts/release-prepare.sh
 # or, for a release branch Step 0 or the user named:
-bash scripts/release-prepare.sh --branch <name>
+bash <skill-dir>/scripts/release-prepare.sh --branch <name>
 ```
 
-The script reads the default branch from `origin/HEAD`, then `gh repo view`, and refuses any
+The script reads the default branch from `<remote>/HEAD` — the remote the branch tracks, else
+`origin`, the same one Step 8 pushes to — then `gh repo view`, and refuses any
 other branch unless it was passed with `--branch`. It refuses too when neither source answers;
-the fix it prints is `git remote set-head origin --auto`. Never pass the current branch as
+the fix it prints is `git remote set-head <remote> --auto`. Never pass the current branch as
 `--branch` just to get past the check.
 
 Where the script cannot run, check by hand: `git branch --show-current` is the release branch
@@ -128,7 +131,7 @@ End the step with one line: `Dry run passed: 42 files, 128 kB`.
 ### Step 3: Analyze Commits for Version Decision
 
 ```bash
-bash scripts/release-analyze.sh
+bash <skill-dir>/scripts/release-analyze.sh
 ```
 
 Where the script cannot run, `git log $(git describe --tags --abbrev=0)..HEAD --oneline` gives
@@ -184,7 +187,7 @@ End the step with one line: `Committed Release v0.16.0 (a1b2c3d)`. The tag is St
 
 ### Step 6: Create Git Tag
 
-Tag the release commit with a **signed** tag — `-s` implies `-a`, and `--follow-tags` in Step 8 pushes only annotated tags:
+Tag the release commit with a **signed** tag — `-s` implies `-a`, and Step 8 refuses a tag that is not annotated:
 
 ```bash
 git tag -s v{{VERSION}} -m "Release v{{VERSION}}"
@@ -216,7 +219,7 @@ Changes:
   - Adds `--watch` to the build command (4 commits)
   - Fixes lockfile drift under pnpm 10 (#212)
   - Removes the deprecated `legacy` export — pre-1.0, so minor rather than major
-Next:     git push --follow-tags -> CI publishes @acme/widget@0.16.0 to npm
+Next:     atomic push of master + v0.16.0 to origin -> CI publishes @acme/widget@0.16.0 to npm
 ```
 
 Ask for approval, per **Asking the User**:
@@ -231,15 +234,22 @@ Ask for approval, per **Asking the User**:
 
 ### Step 8: Push Release
 
-Only after the user approves:
+Only after the user approves, passing the same `--branch <name>` Step 1 used, if any:
 
 ```bash
-bash scripts/release-execute.sh
-# or
-git push --follow-tags
+bash <skill-dir>/scripts/release-execute.sh [--branch <name>]
 ```
 
-`--follow-tags` pushes commits plus any **annotated** tags reachable from them in a single round-trip. It avoids the torn state of two separate pushes and won't accidentally publish stale local tags from other branches the way `git push --tags` does.
+Before pushing, the script re-checks the branch and a clean tree, and refuses an existing tag
+that is lightweight, not at HEAD, or unsigned while signing is configured. It pushes to the
+remote the branch tracks, else `origin`, with `git push --atomic <remote> <branch> v<version>`
+— the remote takes both refs or neither — then confirms both with `ls-remote`. A non-zero exit
+means stop: report its error line. Never retag or switch remotes to get past a refusal.
+
+Where the script cannot run, do the same by hand: confirm `git status --porcelain` is empty and
+the branch is the Step 1 branch, run
+`git push --atomic <remote> <branch> v<version>`, then `git ls-remote <remote> v<version>`.
+Do not use `git push --follow-tags`: it pushes the branch anyway when the tag is missing.
 
 End the step with one line: `Pushed master + v0.16.0`.
 

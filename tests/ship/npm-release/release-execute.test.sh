@@ -77,8 +77,8 @@ test_existing_tag_is_not_recreated() {
   pre_tag v1.2.3
   execute
   assert_eq 0 "$STATUS" "exit status"
-  assert_contains "$STDOUT" "Tag v1.2.3 already exists locally" "output"
-  assert_contains "$STDOUT" "Skipping tag creation" "output"
+  assert_contains "$STDOUT" "Tag v1.2.3 already exists locally; verifying it before reuse" "output"
+  assert_contains "$STDOUT" "Verified: tag v1.2.3 is annotated and points at HEAD" "output"
   assert_eq 1 "$(git tag -l 'v1.2.3' | wc -l | tr -d ' ')" "tag count"
 }
 
@@ -88,23 +88,101 @@ test_commits_and_tag_reach_the_remote() {
   local bare="$PWD/../origin.git"
   execute
   assert_eq 0 "$STATUS" "exit status"
-  assert_contains "$STDOUT" "SUCCESS: Commits and tag pushed" "output"
+  assert_contains "$STDOUT" "SUCCESS: origin has main and v1.2.3 at" "output"
   assert_contains "$STDOUT" "Release v1.2.3 completed successfully" "output"
   assert_eq "v1.2.3" "$(git -C "$bare" tag -l)" "tags on the remote"
   assert_eq "$(git rev-parse HEAD)" "$(git -C "$bare" rev-parse refs/heads/main)" \
     "remote main tip"
 }
 
-# `--follow-tags` only pushes annotated tags, which is why the script signs. A
-# lightweight tag left over from a previous release must not be mistaken for
-# the annotated one and silently left behind.
-test_a_lightweight_existing_tag_is_not_pushed() {
+# A lightweight tag left over from a previous release is not a release tag. It
+# used to be reused and then silently left behind by `--follow-tags`.
+test_a_lightweight_existing_tag_refuses() {
   pkg_repo 1.2.3
   git tag v1.2.3
+  local bare="$PWD/../origin.git" before
+  before=$(git -C "$bare" rev-parse refs/heads/main)
+  execute
+  assert_eq 1 "$STATUS" "exit status"
+  assert_contains "$STDOUT" "Tag v1.2.3 is lightweight" "output"
+  assert_eq "" "$(git -C "$bare" tag -l)" "tags on the remote"
+  assert_eq "$before" "$(git -C "$bare" rev-parse refs/heads/main)" "remote main tip"
+}
+
+# An existing tag on an older commit would publish the old commit's contents
+# under the new version.
+test_an_existing_tag_not_at_head_refuses() {
+  pkg_repo 1.2.3
+  pre_tag v1.2.3
+  local bare="$PWD/../origin.git" before
+  before=$(git -C "$bare" rev-parse refs/heads/main)
+  commit "fix: after the tag"
+  execute
+  assert_eq 1 "$STATUS" "exit status"
+  assert_contains "$STDOUT" "Tag v1.2.3 points at" "output"
+  assert_contains "$STDOUT" "Nothing was pushed" "output"
+  assert_eq "" "$(git -C "$bare" tag -l)" "tags on the remote"
+  assert_eq "$before" "$(git -C "$bare" rev-parse refs/heads/main)" "remote main tip"
+}
+
+test_an_unsigned_existing_tag_refuses_when_signing_is_configured() {
+  pkg_repo 1.2.3
+  pre_tag v1.2.3
+  git config user.signingkey ABC
+  execute
+  assert_eq 1 "$STATUS" "exit status"
+  assert_contains "$STDOUT" "carries no signature" "output"
+  assert_eq "" "$(git -C "$PWD/../origin.git" tag -l)" "tags on the remote"
+}
+
+# The approval gate sits between prepare and execute, so the tree can change
+# while it waits.
+test_a_dirty_tree_right_before_the_push_refuses() {
+  pkg_repo 1.2.3
+  pre_tag v1.2.3
+  printf 'late edit\n' > late.txt
+  execute
+  assert_eq 1 "$STATUS" "exit status"
+  assert_contains "$STDOUT" "Uncommitted changes detected" "output"
+  assert_eq "" "$(git -C "$PWD/../origin.git" tag -l)" "tags on the remote"
+}
+
+test_a_non_default_branch_refuses() {
+  pkg_repo 1.2.3
+  git checkout --quiet -b feature
+  execute
+  assert_eq 1 "$STATUS" "exit status"
+  assert_contains "$STDOUT" "On feature, not the default branch main" "output"
+  assert_eq "" "$(git -C "$PWD/../origin.git" tag -l)" "tags on the remote"
+  assert_eq "" "$(git tag -l)" "tags created locally"
+}
+
+test_a_named_release_branch_is_pushed() {
+  pkg_repo 1.2.3
+  git checkout --quiet -b release-1.x
+  pre_tag v1.2.3
+  run bash "$(script "$EXECUTE")" --branch release-1.x
+  assert_eq 0 "$STATUS" "exit status"
+  assert_eq "$(git rev-parse HEAD)" \
+    "$(git -C "$PWD/../origin.git" rev-parse refs/heads/release-1.x)" "remote release-1.x tip"
+}
+
+# `origin` is listed first, but the branch tracks `zeta`. The release goes where
+# the branch is published, not to whichever remote `git remote` prints first.
+test_push_goes_to_the_upstream_remote_not_the_first_listed() {
+  pkg_repo 1.2.3
+  local zeta="$PWD/../zeta.git"
+  git init --quiet --bare "$zeta"
+  git remote add zeta "$zeta"
+  git push --quiet -u zeta main
+  git symbolic-ref refs/remotes/zeta/HEAD refs/remotes/zeta/main
+  assert_eq "origin" "$(git remote | head -n 1)" "first listed remote"
+  pre_tag v1.2.3
   execute
   assert_eq 0 "$STATUS" "exit status"
-  assert_contains "$STDOUT" "Skipping tag creation" "output"
-  assert_eq "" "$(git -C "$PWD/../origin.git" tag -l)" "tags on the remote"
+  assert_contains "$STDOUT" "Remote: zeta" "output"
+  assert_eq "v1.2.3" "$(git -C "$zeta" tag -l)" "tags on zeta"
+  assert_eq "" "$(git -C "$PWD/../origin.git" tag -l)" "tags on origin"
 }
 
 test_no_remote_exits_1() {

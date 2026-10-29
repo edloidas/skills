@@ -30,12 +30,22 @@ if [[ "$1" == "--branch" ]]; then
   fi
 fi
 
-DEFAULT_BRANCH=$(git symbolic-ref --quiet --short refs/remotes/origin/HEAD 2>/dev/null | sed 's|^origin/||' || true)
+CURRENT_BRANCH=$(git branch --show-current)
+
+# The remote release-execute.sh pushes to: the branch's upstream, else origin.
+REMOTE=""
+if [[ -n "$CURRENT_BRANCH" ]]; then
+  REMOTE=$(git config --get "branch.$CURRENT_BRANCH.remote" 2>/dev/null || true)
+fi
+if [[ -z "$REMOTE" ]] || [[ "$REMOTE" == "." ]]; then
+  REMOTE="origin"
+fi
+
+DEFAULT_BRANCH=$(git symbolic-ref --quiet --short "refs/remotes/$REMOTE/HEAD" 2>/dev/null | sed "s|^$REMOTE/||" || true)
 if [[ -z "$DEFAULT_BRANCH" ]] && command -v gh &> /dev/null; then
   DEFAULT_BRANCH=$(gh repo view --json defaultBranchRef -q .defaultBranchRef.name 2>/dev/null || true)
 fi
 
-CURRENT_BRANCH=$(git branch --show-current)
 echo "Branch: $CURRENT_BRANCH"
 echo "Default branch: ${DEFAULT_BRANCH:-unknown}"
 
@@ -50,8 +60,8 @@ if [[ -n "$RELEASE_BRANCH" ]]; then
     exit 1
   fi
 elif [[ -z "$DEFAULT_BRANCH" ]]; then
-  echo "ERROR: Could not detect the default branch (no origin/HEAD, no gh)"
-  echo "       Run 'git remote set-head origin --auto', or pass --branch <name>"
+  echo "ERROR: Could not detect the default branch (no $REMOTE/HEAD, no gh)"
+  echo "       Run 'git remote set-head $REMOTE --auto', or pass --branch <name>"
   exit 1
 elif [[ "$CURRENT_BRANCH" != "$DEFAULT_BRANCH" ]]; then
   echo "ERROR: On $CURRENT_BRANCH, not the default branch $DEFAULT_BRANCH"
