@@ -26,7 +26,7 @@ metadata:
 
 **Mutation class: writes to external services.** It approves, requests changes and dismisses its
 own requests, comments, replies in and resolves the reviewer's own threads, merges, brings a
-branch up to date with its base, closes and reopens a pull request to clear stale mergeability, raises points in other repositories, and amends
+branch up to date by rebasing it onto its base, closes and reopens a pull request to clear stale mergeability, raises points in other repositories, and amends
 an author's last commit and force-pushes it with a lease — each only after the reviewer names it in
 their own reply to a report. `allowed-tools` pre-approves `gh` and `git`, so that reply is the only
 check before a write. Locally it creates `triage/<N>` and `fold/<N>` branches, deleted once their
@@ -171,7 +171,7 @@ default as the recommended option.
 | Nothing left | `APPROVE` — and `MERGE` with `merge` |
 
 A reviewer who asked for a comment gets a `COMMENT` row; a proposal that would differ says why. A
-plan row also lists any close-and-reopen or branch update it may need and any point it will raise in another
+plan row also lists any close-and-reopen or rebase and force-push of the author's branch it may need and any point it will raise in another
 repository.
 
 Show the report (**Report**) and stop; never ask whether to run the plan or offer the rows as

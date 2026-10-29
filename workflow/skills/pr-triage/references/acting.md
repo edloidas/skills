@@ -62,8 +62,19 @@ gh pr merge <N> -R <repo> --<squash|rebase|merge> --match-head-commit <full head
   `gh api repos/<owner>/<repo>/compare/<base>...<head sha> --jq .behind_by` is `0`, close and
   reopen the pull request once to recompute, then merge with `--match-head-commit`. The author is
   notified of both; the report says so.
-- A branch that is truly behind, with protection requiring it up to date: `gh pr update-branch`,
-  wait for CI again, then merge. Never force-push to bring it up to date.
+- A branch that is truly behind, with protection requiring it up to date, is rebased onto its
+  base, never merged with it — a merge commit on the author's branch is not the reviewer's to add.
+  Run `gh pr update-branch <N> -R <repo> --rebase`; without `--rebase` it merges. Where GitHub
+  refuses that for a reason other than a conflict, rebase locally where a fold could push — a
+  clean clone, an editable head, no required signatures — on `fold/<N>` per step 1 below, onto a
+  freshly fetched `<remote>/<base>`, and push with step 4's pinned lease, the head SHA before the
+  rebase. Then re-read `headRefOid` for `--match-head-commit`, wait for CI again, re-approve if
+  the update dismissed the approval, and merge. A conflict holds the row: resolving it is the
+  author's. A branch GitHub would merge as it is is not rebased.
+- A rebase or its push that is refused — the host's permission layer, branch protection, a lease
+  the remote moved past — stops the row. Do not merge the base in instead and do not retry with
+  `--force`. Report the row held, with the refusal as printed and the exact command the reviewer
+  can run themselves.
 
 ## Fold small fixes and approve
 
@@ -110,6 +121,11 @@ review as suggestions. A `FOLD` row that fails one of these conditions in Phase 
    git log -1 --format='%an <%ae>%n%(trailers)'   # the original author, then the trailers
    git push --force-with-lease=<head-branch>:<head sha before the fold> <push-target> HEAD:<head-branch>
    ```
+
+   A row that also brings the branch up to date rebases `fold/<N>` onto `<remote>/<base>` after
+   the amend and before this push, so one push carries both; the lease stays pinned to the head
+   SHA before the fold, and a head in the base repository reruns step 2's checks on the rebased
+   tree. A refused push follows the refusal rule under [Approve and merge](#approve-and-merge).
 
 5. Wait for every required check on the new head. **Red after the push: no approval.** Post a
    `COMMENT` naming the pushed head and the failing check, and report it; a push to revert the fold
