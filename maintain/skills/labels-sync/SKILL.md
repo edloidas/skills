@@ -94,7 +94,7 @@ bash <skill-dir>/scripts/sync-labels.sh < <skill-dir>/references/labels.json
 
 Parse the JSON output and present it in the shape of the worked example below — a table each
 for create, update, and delete, and a comma list of unchanged labels. End the phase with one line carrying the counts: `7 to create, 2 to update, 1 to delete, 12 unchanged`.
-If every count is zero, that line is `All 22 labels already in sync` and the run is finished.
+If every count is zero, that line is `All <N> labels already in sync`, where `<N>` is the number of labels in the target set and the run is finished.
 
 #### Worked example
 
