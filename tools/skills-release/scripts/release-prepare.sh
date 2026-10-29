@@ -29,6 +29,45 @@ if [[ -n $(git status --porcelain) ]]; then
   exit 1
 fi
 
+# Compare with origin before anything below writes to the tree. Behind would
+# only fail at the push, after the release commit and tag exist; ahead would
+# ship commits nobody has seen on the remote.
+ALLOW_UNPUSHED=false
+case "${1:-}" in
+  "") ;;
+  --allow-unpushed) ALLOW_UNPUSHED=true ;;
+  *) echo "ERROR: Unknown argument: $1 (the only option is --allow-unpushed)"; exit 1 ;;
+esac
+
+if ! git fetch --quiet origin "$CURRENT_BRANCH"; then
+  echo "ERROR: Could not fetch origin/$CURRENT_BRANCH. Check the remote and network, then re-run"
+  exit 1
+fi
+
+UPSTREAM="refs/remotes/origin/$CURRENT_BRANCH"
+if ! git rev-parse --verify --quiet "$UPSTREAM" > /dev/null; then
+  echo "ERROR: origin/$CURRENT_BRANCH does not exist"
+  exit 1
+fi
+
+BEHIND=$(git rev-list --count "HEAD..$UPSTREAM")
+if [[ "$BEHIND" -gt 0 ]]; then
+  echo "ERROR: $CURRENT_BRANCH is $BEHIND commit(s) behind origin/$CURRENT_BRANCH. Pull first, then re-run"
+  git log --oneline "HEAD..$UPSTREAM"
+  exit 1
+fi
+
+AHEAD=$(git rev-list --count "$UPSTREAM..HEAD")
+if [[ "$AHEAD" -gt 0 ]]; then
+  echo "Local-only commits ($AHEAD), not on origin/$CURRENT_BRANCH:"
+  git log --oneline "$UPSTREAM..HEAD"
+  if [[ "$ALLOW_UNPUSHED" != true ]]; then
+    echo "STOP: these commits would ship in the release. Re-run with --allow-unpushed once the user approves including them"
+    exit 2
+  fi
+  echo "Including them: --allow-unpushed was passed"
+fi
+
 # Check jq is available
 if ! command -v jq &> /dev/null; then
   echo "ERROR: jq is required but not installed"

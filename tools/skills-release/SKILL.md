@@ -48,13 +48,35 @@ Follow these steps in order.
 bash .claude/skills/skills-release/scripts/release-prepare.sh
 ```
 
-It checks the branch, a clean tree, every manifest and the catalog, `jq`, both validators, that
-`sync-repo` leaves the tree clean, and that every version-bearing file agrees.
+It checks the branch, a clean tree, fetches `origin` and compares with it, then every manifest
+and the catalog, `jq`, both validators, that `sync-repo` leaves the tree clean, and that every
+version-bearing file agrees. A branch behind origin is refused before anything is written.
 
-If any check fails, report which one and the fix, and stop there — no analysis, no bump. Do not
+Exit 2 with a `STOP:` line means the branch carries commits origin does not have; the script
+lists them. They would ship in the release, so show the list and ask:
+
+```
+AskUserQuestion:
+  question: "{{N}} local commits are not on origin. Ship them in this release?"
+  header: "Unpushed"
+  options:
+    - label: "Stop (Recommended)"
+      description: "End the release; push or drop the commits first"
+    - label: "Include them"
+      description: "Ship these {{N}} commits in the release; pre-flight re-runs with --allow-unpushed"
+```
+
+On `Include them`, and only then, re-run:
+
+```bash
+bash .claude/skills/skills-release/scripts/release-prepare.sh --allow-unpushed
+```
+
+If any other check fails, report which one and the fix, and stop there — no analysis, no bump. Do not
 commit generated changes yourself to make `sync-repo` come back clean; that is the user's call.
 
-End the step with one line: `Pre-flight passed: 10 plugins, version 5.5.1, tree clean`.
+End the step with one line: `Pre-flight passed: 10 plugins, version 5.5.1, tree clean` — with
+`, 3 unpushed commits included` appended when they were.
 
 ### Step 2: Analyze Commits
 
@@ -151,7 +173,8 @@ workflow, and installers fetch the published GitHub Release. Show the version an
 wait for approval. If Step 2 listed removed or renamed skills, also show the
 `## Removed or renamed skills` section Step 7 will put in the release notes — one line per
 skill, `old (group) -> new` or `old (group) -> removed`. Approving the push approves that notes
-edit, so draft it here, not after.
+edit, so draft it here, not after. If Step 1 included unpushed commits, name their count in the
+question too — this push is the first time they reach origin.
 
 **Use the AskUserQuestion tool:**
 
