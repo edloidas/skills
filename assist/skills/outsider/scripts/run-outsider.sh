@@ -2,19 +2,26 @@
 # Run an agent CLI from another harness for an outside opinion.
 #
 # Usage:
-#   run-outsider.sh ask    [--host H] [--agent A] [--preamble FILE] [FILE] [TIMEOUT]
-#   run-outsider.sh review [--host H] [--agent A] [--uncommitted|--base B|--commit SHA] [TIMEOUT]
+#   run-outsider.sh ask    [--host H] [--agent A] [--preamble FILE] [--attach FILE]...
+#                          [--confirm-uncommitted] [FILE] [TIMEOUT]
+#   run-outsider.sh review [--host H] [--agent A] [--uncommitted|--base B|--commit SHA]
+#                          [--confirm-uncommitted] [TIMEOUT]
 #   run-outsider.sh list   [--host H]
 #
-#   --host   the harness invoking this script; it is excluded from selection
-#   --agent  force one agent, host or not
+#   --host    the harness invoking this script; it is excluded from selection
+#   --agent   force one agent, host or not
+#   --attach  append a working-tree file to an ask payload, whole
+#   --confirm-uncommitted  the user approved sending uncommitted or untracked content
 #
 # Selection: an explicit --agent wins; otherwise the first installed agent in
 # $OUTSIDER_AGENTS that is not the host. Model and effort are never set unless
 # configured — see references/agents.md.
 #
 # Exits 0, with errors and skips reported on stdout — except exit 2 when a
-# review's --base or --commit does not resolve, so a wrong scope is never reviewed.
+# review's --base or --commit does not resolve, so a wrong scope is never reviewed,
+# and exit 3 when the payload holds uncommitted or untracked content and
+# --confirm-uncommitted was not passed. Exit 3 sends nothing and prints one
+# `[outsider] uncommitted payload:` line for the caller to put to the user.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -184,6 +191,45 @@ collect_uncommitted() {
     done
 }
 
+# Counts NUL-terminated names on stdin.
+count_nul() {
+  local n
+  n="$(tr -cd '\000' | wc -c)"
+  printf '%s' "$((n))"
+}
+
+# Sets GATE_FILES, GATE_UNTRACKED and GATE_BYTES for the uncommitted part of the
+# payload; GATE_FILES=0 means the payload is committed-only.
+GATE_FILES=0
+GATE_UNTRACKED=0
+GATE_BYTES=0
+measure_uncommitted() {
+  local f st n
+  if [[ "$MODE" == "review" ]]; then
+    [[ "$SCOPE" == "uncommitted" ]] || return 0
+    GATE_UNTRACKED="$(git ls-files --others --exclude-standard -z 2>/dev/null | count_nul)"
+    n="$(git diff HEAD --name-only -z 2>/dev/null | count_nul)"
+    GATE_FILES=$((n + GATE_UNTRACKED))
+    n="$(printf '%s' "$DIFF" | wc -c)"
+    GATE_BYTES=$((n))
+    return 0
+  fi
+  # An attachment counts unless git reports it tracked and clean. Ignored files
+  # count as untracked, and so does a file git cannot place in this repo.
+  if [[ ${#ATTACH[@]} -eq 0 ]]; then return 0; fi
+  for f in "${ATTACH[@]}"; do
+    if st="$(git status --porcelain --ignored --untracked-files=all -- "$f" 2>/dev/null)"; then
+      [[ -n "$st" ]] || continue
+      case "$st" in '??'*|'!!'*) GATE_UNTRACKED=$((GATE_UNTRACKED + 1)) ;; esac
+    else
+      GATE_UNTRACKED=$((GATE_UNTRACKED + 1))
+    fi
+    GATE_FILES=$((GATE_FILES + 1))
+    n="$(wc -c < "$f")"
+    GATE_BYTES=$((GATE_BYTES + n))
+  done
+}
+
 # --------------------------------------------------------------- execute ----
 strip_ansi() {
   sed -e 's/'$'\033''\[[0-9;?]*[a-zA-Z]//g'
@@ -257,6 +303,8 @@ esac
 HOST_ARG=""
 AGENT_ARG=""
 PREAMBLE=""
+ATTACH=()
+CONFIRM_UNCOMMITTED=""
 INPUT_FILE=""
 DIFF=""
 SCOPE="uncommitted"
@@ -269,6 +317,13 @@ while [[ $# -gt 0 ]]; do
     --host)        HOST_ARG="${2:-}"; shift; shift 2>/dev/null || true ;;
     --agent)       AGENT_ARG="${2:-}"; shift; shift 2>/dev/null || true ;;
     --preamble)    PREAMBLE="${2:-}"; shift; shift 2>/dev/null || true ;;
+    --attach)
+      if [[ ! -f "${2:-}" ]]; then
+        echo "Attached file not found: ${2:-}"
+        exit 0
+      fi
+      ATTACH+=("$2"); shift 2 ;;
+    --confirm-uncommitted) CONFIRM_UNCOMMITTED=1; shift ;;
     --uncommitted) SCOPE="uncommitted"; shift ;;
     --base)        SCOPE="base"; SCOPE_REF="${2:-}"; shift; shift 2>/dev/null || true ;;
     --commit)      SCOPE="commit"; SCOPE_REF="${2:-}"; shift; shift 2>/dev/null || true ;;
@@ -349,29 +404,40 @@ if ! build_cmd "$AGENT"; then
   exit 0
 fi
 
-case "$MODE" in
-  ask)
-    PROMPT_FILE="${PREAMBLE:-$SCRIPT_DIR/../references/prompt.md}"
-    if ! check_preamble "$PROMPT_FILE"; then exit 0; fi
-    PROMPT=""
-    if [[ -f "$PROMPT_FILE" ]]; then
-      PROMPT="$(cat "$PROMPT_FILE")"$'\n'
-    fi
-    if [[ -n "$INPUT_FILE" ]]; then
-      PROMPT+="$(cat "$INPUT_FILE")"
-    else
-      PROMPT+="$(cat -)"
-    fi
-    echo "$PROMPT" | run_agent "$AGENT" "${TIMEOUT:-300}"
-    ;;
-  review)
-    PROMPT_FILE="${PREAMBLE:-$SCRIPT_DIR/../references/review-prompt.md}"
-    if ! check_preamble "$PROMPT_FILE"; then exit 0; fi
-    PROMPT=""
-    if [[ -f "$PROMPT_FILE" ]]; then
-      PROMPT="$(cat "$PROMPT_FILE")"$'\n'
-    fi
-    PROMPT+="$DIFF"
-    echo "$PROMPT" | run_agent "$AGENT" "${TIMEOUT:-600}"
-    ;;
-esac
+if [[ "$MODE" == "ask" ]]; then
+  PROMPT_FILE="${PREAMBLE:-$SCRIPT_DIR/../references/prompt.md}"
+else
+  PROMPT_FILE="${PREAMBLE:-$SCRIPT_DIR/../references/review-prompt.md}"
+fi
+if ! check_preamble "$PROMPT_FILE"; then exit 0; fi
+PROMPT=""
+if [[ -f "$PROMPT_FILE" ]]; then
+  PROMPT="$(cat "$PROMPT_FILE")"$'\n'
+fi
+if [[ "$MODE" == "review" ]]; then
+  PROMPT+="$DIFF"
+else
+  if [[ -n "$INPUT_FILE" ]]; then
+    PROMPT+="$(cat "$INPUT_FILE")"
+  else
+    PROMPT+="$(cat -)"
+  fi
+  if [[ ${#ATTACH[@]} -gt 0 ]]; then
+    for f in "${ATTACH[@]}"; do
+      PROMPT+=$'\n\n'"----- begin $f -----"$'\n'"$(cat "$f")"$'\n'"----- end $f -----"
+    done
+  fi
+fi
+
+# Checked last, so the user is asked only when an agent would really run.
+measure_uncommitted
+if [[ $GATE_FILES -gt 0 && -z "$CONFIRM_UNCOMMITTED" && -n "$TIMEOUT_BIN" ]]; then
+  echo "[outsider] uncommitted payload: $GATE_FILES files ($GATE_UNTRACKED untracked), $GATE_BYTES bytes, would go to $AGENT. Nothing was sent; re-run with --confirm-uncommitted to send."
+  exit 3
+fi
+
+if [[ "$MODE" == "ask" ]]; then
+  echo "$PROMPT" | run_agent "$AGENT" "${TIMEOUT:-300}"
+else
+  echo "$PROMPT" | run_agent "$AGENT" "${TIMEOUT:-600}"
+fi

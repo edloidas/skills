@@ -133,6 +133,7 @@ probe, or leave a scratch file. Phase 5 cleans up against it.
 **Peregrinus** runs through `outsider` in **ask** mode, per its **Calling from Another Skill**: preamble
 `<skill-dir>/references/peregrinus-prompt.md`, the frame and nothing else as the question, timeout
 `540`. Its brief arrived when the answer opens with a `read-as:` line and closes with an `end:` line.
+Pass no `--attach` and quote no uncommitted file content: consilium asks nobody to clear outsider's **Uncommitted Gate**.
 
 Every generator returns candidate records with **local ids** (`N1`, `O1`, `P1`, `L1`), plus `flag`
 and `question` records and a footer. Print one line: `Diverge: 4 generators (Novator, Occam,

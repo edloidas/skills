@@ -10,7 +10,7 @@ when_to_use: >
   agent", and when a fast independent perspective would settle something.
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
-allowed-tools: Bash(bash *outsider/scripts/run-outsider.sh *) Bash(bash *outsider/scripts/resolve-tmp.sh) Write(*/outsider-*)
+allowed-tools: Bash(bash *outsider/scripts/run-outsider.sh *) Bash(bash *outsider/scripts/resolve-tmp.sh) Write(*/outsider-*) AskUserQuestion
 argument-hint: "[review] [agent], or empty for ask mode"
 metadata:
   author: edloidas
@@ -32,7 +32,8 @@ any file there, not only what you send.
 
 The question or diff, and any file the responder reads, goes to that agent's vendor service — it
 leaves the machine. Keep secrets and credentials out of the question, and out of an uncommitted
-review, which sends untracked files whole.
+review, which sends untracked files whole. Uncommitted and untracked content goes only after the
+user approves it — **Uncommitted Gate**.
 
 The value is structural: the responder shares none of this conversation's context and runs in its
 own process, usually on a different model family. Which vendor answers is incidental, which is why
@@ -44,6 +45,14 @@ this skill resolves the agent instead of naming one.
 neither; `brew install coreutils` provides `gtimeout`. Without one the script skips instead
 of running an agent CLI unbounded, because a hung agent would hang the caller's turn.
 `run-outsider.sh list` reports it when it is missing.
+
+## Asking the User
+
+Every question in this skill is written as `AskUserQuestion` options. Use that tool where
+the host offers it, or the host's nearest structured-choice equivalent. Where the host has
+neither, ask the same question in normal chat as a numbered list of 2–5 options —
+recommended first, one short line of description each — and wait for the user to reply
+with a number.
 
 ## Agent Selection
 
@@ -71,7 +80,8 @@ and how to add an agent.
 
 1. **Prepare a focused question with context.** Extract only the relevant code or plan excerpt —
    don't dump the conversation. Keep it under 2000 words; past that, use review mode, which
-   extracts the diff itself.
+   extracts the diff itself. Content from a file with uncommitted or untracked changes goes in
+   with `--attach <file>`, never pasted into the question: the gate counts attachments, not text.
 
 2. **Resolve the temp directory** (once per session):
 
@@ -98,8 +108,10 @@ and how to add an agent.
    `Asking codex (ask mode, up to 5 min).`
 
    ```bash
-   bash <skill-dir>/scripts/run-outsider.sh ask --host claude <TMP>/outsider-<ID>-question.md
+   bash <skill-dir>/scripts/run-outsider.sh ask --host claude [--attach <file>]... <TMP>/outsider-<ID>-question.md
    ```
+
+   Exit `3` means an attachment is uncommitted — follow **Uncommitted Gate**.
 
 ## Review Mode
 
@@ -119,6 +131,27 @@ the highest value the host allows:
 ```bash
 bash <skill-dir>/scripts/run-outsider.sh review --host claude --uncommitted 540
 ```
+
+`--uncommitted`, explicit or as the default, exits `3` until the user approves — follow
+**Uncommitted Gate**. `--base` and `--commit` send committed content only and need no approval.
+
+## Uncommitted Gate
+
+The script refuses to send uncommitted or untracked content without `--confirm-uncommitted`. It
+exits `3`, invokes no agent, and prints one line:
+
+```text
+[outsider] uncommitted payload: 6 files (2 untracked), 14210 bytes, would go to codex. Nothing was sent; re-run with --confirm-uncommitted to send.
+```
+
+Ask, per **Asking the User**, quoting that line and naming where it goes — codex to OpenAI, claude
+to Anthropic, opencode and pi to whichever provider their configured model uses:
+
+- `Send it (Recommended)` — re-run the same command with `--confirm-uncommitted` added
+- `Don't send` — no outside opinion this time
+
+On decline, print `Not sent: <agent> review of uncommitted work declined.` and stop. Pass
+`--confirm-uncommitted` only on the re-run after an approval, never on a first run.
 
 ## Custom Preamble
 
@@ -185,12 +218,16 @@ call is owned here, in place of **Presenting Output** and its stop sentence, whi
   first and prints its message, and set the surrounding command timeout to the highest value the
   host allows. An answer that stopped at the mode default — 300s ask, 600s review — never received
   the argument.
+- **Exit 3 is the user's question, never the caller's.** Put it to the user per **Uncommitted
+  Gate**, in the caller's own asking convention, and re-run with `--confirm-uncommitted` only on
+  their approval. A caller with no user to answer — autonomous, a subagent, or running unattended —
+  drops the leg and reports `uncommitted payload not approved`.
 - **The leg is droppable.** Exit 2 is the exception: a `--base` or `--commit` that does not resolve
   is the caller's error to surface, not a skip. A skip, a timeout, or a failure is not retried; the caller continues and
   its report says which happened. So does a host without this skill installed — it ships in the
   assist bundle.
 - **Name the agent** from the first output line, `[outsider] agent: <name>`. Without that line no
-  agent ran — a skip, a preamble refusal, or a failure: quote the script's message and drop the leg.
+  agent ran — a skip, a preamble refusal, an exit 3, or a failure: quote the script's message and drop the leg.
 - **Detect an unbriefed answer.** The caller's preamble fixes an output shape — marker lines, a
   closed vocabulary. An answer missing it ran unbriefed or was truncated: rerun once, and if the
   second answer is missing it too, discard it rather than map it, drop the leg, and say so. An

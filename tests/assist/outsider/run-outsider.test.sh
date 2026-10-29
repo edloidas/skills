@@ -2,8 +2,9 @@
 # run-outsider.sh — picks an agent CLI that is not the current host and runs it
 # read-only. Two properties carry the whole design: it never invokes the host
 # (recursion), and it never fails the caller (exit 0, skips reported on
-# stdout) — except exit 2 for a review ref that does not resolve. Everything
-# else is selection bookkeeping.
+# stdout) — except exit 2 for a review ref that does not resolve, and exit 3 for
+# an uncommitted payload the user has not approved. Everything else is selection
+# bookkeeping.
 #
 # Every case pins PATH to a sandbox, so "installed" means "a stub exists" and no
 # real agent CLI on the machine can influence the result.
@@ -374,7 +375,7 @@ test_review_includes_uncommitted_changes() {
   stub opencode <<'EOF'
 cat
 EOF
-  outsider review --host claude --uncommitted
+  outsider review --host claude --uncommitted --confirm-uncommitted
   assert_contains "$STDOUT" "CHANGED-LINE" "diff sent to the agent"
 }
 
@@ -389,7 +390,7 @@ test_review_includes_untracked_files() {
   stub opencode <<'EOF'
 cat
 EOF
-  outsider review --host claude --uncommitted
+  outsider review --host claude --uncommitted --confirm-uncommitted
   assert_contains "$STDOUT" "BRAND-NEW" "diff sent to the agent"
 }
 
@@ -418,6 +419,162 @@ cat
 EOF
   outsider review --host claude --base main
   assert_contains "$STDOUT" "FEATURE-LINE" "diff sent to the agent"
+}
+
+# ------------------------------------------------------- uncommitted gate ----
+# Uncommitted and untracked content goes to another vendor only after the user
+# approved it. Without --confirm-uncommitted the script exits 3, invokes
+# nothing, and prints the counts the caller needs to ask.
+
+dirty_repo() {
+  init_repo repo main
+  cd repo
+  commit "initial"
+  printf 'CHANGED-LINE\n' >> file.txt
+  printf 'BRAND-NEW\n' > added.txt
+}
+
+test_uncommitted_review_without_confirmation_sends_nothing() {
+  dirty_repo
+  only_agents claude opencode
+  stub_recording opencode
+  outsider review --host claude --uncommitted
+  assert_eq 3 "$STATUS" "exit status"
+  assert_contains "$STDOUT" "[outsider] uncommitted payload: 2 files (1 untracked)" "output"
+  assert_contains "$STDOUT" "would go to opencode" "output"
+  assert_contains "$STDOUT" "--confirm-uncommitted" "output"
+  assert_eq "" "$(calls_of opencode)" "agent invocations"
+}
+
+# The default scope is uncommitted, so it is gated the same way.
+test_default_review_scope_is_gated() {
+  dirty_repo
+  only_agents claude opencode
+  stub_recording opencode
+  outsider review --host claude
+  assert_eq 3 "$STATUS" "exit status"
+  assert_eq "" "$(calls_of opencode)" "agent invocations"
+}
+
+test_uncommitted_review_summary_reports_the_payload_size() {
+  dirty_repo
+  only_agents claude opencode
+  stub_recording opencode
+  outsider review --host claude --uncommitted
+  local bytes
+  bytes="$(git diff HEAD; git diff --no-index -- /dev/null added.txt || true)"
+  bytes="$(printf '%s' "$bytes" | wc -c)"
+  assert_contains "$STDOUT" ", $((bytes)) bytes," "output"
+}
+
+test_uncommitted_review_with_confirmation_runs_the_agent() {
+  dirty_repo
+  only_agents claude opencode
+  stub_recording opencode
+  outsider review --host claude --uncommitted --confirm-uncommitted
+  assert_eq 0 "$STATUS" "exit status"
+  assert_ne "" "$(calls_of opencode)" "agent invocations"
+  assert_not_contains "$STDOUT" "uncommitted payload" "output"
+}
+
+# Committed-only scopes go without the flag, even with a dirty tree beside them.
+test_commit_review_needs_no_confirmation() {
+  dirty_repo
+  only_agents claude opencode
+  stub_recording opencode
+  outsider review --host claude --commit HEAD
+  assert_eq 0 "$STATUS" "exit status"
+  assert_ne "" "$(calls_of opencode)" "agent invocations"
+}
+
+test_base_review_needs_no_confirmation() {
+  init_repo repo main
+  cd repo
+  commit "initial"
+  git checkout --quiet -b feature
+  commit "feature" file.txt "FEATURE-LINE"
+  printf 'BRAND-NEW\n' > added.txt
+  only_agents claude opencode
+  stub_recording opencode
+  outsider review --host claude --base main
+  assert_eq 0 "$STATUS" "exit status"
+  assert_ne "" "$(calls_of opencode)" "agent invocations"
+}
+
+test_ask_without_attachments_needs_no_confirmation() {
+  dirty_repo
+  only_agents claude opencode
+  stub_recording opencode
+  outsider ask --host claude <<< "question"
+  assert_eq 0 "$STATUS" "exit status"
+  assert_ne "" "$(calls_of opencode)" "agent invocations"
+}
+
+test_ask_attaching_a_modified_file_is_gated() {
+  dirty_repo
+  only_agents claude opencode
+  stub_recording opencode
+  outsider ask --host claude --attach file.txt --attach added.txt <<< "question"
+  assert_eq 3 "$STATUS" "exit status"
+  assert_contains "$STDOUT" "[outsider] uncommitted payload: 2 files (1 untracked)" "output"
+  assert_eq "" "$(calls_of opencode)" "agent invocations"
+}
+
+# A gitignored file is where secrets usually live, so it counts as untracked.
+test_ask_attaching_an_ignored_file_is_gated() {
+  init_repo repo main
+  cd repo
+  printf 'secret.env\n' > .gitignore
+  commit "initial" .gitignore ""
+  printf 'TOKEN=1\n' > secret.env
+  only_agents claude opencode
+  stub_recording opencode
+  outsider ask --host claude --attach secret.env <<< "question"
+  assert_eq 3 "$STATUS" "exit status"
+  assert_contains "$STDOUT" "1 files (1 untracked)" "output"
+}
+
+test_ask_attaching_a_clean_committed_file_needs_no_confirmation() {
+  init_repo repo main
+  cd repo
+  commit "initial" file.txt "COMMITTED-CONTENT"
+  only_agents claude opencode
+  stub opencode <<'EOF'
+cat
+EOF
+  outsider ask --host claude --attach file.txt <<< "question"
+  assert_eq 0 "$STATUS" "exit status"
+  assert_contains "$STDOUT" "COMMITTED-CONTENT" "prompt sent to the agent"
+}
+
+test_ask_attachment_is_sent_once_confirmed() {
+  dirty_repo
+  only_agents claude opencode
+  stub opencode <<'EOF'
+cat
+EOF
+  outsider ask --host claude --attach added.txt --confirm-uncommitted <<< "question"
+  assert_eq 0 "$STATUS" "exit status"
+  assert_contains "$STDOUT" "----- begin added.txt -----" "prompt sent to the agent"
+  assert_contains "$STDOUT" "BRAND-NEW" "prompt sent to the agent"
+}
+
+test_ask_rejects_an_attachment_that_does_not_exist() {
+  only_agents claude opencode
+  stub_recording opencode
+  outsider ask --host claude --attach missing.txt <<< "question"
+  assert_eq 0 "$STATUS" "exit status"
+  assert_contains "$STDOUT" "Attached file not found: missing.txt" "output"
+  assert_eq "" "$(calls_of opencode)" "agent invocations"
+}
+
+# Asking the user is pointless when no agent would run; the skip comes first.
+test_gate_does_not_fire_when_no_agent_is_available() {
+  dirty_repo
+  only_agents claude
+  outsider review --host claude --uncommitted
+  assert_eq 0 "$STATUS" "exit status"
+  assert_contains "$STDOUT" "No external agent CLI available" "output"
 }
 
 # --------------------------------------------------------- failure handling ----

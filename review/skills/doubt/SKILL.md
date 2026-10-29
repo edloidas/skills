@@ -115,7 +115,8 @@ facility, run the same prompt inline and report the run as having one independen
 
 **Outside seat** — `outsider` in ask mode, per its **Calling from Another Skill**: preamble
 `<skill-dir>/references/seat-prompt.md`, the numbered propositions and nothing else as the question,
-timeout `540`. An answer without a Phase 3 verdict for every proposition ran unbriefed.
+timeout `540`. An answer without a Phase 3 verdict for every proposition ran unbriefed. Pass no
+`--attach` and quote no uncommitted file content: nobody is here to clear outsider's **Uncommitted Gate**.
 
 Print one line once both are away: `Seats away: cold (sonnet) · outside (codex).`
 
