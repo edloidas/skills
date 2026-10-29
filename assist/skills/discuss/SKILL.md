@@ -32,18 +32,7 @@ Two things this is not, and they fail in opposite directions:
 The test for any turn: does it contain something the user can disagree with? If not, it is not a
 discussion turn yet.
 
-This skill reports only. It reads, searches, and runs read-only commands; it writes no file and
-runs no mutating command for the whole session — see **Hard Rules**.
-
-## When to Use
-
-- The user brings a proposal, plan, or set of review findings and wants it judged
-- The user asks "should we X" — a decision with a recommendation expected
-- The user says "give your opinion first" before committing to something
-- The user names a broad area to talk through, with no proposal attached yet — an architecture, a
-  layer, a subsystem
-- A direction should be pressure-tested before anyone builds it
-- The user wants to think out loud about a design and have it pushed back on
+This skill reports only, for the whole session — see **Hard Rules**.
 
 ## Opening
 
@@ -122,8 +111,8 @@ the scope is already small enough to hold in one turn.
 
 ## Hard Rules
 
-- **No implementation.** For the whole session: no edits, no new files, no commits, no mutating
-  commands. Reading, searching, and running read-only commands to ground yourself is expected —
+- **No implementation — this skill reports only.** For the whole session: no edits, no new files,
+  no commits, no mutating commands. Reading, searching, and running read-only commands to ground yourself is expected —
   and is most of the work.
 - **Take a position.** Every point gets your verdict. "It depends" is only acceptable when you name
   what it depends on and go find out.
@@ -266,14 +255,9 @@ implement and a branch was left open, say which one rather than filling it in si
 
 ## When NOT to Use
 
-- **The user wants to understand something, not decide anything** — "how does the auth layer work",
-  "explain this module". That is explanation, and it is `assist/skills/explain`. The tell is that a good
-  answer contains nothing to disagree with.
-- **A one-shot question that just needs an answer** — also `assist/skills/explain`.
-- **The user has already decided** — implement it.
-- **The question is which approach to take, and independent seats should rank the options** —
-  `review:consilium` runs a board that generates candidate approaches and attacks them
-  comparatively; this is one voice working the problem with the user in the loop.
-- **A second opinion from outside the session would settle it** — `assist/skills/outsider` in ask
-  mode, passing `--host <the agent you are>` and a question file holding the point under discussion
-  plus only the context needed to judge it. The responder sees nothing else.
+- **Nothing to disagree with** — the user wants to understand, not decide. That is `explain`.
+- **Already decided** — implement it.
+- **Independent seats should rank the options** — `consilium`; this is one voice with the user in
+  the loop.
+- **One outside opinion would settle it** — `outsider` in ask mode, per its **Calling from Another
+  Skill**, with the point under discussion and only the context needed to judge it.

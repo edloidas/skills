@@ -434,9 +434,11 @@ reasons above, both lowered from 13600 and 7650 by the same compaction pass. Bot
 per-slice reset point belongs in `issue-flow`'s Consolidate, the one owner of the squash
 rules, and `solve-issue` keeps only the switch and its call sites in the body, with the
 loop itself in `references/slices.md`. It also carries three skills grandfathered at their
-size when the cap arrived: `changes-review` 7500, `code-cleanup` 6500, `security-audit` 5700.
-Those ceilings stop growth and sanction nothing; lower a row whenever its skill is trimmed, and
-delete it once the skill fits the cap — `consilium` left the table that way.
+size when the cap arrived: `changes-review` 6490, `code-cleanup` 5590, `security-audit` 5700.
+The first two were lowered from 7500 and 6500 when the review and assist compaction pass trimmed
+them, to their new size plus about 2%. Those ceilings stop growth and sanction nothing; lower a row
+whenever its skill is trimmed, and delete it once the skill fits the cap — `consilium` left the
+table that way.
 
 A budget is a per-skill ceiling, not an exemption — a budgeted skill that grows past its
 allowance still fails, so a deliberate size cannot drift into an accidental one. Adding a

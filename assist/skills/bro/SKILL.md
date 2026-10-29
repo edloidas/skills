@@ -56,9 +56,8 @@ Anything the user has to decide goes at the end, never buried mid-answer and nev
 facts. One question per decision, each carrying your own lean so agreeing costs one word. Number the
 questions from two decisions up — a single decision is a sentence, never a list of one. Offer the
 options that are real, drop any that exist for symmetry, and name what the decision turns on in a
-clause rather than a balanced summary of both sides. Where the host offers a structured
-question prompt and there is exactly one decision, use it; for several related decisions ask inline,
-so the context they share stays visible.
+clause rather than a balanced summary of both sides. Ask in prose, as the end of the message — never
+through a structured question prompt, which interrupts the answer the user needs in order to reply.
 
 ## What It Looks Like
 

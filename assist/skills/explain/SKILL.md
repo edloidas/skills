@@ -8,6 +8,7 @@ when_to_use: >
   When the user asks how or why something works, wants a walkthrough or a step-by-step, says
   an earlier answer did not land ("explain again", "simpler", "I still don't get it"), asks
   again on a subject already explained, or asks whether what they wrote about it is right.
+  Not for taking a position on a decision — that is discuss.
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
 allowed-tools: Read Glob Grep Bash Task
@@ -216,9 +217,3 @@ already made is not that.
 `references/worked-examples.md` holds four explanations that landed, each annotated with the move
 that carried it — including one second pass over a subject already explained once. Read it when the
 subject is substantial and the right shape is not obvious.
-
-## Related
-
-- `assist/skills/bro` — compress an answer already given. This skill deepens one.
-- `assist/skills/discuss` — take a position on a decision. This builds understanding.
-- `review/skills/code-to-spec` — when the deliverable is a rebuild spec rather than comprehension.

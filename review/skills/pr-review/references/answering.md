@@ -84,3 +84,18 @@ unobserved claim asserts something you did not check, in public, under your own 
 
 `defer` always appears in the report even though its thread is closed. A deferral nobody can see is
 backlog that does not exist yet.
+
+## Asking for the next look
+
+Author mode only, once the head holds every fix the replies name — the precondition is in the skill
+body. The requests are shown with the replies at the confirmation.
+
+- **Each human whose thread you answered with a pushed fix** — `gh api -X POST
+  repos/<owner>/<repo>/pulls/<N>/requested_reviewers -f 'reviewers[]=<login>'`. Not for a thread
+  answered only with `reject` or `discuss`, and not while that human's reply is a held draft.
+- **A bot whose review is already on this pull request** (`pulls/<N>/reviews`), when the fixes
+  change code — logic, tests, an interface, configuration — not only formatting, comments, names,
+  or docs. For Copilot: `gh pr edit <N> --add-reviewer copilot-pull-request-reviewer`.
+
+Fixes not on the head yet: list the requests under `Re-request:` as pending, for whoever pushes. A
+request GitHub refuses is reported, not retried.

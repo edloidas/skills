@@ -1,6 +1,6 @@
 # Spec Output Template
 
-Unified schema for all code-to-spec output files. Use this as the authoritative reference when reviewing extracted specs by hand, when writing calibration targets, or when extending the pipeline in a future version.
+Unified schema for all code-to-spec output files. Use this as the authoritative reference when reviewing extracted specs by hand or when extending the pipeline.
 
 ## Small Tier Output
 

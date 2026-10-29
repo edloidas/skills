@@ -26,12 +26,6 @@ Extract a behavioral specification from a source-code bundle — anywhere from �
 
 The skill orchestrates a pipeline of bundled plugin agents: a scout that maps structure, module analyzers that produce medium-depth summaries, a contract resolver for cross-module events and exports, deep analyzers for flagged critical modules, an auditor that verifies the spec against source, and a synthesizer that assembles the final output directory.
 
-## When to Use
-
-- User says: "extract a spec from X", "analyze what X does", "understand X's contract", "reverse engineer", "produce a reimplementation spec".
-- User wants to understand a whole application or a specific module in detail.
-- User wants a reproducible, stack-neutral spec — not documentation, not an API reference, but a behavioral contract.
-
 ## Invocation Modes
 
 Three forms, detected at invocation time:
@@ -56,18 +50,8 @@ The skill auto-selects a tier based on resolved bundle size:
 
 ## Dependencies
 
-Bundled plugin agents (`review/agents/`):
-- `review:spec-scout` — architecture map + module inventory + critical-module nomination
-- `review:spec-module-analyzer` — medium-depth per-module summary
-- `review:spec-analyzer` — deep 11-section spec per module
-- `review:spec-contract-resolver` — cross-module events, exports, integrations
-- `review:spec-synthesizer` — aggregation and final file assembly
-- `review:spec-auditor` — verification against source
-
-References:
-- `references/spec-template.md` — unified output schema
-- `references/severity-rubric.md` — Critical/Warning/Note definitions (mirrors auditor)
-- `references/calibration-guide.md` — forward-looking guidance for a future calibration skill
+The six agents named in **Tiers** ship in `review/agents/`. `references/spec-template.md` is the output
+schema; `references/severity-rubric.md` defines Critical / Warning / Note, mirroring the auditor.
 
 ## Workflow
 
@@ -160,77 +144,40 @@ Resolve the temp directory:
 bash -c 'printf "%s" "${TMPDIR:-/tmp}"'
 ```
 
-Use it as `<TMP>`. Create a session subdirectory: `<TMP>/code-to-spec-${CLAUDE_SESSION_ID}/`. Leave it in place when the run ends — the OS reclaims it, and a failed synthesis is unrecoverable without it.
+Use it as `<TMP>`. Every stage below is one `Task` dispatch of the bundled agent it names, as
+`subagent_type: "review:<agent>"`, on `model: "opus"` except the synthesizer on `"sonnet"`. The
+prompt carries the inputs the step names plus the six **Quality Constraints**. Every agent but the
+synthesizer returns its output as text; write each return with `Write` to the named file under
+`<RUN>` = `<TMP>/code-to-spec-${CLAUDE_SESSION_ID}/`. Leave `<RUN>` in place when the
+run ends — the OS reclaims it, and a failed synthesis is unrecoverable without it.
 
 #### Small Tier
 
 Skip scout, module analyzers, contract resolver, synthesizer.
 
-1. **Dispatch `spec-analyzer`** via `Task`:
-   - `subagent_type: "review:spec-analyzer"`
-   - `model: "opus"`
-   - `prompt`: file list + role hints + instruction to follow its agent contract
-
-2. **Write raw analyzer output** to `<TMP>/code-to-spec-${CLAUDE_SESSION_ID}/analyzer.md`.
-
-3. **Dispatch `spec-auditor`** via `Task`:
-   - `subagent_type: "review:spec-auditor"`
-   - `model: "opus"`
-   - `prompt`: mode=`per-module`, source file list, path to analyzer output
-
-4. **Write raw auditor output** to `<TMP>/code-to-spec-${CLAUDE_SESSION_ID}/auditor.md`.
-
-5. **Assemble final file.** Use `Write` to produce `<dest>/spec.md`:
-
-```markdown
-# Behavioral Specification
-
-**Bundle:** <bundle-name>
-**Generated:** <ISO 8601>
-**Files:** N
-**Tier:** Small
-
-<analyzer output verbatim>
-
----
-
-## Audit Findings
-
-<auditor output verbatim>
-```
-
-6. **Report**, per **Run Report** below.
+1. **`spec-analyzer`** — file list and role hints → `<RUN>/analyzer.md`.
+2. **`spec-auditor`**, mode `per-module` — source file list and the analyzer output's path →
+   `<RUN>/auditor.md`.
+3. **Assemble** `<dest>/spec.md` with `Write`, per **Small Tier Output** in
+   `references/spec-template.md`: the header, the analyzer output verbatim, then the auditor output
+   verbatim under `## Audit Findings`.
+4. **Report**, per **Run Report** below.
 
 #### Medium Tier
 
-1. **Scout pass.** Single `Task` dispatch:
-   - `subagent_type: "review:spec-scout"`
-   - `model: "opus"`
-   - `prompt`: bundle file list, file count, LOC, tier
-   - Write output to `<TMP>/code-to-spec-${CLAUDE_SESSION_ID}/scout.md`
-
-2. **Parse modules from scout output.** Extract the Module Inventory table. For each row, collect the module name, path, and file subset. Announce it in one line: `Scout: 7 modules, 2 nominated critical.`
-
-3. **Parallel module analysis.** Dispatch `spec-module-analyzer` per module, capped at **5 concurrent**. When they return, announce in one line: `Modules: 7 analyzed, 1 failed.`
-   - Each dispatch: `subagent_type: "review:spec-module-analyzer"`, `model: "opus"`, prompt contains module name, role, files, and scout excerpt.
-   - Write each output to `<TMP>/code-to-spec-${CLAUDE_SESSION_ID}/modules/<module-name>.md`.
-
-4. **Contract resolution.** Single `Task` dispatch once all module analyzers return:
-   - `subagent_type: "review:spec-contract-resolver"`
-   - `model: "opus"`
-   - `prompt`: scout output + all module summaries + full file list
-   - Write to `<TMP>/code-to-spec-${CLAUDE_SESSION_ID}/contracts.md`
-
-5. **Per-module audit.** Dispatch `spec-auditor` per module, capped at **5 concurrent**. Mode=`per-module`. Write each to `<TMP>/code-to-spec-${CLAUDE_SESSION_ID}/audit/<module-name>.md`.
-
-6. **Global audit.** Single `spec-auditor` dispatch, mode=`global`, with scout + modules + contracts. Write to `<TMP>/code-to-spec-${CLAUDE_SESSION_ID}/audit-global.md`.
-
-7. **Synthesis.** Single `spec-synthesizer` dispatch:
-   - `subagent_type: "review:spec-synthesizer"`
-   - `model: "sonnet"`
-   - `prompt`: destination path, tier, bundle summary, the absolute path to `references/spec-template.md` as the output schema, and absolute paths to all upstream output files
-   - Synthesizer writes the final directory.
-
+1. **`spec-scout`** — bundle file list, file count, LOC, tier → `<RUN>/scout.md`.
+2. **Parse modules** from the scout's Module Inventory table: name, path, file subset. Print
+   `Scout: 7 modules, 2 nominated critical.`
+3. **`spec-module-analyzer`** per module, capped at **5 concurrent** — module name, role, files, scout
+   excerpt → `<RUN>/modules/<module-name>.md`. Print `Modules: 7 analyzed, 1 failed.`
+4. **`spec-contract-resolver`**, once every module analyzer has returned — scout output, all module
+   summaries, full file list → `<RUN>/contracts.md`.
+5. **`spec-auditor`** per module, mode `per-module`, capped at **5 concurrent** →
+   `<RUN>/audit/<module-name>.md`.
+6. **`spec-auditor`**, mode `global`, with scout, modules and contracts → `<RUN>/audit-global.md`.
+7. **`spec-synthesizer`** — destination path, tier, bundle summary, the absolute path to
+   `references/spec-template.md` as the output schema, and absolute paths to every upstream output.
+   It writes the final directory.
 8. **Report**, per **Run Report** below.
 
 #### Large Tier
@@ -243,14 +190,11 @@ Steps 1–4 identical to Medium tier. Then:
    - **Remove modules** — user trims the list
    - **Skip deep dives** — proceed Medium-style
 
-6. **Deep analysis.** For each flagged critical module, dispatch `spec-analyzer`, capped at **3 concurrent**. Write each to `<TMP>/code-to-spec-${CLAUDE_SESSION_ID}/deep/<module-name>.md`.
-
-7. **Per-module audit** — as Medium step 5, but include per-module deep spec as audit input when available.
-
+6. **`spec-analyzer`** per flagged critical module, capped at **3 concurrent** →
+   `<RUN>/deep/<module-name>.md`.
+7. **Per-module audit** — as Medium step 5, with the module's deep spec as audit input when available.
 8. **Global audit** — as Medium step 6.
-
-9. **Synthesis** — as Medium step 7, with `deep/` paths included in the synthesizer's input list.
-
+9. **Synthesis** — as Medium step 7, with the `deep/` paths in the synthesizer's input list.
 10. **Report** — as Medium step 8.
 
 ### Run Report
@@ -286,22 +230,8 @@ Each dispatch step above names its own cap. Where the count exceeds it, send the
 
 ## Output Layout
 
-### Small Tier
-```
-<dest>/spec.md
-```
-
-### Medium / Large Tier
-```
-<dest>/spec/
-├── README.md
-├── architecture.md
-├── modules.md
-├── contracts.md
-├── audit.md
-└── modules/
-    └── <module>.md    (only flagged critical modules in Large tier)
-```
+`references/spec-template.md` owns it: `<dest>/spec.md` for Small, the `<dest>/spec/` directory for
+Medium and Large.
 
 ## Quality Constraints
 

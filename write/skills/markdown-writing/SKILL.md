@@ -33,33 +33,12 @@ heading case that nobody asked to change, and buries the real edit in the diff.
 | README that also ships to npm, PyPI, a docs site, or an editor preview | CommonMark + tables + `<details>`. GitHub extras are degradable, not free: every alert body must read correctly with its `[!IMPORTANT]` line showing as literal text |
 | Terminal, `--help` output, plain-text logs | No Markdown. Write plain text |
 
-What that degradation looks like: on npm a GitHub alert renders as a plain
-blockquote with a literal `[!IMPORTANT]` line above the text. Use alerts in a
-published README anyway — but an alert whose body reads "This one." is
-meaningless the moment the label stops rendering.
-
 Full syntax and per-host support: `references/github-features.md`.
 
 ## 2. GitHub alerts
 
-Five types, exact spelling, uppercase, nothing on the label line:
-
-```markdown
-> [!NOTE]
-> Highlights information that users should take into account, even when skimming.
-
-> [!TIP]
-> Optional information to help a user be more successful.
-
-> [!IMPORTANT]
-> Crucial information necessary for users to succeed.
-
-> [!WARNING]
-> Critical content demanding immediate user attention due to potential risks.
-
-> [!CAUTION]
-> Negative potential consequences of an action.
-```
+Five types, exact spelling, uppercase, nothing on the label line — the syntax block is in
+`references/github-features.md`.
 
 Picking one:
 

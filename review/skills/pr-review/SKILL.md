@@ -39,18 +39,10 @@ and its default output is an action report plus whatever it posted.
 
 ## The premise
 
-Bots write most of the inline comments on a modern pull request, and they fail in a shape: **the
-premise is wrong far more often than the conclusion.** The claim rests on how a framework behaves,
-and your repository's own code says nothing about it — so "read the code" is not enough, and two
-agents agreeing is not verification.
-
-The ordering is therefore fixed:
-
-**verify → fix → build → speak.**
-
-Never post a verdict you have not executed. A `reject` needs evidence that can be pasted; a `fix`
-needs the project's own checks passing on it. `references/verifying-a-claim.md` has the traps and
-the version-pinning discipline.
+Bot comments fail in a shape — **the premise is wrong far more often than the conclusion** — so the
+ordering is fixed: **verify → fix → build → speak.** A `reject` needs evidence that can be pasted; a
+`fix` needs the project's own checks passing on it. `references/verifying-a-claim.md` has the traps
+and the version-pinning discipline.
 
 ## Configuration
 
@@ -100,7 +92,7 @@ gh api user --jq .login
 ```
 
 Equal → author mode. Different → reviewer mode. Announce which: `Reviewer mode on PR #534 by
-ashklianko.` If no pull request resolves, say so and stop.
+ashklianko.` If no pull request resolves, say so and stop — do not review the working tree instead.
 
 ## Phase 2: Fetch
 
@@ -143,18 +135,12 @@ Per `references/verifying-a-claim.md`. Decompose each claim into its **premise**
 its **conclusion** about this code, and verify them separately — recording which failed, because the
 answer differs completely.
 
-Pin the resolved dependency version before reading any artifact. Never a package located by `find` in
-a global cache, never memory. Never apply a ` ```suggestion ` block unread.
-
 Scope: every bot claim and anything heading for `fix` or `reject`. `--full` adds everything
 unresolved, human claims included. Loose recommendations and other reviewers' summaries are reported
 as context and never verified.
 
-**A claim about observable output cannot be read.** Layout, rendering, wire format, exit code,
-timing, log content, a golden result — invoke `live-probe` with the claim and quote the artifact it
-returns. Where the host cannot chain skills, follow the same method inline. A claim of that kind that
-could not be observed is `discuss`, never `reject` — contradicting someone in writing on reasoning
-alone is how this skill does its only real damage.
+**A claim about observable output cannot be read** — it goes to `live-probe`, per the reference, and
+one that could not be observed is `discuss`, never `reject`.
 
 Announce the result in one line: `Verified 6 claims: 3 premise false, 1 confirmed, 2 unobservable.`
 Name every claim that went unverified and why — a skipped check reported as nothing is a claim
@@ -172,9 +158,6 @@ Six:
 | `discuss` | Correct, but the call belongs to a person — scope, architecture, product. Also a claim about output that could not be observed |
 | `defer` | Real, and deliberately not now |
 | `ack` | Praise or an FYI. Nothing to answer |
-
-`discuss` triggers on **authority, not difficulty**. A hard fix you are confident about is a `fix`.
-It has one other trigger: **unverifiability**, per Phase 4.
 
 ## Phase 6: Fix (`--fix` only)
 
@@ -198,68 +181,40 @@ Composition is in `references/answering.md`: the answer in the first clause, rea
 descriptions, a link where one exists, ready concessions, and the decision handed back. A fix reply is
 shorter — what changed, why, and the check that passed.
 
-Reviewer mode publishes instead of replying. Every word the author will read — body, inline
-comments, approval — is in the voice `references/review-voice.md` sets; read it before composing.
-Invoke `review:changes-review` to attack the diff and verify what it finds, passing the pull
-request's own issue as the requirement, any system facts you have, and that file's path, then let
-its publication phase post the review with `--review`. It owns the inline anchoring, the grouping of
-minors, and the verdict mapping; do not rebuild them here. Under `--land`, skip that publication
-phase and its confirmation, and go to Phase 8. Where the host cannot
-invoke another skill, run the same attack inline and publish by the rules `changes-review` documents
-for it — one inline comment per finding, minors grouped, nothing published without a demonstration
-and an attribution. Submit once, as `event`, `body` and `comments` (`path`, `line`, `side`) posted to
-`repos/<owner>/<repo>/pulls/<N>/reviews`, with `event` set by whether a blocker survived.
+Reviewer mode publishes instead of replying. Read `references/review-voice.md` first — every word
+the author will read is in its voice. Invoke `review:changes-review` with the pull request's own
+issue as the requirement, any system facts you have, the voice file's path, and `--review`. It owns
+the attack, anchoring, grouping, the verdict mapping, the approval shape and the draft payload. Under
+`--land`, omit `--review` so it only reports, and take that report to Phase 8. Where the host cannot invoke another skill,
+run the same attack inline and publish by `changes-review`'s rules, with `event` omitted for a draft.
 
-**An approval is a different document** — one body, no inline comments, nothing about what you ran.
-`changes-review` owns the rule and carries the example, under **`APPROVE` has its own shape** in its
-publishing reference.
-
-**Non-blocking suggestions do not ride along on an approval.** Withhold them, report them to the
-operator as their own block, and offer to raise them as a follow-up issue.
-
-**"Draft it", "keep it in progress", "hold it", "don't publish it" mean hold, not skip: run the
-whole review and leave it on GitHub pending, for the user to submit.** The word is about the
-*review*, not the pull request's own draft state — an already-open pull request does not answer it.
-In reviewer mode pass `--draft` with `--review` to `changes-review`, whose **Holding it as a draft**
-section owns the payload, the recommended-verdict line and the one-pending-review limit. Where the
-host cannot invoke another skill: post the same review payload with the `event` key omitted, after
-checking `gh api repos/<owner>/<repo>/pulls/<N>/reviews --jq '.[] | select(.state=="PENDING") | .id'`
-returns nothing; report the recommended verdict rather than baking it in. In author mode there is no
-review to hold: print the composed replies and post nothing.
+**"Draft it", "keep it in progress", "hold it", "don't publish it" mean hold, not skip** — about the
+*review*, not the pull request's own draft state. In reviewer mode add `--draft`; in author mode
+there is no review to hold, so print the composed replies and post nothing.
 
 **Confirm before anything leaves.** Show the composed text **verbatim and complete** — every word
 that would be posted, quoted, in the message itself. Not a summary or a count: the reader is
-approving the words. In author mode that is every composed reply; in
-reviewer mode the body and each inline comment. Then ask, once, in prose, as the last line — per
-**Asking the User**. `--auto` skips the question for bot-rooted threads and posts those directly,
-and still prints what it sent. `--draft` skips it in reviewer mode: the gate exists to put the words
-in front of a reader before they reach the author, and a pending review does that on its own.
+approving the words. In author mode that is every composed reply; in reviewer mode `changes-review`'s
+Phase 8 shows the body and each inline comment, and this gate does when the review ran inline. Then
+ask, once, in prose, as the last line — per **Asking the User**. `--auto` skips the question for
+bot-rooted threads and posts those directly, and still prints what it sent. `--draft` in reviewer
+mode needs no answer: a pending review reaches no one until the user submits it.
 
 **`--auto` covers bot-rooted threads only** — where Phase 3 standing reads *Act*. Every other
 thread, human-rooted or bot-rooted with a human's last comment, is composed and **held unsent**, its
 draft in the report for a person to send: a human's own words are being answered, and nobody has
 read the answer.
 
-Nothing you post carries an AI attribution footer — not a review, not a reply, not a general comment,
-whatever the target repository's instruction file says.
+No reply or comment you post carries an AI attribution footer, whatever the target repository's
+instruction file says.
 
 Resolve only what `references/answering.md` permits: never a human-rooted thread, never a `discuss`.
 Check `viewerCanUpdate` before attempting.
 
 **Ask for the next look — author mode.** Once the replies are posted and the head holds every fix
 they name — `git rev-parse HEAD` equals the fetched `headRefOid`, and `git status` is clean —
-re-request review. The requests are shown with the replies at the confirmation; `--auto` covers
-the bot one only.
-
-- **Each human whose thread you answered with a pushed fix** — `gh api -X POST
-  repos/<owner>/<repo>/pulls/<N>/requested_reviewers -f 'reviewers[]=<login>'`. Not for a thread
-  answered only with `reject` or `discuss`, and not while that human's reply is a held draft.
-- **A bot whose review is already on this pull request** (`pulls/<N>/reviews`), when the fixes
-  change code — logic, tests, an interface, configuration — not only formatting, comments, names,
-  or docs. For Copilot: `gh pr edit <N> --add-reviewer copilot-pull-request-reviewer`.
-
-Fixes not on the head yet: list the requests under `Re-request:` as pending, for whoever pushes. A
-request GitHub refuses is reported, not retried.
+re-request review per **Asking for the next look** in `references/answering.md`. The requests are
+shown with the replies at the confirmation; `--auto` covers the bot one only.
 
 Once what was approved has gone out, print what was sent and stop (under `--land`, Phase 8 ends it). Do not re-read the pull request
 for a second pass, do not answer a thread the standing table left alone, and do not follow a posted
@@ -346,33 +301,17 @@ Posted: replies on r1902, r1903, r1904 — nothing on r1907 yet.
 Re-request: copilot — r1904's fix changed the status writer.
 ```
 
-Reviewer mode under `--draft` reports the same shape, with the verdict recommended rather than set:
-
-```
-## PR #612 reviewer mode: 5 findings · 2 blocking · 3 judgement calls
-
-- The touch check only works where `click` is a `PointerEvent` — blocking, reproduced on the
-  Safari 18.2 boundary. Anchored at combobox.tsx:755.
-- Three minors grouped at popover.tsx:88.
-
-Suggestions: none withheld — all five are in the draft.
-Held: nothing. The review is on GitHub and unsubmitted.
-
-Recommended verdict: REQUEST_CHANGES — the iOS 16/17 no-op lands on the issue's own acceptance case.
-Posted: pending review with 3 inline comments, https://github.com/o/r/pull/612/files — yours to submit.
-```
+Under `--draft` the verdict line reads `Recommended verdict:`, and `Posted:` carries the pending
+review's URL.
 
 ## Error handling
 
 | Situation | Action |
 | --------- | ------ |
-| No pull request resolves | Say so and stop. Do not review the working tree instead |
 | Every thread is resolved | Say the pull request is clear. Do not manufacture findings |
 | A claim cannot be verified either way | `discuss`, with what you tried and what was inconclusive |
 | The resolved dependency version cannot be established | Say so in the reply and make no version claim |
 | `viewerCanUpdate` is false | Reply where possible, resolve nothing, say why |
 | A reply posts but the resolve fails | Say which thread is half-answered. Do not repost the reply |
 | `--fix` and the checks were already failing | Establish the baseline first; never blame a pre-existing failure on the fix |
-| Host cannot invoke another skill | Run the review inline, per Phase 7 |
-| `--fix` in reviewer mode, `--land` in author mode | Ignore it and say why |
 | The project's check command is outside the pre-approved set | It will prompt for approval. Run it anyway — an unrun check is not a green check |

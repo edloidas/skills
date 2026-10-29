@@ -1,7 +1,7 @@
 # Convention Audit
 
 The repo-adaptive half of the convention pass: detect the stack, read what the project itself
-documents, and check the code in scope against both. The eight stack files beside this one carry
+documents, and check the code in scope against both. The seven stack files beside this one carry
 fixed conventions for a specific frontend stack; this file is what makes the pass work on a repo
 that stack does not describe.
 

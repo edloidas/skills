@@ -210,8 +210,8 @@ workflow/skills/solve-issue=538"
 BODY_TOKEN_CAP=5000
 BODY_TOKEN_BUDGETS="plan/skills/issue-flow=9900
 workflow/skills/solve-issue=7410
-review/skills/changes-review=7500
-review/skills/code-cleanup=6500
+review/skills/changes-review=6490
+review/skills/code-cleanup=5590
 audit/skills/security-audit=5700"
 
 # Skills that answer outward-facing correspondence and refuse structured-choice

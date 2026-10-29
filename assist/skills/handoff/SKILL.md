@@ -66,8 +66,6 @@ Examples:
 | Invocation                         | Mode   | Focus                |
 | ---------------------------------- | ------ | -------------------- |
 | `/handoff`                         | inline | _(none)_             |
-| `/handoff fix login bug`           | inline | `fix login bug`      |
-| `/handoff doc`                     | doc    | _(none)_             |
 | `/handoff doc fix login bug`       | doc    | `fix login bug`      |
 | `/handoff fix the login bug --doc` | doc    | `fix the login bug`  |
 
@@ -102,13 +100,8 @@ it from the conversation. Order them as listed.
   `dev:gh-actions-debug`). One short line each — what the next agent might
   reach for, why.
 
-**Deliberately not standalone sections**
-
-- "Impact" — folds into Goal if it matters.
-- "Changes made" — that's what `git log` / `git diff` is for. Reference the
-  branch and commits under Where we are / References.
-- "Summary of what we did" — narrative recap of the session is noise. The
-  core sections already say where we ended up.
+**Not sections:** "Impact" folds into Goal; "Changes made" is `git log` — cite
+the commits under Where we are; a narrative "Summary of what we did" is noise.
 
 ## Inline mode
 

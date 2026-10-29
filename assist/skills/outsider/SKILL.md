@@ -30,13 +30,6 @@ The value is structural: the responder shares none of this conversation's contex
 own process, usually on a different model family. Which vendor answers is incidental, which is why
 this skill resolves the agent instead of naming one.
 
-## When to Use
-
-- "ask codex", "ask claude", "what would another agent say", "get an outside opinion"
-- `/outsider`, `/outsider review`, `/outsider codex review`
-- A quick external sanity check on an approach or decision
-- An independent review of the current code changes
-
 ## Requirements
 
 `timeout` or `gtimeout` must be on PATH — both ship with GNU coreutils. Stock macOS has
@@ -100,20 +93,6 @@ and how to add an agent.
    bash <skill-dir>/scripts/run-outsider.sh ask --host claude <TMP>/outsider-<ID>-question.md
    ```
 
-### Custom preamble
-
-Both modes prepend a prompt file to whatever you pipe them — `references/prompt.md` for ask,
-`references/review-prompt.md` for review. A caller with its own prompt for the responder passes
-`--preamble <file>` to swap it:
-
-```bash
-bash <skill-dir>/scripts/run-outsider.sh ask --host claude \
-  --preamble <caller-skill-dir>/references/its-own-prompt.md <TMP>/outsider-<ID>-question.md
-```
-
-The preamble replaces the default entirely, so it has to carry the responder's whole brief —
-including its output shape. `review:consilium` uses this for its outside board seat.
-
 ## Review Mode
 
 Pick the scope first:
@@ -132,6 +111,20 @@ the highest value the host allows:
 ```bash
 bash <skill-dir>/scripts/run-outsider.sh review --host claude --uncommitted 540
 ```
+
+## Custom Preamble
+
+Both modes prepend a prompt file to whatever you pipe them — `references/prompt.md` for ask,
+`references/review-prompt.md` for review. A caller with its own prompt for the responder passes
+`--preamble <file>` to swap it, in either mode:
+
+```bash
+bash <skill-dir>/scripts/run-outsider.sh ask --host claude \
+  --preamble <caller-skill-dir>/references/its-own-prompt.md <TMP>/outsider-<ID>-question.md
+```
+
+The preamble replaces the default entirely, so it has to carry the responder's whole brief —
+including its output shape.
 
 ## Presenting Output
 
@@ -165,19 +158,28 @@ outside opinion is the whole deliverable.
 - **Timeout** — the script prints a timeout message. Note it and proceed without.
 - **Agent failed** — the script prints the exit code and the last 20 lines of the agent's stderr.
   Quote the reason in one line, so a dropped outside opinion is never silent, and proceed without.
-- **No `timeout` binary** — the script skips and says which tool is missing, per
-  **Requirements**. Report that and proceed without an outside opinion; do not retry.
 
-## Notes for Callers
+## Calling from Another Skill
 
-This skill stays model-invocable on every host. The predecessor `claude` skill set
-`disable-model-invocation: true` only because calling Claude from Claude was recursive; selection
-now handles that structurally, so there is nothing left to suppress.
+Invoke this skill by name, never its script by path — a repo-relative path resolves only inside one
+checkout. The caller supplies its preamble, its question, and its timeout; everything else about the
+call is owned here, in place of **Presenting Output** and its stop sentence, which are for direct use:
 
-Other skills invoke this one as a skill, not by script path — a repo-relative path only resolves
-inside one checkout.
-
-`review:consilium` runs its outside board seat through this skill, and `review:doubt` runs its
-outside verification seat the same way — both pass their own seat prompt as the preamble. That was
-the last duplicate runner in the collection; there is now one implementation of "call an agent CLI
-that is not the host".
+- **`--host <the agent you are>`** on every call, so selection never picks the caller's own agent.
+- **The preamble path** — `--preamble <caller-skill-dir>/references/<its-prompt>.md`, where
+  `<caller-skill-dir>` is the directory the caller's `SKILL.md` was loaded from. Check it resolves
+  before dispatch: skills are reachable through several symlink trees, and the script refuses a
+  preamble it cannot find rather than send the question unbriefed.
+- **The timeout** — pass the caller's value as the trailing number, so the script's own timer fires
+  first and prints its message, and set the surrounding command timeout to the highest value the
+  host allows. An answer that stopped at the mode default — 300s ask, 600s review — never received
+  the argument.
+- **The leg is droppable.** A skip, a timeout, or a failure is not retried; the caller continues and
+  its report says which happened. So does a host without this skill installed — it ships in the
+  assist bundle.
+- **Name the agent** from the first output line, `[outsider] agent: <name>`. Without that line no
+  agent ran — a skip, a preamble refusal, or a failure: quote the script's message and drop the leg.
+- **Detect an unbriefed answer.** The caller's preamble fixes an output shape — marker lines, a
+  closed vocabulary. An answer missing it ran unbriefed or was truncated: rerun once, and if the
+  second answer is missing it too, discard it rather than map it, drop the leg, and say so. An
+  unbriefed answer looks like a result and is not one.

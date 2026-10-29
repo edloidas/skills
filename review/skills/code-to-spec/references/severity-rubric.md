@@ -42,7 +42,3 @@ A finding is Note when any of the following holds:
 - Per-module audit findings are scored against the module's deep spec.
 - Global audit findings are scored against the architecture, modules catalog, and contracts documents.
 - Consolidated audit.md groups findings by severity, with module attribution on each finding.
-
-## Calibration Use
-
-A future calibration skill will parse audit outputs and count findings by severity to gate regression tests. Keep the rubric stable — changing its definitions invalidates existing references.

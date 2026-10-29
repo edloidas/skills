@@ -50,13 +50,6 @@ Only the last row survives contact with the source. The rows above it are usuall
 filed in the wrong place — surface the text in the report under the destination it belongs to, then
 take it out of the code.
 
-Two further removals are not about placement:
-
-- **A missing name.** A comment that exists because a symbol is vaguely named is a rename, not a
-  comment.
-- **A fact already stated nearby.** Once one comment carries a mechanism, a second comment on
-  another part of that mechanism is duplication — see Phase 2.5.
-
 **Delete what does not earn its place; do not shorten to save space.** A surviving comment must
 still read well and still be correct, and a compaction that drops a fact or leaves a half-sentence is
 a worse outcome than the verbose original it replaced.
@@ -70,7 +63,8 @@ a worse outcome than the verbose original it replaced.
   code**. It disables, without exception: convention loading and fixes, the simplifier pass,
   rename-to-kill, and quick wins. Comments and docs only. It may still *report* what it would
   otherwise have done.
-- `--no-simplify` runs everything except the simplifier pass.
+- `--no-simplify` runs everything except applying the simplifier pass.
+- `--dry-run` runs every phase and edits nothing — Phase 4 reports what would change.
 
 ## Asking the User
 
@@ -130,7 +124,7 @@ from a hunk alone is judged without the declaration it serves, which is exactly 
 the project itself documents, detect the stack, and audit against both. It is what makes this work
 on a repo the stack files below do not describe.
 
-The eight stack files carry fixed conventions for one specific frontend stack. Each is gated on
+The seven stack files carry fixed conventions for one specific frontend stack. Each is gated on
 **two** conditions, and both must hold:
 
 | Reference | Paths | Only when |
@@ -143,13 +137,8 @@ The eight stack files carry fixed conventions for one specific frontend stack. E
 | `references/frontend-structure.md` | `src/**` *(JS/TS only — never `src/main/kotlin/**`)* | `react` or `preact` in deps |
 | `references/kotlin.md` | `*.kt` | `.kt` files present, or a `kotlin(...)` plugin in `build.gradle.kts` |
 
-**The dependency gate is not optional.** A path glob alone would load `tailwind.md` for any `.tsx`
-file and rewrite `h-4 w-4` to `size-4` in a project with no Tailwind, or convert a variant lookup
-to `cva` without the package installed. Check `package.json` before loading a stack file; if the
-dependency is absent, the file does not apply and its rules are not violations.
-
-`react.md` additionally requires React 19 — `forwardRef` is correct on 18 and its ref-as-prop rule
-would break the build.
+**Check `package.json` before loading a stack file**; if the dependency is absent, its rules are
+not violations — a glob alone would rewrite `h-4 w-4` to `size-4` in a project with no Tailwind.
 
 **The project's own instructions outrank all of this.** If `CLAUDE.md`, `AGENTS.md`, or a rules
 file found in Step 1 contradicts a reference, follow the project. These are defaults for repos
@@ -261,18 +250,15 @@ guessing that a suppression is stale is how a suppression becomes a build failur
 
 **Safety rules:**
 - Never remove `@ts-ignore` / `@ts-expect-error` without understanding why it's there.
-- Never remove `eslint-disable` without running the linter and confirming the rule passes. `allowed-tools` grants only `Bash(git:*)`, so on most invocations you cannot — leave it and report it.
-- Never delete `HACK` / `FIXME` / `XXX` / `BUG` comments — flag them.
 - Never remove license headers or copyright notices.
-- Preserve `// region` / `// endregion` and any project-specific markers.
 
 Print one line with the counts: `Applied across 4 files: 26 comments removed, 4 compacted, 2 renames,
 3 convention fixes.`
 
 ### Phase 3.5: Simplifier pass
 
-Skipped entirely under `--comments-only`, `--no-simplify`, or `--dry-run`. Under `--dry-run` the
-analysis still runs — the suggestions go in the report and nothing is written.
+Skipped entirely under `--comments-only`. Under `--no-simplify` and `--dry-run` the analysis still
+runs — the suggestions go in the report and nothing is written.
 
 Simplify code that is more complicated than it needs to be, **preserving behavior exactly**:
 collapse a nested conditional into a guard clause, replace a hand-rolled loop with the obvious
@@ -287,28 +273,21 @@ suggestion, not an edit.
 the bare skill name?**
 
 - **Any argument, flag, or instruction — apply without asking.** A scope, a flag, "simplify the
-  parser", "clean this up and tidy the helpers". The caller already said what they want, and a
-  skill invoking this one always passes at least a scope or a flag.
+  parser", "clean this up and tidy the helpers".
 - **Nothing at all — ask before applying.** A bare `/code-cleanup`, or a bare "clean up the
   changes" with no further direction.
 
-That rule is deliberately mechanical, because "did a human or a skill call me" is not something
-you can read at runtime. **A skill calling this one must pass at least one argument** — a scope,
-or `--no-simplify` if it wants the pass off. A caller that passes nothing gets treated as a user
-who typed the bare command, which means it may block on a prompt.
-
-If the host cannot prompt interactively at all, do not ask — apply nothing, and report the
-simplifications as suggestions.
+**A skill calling this one must pass at least one argument** — a scope, or `--no-simplify` to turn
+the pass off — or it is treated as a bare invocation and may block on a prompt.
 
 Ask per **Asking the User**:
 
 1. `Apply the simplifications` (Recommended) — N refactors, all behavior-preserving
 2. `Report them only` — list them under Suggested refactors, change nothing
 
-Declined, or the host cannot prompt → fall back to the existing **Suggested refactors (not
-applied)** section. Under `--no-simplify` and `--dry-run` the analysis still runs and populates
-that section; under `--comments-only` the pass does not run at all and the section carries only
-the renames and convention fixes it would otherwise have applied.
+Declined, or the host cannot prompt at all → apply nothing and list them under **Suggested
+refactors (not applied)**. Under `--comments-only` that section carries only the renames and
+convention fixes it would otherwise have applied.
 
 Print one line with the counts: `Simplifier: 5 candidates, 3 applied, 2 suggested.`
 
@@ -386,71 +365,6 @@ start a second cleanup pass over the same files.
 
 ## Examples
 
-### Restated mechanism → remove
-
-The function name already says everything the comment does.
-
-```typescript
-// Before
-// Opens the Content Operator dialog and seeds it with the field captured by
-// `captureOperatorSeed` (if any), then clears the pending seed.
-export function openOperatorWithSeed(): void { ... }
-
-// After
-export function openOperatorWithSeed(): void { ... }
-```
-
-### Design rationale → commit message
-
-```typescript
-// Before
-// CS pushes the focused data field to the operator as its mention target — but
-// only while the dialog is open. While closed the field is remembered so the
-// toolbar can seed the dialog on open. The seed is captured at pointer-down
-// because clicking the toggle blurs the field before the open handler runs.
-// Clearing context on close is the plugin's responsibility.
-
-// After  (a short orienting note stays; the decision story goes to the commit)
-// Focused field is pushed as context only while the dialog is open;
-// while closed it is remembered as a seed for the next open.
-```
-Report → **Belongs in the commit message:** "Seed captured at pointer-down because the click blurs
-the field before the open handler runs; clearing on close is the plugin's job."
-
-### Gotcha → keep, compacted
-
-```typescript
-// Before
-// Field snapshotted when the user initiates opening the operator dialog (toolbar
-// toggle pointer-down), consumed by `openOperatorWithSeed`. Captured before the
-// click blurs the field, because by the time the dialog opens focus is gone.
-let pendingOperatorSeed: string | null = null;
-
-// After
-// Captured at toggle pointer-down, before the click blurs the focused field.
-let pendingOperatorSeed: string | null = null;
-```
-
-### Rename to kill the comment
-
-```typescript
-// Before
-// Live focused data field as a context path, or null. Reflects the field
-// focused right now (set on focus, cleared on blur).
-let activeDataContext: string | null = null;
-
-// After
-let focusedDataContext: string | null = null;
-```
-
-### Useful transformation → keep, carried by the concrete example
-
-```typescript
-// Before: "Strip the leading dot from the absolute data path (e.g. …)."
-// After
-// Drop the leading dot: ".itemSet[1].field" -> "itemSet[1].field".
-```
-
 ### One mechanism in three places → one home
 
 Each of these is defensible alone, which is why a per-comment pass keeps all three. Together they
@@ -473,23 +387,22 @@ function renderedPool() { ... }
 suppressRender: boolean;
 ```
 
-### External reference → self-contained, or gone
+### Design rationale → commit message
 
 ```typescript
 // Before
-// Workaround for the case described in #412.
+// CS pushes the focused data field to the operator as its mention target — but
+// only while the dialog is open. While closed the field is remembered so the
+// toolbar can seed the dialog on open. The seed is captured at pointer-down
+// because clicking the toggle blurs the field before the open handler runs.
+// Clearing context on close is the plugin's responsibility.
 
-// After — the fact is in the file; the issue number bought the reader nothing
-// Chrome reports a zero-height box until the font loads, so measure after `ready`.
+// After  (a short orienting note stays; the decision story goes to the commit)
+// Focused field is pushed as context only while the dialog is open;
+// while closed it is remembered as a seed for the next open.
 ```
+Report → **Belongs in the commit message:** "Seed captured at pointer-down because the click blurs
+the field before the open handler runs; clearing on close is the plugin's job."
 
-## Arguments
-
-| Argument | Description |
-|----------|-------------|
-| (none) | Clean uncommitted changes; fall back to the last commit if the tree is clean |
-| `<file>` / `<dir>/` | Clean the named file(s) or directory — whole file in scope |
-| `<commit-ref>` | Clean the files changed in that commit |
-| `--comments-only` | Comment work only; never touch code — no conventions, no simplification |
-| `--no-simplify` | Everything except the simplifier pass |
-| `--dry-run` | Report what would change without editing |
+Five more — restated mechanism, gotcha compaction, rename-to-kill, a transformation carried by its
+example, and an external reference — are in `references/examples.md`.

@@ -117,17 +117,7 @@ not to land it. The lead paragraph's opening sentence gives the reader the shape
 
 ## Where to post, and under whose name
 
-**Show the text and get an answer before posting.** This is the one outward-facing thing the
-skill does, published under the user's account to another person, and the text was generated rather
-than written by them. `--comment` authorizes the phase; it does not authorize the words.
-
-Show it **verbatim and complete**, in a fenced block — every word that would be posted, in the
-message itself.
-A summary of the comment, a description of what it covers, or a count of findings and a claim about
-their content are all the wrong artifact: the reader is approving words, so words are what they
-have to see. Then ask, once, in prose, as the last line of the message. Not a structured-choice
-prompt — a modal fires before the reader has finished the report it interrupts, which is the wrong
-order for the only decision here. Print and stop rather than posting when nobody is there to answer.
+Nothing posts before the confirmation gate in the skill's Phase 8 has been answered.
 
 Post as an **issue comment**, not a review: GitHub refuses a review on your own PR, and the common
 case is a branch you opened.
@@ -167,8 +157,8 @@ exists to avoid.
 - **Images and GIFs cap at 10 MB**; video depends on the target repo's plan. PNG, JPEG, GIF, WebP,
   SVG, MP4, MOV and WebM are accepted, nothing else.
 
-**No frame goes out that the confirmation gate did not show.** The gate above shows the composed
-text; name each attachment and its path there too, because an image is the one part of a comment
+**No frame goes out that the confirmation gate did not show.** The gate shows the composed text;
+name each attachment and its path there too, because an image is the one part of a comment
 the approver cannot read in the body.
 
 **No AI attribution footer, ever.** Not a `<sub>` line, not a session link, not a sentence noting

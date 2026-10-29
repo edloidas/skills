@@ -42,22 +42,11 @@ Two agents against consilium's seven or eight. That is the point — cheap enoug
 
 Five triggers, at most once per claim set:
 
-1. **About to contradict a person** — telling a reviewer they are wrong, pushing back on a PR
-   comment, declining a requested change.
-2. **A claim is about to leave the session** — a PR comment, an issue body, a reply on a thread.
+1. **About to contradict a person** — a reviewer, a PR comment, a requested change.
+2. **A claim is about to leave the session** — a PR comment, an issue body, a thread reply.
 3. **Findings exist and fixes are about to start** — once, before the first fix.
-4. **A decision the user would normally make, and the user is not there** — an unattended run, a
-   gate you would otherwise ask at, an answer you are about to assume and carry on with.
-5. **A hard-to-reverse step on your own judgement** — a schema or public contract, a dependency,
-   deleting data, a migration, an architectural direction.
-
-Triggers 4 and 5 doubt your own pending decision: the third opinion you would otherwise ask the user
-for. Already picked → this skill; still open between several approaches → `review:consilium`. Both
-stay bounded by stakes and by the **Never** list below: a gate whose wrong answer one command undoes
-does not fire.
-
-Also on request: `/doubt`, "get a third opinion", "validate your findings", "do they agree", "double
-check this", "are we sure", "did we miss anything".
+4. **A decision the user would normally make, and the user is not there** — your own pending call.
+5. **A hard-to-reverse step on your own judgement** — a contract, a dependency, data, a migration.
 
 **Gate on stakes, not on confidence** — fire when being wrong is expensive, whether or not you feel
 unsure. An agent poorly calibrated on its own certainty cannot use that certainty to trigger the
@@ -71,15 +60,6 @@ skill built to catch it.
   claim, run that — two models reasoning about observable behavior is worse than one observation.
 - **On cheap-to-reverse work.** If undoing it is one command, the panel costs more than the mistake.
 - **On a claim set already doubted this session.**
-
-**Not this skill:**
-
-| You have | Reach for |
-| -------- | --------- |
-| A diff to attack for bugs and requirement gaps | `review:changes-review` |
-| A question about which approach to take | `review:consilium` |
-| One quick outside opinion, no panel and no verdicts | `assist:outsider` |
-| A back-and-forth about a design | `assist:discuss` |
 
 ## Phase 1: Resolve the claim set
 
@@ -120,52 +100,29 @@ Both seats run concurrently on the same input — the numbered propositions and 
 neither sees the other's output. Withhold the plan, the rationale, the commit message body, author
 names, and any hint of which claims you favour.
 
-Seats may probe, so record `git status --porcelain --untracked-files=all` before dispatch. Once both
-return, delete each untracked path that appeared since and `git restore` each tracked file newly modified
-— never one listed before — then print `Cleanup: removed <paths>, restored <paths>` or
+Record `git status --porcelain --untracked-files=all` before the first dispatch; seats may extract
+a dependency, run a probe, or leave a scratch file. Once both seats return: against that snapshot,
+delete each untracked path that appeared since and `git restore` each tracked file newly modified —
+never one listed before — then print `Cleanup: removed <paths>, restored <paths>` or
 `Cleanup: nothing left behind`.
 
 **Cold seat** — dispatch a subagent briefed with `references/seat-prompt.md`, propositions appended,
 on a different model from your own where the host allows one. Where the host has no subagent
 facility, run the same prompt inline and report the run as having one independent seat.
 
-**Outside seat** — invoke `assist:outsider` in ask mode by name rather than reproducing its
-procedure; it owns temp-file resolution, run ids, and the rule that the question is written with a
-file-write tool and never a shell heredoc. Pass it:
-
-- `--host <the agent you are>`, so it does not answer its own question
-- `--preamble <skill-dir>/references/seat-prompt.md`, replacing outsider's default entirely
-- the numbered propositions, and nothing else, as the question
-- a timeout of `420`, with the surrounding command timeout at its maximum
-
-**Verify the preamble path resolved before dispatching.** This skill is reachable through several
-generated symlink trees, so `<skill-dir>` must be the directory this `SKILL.md` was loaded from.
-Outsider refuses an unresolvable `--preamble` and names the path that failed.
-
-**Name the agent that answered** — outsider prints it on its first line. A verdict from a seat you
-cannot identify is not interpretable.
+**Outside seat** — `outsider` in ask mode, per its **Calling from Another Skill**: preamble
+`<skill-dir>/references/seat-prompt.md`, the numbered propositions and nothing else as the question,
+timeout `540`. An answer without a Phase 3 verdict for every proposition ran unbriefed.
 
 Print one line once both are away: `Seats away: cold (sonnet) · outside (codex).`
 
 ## Phase 3: Verdicts
 
-Each seat rules on every proposition, from a closed vocabulary:
-
-| Verdict | Use when | Must carry |
-| ------- | -------- | ---------- |
-| `HOLDS` | True, and worth acting on | The evidence |
-| `NARROWER` | True only under a condition the claim did not state | The condition, and whether it was seen to hold or is assumed |
-| `BELOW BAR` | True, and not worth acting on — the fix costs more than it buys | What acting costs, what it buys |
-| `FALLS` | Wrong, unreachable, or attacking something that is not there | What the claimant missed |
-| `UNPROVEN` | Undemonstrable either way from what is available | What evidence would settle it |
-
-A verdict without the field its row requires is incomplete: complete it, or drop the claim and say
-which you did.
-
-`NARROWER` corrects a true claim's scope; `BELOW BAR` accepts it in full and rejects the work.
-Neither substitutes for the other — without `BELOW BAR`, a seat that wants a trivial claim dropped
-has only `FALLS`, and must argue the claim is *wrong* to get there. That is how a panel starts
-manufacturing refutations.
+Each seat rules on every proposition with one of `HOLDS`, `NARROWER`, `BELOW BAR`, `FALLS`,
+`UNPROVEN`; the meaning of each and the field it must carry are in `references/seat-prompt.md`. A
+verdict missing its field is incomplete: complete it, or drop the claim and say which you did.
+`BELOW BAR` exists so a seat need not argue a trivial claim is *wrong* to get it dropped — without
+it, a panel starts manufacturing refutations.
 
 ## Phase 4: Synthesize
 
@@ -254,9 +211,5 @@ follow it.
   trigger 4, not a question. Say in one line that you are running `review:consilium` instead, then
   run it. Announce but never ask: consilium is four times the cost, so silent escalation is wrong
   and a blocking question is an interruption.
-- **A seat times out or fails** — note it in the header, synthesize from the other. An outside seat
-  that timed out at 300s never received the timeout argument.
-- **Outside seat came back unbriefed** — an answer using none of the verdict vocabulary means the
-  preamble never reached it. Discard rather than map it; an unbriefed answer looks like a verdict
-  and is not one.
+- **A seat times out or fails** — note it in the header, synthesize from the other.
 - **One claim** — valid, and cheap. Run it.

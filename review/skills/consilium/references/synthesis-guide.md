@@ -246,3 +246,5 @@ Say each of these in the run line, and where it matters, in the Frame:
 - **Only C0 and one candidate survived** — report it as a decision with no live alternative.
 - **Every candidate carries a standing `Blocking` objection** — do not pick a least-bad one. Lead with
   the facts that hold for every option and say what a better frame would have to account for.
+- **No objection survived verification** — rank on trade-offs alone and say the board found nothing
+  disqualifying.
