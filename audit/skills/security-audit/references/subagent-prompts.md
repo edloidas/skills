@@ -76,21 +76,21 @@ Full criteria: `release-checklist.md` and `install-flags.md`.
 ````
 You are auditing release configuration for supply-chain hardening.
 
-**Release target context** (substituted at dispatch): `release_publishes_to_npm = {{RELEASE_PUBLISHES_TO_NPM}}` and `detected_build_systems = {{DETECTED_BUILD_SYSTEMS}}`. If `release_publishes_to_npm` is `false`, skip items 4, 5, 10, and 11 entirely and state in the report header: "npm publish not detected — `--prod`, provenance, staged publishing, and npm publisher-side items skipped." Items 1, 2, 3, 6, 7, 8, 9 always apply.
+**Release target context** (substituted at dispatch): `release_publishes_to_npm = {{RELEASE_PUBLISHES_TO_NPM}}` and `detected_build_systems = {{DETECTED_BUILD_SYSTEMS}}`. If `release_publishes_to_npm` is `false`, skip exactly the npm-only items listed in item 0 of `{{SKILL_DIR}}/references/release-checklist.md` and name them in the report header: "npm publish not detected — items <n, n, …> skipped." Every other item applies.
 
 Read `.github/workflows/release.yml` (or equivalent), `package.json`, `.github/dependabot.yml`, and any publishing scripts. Evaluate:
 
-1. Release trigger scope — only `tags: ['v*']` or `workflow_dispatch`, never `push: branches`. (Always applies.)
-2. Tag/commit precheck — workflow verifies the tagged commit is reachable from a trusted branch. (Always applies.)
-3. Frozen lockfile — `npm ci`, `pnpm install --frozen-lockfile`, `yarn install --immutable`, `bun install --frozen-lockfile`. (Always applies when the workflow runs a Node install step, regardless of what gets published.)
-4. `--prod` flag — only in runtime-artifact contexts (Docker runtime layer, deployable tarball). Not in build/test/publish steps. **Skip when `release_publishes_to_npm` is false.**
-5. npm provenance — for public packages, Trusted Publishers (OIDC) and `--provenance` or pnpm OIDC. **Skip when `release_publishes_to_npm` is false** — the artifact isn't going to npm.
-6. Token usage — secrets or OIDC only. No hardcoded tokens, no workflow_dispatch input tokens. (Always applies.)
+1. Release trigger scope — only `tags: ['v*']` or `workflow_dispatch`, never `push: branches`.
+2. Tag/commit precheck — workflow verifies the tagged commit is reachable from a trusted branch.
+3. Frozen lockfile — `npm ci`, `pnpm install --frozen-lockfile`, `yarn install --immutable`, `bun install --frozen-lockfile`. Applies whenever the workflow runs a Node install step, regardless of what gets published.
+4. `--prod` flag — only in runtime-artifact contexts (Docker runtime layer, deployable tarball). Not in build/test/publish steps.
+5. npm provenance — for public packages, Trusted Publishers (OIDC) and `--provenance` or pnpm OIDC.
+6. Token usage — secrets or OIDC only. No hardcoded tokens, no workflow_dispatch input tokens.
 7. `dependabot.yml` ecosystem coverage — always require `package-ecosystem: "github-actions"`. For each entry in `detected_build_systems` other than `github-actions`, recommend the matching Dependabot ecosystem: `npm` covers npm/pnpm/yarn/bun; `gradle`, `maven`, `cargo`, `pip`, `docker` map 1:1. Do NOT require `npm` when `release_publishes_to_npm` is false unless a Node lockfile is present (then it covers dev-dep updates).
 8. Artifact identity — the published artifact must be the exact bytes that were smoked/inspected: pack once, upload, smoke the downloaded artifact in a scratch project, publish that same artifact. Flag re-packing in the publish job, tests that rebuild the packed output, and unpinned packing toolchains. (Applies to any packed artifact.)
-9. Minimal credentialed publish job — the job holding `id-token: write` or registry tokens must contain only auth setup, artifact download, and the publish command with `--ignore-scripts`. No checkout, no install, no build. Also flag dependency caching in that job (`cache:` on `actions/setup-node`, or any `actions/cache` step): set `package-manager-cache: false` so a poisoned cache entry cannot reach the credentialed job. (Always applies.)
-10. Publisher-side npm settings — not API-auditable; emit as ask-the-user items: Trusted Publisher pinned to exact repo + workflow filename, and token-based publishing disallowed (require 2FA, no bypass tokens) once OIDC is the only path. **Skip when `release_publishes_to_npm` is false.**
-11. Staged publishing — the publish step should run `npm stage publish`, not `npm publish`. Staged publishing holds the release in a staging area until a maintainer approves it with 2FA (`npm stage approve <stage-id>`, or the Staged Packages page on npmjs.com), which is the one control a fully compromised CI job cannot forge. Requires npm CLI >= 11.15.0 and Node >= 22.14.0. Plain `npm publish` in a workflow whose package has no stage-only Trusted Publisher restriction = medium; `npm publish` where the package *does* restrict to stage-only = high (the release will be rejected at publish time). **Skip when `release_publishes_to_npm` is false.**
+9. Minimal credentialed publish job — the job holding `id-token: write` or registry tokens must contain only auth setup, artifact download, and the publish command with `--ignore-scripts`. No checkout, no install, no build. Also flag dependency caching in that job (`cache:` on `actions/setup-node`, or any `actions/cache` step): set `package-manager-cache: false` so a poisoned cache entry cannot reach the credentialed job.
+10. Publisher-side npm settings — not API-auditable; emit as ask-the-user items: Trusted Publisher pinned to exact repo + workflow filename, and token-based publishing disallowed (require 2FA, no bypass tokens) once OIDC is the only path.
+11. Staged publishing — the publish step should run `npm stage publish`, not `npm publish`. Staged publishing holds the release in a staging area until a maintainer approves it with 2FA (`npm stage approve <stage-id>`, or the Staged Packages page on npmjs.com), which is the one control a fully compromised CI job cannot forge. Requires npm CLI >= 11.15.0 and Node >= 22.14.0. Plain `npm publish` in a workflow whose package has no stage-only Trusted Publisher restriction = medium; `npm publish` where the package *does* restrict to stage-only = high (the release will be rejected at publish time).
 
 Read the full checklists at:
 - `{{SKILL_DIR}}/references/release-checklist.md`
@@ -106,7 +106,7 @@ Full criteria: `repo-settings-checklist.md`.
 ````
 You are auditing GitHub repository settings for supply-chain hardening. Findings here are API-driven; fixes are `gh api` calls, not file edits.
 
-Resolve `<owner>/<repo>` via `gh repo view --json nameWithOwner --jq .nameWithOwner` and call the GitHub REST API to evaluate:
+Resolve `<owner>/<repo>` via `gh repo view --json nameWithOwner --jq .nameWithOwner` and read the GitHub REST API with `gh api` GET requests to evaluate. Run no other command, and no `gh api` call carrying `-X`/`--method` other than `GET` or any `-f`/`-F`/`--input` field — a field without `-X` makes `gh api` send a POST.
 
 1. Default `GITHUB_TOKEN` permissions — `default_workflow_permissions` must be `read`, `can_approve_pull_request_reviews` must be `false`.
 2. `sha_pinning_required` — **report the current value verbatim** (e.g., `sha_pinning_required: false`). Do NOT recommend flipping it independently; whether enabling it is safe depends on the Actions audit verdict (item 1 of Subagent A). Step 3 of the orchestrator combines your report with Subagent A's pin status and emits the recommendation.
@@ -122,7 +122,7 @@ Resolve `<owner>/<repo>` via `gh repo view --json nameWithOwner --jq .nameWithOw
 
 Read the full checklist at `{{SKILL_DIR}}/references/repo-settings-checklist.md` — it contains the exact `gh api` commands for both detection and remediation, plus well-known actor IDs (Dependabot Integration = 29110, Admin RepositoryRole = 5) and the ruleset-splitting pattern for granular bypass.
 
-Report findings grouped by severity, same format as the Actions audit. For each finding, include the exact `gh api` remediation command as report text. Do not execute any commands and do not edit files.
+Report findings grouped by severity, same format as the Actions audit. For each finding, include the exact `gh api` remediation command as report text — never execute it. Do not edit files.
 
 **Additionally emit a structured "Ruleset Required Checks" map at the end of your report**, in this exact format — Step 3 uses it to cross-check against the Actions audit's Workflow Trigger Map for status-check coverage:
 
@@ -148,14 +148,14 @@ You are auditing Node.js package-manager configuration for install-time supply-c
 
 This audit distinguishes two kinds of "critical": (a) currently-exploitable misconfigurations (e.g., `verifyStoreIntegrity: false`), and (b) policy floors — the *absence* of a hardening primitive this audit treats as mandatory, including an unsupported manager. Label policy findings as "critical (policy)" or "high (policy)" so consumers can calibrate urgency.
 
-Read whichever of these exist: `package.json`, `pnpm-workspace.yaml`, `.npmrc`, `bunfig.toml`, `pnpm-lock.yaml`, `bun.lock`, `bun.lockb`. Also check for `package-lock.json` and `yarn.lock` — their presence is item 1's finding. Then evaluate:
+Read whichever of these exist: `package.json`, `pnpm-workspace.yaml`, `.npmrc`, `bunfig.toml`, `pnpm-lock.yaml`, `bun.lock`, `bun.lockb`. Read `.npmrc` and `bunfig.toml` only through the redacting `sed` in the checklist's Quick Audit Block — both can hold registry tokens, and a raw read puts them in the transcript. Also check for `package-lock.json` and `yarn.lock` — their presence is item 1's finding. Then evaluate:
 
 1. Manager and version floor — `yarn.lock` present (any version) = critical (policy), outside the supported set. `package-lock.json` present (any npm version) = critical (policy), same. pnpm below 10.26 or bun below current = high (policy), naming the primitive the version lacks — this is a one-line bump, not a migration. `packageManager` unset = high. Multiple lockfiles = high. When the manager is unsupported, stop here: report the migration and do not emit tuning findings for config files that manager does not read.
 2. pnpm version floor detail (pnpm only) — v10.26 is the capability floor (`allowBuilds` ships there); v11 is the no-regression floor, because v11 removes the legacy split keys. If pnpm is between 10.26 and 11 and any of `onlyBuiltDependencies`, `neverBuiltDependencies`, `ignoredBuiltDependencies`, `ignoreDepScripts` is still present = medium; recommend `pnpx codemod run pnpm-v10-to-v11`.
 3. Lifecycle script allowlist — both managers deny dependency scripts by default at the floors above; the finding is about the audit log and whether install fails closed.
    - **pnpm:** `allowBuilds` is the audit log; `strictDepBuilds: false` = high (silent skip masks new requests). `allowBuilds` undefined = medium. Entries without justification comments = low.
    - **bun:** does NOT execute lifecycle scripts by default, with a built-in default allowlist. Any `trustedDependencies` entry NOT in Bun's default allowlist and lacking a justification comment = medium. Absence of `trustedDependencies` and `ignoreScripts` is NOT a finding. bun has no fail-closed switch — note that as a limitation of the stack, not as a repo misconfiguration.
-4. Release-age gate — floor 72h. **The unit differs between the two managers; this is the most common error in this audit.** pnpm `minimumReleaseAge` = minutes (`4320`); bun `install.minimumReleaseAge` = seconds (`259200`). Unset on bun (no default) = high (policy). Set below 72h, including pnpm v11's `1440` default = medium (policy).
+4. Release-age gate — floor 72h. **The unit differs between the two managers; this is the most common error in this audit.** pnpm `minimumReleaseAge` = minutes (`4320`); bun `install.minimumReleaseAge` = seconds (`259200`). Unset on bun (no default) or on pnpm < 11 (default 0) = high (policy). Set below 72h, including pnpm v11's `1440` default (which is what unset means on v11) = medium (policy).
    - pnpm only: also pin `minimumReleaseAgeStrict: true` (defaults true only when `minimumReleaseAge` is set), and note that `minimumReleaseAgeIgnoreMissingTime: true` (default) silently skips the gate for packages whose registry omits `time` — common on private registries.
 5. Release-age exclusions — **owned scopes only.** The orchestrator has substituted `{{ORG_PREFIX}}` (may be empty) and `{{ALREADY_COVERED_SCOPES}}`. If `{{ORG_PREFIX}}` is non-empty, owned scope patterns are `@{{ORG_PREFIX}}/*` AND `@{{ORG_PREFIX}}-*/*`. For each owned scope in the lockfile NOT in `{{ALREADY_COVERED_SCOPES}}`, flag it (medium). **Never flag non-owned scopes** — the gate is correctly applied to them. pnpm's field is singular (`minimumReleaseAgeExclude`), bun's is plural (`minimumReleaseAgeExcludes`).
 6. Scope → registry mapping — **owned scopes only**, same gating as item 5. Only flag owned scopes in the lockfile lacking an entry in `registries:` (pnpm) or `[install.scopes]` (bun), or a `@scope:registry=` line in `.npmrc`. Missing mapping for an owned scope = dependency-confusion vector (high). Public scopes (`@types/*`, `@biomejs/*`) are never findings here.

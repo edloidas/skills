@@ -35,7 +35,7 @@ gh api repos/<owner>/<repo>/actions/permissions
 
 Look for `sha_pinning_required`.
 
-**Severity:** high if `false` AND `actions-checklist.md` item 1 has already been remediated. Low if workflows are not yet SHA-pinned.
+**Severity:** the Repo Settings audit reports the value verbatim and does not grade it; SKILL.md aggregation rule 1 does. `false` with every `uses:` SHA-pinned is high. `false` while pin findings remain is no finding — the unpinned actions are the finding, and enabling this first would break every run.
 
 **Why:** Runtime guard that refuses to start any workflow run containing a tag-pinned `uses:` line. Prevents regression: once enabled, no contributor can land a PR that introduces `@v1`-style pinning, because the workflow run breaks immediately on the failing PR.
 

@@ -64,6 +64,7 @@ because they lack the controls — say it that way in the report. Floors: pnpm >
 | `packageManager` unset | high | Pin it — the floor is otherwise unverifiable across machines |
 | Multiple lockfiles present | high | Pick one; delete the rest |
 | bun `install.minimumReleaseAge` unset | high (policy) | Set `259200` (seconds) in `bunfig.toml [install]` |
+| pnpm `minimumReleaseAge` unset on pnpm < 11 (default 0) | high (policy) | Set `4320` (minutes) in `pnpm-workspace.yaml`, with `minimumReleaseAgeStrict: true` |
 | Release-age gate below 72h (incl. pnpm v11's `1440` default) | medium (policy) | Raise to the 72h value in that manager's unit |
 | pnpm `strictDepBuilds: false` | high | Remove the override or set `true` |
 | pnpm without `allowBuilds` map | medium | Define `allowBuilds:`; the gate is already on, the map is the audit log |

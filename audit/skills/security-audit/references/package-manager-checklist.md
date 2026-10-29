@@ -391,8 +391,8 @@ jq -r '{packageManager, trustedDependencies}' package.json 2>/dev/null
 
 # Supported-manager config
 cat pnpm-workspace.yaml 2>/dev/null   # pnpm
-cat bunfig.toml 2>/dev/null           # bun
-cat .npmrc 2>/dev/null                # scope->registry mapping, read by both
+sed -E 's/((_authToken|_auth|_password|[Tt]oken|[Pp]assword)[[:space:]]*=).*/\1<redacted>/' bunfig.toml 2>/dev/null   # bun; tokens redacted
+sed -E 's/((_authToken|_auth|_password|[Tt]oken|[Pp]assword)[[:space:]]*=).*/\1<redacted>/' .npmrc 2>/dev/null        # scope->registry mapping, read by both; tokens redacted
 
 # Surface scoped deps
 grep -hoE '@[a-z0-9-]+/[a-z0-9-]+' pnpm-lock.yaml bun.lock 2>/dev/null | sort -u

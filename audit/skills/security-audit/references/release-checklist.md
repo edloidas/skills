@@ -8,11 +8,11 @@ The audit cares about one question per item: does this release publish to npm? I
 
 **`release_publishes_to_npm` is `true` if any of these signals exist:**
 
-- A `release.yml` / `release.yaml` in `.github/workflows/` contains a literal `npm publish`, `pnpm publish`, `yarn publish`, or `bun publish` invocation.
+- A `release.yml` / `release.yaml` in `.github/workflows/` contains a literal `npm publish`, `npm stage publish`, `pnpm publish`, `yarn publish`, or `bun publish` invocation.
 - `package.json` has `publishConfig.registry`.
-- `package.json` `scripts.publish` value contains any of the four publish commands above.
+- `package.json` `scripts.publish` value contains any of the publish commands above.
 
-If none match, the audit treats this repo as a non-npm publisher and skips items 4, 5, and 10 entirely. The remaining items (trigger scope, precheck, frozen lockfile, token usage, dependabot ecosystem coverage, artifact identity, minimal credentialed jobs) apply to any release workflow.
+If none match, the audit treats this repo as a non-npm publisher and skips the npm-only items — 4, 5, 10, and 11 — entirely. This is the one list of them; the Release subagent prompt points here. Every other item applies to any release workflow.
 
 **Build-system list** used by item 7 (`detected_build_systems`) is derived from file presence at repo root:
 
