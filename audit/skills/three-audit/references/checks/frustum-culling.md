@@ -25,19 +25,19 @@ sky, and `renderer.info.render.calls` that stays flat as the camera turns.
 
 ```bash
 # Culling explicitly turned off
-rg -n 'frustumCulled\s*[:=]\s*(false|\{false\})' --type ts --type tsx --type js --type jsx
+rg -n 'frustumCulled\s*[:=]\s*(false|\{false\})' --type ts --type js
 
 # Bounding volume computation — needed after geometry mutation
 rg -n 'computeBoundingSphere|computeBoundingBox|boundingSphere|boundingBox' \
-  --type ts --type tsx --type js --type jsx
+  --type ts --type js
 
 # Geometry mutated after creation
 rg -n 'setAttribute\(|attributes\.position|\.needsUpdate\s*=\s*true' \
-  --type ts --type tsx --type js --type jsx
+  --type ts --type js
 
 # Merged / instanced units
 rg -n 'mergeGeometries|mergeBufferGeometries|InstancedMesh|<Merged\b' \
-  --type ts --type tsx --type js --type jsx
+  --type ts --type js
 ```
 
 For each `frustumCulled = false`, find the justification. There are legitimate

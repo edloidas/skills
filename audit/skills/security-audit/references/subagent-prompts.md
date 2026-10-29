@@ -183,5 +183,5 @@ Read every file you flag before reporting it.
 
 For each finding report: file:line, the vector, the source expression that reaches it, and
 whether a guard is present, absent, or unclear. A sink reached only by a literal is not a
-finding. Return findings severity-ordered. Return "No findings." if the code is clean.
+finding. Return findings severity-ordered. Return "No findings." if the code is clean. Do not edit files.
 ````

@@ -27,16 +27,16 @@ FPS counters hide it; a frame-time graph shows it as regular spikes.
 Find the render loops first, then read what's inside them:
 
 ```bash
-rg -n 'useFrame\(|requestAnimationFrame\(' --type ts --type tsx --type js --type jsx
+rg -n 'useFrame\(|requestAnimationFrame\(' --type ts --type js
 ```
 
 Then, within those callback bodies, look for construction:
 
 ```bash
 rg -n 'new\s+THREE\.(Vector[234]|Quaternion|Matrix[34]|Euler|Color|Box3|Sphere|Raycaster)\b' \
-  --type ts --type tsx --type js --type jsx
+  --type ts --type js
 rg -n 'new\s+(Vector[234]|Quaternion|Matrix[34]|Euler|Color|Box3|Sphere|Raycaster)\b' \
-  --type ts --type tsx --type js --type jsx
+  --type ts --type js
 ```
 
 A hit is only a finding if it sits inside a per-frame callback (directly, or
@@ -49,7 +49,7 @@ Also check for the non-obvious allocators: `.clone()`, `.toArray()`,
 a fresh object.
 
 ```bash
-rg -n '\.clone\(\)|\.toArray\(\)' --type ts --type tsx --type js --type jsx
+rg -n '\.clone\(\)|\.toArray\(\)' --type ts --type js
 ```
 
 ## Anti-patterns

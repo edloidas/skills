@@ -31,8 +31,8 @@ Look for construction inside a map/loop or inside a component body that renders
 many times:
 
 ```bash
-rg -n -B4 '<(box|sphere|plane|cylinder|cone|torus|circle)Geometry\b' --type tsx --type jsx
-rg -n -B4 '<mesh(Standard|Basic|Physical|Lambert|Phong|Toon)Material\b' --type tsx --type jsx
+rg -n -B4 '<(box|sphere|plane|cylinder|cone|torus|circle)Geometry\b' -g '*.tsx' -g '*.jsx'
+rg -n -B4 '<mesh(Standard|Basic|Physical|Lambert|Phong|Toon)Material\b' -g '*.tsx' -g '*.jsx'
 ```
 
 Then check the enclosing scope: is the JSX inside a `.map(...)`, or in a

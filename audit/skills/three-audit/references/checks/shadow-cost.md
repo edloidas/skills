@@ -26,15 +26,15 @@ scene detail.
 
 ```bash
 # Shadow enablement
-rg -n 'shadowMap|castShadow|receiveShadow|shadows' --type ts --type tsx --type js --type jsx
+rg -n 'shadowMap|castShadow|receiveShadow|shadows' --type ts --type js
 
 # Resolution and camera frustum config
 rg -n 'shadow-mapSize|shadow\.mapSize|shadow-camera-|shadow\.camera\.' \
-  --type ts --type tsx --type js --type jsx
+  --type ts --type js
 
 # Light types that cast
 rg -n '<(directional|point|spot)Light\b|new\s+THREE\.(Directional|Point|Spot)Light' \
-  --type ts --type tsx --type js --type jsx
+  --type ts --type js
 ```
 
 For each shadow-casting light, record: light type, `mapSize`, shadow camera

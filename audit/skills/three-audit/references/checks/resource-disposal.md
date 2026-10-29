@@ -28,15 +28,15 @@ Find imperative construction of disposable resources:
 
 ```bash
 rg -n 'new\s+(THREE\.)?\w*(Geometry|Material|Texture|RenderTarget)\b' \
-  --type ts --type tsx --type js --type jsx
+  --type ts --type js
 rg -n 'TextureLoader|GLTFLoader|useLoader|useTexture|CanvasTexture|VideoTexture' \
-  --type ts --type tsx --type js --type jsx
+  --type ts --type js
 ```
 
 Then find the disposal side:
 
 ```bash
-rg -n '\.dispose\(\)' --type ts --type tsx --type js --type jsx
+rg -n '\.dispose\(\)' --type ts --type js
 ```
 
 Compare the two. For each imperative construction site, ask: **who owns this,

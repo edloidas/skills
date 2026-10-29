@@ -48,16 +48,16 @@ Then:
 
 ```bash
 # Reads that do not subscribe
-rg -n '\$\w+\.get\(\)' --type tsx
+rg -n '\$\w+\.get\(\)' -g '*.tsx'
 
 # Manual subscriptions in components
-rg -n '\.subscribe\(|\.listen\(' --type tsx
+rg -n '\.subscribe\(|\.listen\(' -g '*.tsx'
 
 # Writes, to check batching
-rg -n '\$\w+\.set\(' --type ts --type tsx
+rg -n '\$\w+\.set\(' --type ts
 
 # Batching, the fix side
-rg -n 'batch\(' --type ts --type tsx
+rg -n 'batch\(' --type ts
 ```
 
 For `.get()` hits, check the enclosing scope: inside an event handler, a

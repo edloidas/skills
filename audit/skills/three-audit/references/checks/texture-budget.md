@@ -31,11 +31,11 @@ lighting.
 ```bash
 # Texture loading
 rg -n 'TextureLoader|useTexture|useKTX2|KTX2Loader|CompressedTextureLoader|EXRLoader|RGBELoader' \
-  --type ts --type tsx --type js --type jsx
+  --type ts --type js
 
 # Colour space / filtering / mipmaps
 rg -n 'colorSpace|encoding|SRGBColorSpace|generateMipmaps|minFilter|magFilter|anisotropy' \
-  --type ts --type tsx --type js --type jsx
+  --type ts --type js
 ```
 
 Then look at the files on disk — this is the one check where the source alone

@@ -39,10 +39,10 @@ lazy-loading a chunk changes mount order and moves the bug around.
 
 ```bash
 # Every frame callback, with and without a priority argument
-rg -n 'useFrame\(' --type tsx --type jsx
+rg -n 'useFrame\(' -g '*.tsx' -g '*.jsx'
 
 # Calls that pass a priority
-rg -n 'useFrame\([^)]*\},\s*-?\d' --type tsx --type jsx
+rg -n 'useFrame\([^)]*\},\s*-?\d' -g '*.tsx' -g '*.jsx'
 ```
 
 Establish whether the convention is in force: if some callbacks pass a priority

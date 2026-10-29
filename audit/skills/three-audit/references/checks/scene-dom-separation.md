@@ -47,14 +47,14 @@ Then look for files that carry both kinds of markup:
 
 ```bash
 # DOM tags inside the scene directory
-rg -n '<(div|span|button|section|ul|li|p|h[1-6])\b' src/scene --type tsx
+rg -n '<(div|span|button|section|ul|li|p|h[1-6])\b' src/scene -g '*.tsx'
 
 # R3F tags inside the DOM component directory
 rg -n '<(mesh|group|instancedMesh|points|line|primitive|(ambient|directional|point|spot|hemisphere)Light)\b' \
-  src/components --type tsx
+  src/components -g '*.tsx'
 
 # The sanctioned bridge — these hits are not findings
-rg -n 'from\s+.@react-three/drei.' src/scene --type tsx | rg 'Html'
+rg -n 'from\s+.@react-three/drei.' src/scene -g '*.tsx' | rg 'Html'
 ```
 
 Read each hit. A DOM tag inside an `<Html>` subtree is correct. A DOM tag as a

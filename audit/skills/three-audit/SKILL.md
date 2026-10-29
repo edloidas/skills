@@ -25,7 +25,9 @@ argument-hint: "[<target-dir>] [--check=<name>]"
 is byte-identical. Most checks need judgment: a grep hit needs a read.
 
 Detection commands assume `rg` (ripgrep) and `jq` are on `PATH`. Substitute
-`grep -rn` and a manual read of `package.json` where they are not.
+`grep -rn` and a manual read of `package.json` where they are not. ripgrep has no
+`tsx` or `jsx` type: `--type ts` already covers `.tsx`, `--type js` covers `.jsx`, and a
+JSX-only search uses `-g '*.tsx' -g '*.jsx'`.
 
 ## Workflow
 
@@ -48,13 +50,13 @@ These are the anchors most checks key off of:
 
 ```bash
 # Vanilla Three.js renderer construction
-rg -n 'new\s+(THREE\.)?WebGLRenderer\b' --type ts --type tsx --type js --type jsx
+rg -n 'new\s+(THREE\.)?WebGLRenderer\b' --type ts --type js
 
 # React Three Fiber Canvas mounts
-rg -n '<\s*Canvas\b' --type tsx --type jsx
+rg -n '<\s*Canvas\b' -g '*.tsx' -g '*.jsx'
 
 # R3F imperative GL access
-rg -n "useThree\(|gl\s*[:=]" --type tsx --type jsx
+rg -n "useThree\(|gl\s*[:=]" -g '*.tsx' -g '*.jsx'
 ```
 
 Note the file paths — each check refers back to them. Close the step with one
@@ -68,7 +70,7 @@ activate each one only on its signal:
 
 ```bash
 # useframe-priority — is a priority argument used anywhere?
-rg -n 'useFrame\([^)]*\},\s*-?\d' --type tsx --type jsx
+rg -n 'useFrame\([^)]*\},\s*-?\d' -g '*.tsx' -g '*.jsx'
 
 # scene-dom-separation — is there a scene directory distinct from components?
 ls -d src/scene src/three src/webgl src/components 2>/dev/null

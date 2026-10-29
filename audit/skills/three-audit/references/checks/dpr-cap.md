@@ -33,17 +33,17 @@ fillrate across screen sizes:
 Search for any DPR-related call:
 
 ```bash
-rg -n 'setPixelRatio|pixelRatio|devicePixelRatio' --type ts --type tsx --type js --type jsx
+rg -n 'setPixelRatio|pixelRatio|devicePixelRatio' --type ts --type js
 ```
 
 R3F-specific:
 
 ```bash
 # Canvas dpr prop
-rg -n '<\s*Canvas\b[^>]*\bdpr\s*=' --type tsx --type jsx
+rg -n '<\s*Canvas\b[^>]*\bdpr\s*=' -g '*.tsx' -g '*.jsx'
 
 # gl prop renderer construction
-rg -n 'gl\s*=\s*\{[^}]*setPixelRatio' --type tsx --type jsx
+rg -n 'gl\s*=\s*\{[^}]*setPixelRatio' -g '*.tsx' -g '*.jsx'
 ```
 
 For each hit, open the file and assess the call site against the

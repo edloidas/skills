@@ -43,7 +43,9 @@ Both gate which findings are even valid, so resolve them before analysis, not du
 
 ```bash
 jq -r '.dependencies.react // .devDependencies.react // "none"' package.json
-grep -rl "babel-plugin-react-compiler\|reactCompiler" --include="*.config.*" --include="package.json" . | head -3
+grep -rl "babel-plugin-react-compiler\|reactCompiler" --include="*.config.*" --include="package.json" \
+  --exclude-dir=node_modules --exclude-dir=.git --exclude-dir=dist --exclude-dir=build \
+  --exclude-dir=.next --exclude-dir=coverage . | head -3
 ```
 
 - **React 19+** — `useActionState`, `useTransition` for pending state, `ref` as a plain prop, ref
@@ -82,7 +84,9 @@ grep -rl "data-component" src/ --include="*.tsx" | head -3
 ### 1.5 Identify target files
 
 - `$ARGUMENTS` given → that file or directory
-- Otherwise → `git diff --name-only HEAD` plus `git diff --name-only --cached`
+- Otherwise → `git diff --name-only HEAD`, `git diff --name-only --cached`, and
+  `git ls-files --others --exclude-standard` — untracked files count, matching Track A's
+  `--include-untracked`; `.gitignore`d ones do not
 - Filter to `.tsx` and `.ts` files that import React
 - List the surviving files, then open all of them in one response before writing any analysis. A
   file you reasoned about without opening is not audited, and must not appear in the report

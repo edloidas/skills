@@ -25,19 +25,19 @@ screen to gameplay is a long hitch even though everything was "already loaded".
 
 ```bash
 # Shader-affecting mutations
-rg -n '\.needsUpdate\s*=\s*true' --type ts --type tsx --type js --type jsx
-rg -n 'onBeforeCompile|customProgramCacheKey|\.defines\b' --type ts --type tsx --type js --type jsx
+rg -n '\.needsUpdate\s*=\s*true' --type ts --type js
+rg -n 'onBeforeCompile|customProgramCacheKey|\.defines\b' --type ts --type js
 
 # Material properties changed at runtime
 rg -n '\.(transparent|vertexColors|flatShading|alphaTest|side|fog|toneMapped)\s*=' \
-  --type ts --type tsx --type js --type jsx
+  --type ts --type js
 
 # Map slots assigned after construction
 rg -n '\.(map|normalMap|roughnessMap|emissiveMap|alphaMap|envMap)\s*=' \
-  --type ts --type tsx --type js --type jsx
+  --type ts --type js
 
 # Precompilation, the fix side
-rg -n 'compileAsync|renderer\.compile\(|<Preload\b' --type ts --type tsx --type js --type jsx
+rg -n 'compileAsync|renderer\.compile\(|<Preload\b' --type ts --type js
 ```
 
 For each hit, determine when it runs. In an event handler or `useFrame`, it is

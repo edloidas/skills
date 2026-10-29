@@ -27,7 +27,7 @@ Count the objects a render path can produce. Look for `.map(...)` over a
 collection that yields `<mesh>`, or loops that `scene.add(new THREE.Mesh(...))`:
 
 ```bash
-rg -n -A6 '\.map\(' --type tsx --type jsx | rg -n '<mesh\b'
+rg -n -A6 '\.map\(' -g '*.tsx' -g '*.jsx' | rg -n '<mesh\b'
 rg -n 'scene\.add\(' --type ts --type js
 ```
 
@@ -35,7 +35,7 @@ Then find whether instancing is already used:
 
 ```bash
 rg -n 'InstancedMesh|instancedMesh|<Instances\b|<Merged\b|InstancedBufferAttribute' \
-  --type ts --type tsx --type js --type jsx
+  --type ts --type js
 ```
 
 The finding needs a count. Read the data source — a fixed-length array, a

@@ -35,7 +35,7 @@ profile dominated by React internals or `Object3D.traverse`.
 ## How to detect
 
 ```bash
-rg -n -A20 'useFrame\(' --type tsx --type jsx
+rg -n -A20 'useFrame\(' -g '*.tsx' -g '*.jsx'
 ```
 
 Read each callback body and classify the work. Then target the specific
@@ -43,15 +43,15 @@ offenders:
 
 ```bash
 # React state updates in the loop
-rg -n 'useFrame\(' -A20 --type tsx --type jsx | rg 'set[A-Z]\w*\(|dispatch\('
+rg -n 'useFrame\(' -A20 -g '*.tsx' -g '*.jsx' | rg 'set[A-Z]\w*\(|dispatch\('
 
 # Scene graph lookups
 rg -n 'getObjectByName|getObjectByProperty|scene\.traverse|\.traverse\(' \
-  --type ts --type tsx --type js --type jsx
+  --type ts --type js
 
 # Layout reads and per-frame raycasts
 rg -n 'getBoundingClientRect|new\s+THREE\.Raycaster|\.intersectObjects\(' \
-  --type ts --type tsx --type js --type jsx
+  --type ts --type js
 ```
 
 Also count the `useFrame` callbacks themselves. Fifty components each with

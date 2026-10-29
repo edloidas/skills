@@ -30,18 +30,18 @@ resolution, so a five-pass chain shades the viewport five extra times.
 ```bash
 # Transparency and blending
 rg -n 'transparent\s*[:=]|opacity\s*[:=]|blending\s*[:=]|AdditiveBlending|depthWrite' \
-  --type ts --type tsx --type js --type jsx
+  --type ts --type js
 
 # Post-processing chains
 rg -n 'EffectComposer|<Effect|RenderPass|UnrealBloom|Bloom|SSAO|DepthOfField|ShaderPass' \
-  --type ts --type tsx --type js --type jsx
+  --type ts --type js
 
 # Full-screen / very large surfaces
 rg -n '<planeGeometry|ScreenQuad|fullscreen|<Backdrop|<Sky\b|<Cloud' \
-  --type tsx --type jsx
+  -g '*.tsx' -g '*.jsx'
 
 # Volumetric / particle systems
-rg -n '<Sparkles|<Points\b|<points\b|ParticleSystem|<Trail' --type tsx --type jsx
+rg -n '<Sparkles|<Points\b|<points\b|ParticleSystem|<Trail' -g '*.tsx' -g '*.jsx'
 ```
 
 Then read the sites and estimate **layers over a typical pixel**: how many
