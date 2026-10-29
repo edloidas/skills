@@ -16,7 +16,7 @@ when_to_use: >
   "sanity-check this before I go on". Not inside a fix-verify loop, and not for a diff.
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
-allowed-tools: Read Glob Grep Task Skill Write(*/outsider-*) Bash(git status:*) Bash(git hash-object:*) Bash(git restore:*) Bash(rm:*)
+allowed-tools: Read Glob Grep Task Skill Write(*/outsider-*) Bash(git status:*) Bash(git hash-object:*) Bash(git restore -- *) Bash(git clean -fdx -- *)
 argument-hint: "[what to doubt, or empty for the session's most recent claim set]"
 metadata:
   author: edloidas
@@ -103,7 +103,8 @@ names, and any hint of which claims you favour.
 Record `git status --porcelain --ignored=matching --untracked-files=all` and a `git hash-object` of
 every non-ignored file it lists before the first dispatch; seats may extract a dependency, run a
 probe, or leave a scratch file. Once both seats return: against that snapshot, delete each untracked
-or ignored path that appeared since and `git restore` each tracked file newly modified. Never
+or ignored path that appeared since with `git clean -fdx -- <path>`, which cannot reach a tracked file
+or leave the repository, and `git restore -- <path>` each tracked file newly modified. Never
 restore a file listed before: the user's own edits live there, so one whose hash changed is
 reported, not reverted. Print `Cleanup: removed <paths>, restored <paths>, changed but kept <paths>`
 or `Cleanup: nothing left behind`. A file added inside an ignored directory that already existed is
@@ -210,10 +211,12 @@ follow it.
   run one and mark the run **one seat, not corroborated** — two seats on the same model differ only
   by sampling, so calling that corroborated would be a lie.
 - **A diff was passed** — hand off to `review:changes-review` at `--mode simple`, the same
-  two-reviewer cost as this skill. Say so in one line; do not ask.
+  two-reviewer cost as this skill. Say so in one line; do not ask. Where the host cannot invoke
+  another skill, say to run `changes-review --mode simple` on the diff, and stop.
 - **A question was passed** — one still open between approaches; a decision already picked is
   trigger 4, not a question. Say in one line that you are running `review:consilium` instead, then
   run it. Announce but never ask: consilium is four times the cost, so silent escalation is wrong
-  and a blocking question is an interruption.
+  and a blocking question is an interruption. Where the host cannot invoke another skill, say to run
+  `consilium` on the question, and stop.
 - **A seat times out or fails** — note it in the header, synthesize from the other.
 - **One claim** — valid, and cheap. Run it.
