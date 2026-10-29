@@ -28,25 +28,6 @@ no installs, nothing written into the project.** After it runs the working tree 
 **Linter-aware.** Biome and ESLint already own hook rules, dependency arrays, self-closing elements,
 fragments, type imports, and unused variables. This skill skips all of it.
 
-## When to Use
-
-- After building or reworking a React feature, before it is committed
-- Reviewing a change that touches components, hooks, or state
-- A component works but has become hard to reason about — unexplained re-renders, an effect chain
-  nobody wants to touch, a file that keeps growing
-- Invoked as a stack lens by another skill — see **Lens Mode**
-
-Trigger phrases: "review react", "audit react", "check components", "react patterns", "effects
-review", "why does this re-render".
-
-## Commands
-
-| Command | Scope |
-|---------|-------|
-| `/react-audit` | Staged and unstaged changes |
-| `/react-audit path/file.tsx` | One file |
-| `/react-audit src/components/` | A directory |
-
 ---
 
 ## Phase 1: Load Context
@@ -132,13 +113,9 @@ bash <skill-dir>/scripts/run-react-doctor.sh . "$OUT" "$DIAG" --scope files --in
 | A file or directory | none — react-doctor scans the project, so filter its findings to the target paths in Phase 3 |
 | A base ref (lens mode) | `--scope changed --base <ref>` |
 
-The script needs nothing installed. It prefers a react-doctor already in the project or on `PATH`,
-then falls back to `bunx`, `pnpm dlx`, or `npx` to fetch it for the run. `bunx` is first on purpose:
-it resolves from its own cache, where `npx` will populate the nearest `node_modules` when it finds a
-`package.json` above the working directory — a side effect an audit should not have. It writes nothing into the
-project and opts out of telemetry, the score API, and crash reporting, so no source metadata leaves
-the machine — drop `--no-score` from the script if you want the 0-100 health score back and the
-network call that computes it is acceptable.
+The script prefers a react-doctor already in the project or on `PATH`, then `bunx`, `pnpm dlx`, `npx` —
+`bunx` first because `npx` can populate the nearest `node_modules`. It writes nothing into the project
+and opts out of telemetry, crash reporting, and the score API.
 
 **Read `$DIAG/diagnostics.json`, not the terminal summary.** It is an array of objects with
 `filePath`, `line`, `endLine`, `rule`, `severity`, `category`, `title`, `message`, and `help` —
@@ -290,50 +267,18 @@ Tracks: deep analysis, mechanical checks, react-doctor. React 19.1, compiler off
 ```
 
 The setup recommendation, when it applies, is the only thing that may follow the summary table —
-see the next section. Then stop. Do not apply a finding, do not offer to apply one, and do not
+see **Recommending a Permanent Setup**. Then stop. Do not apply a finding, do not offer to apply one, and do not
 start a second pass.
 
 ---
 
 ## Recommending a Permanent Setup
 
-Track A always uses the ephemeral runner — fetched for the run, cached outside the project, gone
-afterwards. That holds even when you are about to recommend a permanent setup, and it holds if the
-user says yes: they run the install, not you.
-
-A permanent setup is worth recommending anyway, because the ephemeral run is a snapshot. Installed,
-react-doctor runs from a `doctor` script, scans each PR in CI, and is available to the agent between
-audits.
-
-Recommend it when **all** of these hold:
-
-- **The repo is large enough to keep paying off.** 20+ React files, or an established component
-  tree. A handful of components does not need a CI gate
-- **Nothing already sets it up.** No `doctor.config.{ts,mts,cts,js,mjs,cjs,json,jsonc}`, no
-  `reactDoctor` key in `package.json`, no react-doctor dependency, no react-doctor CI workflow
-- **The scan actually found something.** Recommend on any `error`-severity entry in
-  `diagnostics.json`, or on a real volume of `warning`-severity ones. A clean scan is an argument
-  against the recommendation, not for it
-
-```bash
-jq -r 'group_by(.severity)[] | "\(.[0].severity): \(length)"' "$DIAG/diagnostics.json"
-```
-
-**Put it at the very end** — the last lines of the output, after the summary table and after every
-finding. It is a suggestion about tooling, and it must never sit between the reader and the findings
-they came for:
-
-> react-doctor found N issues here (E errors, W warnings) and is not set up in this repo.
-> `bunx react-doctor@latest install` adds it as a dev dependency, a `doctor` package script, a skill
-> for your agents, and a CI workflow that scans each pull request.
-
-**Recommend it, never run it — including with `--dry-run`.** Observed behavior of `install` in
-0.9.12: it adds a `doctor` script and a `react-doctor` devDependency to `package.json`, writes a
-lockfile, populates `node_modules`, adds `.github/workflows/react-doctor.yml`, and drops a skill
-directory into the config directory of every agent it detects. `--dry-run` printed a "would install"
-list and the same writes still landed, so treat it as an install, not a preview.
-
-Say it once, and drop it if the user has declined before.
+Consider a permanent react-doctor setup only on a standalone run where Track A ran, in a repo of 20+
+React files where nothing already configures it, and the scan found `error`-severity entries or a real
+volume of warnings. Read `references/permanent-setup.md` before recommending — it holds the full
+criteria, the wording, and the placement. Recommend it, never run `install` or `install --dry-run` —
+the dry run still writes.
 
 ## Lens Mode
 

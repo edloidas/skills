@@ -1,18 +1,32 @@
 # Audit Subagent Prompts
 
-Dispatch prompts for each audit area. The orchestrator (SKILL.md Step 2) reads this file,
-substitutes the placeholders, and dispatches one subagent per applicable area.
+Dispatch prompts for each audit area. The orchestrator computes the placeholders in SKILL.md
+Step 1, substitutes them in Step 2, and dispatches one subagent per applicable area. A new audit
+area adds a checklist under `references/` and a prompt here — never a mutation.
 
 **Substitutions the orchestrator must perform before dispatch:**
 
 | Placeholder | Computed in | Used by |
 |---|---|---|
 | `{{SKILL_DIR}}` | absolute path to the skill directory containing SKILL.md | all |
-| `{{RELEASE_PUBLISHES_TO_NPM}}` | Step 1 release-target context | B |
-| `{{DETECTED_BUILD_SYSTEMS}}` | Step 1 release-target context | B |
-| `{{ORG_PREFIX}}` | Step 1 org-scope context (may be empty) | D |
-| `{{ALREADY_COVERED_SCOPES}}` | Step 1 org-scope context | D |
+| `{{RELEASE_PUBLISHES_TO_NPM}}` | Step 1, release-target context below | B |
+| `{{DETECTED_BUILD_SYSTEMS}}` | Step 1, release-target context below | B |
+| `{{ORG_PREFIX}}` | Step 1, org-scope context below (may be empty) | D |
+| `{{ALREADY_COVERED_SCOPES}}` | Step 1, org-scope context below | D |
 | `{{CODE_SECURITY_CHECKLIST}}` | inlined body of `code-security-checklist.md` | E |
+
+**Org-scope context, for Subagent D:**
+
+- `org_prefix` — derived from `package.json` `name:`. If the name is `@<prefix>/<pkg>`, the prefix is `<prefix>`. If the name is unscoped, leave `org_prefix` empty (no org scopes will be flagged).
+- `org_scope_patterns` — given a non-empty `org_prefix`, owned scopes are `@<prefix>/*` AND any scope matching `@<prefix>-*/*` (e.g., for `enonic`: `@enonic/*`, `@enonic-types/*`, `@enonic-cli/*`).
+- `already_covered_scopes` — union of: `minimumReleaseAgeExclude` from `pnpm-workspace.yaml` (use `yq`), `minimumReleaseAgeExcludes` from `bunfig.toml`, `registries:` keys from `pnpm-workspace.yaml`, `[install.scopes]` keys from `bunfig.toml`, and `@<scope>:registry=` lines from `.npmrc`.
+
+These pre-approve scopes the team has already decided to trust. Subagent D treats them as covered and emits no finding for missing config.
+
+**Release-target context, for Subagent B:**
+
+- `release_publishes_to_npm` — `true` if any of these exist (the audit does not care WHICH non-npm publisher is used, only whether npm is involved): a `release.yml` / `release.yaml` in `.github/workflows/` containing a literal `npm publish`, `npm stage publish`, `pnpm publish`, `yarn publish`, or `bun publish`; a `publishConfig.registry` field in `package.json`; or a `scripts.publish` value containing any of those commands.
+- `detected_build_systems` — assembled from root file presence: `npm` if `package.json` + any lockfile, `gradle` if `build.gradle`/`build.gradle.kts`, `maven` if `pom.xml`, `cargo` if `Cargo.toml`, `pip` if `requirements.txt`/`pyproject.toml`, `docker` if `Dockerfile`. `github-actions` is always added when `.github/workflows/` exists. This drives item 7 (dependabot ecosystem coverage) so the audit recommends the right ecosystems regardless of stack.
 
 Subagents are spawned with the user's CWD, not the skill's — `{{SKILL_DIR}}` is why relative
 checklist paths resolve. Every prompt ends with "Do not edit files": no subagent mutates
@@ -130,7 +144,7 @@ Full criteria: `package-manager-checklist.md`.
 ````
 You are auditing Node.js package-manager configuration for install-time supply-chain hardening.
 
-**This audit supports pnpm and bun only.** If the repo uses npm or yarn, emit one finding — outside the supported set, migrate to pnpm or bun — and skip items 2-8 entirely. Do NOT claim npm or yarn lack these controls: npm has `min-release-age` (11.10+) and deny-by-default install scripts (12+), and yarn berry has `npmMinimalAgeGate` and defaults `enableScripts` to false. The finding is scope, not capability, and saying otherwise to a maintainer who knows their tool discredits the whole report.
+**This audit supports pnpm and bun only.** If the repo uses npm or yarn, emit one finding — outside the supported set, migrate to pnpm or bun — and skip items 2-9 entirely. Do NOT claim npm or yarn lack these controls: npm has `min-release-age` (11.10+) and deny-by-default install scripts (12+), and yarn berry has `npmMinimalAgeGate` and defaults `enableScripts` to false. The finding is scope, not capability, and saying otherwise to a maintainer who knows their tool discredits the whole report.
 
 This audit distinguishes two kinds of "critical": (a) currently-exploitable misconfigurations (e.g., `verifyStoreIntegrity: false`), and (b) policy floors — the *absence* of a hardening primitive this audit treats as mandatory, including an unsupported manager. Label policy findings as "critical (policy)" or "high (policy)" so consumers can calibrate urgency.
 
@@ -147,6 +161,7 @@ Read whichever of these exist: `package.json`, `pnpm-workspace.yaml`, `.npmrc`, 
 6. Scope → registry mapping — **owned scopes only**, same gating as item 5. Only flag owned scopes in the lockfile lacking an entry in `registries:` (pnpm) or `[install.scopes]` (bun), or a `@scope:registry=` line in `.npmrc`. Missing mapping for an owned scope = dependency-confusion vector (high). Public scopes (`@types/*`, `@biomejs/*`) are never findings here.
 7. Default downgrades — flag any explicit override of a safe default: pnpm `verifyStoreIntegrity: false`, `blockExoticSubdeps: false`, `strictDepBuilds: false` — all high. Do NOT flag pnpm `enablePrePostScripts: true` (default): it governs the current project's own `prefoo`/`postfoo` scripts, not dependency build scripts.
 8. Vuln-override hygiene — if `overrides:` (`pnpm-workspace.yaml` or `pnpm.overrides`) or `resolutions` (bun) contains **10 or more** entries whose left-hand side uses range operators, surface it in "passes" as a positive signal: `Vuln-override block: N CVE-shape pins`. Do NOT validate against current CVE data — that is Dependabot's job. Below the threshold, emit nothing.
+9. Trust policy (pnpm only, at or above the floor) — `trustPolicy` unset or `off` = low (policy). `no-downgrade` fails the install when a version carries weaker publish evidence than earlier releases — a hijacked token publishing without provenance. Exemptions go in `trustPolicyExclude`, not in turning it off.
 
 Read the full checklist at `{{SKILL_DIR}}/references/package-manager-checklist.md` — it contains exact field names, the two-manager unit table, defaults, the policy / exploitable distinction, and fix examples.
 

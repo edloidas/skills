@@ -7,8 +7,8 @@ description: >
   never edits a workflow.
 when_to_use: >
   On "audit CI", "review the workflows", "speed up the pipeline", "cut Actions minutes",
-  "parallelize jobs", or "fix caching". Also when a matrix job's failure reads as a pass, a
-  check is not blocking what it should, or a release is being cancelled mid-run.
+  "parallelize jobs", "CI is slow", or "fix caching". Also when a matrix job's failure reads as a pass, a
+  check is not blocking what it should ("why did that merge when the tests failed"), or a release is being cancelled mid-run.
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
 allowed-tools: Bash(yq:*) Bash(gh:*) Bash(ls:*) Read Glob Grep
@@ -43,20 +43,12 @@ produces two different severities for one line of YAML. And when a required chec
 workflow, report the observation and hand it over: reconciling rulesets against triggers needs the
 `gh api` calls that skill already makes.
 
-## When to use
-
-Trigger phrases: `ci audit`, `github actions`, `workflow performance`, `actions minutes`, `ci slow`,
-`parallelize ci`, `ci caching`, `required check`. "Why did that merge when the tests failed" is
-family A — gating correctness.
-
 ## Phase 1: Inventory
 
 Glob `.github/workflows/*.yml` and `.github/workflows/*.yaml`. An empty result — the directory is
 missing, or holds no YAML — means print `No GitHub Actions workflows found.` and stop.
 
-Use globbing rather than shelling out. `fd` is not guaranteed present, and it exits non-zero with
-`Search path is not a directory` when `.github/workflows/` is absent, so a bare `fd` returns an error
-where the stop condition expects an empty result. Where a shell is preferred anyway, guard it:
+Glob rather than `fd`, which errors instead of returning empty when the directory is absent. In a shell, guard it:
 
 ```bash
 [ -d .github/workflows ] && ls .github/workflows/*.y*ml 2>/dev/null
@@ -97,7 +89,7 @@ the cost when it is wrong, and the shape that fixes it.
 
 | Family | Covers |
 | ------ | ------ |
-| **A. Gating correctness** | Matrix jobs with no stable fan-in gate, jobs that cannot fail the run, gates on noisy signals, required names nothing produces |
+| **A. Gating correctness** | Matrix jobs with no stable fan-in gate, jobs that cannot fail the run, gates on noisy signals, required names nothing produces — "why did that merge when the tests failed" |
 | **B. Critical path** | Serialized independent steps, no cheap head gate, expensive jobs on every event, setup repeated instead of artifacts consumed, push and pull-request double runs |
 | **C. Caching** | Keys not derived from the lockfile, missing `restore-keys`, redundant or broken auto-caches, caching what is cheaper to rebuild |
 | **D. Spend and hygiene** | Missing `timeout-minutes`, default artifact retention, diagnostics uploaded unconditionally, no `concurrency` group, `cancel-in-progress` on irreversible work, needless full history, fixed sleeps |
@@ -156,10 +148,7 @@ Close the phase with one line carrying the counts:
 Drop any finding section with no findings. Do not pad a clean result — a workflow set with nothing
 wrong is a real outcome, and `Already right` carries it.
 
-`Not checked` is the one section that is never dropped while anything is in it, and every check
-that did not run goes in it — an unparsed workflow, a callee outside this repository, `yq` absent so
-the graph was read by hand, `gh` absent or no run history so timings are estimates, a family skipped
-for lack of input. A partial audit that omits them reads as a clean one.
+`Not checked` is never dropped while non-empty. It names each check that did not run, with the reason — an unparsed workflow, a callee outside this repository, `yq` or `gh` absent, no run history, a family skipped for lack of input.
 
 A filled report:
 
@@ -216,5 +205,3 @@ Offer them when a repository is starting from nothing, not as a target to conver
 | A reusable workflow (`uses:` at job level) | Audit the caller's graph; say the callee was not read unless it is in this repository |
 | A composite action in the repository | Read it — its steps are on the critical path too |
 | Only one job, doing everything | Still audit families A, C and D. A single job is not automatically wrong |
-
-Every row above that fires puts a line in `Not checked`, naming the check and the reason.

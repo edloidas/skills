@@ -2,8 +2,8 @@
 name: workspace-audit
 description: >
   Audit a pnpm 10+ workspace for configuration and monorepo problems: dependency placement,
-  workspace protocol usage, hoisting, catalog configuration, build order and build hooks,
-  dependency rules, and .npmrc settings that are now defaults. Reads and reports only.
+  workspace protocol usage, hoisting, catalog configuration, build order, overrides and
+  peer-dependency rules, and .npmrc settings that are now defaults. Reads and reports only.
 when_to_use: >
   When setting up or cleaning up a pnpm monorepo, diagnosing why a dependency resolves oddly
   across packages, or reviewing `pnpm-workspace.yaml`. Also on "audit the workspace", "check
@@ -18,24 +18,25 @@ allowed-tools: Bash(pnpm dedupe --check) Bash(pnpm -r ls:*) Bash(turbo run build
 
 ## Purpose
 
-Analyze pnpm workspace configuration — dependency placement, workspace protocol and catalog
-usage, build hooks, dependency rules, and cargo-culted `.npmrc` settings.
-
 **This skill reads and reports; it never edits the workspace.** Every command below is a read or a
 dry run (`pnpm dedupe --check`, `turbo run build --dry-run`, `syncpack list-mismatches`), so no
 config file, lockfile, or `node_modules` tree changes. The one command that would write is
 `pnpm -r run build` in Step 6 — it is there for a user who asks for it, not for the audit.
 
-Scoped to pnpm 10+ deliberately: catalogs, `allowBuilds`, `minimumReleaseAge` and the rest are
+Scoped to pnpm 10+ deliberately: catalogs, `catalogMode`, `overrides` and the rest are
 pnpm's own fields, and none of it transfers to npm, yarn or bun. On a repo whose lockfile is
 `package-lock.json`, `yarn.lock` or `bun.lock`, say so and stop rather than translating the advice.
 
+Supply-chain fields belong to `security-audit`, which grades them against its own floor:
+build-script allowlists (`allowBuilds`, the 10.0–10.25 split keys), `strictDepBuilds`, `minimumReleaseAge`,
+`trustPolicy`, and `blockExoticSubdeps`. Do not grade them here; Step 1 records which are set.
+
 ## Workflow
 
-Done means: the Step 11 report is printed, with every step either reported or listed under
+Done means: the Step 10 report is printed, with every step either reported or listed under
 **Not checked** — or Step 1 printed `Not a pnpm workspace` and stopped.
 
-Steps 2–10 each close with one line carrying their counts, such as `Step 5: 6 shared deps, 1
+Steps 2–9 each close with one line carrying their counts, such as `Step 5: 6 shared deps, 1
 hardcoded, catalogMode unset.` A step with nothing to check says why in that line.
 
 ### Step 1: Identify Workspace Type
@@ -48,10 +49,13 @@ Read `pnpm-workspace.yaml` and the root `package.json`. The `packageManager` fie
 pnpm version; `engines` may pin it too. Audit advice below assumes pnpm 10+; call out version-gated
 settings when the project is on an older minor.
 
-Start a **not-checked list** here and carry it to Step 11. Every step below that cannot run goes
+Start a **not-checked list** here and carry it to Step 10. Every step below that cannot run goes
 in it with its reason: an absent `.npmrc` or `turbo.json`, a `pnpm` binary too old for a
 version-gated field, an `npx` tool (`syncpack`, `madge`) that is not installed or refused to
 fetch. A report that names only the findings reads as a full audit of everything else.
+
+While reading `pnpm-workspace.yaml`, record which of the supply-chain fields above are set and
+which are missing, by key name only. They go under **Handed to security-audit** in the report.
 
 Close the step with one line: `Workspace: pnpm 10.28.1, 7 packages (3 apps, 4 libs), turbo.json present, no nx.json.`
 
@@ -106,28 +110,6 @@ pnpm dedupe --check
 
 ### Step 5: Check Catalog Configuration
 
-#### Catalog definition
-```yaml
-# pnpm-workspace.yaml
-catalog:
-  react: ^19.0.0
-  react-dom: ^19.0.0
-  typescript: ^5.0.0
-  vite: ^6.0.0
-  vitest: ^3.0.0
-
-  # npm: prefix aliases a name to a different package implementation
-  # vite: npm:@org/custom-vite-fork@^1.0.0
-```
-
-#### Usage in packages
-```json
-{
-  "dependencies": { "react": "catalog:", "react-dom": "catalog:" },
-  "devDependencies": { "vite": "catalog:", "vitest": "catalog:", "typescript": "catalog:" }
-}
-```
-
 #### Audit checks
 
 **The rule: a third-party dep used by two or more packages is declared once in the catalog and
@@ -141,17 +123,7 @@ referenced as `catalog:` everywhere.** A hardcoded version in an individual pack
 
 ### Step 6: Check Build Order
 
-Verify cross-package dependencies are declared:
-
-```json
-{
-  "name": "@myorg/app",
-  "dependencies": {
-    "@myorg/ui": "workspace:*",
-    "@myorg/utils": "workspace:*"
-  }
-}
-```
+Verify cross-package dependencies are declared as `workspace:*` (Step 3's shape) in each consumer:
 
 ```bash
 turbo run build --dry-run   # if Turbo is used — prints the order, builds nothing
@@ -161,87 +133,9 @@ pnpm -r ls --depth -1       # topological package list
 `pnpm -r run build` proves the order end to end but writes build output, so the audit does not run
 it. Offer it as a follow-up when the declared graph looks wrong.
 
-### Step 7: Check Build Hook Configuration
+### Step 7: Check Dependency Rules
 
-Build hook config belongs in `pnpm-workspace.yaml`, **not** `package.json`.
-
-#### pnpm 10.0–10.25
-
-```yaml
-# Blacklist: skip post-install scripts for these
-ignoredBuiltDependencies:
-  - unrs-resolver
-  - sharp
-
-# Whitelist: only these packages may run post-install scripts
-onlyBuiltDependencies:
-  - esbuild
-```
-
-Don't use both together — pick the model that fits the project's security posture.
-
-#### pnpm 10.26+ — `allowBuilds`
-
-Replaces `ignoredBuiltDependencies` and `onlyBuiltDependencies` with a single explicit map:
-
-```yaml
-allowBuilds:
-  esbuild: true
-  unrs-resolver: false
-  sharp: false
-```
-
-#### `strictDepBuilds` (10.3+)
-
-Fails the install if any dependency tries to run a build script that isn't covered by the allow/ignore config:
-
-```yaml
-strictDepBuilds: true
-```
-
-**Audit:** If neither `onlyBuiltDependencies` / `allowBuilds` nor `strictDepBuilds` is set, build scripts run unchecked — flag as a supply-chain risk.
-
-### Step 8: Check Dependency Rules
-
-All of these belong in `pnpm-workspace.yaml`.
-
-#### minimumReleaseAge (10.16+) / minimumReleaseAgeExclude (10.17+)
-
-Prevents installing packages published less than N minutes ago:
-
-```yaml
-minimumReleaseAge: 1440  # 24 hours
-
-minimumReleaseAgeExclude:
-  - '@typescript/native-preview'  # bleeding-edge, exempt by design
-```
-
-Audit: missing entirely is a risk signal. `1440` (24h) is a reasonable default.
-
-#### trustPolicy (10.21+)
-
-Enforces publisher trust levels — complements `minimumReleaseAge` with a signature/provenance check:
-
-```yaml
-trustPolicy: audit       # audit | warn | off
-
-trustPolicyExclude:      # (10.22+) exempt specific packages
-  - '@myorg/internal'
-
-trustPolicyIgnoreAfter: 525600  # (10.27+) ignore trust for packages older than 1 year
-```
-
-Audit: flag if `trustPolicy` is absent and the project has `minimumReleaseAge` set — both are supply-chain controls that complement each other.
-
-#### blockExoticSubdeps (10.26+)
-
-Restricts git, file, and URL dependencies to direct dependencies only — prevents transitive exotic sources:
-
-```yaml
-blockExoticSubdeps: true
-```
-
-Audit: flag if git or file deps appear in the dependency tree and this is not enabled.
+Both belong in `pnpm-workspace.yaml`.
 
 #### overrides
 
@@ -272,7 +166,7 @@ peerDependencyRules:
 
 Audit: flag `allowAny: ['*']` — that's too broad. Specific package names are fine.
 
-### Step 9: Check .npmrc
+### Step 8: Check .npmrc
 
 Most `.npmrc` settings commonly copy-pasted into projects are redundant defaults or belong elsewhere:
 
@@ -294,7 +188,7 @@ Valid reasons to use `.npmrc`:
 shell-emulator=true
 ```
 
-### Step 10: Check for Common Issues
+### Step 9: Check for Common Issues
 
 Both tools below are fetched by `npx` and may be unavailable offline or blocked by a registry
 policy. Run each, and put any that does not run on the not-checked list with its reason —
@@ -316,10 +210,10 @@ For each key under `catalog:` and each named catalog, grep the workspace's `pack
 `"<key>": "catalog:`. A key nothing references is stale. Recommend `cleanupUnusedCatalogs: true`,
 which prunes such keys on the user's next install — the audit does not run that install.
 
-### Step 11: Generate Report
+### Step 10: Generate Report
 
 One section per step group, `[x]` for what holds and `[ ]` for each finding, then a numbered
-**Recommendations** list ordered worst-first, then **Not checked** — one line per entry on the
+**Recommendations** list ordered worst-first, then **Handed to security-audit**, then **Not checked** — one line per entry on the
 list started in Step 1, with its reason.
 
 A filled report:
@@ -341,17 +235,9 @@ A filled report:
       catalog
 - [ ] `catalogMode` unset — nothing stops the next package from hardcoding a catalogued dep
 
-### Build Hooks
-- [x] `onlyBuiltDependencies: [esbuild, sharp]` in `pnpm-workspace.yaml`
-- [ ] pnpm is 10.28, so `onlyBuiltDependencies` is the legacy split key. Migrate to `allowBuilds`
-      (`pnpx codemod run pnpm-v10-to-v11`) before the v11 bump removes it
-- [ ] `strictDepBuilds` unset — a new dependency requesting a build script is skipped silently
-
 ### Dependency Rules
-- [ ] `minimumReleaseAge` unset — a package published 40 seconds ago installs. Set `1440`
-- [ ] `trustPolicy` unset
 - [x] `overrides` pins `vite` and `vitest` to `catalog:`
-- [ ] `blockExoticSubdeps` unset while `packages/legacy` pulls a `git:` transitive dep
+- [ ] `peerDependencyRules.allowAny: ['*']` — suppresses every peer warning; name the packages
 
 ### Configuration
 - [ ] .npmrc sets `prefer-frozen-lockfile=true` (pnpm 10 default) and
@@ -359,12 +245,14 @@ A filled report:
 - [x] `@acme:registry=https://npm.acme.dev/` is a legitimate .npmrc entry
 
 ### Recommendations
-1. Set `minimumReleaseAge: 1440` and `trustPolicy: audit` in `pnpm-workspace.yaml`
-2. Enable `strictDepBuilds: true` and migrate to `allowBuilds`
-3. Move `vite` into the catalog and set `catalogMode: force`
-4. Replace the two hardcoded `@acme/ui` versions with `workspace:*`
-5. Enable `blockExoticSubdeps: true` once the `git:` transitive dep in `packages/legacy` is gone
-6. Delete the two redundant .npmrc lines
+1. Replace the two hardcoded `@acme/ui` versions with `workspace:*`
+2. Move `vite` into the catalog and set `catalogMode: force`
+3. Replace `allowAny: ['*']` with the packages that need it
+4. Delete the two redundant .npmrc lines
+
+### Handed to security-audit
+- Set: `onlyBuiltDependencies`. Missing: `minimumReleaseAge`, `strictDepBuilds`, `trustPolicy`.
+  Ungraded here — run `security-audit` to grade them
 
 ### Not checked
 - Circular dependencies — `npx madge` could not fetch; the registry is behind a proxy

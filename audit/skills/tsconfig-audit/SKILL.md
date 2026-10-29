@@ -30,10 +30,6 @@ Report what a `tsconfig.json` should look like on TypeScript 7:
 - Options that became load-bearing because a default changed, and must now be written explicitly
 - Options that look droppable but should be kept
 
-## When to Use This Skill
-
-Trigger phrases: "tsconfig audit", "tsconfig cleanup", "TypeScript 7 migration", "compilerOptions", "drop tsconfig options".
-
 ## Scope
 
 This audits `compilerOptions` only. `include`/`exclude`/`files` are read to reason about
@@ -53,13 +49,7 @@ releases move:
 | `tsc --showConfig` | Options *implied* by another option, and the fully resolved `extends` chain |
 | `references/ts7-options.json` | Defaults, locked values, which unknown options are legacy removals rather than typos, keep-list |
 
-Two things the compiler will not tell you, which the script handles itself:
-
-- **`--showConfig` swallows config errors.** It prints a config containing a removed option and
-  exits 0. It is never used as a diagnostics source.
-- **Diagnostics anchor to the leaf config**, even when the option was inherited from a base inside
-  `node_modules`. The script walks the `extends` chain itself to attribute each option to the file
-  that really set it.
+`--showConfig` exits 0 on a config holding a removed option, so it is never a diagnostics source.
 
 ## Asking the User
 
@@ -160,7 +150,8 @@ Do not silently recommend deleting an option you could not identify.
 
 ### Step 5: Report
 
-Lead with the blocking findings and the concrete failure each one causes. Then the must-add
+Lead with the blocking findings and the concrete failure each one causes, taking each fix from
+`references/migrations.md`. Then the must-add
 findings, then the safe drops as a single grouped list, then anything to keep and why.
 
 Close with a **Not checked** list, one line per item with its reason. Everything the run could not
@@ -251,15 +242,7 @@ node <skill-dir>/scripts/refresh-options.mjs [--tag typescript/v7.0.2] [--tsc <p
 ```
 
 It pulls the compiler's own option declarations from the pinned `microsoft/typescript-go` release
-tag, then probes an installed `tsc` for removals, enums and implications. Probes win where the two
-disagree — the declared defaults are help strings and are wrong in places. `rootDir` declares
-"Computed from the list of input files" but is fixed at `.`, and the 7.0 release notes claim
-`stableTypeOrdering` cannot be disabled while the compiler accepts `false`.
+tag, then probes an installed `tsc`; probes win where the two disagree.
 
 Regenerate when a new TypeScript release ships, or when Step 4 turns up an option the data file
 does not know.
-
-## Reference Files
-
-- `references/migrations.md` — the fix for each removed option and value
-- `references/ts7-options.json` — generated option data

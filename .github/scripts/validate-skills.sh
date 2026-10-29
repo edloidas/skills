@@ -205,14 +205,13 @@ workflow/skills/solve-issue=538"
 
 # The line cap alone let a body grow sideways: changes-review sat at 499 lines and
 # ~7.3k tokens. Estimated as bytes / 4, the same heuristic skill-metrics.mjs prints.
-# The last three rows are grandfathered at their size when this cap arrived — the
+# The last two rows are grandfathered at their size when this cap arrived — the
 # ceiling stops growth, it does not sanction the size.
 BODY_TOKEN_CAP=5000
 BODY_TOKEN_BUDGETS="plan/skills/issue-flow=9900
 workflow/skills/solve-issue=7410
 review/skills/changes-review=6490
-review/skills/code-cleanup=5590
-audit/skills/security-audit=5700"
+review/skills/code-cleanup=5590"
 
 # Skills that answer outward-facing correspondence and refuse structured-choice
 # prompting on purpose; each carries its own `Asking the User` section saying so.

@@ -225,6 +225,25 @@ Bun does not currently expose `Strict` or `IgnoreMissingTime` equivalents — th
 
 **Common Mistake:** copying pnpm's 4320 into bun's setting. 4320 seconds = 72 minutes. That is approximately no protection at all.
 
+### 4c. pnpm trust policy
+
+The release-age gate waits out a malicious version; `trustPolicy: no-downgrade` refuses one whose publish evidence is weaker than the package's earlier releases — a package that shipped through a Trusted Publisher with provenance, then suddenly ships from a bare token. That is the shape of a hijacked maintainer token, and age alone does not catch it.
+
+**Detection:** `pnpm-workspace.yaml` value of `trustPolicy` (pnpm 10.21+, so present at the 10.26 floor). Default is `off`.
+
+**Severity:**
+- Unset or `off` — **low (policy)**. Enabling it can fail installs for a package that legitimately lost provenance; list those in `trustPolicyExclude`.
+- `no-downgrade` — **pass**.
+
+**Fix:**
+
+```yaml
+# pnpm-workspace.yaml
+trustPolicy: no-downgrade
+trustPolicyExclude:            # packages that legitimately lost provenance
+  - '<package>@<version>'
+```
+
 ## 5. Release-Age Exclusions (owned scopes only)
 
 The release-age gate blocks new versions of every package equally, including the team's own internal libraries. For workspaces that publish their own scoped packages, every release of an internal lib is invisible to consumers for 3 days. The exclude list bypasses the gate for trusted scopes — but **only for the team's own org scopes**, never for arbitrary `@scope/*` deps the audit happens to see.

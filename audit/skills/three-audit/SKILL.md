@@ -21,18 +21,8 @@ argument-hint: "[<target-dir>] [--check=<name>]"
 
 ## Purpose
 
-A curated catalog of WebGL performance and correctness checks for Three.js and
-React Three Fiber projects. Each check is one self-contained file describing
-what to look for, why it matters, and how to fix it. The skill walks you
-through running them against a target codebase and producing a structured
-findings report.
-
 **This skill reports; it never edits the scene.** After a run the working tree
-is byte-identical — fixes are for the maintainer to apply.
-
-This is not a linter — most checks need contextual judgment, not just
-pattern-matching. The agent is expected to read the offending code and reason
-about whether the pattern actually applies in this scene.
+is byte-identical. Most checks need judgment: a grep hit needs a read.
 
 Detection commands assume `rg` (ripgrep) and `jq` are on `PATH`. Substitute
 `grep -rn` and a manual read of `package.json` where they are not.
@@ -112,22 +102,7 @@ Close the step with one line: `Checks: 11 of 14 run, 47 candidate sites read, 6 
 ### Step 5 — Report findings
 
 Group findings by severity (`high`, `medium`, `low`) and emit one section per
-check that produced a finding. Format:
-
-```markdown
-### <check-name> — <severity>
-
-**Where:** <file>:<line> [+ more]
-
-**What's wrong:** <one sentence>
-
-**Suggested fix:**
-\`\`\`<lang>
-<canonical pattern>
-\`\`\`
-
-**Why it matters:** <one sentence on the user-visible impact>
-```
+check that produced a finding, in the shape of the filled report below.
 
 Each check file ends with a **How to report this finding** section — use its
 wording so findings from different checks read consistently.
@@ -239,18 +214,7 @@ still low.
 
 ## Adding a New Check
 
-1. Create `references/checks/<name>.md` using the existing checks as a
-   template. Required sections: **What it is**, **Why it matters**,
-   **How to detect**, **Anti-patterns**, **Canonical fix**, **Notes**, and
-   **How to report this finding**.
-2. Append a row to the appropriate **Checks** table above with topic and
-   severity.
-3. If the check is conditional on a project convention, state the activation
-   signal in a `**Conditional:**` line in its header block and add the
-   detection command to Step 3.
-4. If the check needs special detection (beyond grep + read), describe it in
-   the check file itself rather than baking shell scripts into the skill —
-   keeps each check portable across Claude / Codex / future hosts.
+Maintainer steps are in `references/adding-a-check.md`.
 
 ## Out of Scope
 
@@ -260,8 +224,4 @@ still low.
 - General React patterns — effects, memoization, state architecture (use
   `react-audit`; this skill only covers React as it meets the Canvas)
 
-The audit reads the JS/TS source. The one exception is
-[`texture-budget`](references/checks/texture-budget.md), which also sizes the
-texture files on disk, because how a texture is *delivered* — dimensions,
-format, colour space — is a renderer concern that the source alone cannot
-answer. How it was *authored* is not.
+The audit reads the JS/TS source; only `texture-budget.md` also sizes texture files on disk, since delivery is a renderer concern.

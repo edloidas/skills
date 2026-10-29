@@ -72,6 +72,7 @@ because they lack the controls — say it that way in the report. Floors: pnpm >
 | Owned `@scope/*` in lockfile without registry mapping | high | Add `registries:` (pnpm) or `[install.scopes]` (bun) |
 | Owned `@scope/*` not in the release-age exclude list | medium | pnpm `minimumReleaseAgeExclude` (singular) / bun `minimumReleaseAgeExcludes` (plural) |
 | pnpm `verifyStoreIntegrity: false` / `blockExoticSubdeps: false` | high | Remove the override |
+| pnpm `trustPolicy` unset or `off` | low (policy) | `trustPolicy: no-downgrade`; exempt with `trustPolicyExclude` |
 
 Not findings: absence of bun `trustedDependencies` or `ignoreScripts` (defaults are safe);
 pnpm `enablePrePostScripts: true` (governs the project's own scripts, not dependency builds).

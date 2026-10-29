@@ -21,30 +21,11 @@ composition, lifecycle hooks, consistency, and performance. Vite Plus convention
 app-style repos. **Reports only — it reads the manifest and writes a report; no file in the repo is
 touched, so the working tree is byte-identical afterwards.**
 
-## When to Use This Skill
-
-Use when the user asks to:
-- "Audit my npm scripts"
-- "Standardize package.json script names"
-- "Decide whether this should be `dev` or `start`"
-- "Review build, check, or release scripts"
-- "Make root workspace scripts consistent with package scripts"
-
-Trigger phrases: "scripts audit", "package.json scripts", "npm scripts", "pnpm scripts", "bun scripts", "script naming", "script conventions"
-
 ## Scope
 
 This is still a **scripts** skill, not a full `package.json` audit.
 
-Read adjacent manifest fields only when they change what "good scripts" means:
-- `private`
-- `packageManager`
-- `workspaces`
-- `type`
-- `bin`
-- `exports`
-- `files`
-- `engines`
+Read adjacent manifest fields — the ones Step 1's `jq` reads — only as role signals for Step 2, never as audit subjects.
 
 Do **not** drift into dependency hygiene, `exports`, `peerDependencies`, publish metadata, or security scanning unless the user explicitly asks for that broader audit.
 
@@ -52,21 +33,13 @@ Do **not** drift into dependency hygiene, `exports`, `peerDependencies`, publish
 
 If a repo uses `vite-plus`, aliases `vite` to `@voidzero-dev/vite-plus-core`, or invokes `vp` in scripts, treat Vite Plus as the primary app workflow.
 
-Prefer VP-native guidance:
-- `build`: `vp run clean && tsgo && vp build`
-- `check`: `vp check && vp run typecheck`
-- `test`: `vp test --run`
-- `test:ci`: `vp test --run --coverage`
-- `prepare`: `vp config`
+Prefer the VP-native commands of the App (Vite Plus) family in `references/role-templates.md` — read it whenever VP is detected, whatever role Step 2 picks.
 
 Do not recommend ESLint-specific patterns in this skill. If the repo exposes Biome explicitly, it is fine to mention `biome` scripts as optional non-VP companion scripts, but VP remains the primary app workflow.
 
 ## Non-VP Patterns
 
-Non-VP patterns are still worth mentioning when the repo actually uses them:
-- Plain `pnpm` script composition is the normal baseline for monorepo roots, publishable libraries, and release flows.
-- `biome` scripts are a valid non-VP quality layer, especially in libraries, CLIs, and repos with explicit lint or format commands.
-- Lifecycle hooks in non-VP repos follow Step 7.
+Mention non-VP patterns when the repo actually uses them: plain `pnpm` composition is the baseline for monorepo roots, libraries, and release flows, and `biome` scripts are a valid non-VP quality layer.
 
 When VP is detected, do not try to "improve" the repo by replacing VP-native app flows with separate non-VP app scripts unless the user explicitly asks for that direction.
 
@@ -127,88 +100,8 @@ Close detection with one line: `Role: monorepo root · pnpm 9 · 14 scripts · V
 Do not demand the same scripts from every package. These are pattern families, not one universal
 template: audit against the family the Step 2 role selected, and ignore the others.
 
-#### App (Vite Plus)
-
-```json
-{
-  "dev": "vp dev",
-  "build": "vp run clean && tsgo && vp build",
-  "clean": "rm -rf dist coverage reports",
-  "typecheck": "tsgo --noEmit",
-  "check": "vp check && vp run typecheck",
-  "test": "vp test --run",
-  "test:ci": "vp test --run --coverage",
-  "prepare": "vp config"
-}
-```
-
-Separate `lint`, `lint:fix`, `format`, and `format:check` scripts are optional in a VP-driven repo. Keep them only when they expose distinct Biome behavior the team actually uses:
-
-```json
-{
-  "lint": "biome check .",
-  "lint:fix": "biome check --write .",
-  "format": "biome format --write .",
-  "format:check": "biome format ."
-}
-```
-
-#### Monorepo root (pnpm)
-
-```json
-{
-  "build": "pnpm --filter @edloidas/example run build",
-  "check": "pnpm --filter @edloidas/example run check",
-  "test": "pnpm --filter @edloidas/example run test",
-  "test:ci": "pnpm --filter @edloidas/example run test:ci",
-  "dev": "pnpm --filter @edloidas/example exec vp dev",
-  "prepare": "pnpm --filter @edloidas/example run prepare"
-}
-```
-
-Prefer delegation over re-implementing leaf commands in the root package.
-
-#### Publishable library (non-VP)
-
-```json
-{
-  "clean": "rm -rf dist coverage",
-  "typecheck": "tsc --noEmit",
-  "lint": "biome lint .",
-  "lint:fix": "biome lint --write .",
-  "format": "biome format --write .",
-  "format:check": "biome format .",
-  "check": "pnpm typecheck && pnpm lint && pnpm format:check",
-  "check:fix": "pnpm typecheck && pnpm lint:fix && pnpm format",
-  "build": "pnpm clean && pnpm build:*",
-  "test": "vitest run",
-  "test:watch": "vitest",
-  "test:ci": "vitest run --coverage",
-  "validate": "pnpm check && pnpm build && pnpm test:ci",
-  "release:dry": "pnpm publish --dry-run --no-git-checks",
-  "prepublishOnly": "pnpm validate"
-}
-```
-
-#### Service / bot / CLI (non-VP)
-
-```json
-{
-  "start": "bun src/index.ts",
-  "typecheck": "tsc --noEmit",
-  "lint": "biome lint .",
-  "lint:fix": "biome lint --write .",
-  "format": "biome format --write .",
-  "format:check": "biome format .",
-  "check": "bun run typecheck && bun run lint && bun run format:check",
-  "check:fix": "bun run typecheck && bun run lint:fix && bun run format",
-  "test": "bun test",
-  "test:watch": "bun test --watch",
-  "validate": "bun run check && bun run test"
-}
-```
-
-`build` is optional here if the runtime already executes the source directly.
+Read the selected family's template from `references/role-templates.md` — App (Vite Plus),
+Monorepo root (pnpm), Publishable library (non-VP), or Service / bot / CLI (non-VP).
 
 ### Step 4: Check Naming Conventions
 
@@ -248,20 +141,6 @@ Naming rules:
 
 Leaf scripts should do one job well. Composite scripts should compose those leaf scripts instead of duplicating raw command strings everywhere.
 
-Good composition:
-
-```json
-{
-  "clean": "rm -rf dist coverage reports",
-  "typecheck": "tsgo --noEmit",
-  "build": "vp run clean && tsgo && vp build",
-  "check": "vp check && vp run typecheck",
-  "test": "vp test --run",
-  "test:ci": "vp test --run --coverage",
-  "prepare": "vp config"
-}
-```
-
 Guidelines:
 - `check` should be the fast, repeatable preflight gate.
 - `check:fix` should touch the same surfaces as `check`, but with writes enabled where appropriate.
@@ -281,23 +160,9 @@ Look for consistency across related variants:
 
 #### Vite Plus mode pairing
 
-```jsonc
-// Good
-"check": "vp check && vp run typecheck",
-"test": "vp test --run",
-"test:ci": "vp test --run --coverage"
-```
-
 If a VP repo exposes `test:ci`, it should usually add something CI-specific such as coverage or stricter reporting rather than duplicating `test`.
 
 #### Biome pairing
-
-```jsonc
-"lint": "biome check .",
-"lint:fix": "biome check --write .",
-"format": "biome format --write .",
-"format:check": "biome format ."
-```
 
 If the repo keeps Biome scripts, related variants should usually target the same scope unless the difference is intentional and documented.
 
@@ -327,16 +192,6 @@ Parallelize only when it preserves readable output and does not break dependency
 ### Step 7: Check Lifecycle Hook Usage
 
 Use package lifecycle hooks for real lifecycle boundaries:
-
-```json
-{
-  "prepare": "vp config",
-  "prepack": "pnpm build",
-  "prepublishOnly": "pnpm validate"
-}
-```
-
-Guidelines:
 - In VP repos, `prepare: "vp config"` is a strong default.
 - In non-VP repos, `prepare: "husky"` is a valid setup hook when the project manages git hooks explicitly.
 - `prepare` is for local setup such as VP configuration or git hooks, not for hidden build work.

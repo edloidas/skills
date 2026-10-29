@@ -1,4 +1,4 @@
-## Optimized pnpm 10+ Workspace Template
+## Optimized pnpm Workspace Template (10.26+)
 
 ### pnpm-workspace.yaml
 ```yaml
@@ -22,36 +22,20 @@ catalogMode: force
 # Remove unused catalog entries on install (10.15+)
 cleanupUnusedCatalogs: true
 
-# Security: reject packages published less than 24h ago (10.16+)
-minimumReleaseAge: 1440
-# Exempt bleeding-edge or trusted packages from the age check (10.17+):
+# Supply-chain settings follow security-audit's package-manager checklist (pnpm 10.26+).
+# Release-age gate in minutes: 4320 = 72h, the audit's floor
+minimumReleaseAge: 4320
+minimumReleaseAgeStrict: true
 # minimumReleaseAgeExclude:
-#   - '@org/internal-package'
+#   - '@myorg/*'
 
-# Publisher trust enforcement — complements minimumReleaseAge (10.21+)
-trustPolicy: audit
-# trustPolicyExclude:  # exempt specific packages (10.22+)
-#   - '@myorg/internal'
+# Fail the install when a version's publish evidence is weaker than earlier releases (10.21+)
+trustPolicy: no-downgrade
 
-# Restrict exotic (git/file/url) dep sources to direct deps only (10.26+)
-blockExoticSubdeps: true
-
-# Build hooks (pnpm 10.0–10.25): choose one model
-# Whitelist: only listed packages may run install scripts
-onlyBuiltDependencies:
-  - esbuild
-# Blacklist: skip install scripts for these
-# ignoredBuiltDependencies:
-#   - unrs-resolver
-#   - sharp
-
-# Build hooks (pnpm 10.26+): single map replaces the two settings above
-# allowBuilds:
-#   esbuild: true
-#   unrs-resolver: false
-#   sharp: false
-
-# Fail install if any dep runs unchecked build scripts (10.3+)
+# Dependency build scripts are denied by default; this map is the audit log
+allowBuilds:
+  esbuild: true    # bundler ships a native binary via postinstall
+  sharp: false
 strictDepBuilds: true
 
 # Force transitive consumers to use catalog versions
@@ -80,7 +64,7 @@ overrides:
   },
   "engines": {
     "node": ">= 22.0.0",
-    "pnpm": ">= 10.16.0"
+    "pnpm": ">= 10.26.0"
   }
 }
 ```

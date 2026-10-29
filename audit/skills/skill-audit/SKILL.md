@@ -35,14 +35,6 @@ questions a script cannot answer:
 5. Can this skill damage something without being told to?
 6. Does the body stay in its own layer, or carry lines the host or `CLAUDE.md` owns?
 
-## When to Use This Skill
-
-- Before committing a change to any skill directory — this is the acceptance gate
-- "Audit skills", "score this skill", "check compliance with the spec"
-- "Is this skill Codex-ready?"
-- "Why does this skill never get invoked?"
-- Reviewing a PR that touches `SKILL.md`, `references/`, or `agents/openai.yaml`
-
 ## Division of Labour
 
 Anything mechanically checkable belongs to a script. Never re-derive by hand what one of
@@ -50,7 +42,7 @@ these already answers, and never score a skill down for something a script repor
 
 | Owner | Answers | Failure mode |
 | ----- | ------- | ------------ |
-| `.github/scripts/validate-skills.sh` | Marketplace and plugin manifests; canonical `<group>/skills/<name>` real directory; required frontmatter; `name` matches directory and format; description ≤ 1024 and discovery entry ≤ 1536; body line and token ceilings; shouty emphasis in the body and in dispatched prompts; the canonical `Asking the User` section, verbatim; `SKILL.md` referencing bundled files it does not ship | Hard, fails CI |
+| `.github/scripts/validate-skills.sh` | Manifests, layout, frontmatter, size ceilings, portability patterns, and every rule its `::error::` lines name | Hard, fails CI |
 | `scripts/validate-codex.sh` | Codex catalog membership, `compatibility` ↔ catalog agreement, `agents/openai.yaml` presence, Codex ⊆ OpenCode ∩ Pi host subset rule | Hard, fails CI |
 | `scripts/skill-metrics.mjs` | Body size and token estimate, largest inline block, duplicate sentence pairs, worked-output examples, longest prose run, unquantified dispatch lines, inline fallback length, named-output lines per section, unreachable bundled files, nested reference chains, heading skips, host-mechanism hits, `AskUserQuestion` fallback wording, cross-skill discovery overlap | Advisory measurements |
 | This skill | The six judgment questions above | Scored 1–5 |
