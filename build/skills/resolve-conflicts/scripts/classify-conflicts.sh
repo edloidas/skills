@@ -20,6 +20,15 @@
 #   UD path/to/file2.ts
 #   UU path/to/file3.ts
 #
+#   # delete-modify
+#   DU trivial path/to/file1.ts
+#   UD substantive path/to/file2.ts
+#
+# The delete-modify block rates the surviving side of every DU/UD conflict
+# against the merge base: `trivial` when its change is whitespace or blank lines
+# only, `substantive` otherwise. Only a trivial one may be resolved by deletion.
+# The header is always printed; the block is empty when there is no DU/UD.
+#
 # Paths are printed verbatim and relative to the REPOSITORY ROOT, so each one can
 # be passed to git as a single argument from the root of the work tree. A path
 # containing a literal newline is the one case this format cannot represent.
@@ -38,8 +47,8 @@ fi
 # Capture conflict status lines
 # git status --short shows two-letter codes for unmerged files:
 #   UU = both modified
-#   DU = deleted by theirs, modified by ours
-#   UD = deleted by ours, modified by theirs
+#   DU = deleted by ours, modified by theirs
+#   UD = modified by ours, deleted by theirs
 #   AA = both added
 #   DD = both deleted
 #   AU = added by us, unmerged by theirs
@@ -119,4 +128,25 @@ while IFS= read -r line; do
     # File path starts at position 3 (after code + space)
     FILE="${line:3}"
     echo "$CODE $FILE"
+done <<< "$CONFLICT_LINES"
+
+# A DU/UD conflict keeps the modified version in one index stage: theirs (3)
+# for DU, ours (2) for UD. Base is stage 1; without one there is nothing to
+# compare against, so the change counts as substantive.
+echo ""
+echo "# delete-modify"
+while IFS= read -r line; do
+    CODE="${line:0:2}"
+    FILE="${line:3}"
+    case "$CODE" in
+        DU) STAGE=3 ;;
+        UD) STAGE=2 ;;
+        *) continue ;;
+    esac
+    RATING=substantive
+    if git rev-parse -q --verify ":1:$FILE" > /dev/null 2>&1 &&
+        git diff --quiet -w --ignore-blank-lines ":1:$FILE" ":$STAGE:$FILE" 2> /dev/null; then
+        RATING=trivial
+    fi
+    echo "$CODE $RATING $FILE"
 done <<< "$CONFLICT_LINES"

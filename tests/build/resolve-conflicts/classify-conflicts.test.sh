@@ -201,6 +201,87 @@ test_a_reported_path_is_usable_from_the_repository_root() {
     "remaining conflicts"
 }
 
+# ------------------------------------------------------------ delete/modify --
+
+# The rating of one path in the delete-modify block.
+rating_of() {
+  printf '%s\n' "$STDOUT" | sed -n "s|^[A-Z][A-Z] \\([a-z]*\\) $1\$|\\1|p"
+}
+
+# main deletes shared.txt; feature rewrites it with the given content.
+delete_against_modify() {
+  conflict_repo
+  printf '%s' "$1" > shared.txt
+  git commit --quiet -am "theirs modifies"
+  git checkout --quiet main
+  git rm --quiet shared.txt
+  git commit --quiet -m "ours deletes"
+  start_conflicted_merge
+}
+
+# A real edit on the surviving side is the work an unconditional `git rm` would
+# have thrown away.
+test_du_with_a_substantive_change_is_rated_substantive() {
+  delete_against_modify 'original
+new logic
+'
+  classify
+  assert_eq 0 "$STATUS" "exit status"
+  assert_eq DU "$(code_of shared.txt)" "code for shared.txt"
+  assert_eq substantive "$(rating_of shared.txt)" "rating"
+  assert_contains "$(git status --porcelain)" "DU shared.txt" "still unresolved"
+}
+
+test_du_with_a_whitespace_only_change_is_rated_trivial() {
+  delete_against_modify '  original
+
+'
+  classify
+  assert_eq 0 "$STATUS" "exit status"
+  assert_eq trivial "$(rating_of shared.txt)" "rating"
+}
+
+test_ud_with_a_substantive_change_is_rated_substantive() {
+  conflict_repo
+  git rm --quiet shared.txt
+  git commit --quiet -m "theirs deletes"
+  git checkout --quiet main
+  commit "ours modifies" shared.txt "more"
+  start_conflicted_merge
+
+  classify
+  assert_eq UD "$(code_of shared.txt)" "code for shared.txt"
+  assert_eq substantive "$(rating_of shared.txt)" "rating"
+}
+
+test_delete_modify_rates_a_path_containing_a_space() {
+  conflict_repo
+  commit "base" "dir name/a file.txt" "base"
+  git checkout --quiet main
+  git merge --quiet feature
+  git checkout --quiet feature
+  commit "theirs modifies" "dir name/a file.txt" "more"
+  git checkout --quiet main
+  git rm --quiet "dir name/a file.txt"
+  git commit --quiet -m "ours deletes"
+  start_conflicted_merge
+
+  classify
+  assert_contains "$STDOUT" "DU substantive dir name/a file.txt" "delete-modify block"
+}
+
+# Callers parse the block by its header, so it is there even with no DU/UD.
+test_delete_modify_header_is_printed_without_entries() {
+  conflict_repo
+  commit "theirs" shared.txt "theirs"
+  git checkout --quiet main
+  commit "ours" shared.txt "ours"
+  start_conflicted_merge
+
+  classify
+  assert_eq "# delete-modify" "$(last_line "$STDOUT")" "last line"
+}
+
 # ------------------------------------------------------------ failure modes --
 
 # A newline in a path splits the record, and the leading half still matches a

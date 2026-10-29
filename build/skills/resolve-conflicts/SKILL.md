@@ -87,14 +87,23 @@ Link: <url>
 ```bash
 git fetch origin <base>
 git fetch origin <head>
-before=$(git rev-parse "origin/<head>")
-git checkout <head>
-git reset --hard origin/<head>
-git rebase origin/<base>
 ```
 
-Keep `$before` for Step 5. It is the remote tip this rebase started from, and the only
-value a force-push may safely lease against.
+Then run `scripts/prepare-branch.sh <head>`. It checks out `<head>` at `origin/<head>` with
+`git switch -C`, never `reset --hard`, and only after confirming nothing would be lost. Print its
+`recovery=` value as the first line of output: `Recovery point: <sha>` — `git switch -C <head>
+<sha>` restores the branch as it was.
+
+| Exit | Meaning | Action |
+|------|---------|--------|
+| 0 | Branch is at `origin/<head>` | Keep `before=` as `$before`, run `git rebase origin/<base>` |
+| 1 | Not a git repository, or `<head>` missing | Show the error, stop |
+| 2 | Work tree not clean | Stop and show the listed files. Step 2 should have moved to a worktree |
+| 3 | Local `<head>` has commits the remote lacks | Show the listed commits and the recovery point, then stop. Do not reset or delete the branch to get past this; the user pushes those commits or rebases the branch themselves |
+| 4 | `origin/<head>` missing | Show the error, stop |
+
+`$before` is the remote tip this rebase started from, and the only value a force-push may
+safely lease against.
 
 If rebase produces conflicts → proceed to Resolution Pipeline.
 If rebase completes cleanly → show "No conflicts after rebase" and stop.
@@ -162,7 +171,8 @@ Same as Local Mode but:
      file, and resolves nothing.
    - If the host has no subagent facility, classify inline using the same prompt.
    - Parse the classifier output to get the trivial/simple/complex subgroups
-4. Combine bash output (DU/UD/DD/AU/UA) with classifier output
+4. Combine bash output (DU/UD/DD/AU/UA, and the `# delete-modify` block rating each DU/UD
+   `trivial` or `substantive`) with classifier output
 5. Print the initial report (see `references/report-format.md`)
 
 ### Phase 2: Auto-Resolve
@@ -171,8 +181,8 @@ Resolve groups that need no LLM analysis:
 
 | Group | Command |
 |-------|---------|
-| DU | `git rm "<file>"` for each file |
-| UD | `git rm "<file>"` for each file |
+| DU / UD rated `trivial` | `git rm "<file>"` — the surviving side changed only whitespace or blank lines |
+| DU / UD rated `substantive` | Not resolved here — see **Delete/modify with real changes** below |
 | DD | `git rm "<file>"` for each file |
 | AA | Classified with the UU files; from here on, every UU count and step includes them |
 | AU | `git checkout --ours "<file>" && git add "<file>"` — only our side has a version |
@@ -186,7 +196,28 @@ other.
 Batch all trivial UU files into one resolver subagent for parallel execution.
 
 When the group is done, print one line: `Auto-resolved <N> of <T> conflicts (DU <n>, UD <n>, DD <n>,
-AU <n>, UA <n>, UU trivial <n>)`.
+AU <n>, UA <n>, UU trivial <n>); <K> delete/modify for the user`.
+
+#### Delete/modify with real changes
+
+A `substantive` DU or UD means one side deleted a file the other side changed beyond whitespace.
+Deleting it would discard that change, so it is never resolved without the user. For each file,
+collect and show:
+
+- Who deleted it: DU is deleted by ours and changed by theirs, UD the reverse. In a rebase ours is
+  the upstream and theirs the commit being replayed; in a merge ours is the current branch
+- What the other side changed: `git diff --shortstat :1:"<file>" :<n>:"<file>"`, `<n>` being 3 for
+  DU and 2 for UD
+- The commits on each side: `git log --oneline --left-right HEAD...<other> -- "<file>"`, `<other>`
+  being `REBASE_HEAD` in a rebase and `MERGE_HEAD` in a merge
+
+In Conditional mode, leave the file unresolved and report it. Otherwise ask, per **Asking the User**,
+one question per file:
+
+1. `Keep the change` (Recommended) — `git checkout --theirs "<file>"` for DU, `--ours` for UD, then
+   `git add "<file>"`
+2. `Accept deletion` — `git rm "<file>"`, discarding the change shown above
+3. `Leave unresolved` — the conflict stays; the file appears in the final report
 
 ### Phase 3: Context-Aware Resolve
 
@@ -249,13 +280,17 @@ After all resolvable conflicts are handled:
 A filled final report:
 
 ```
-Resolved 9/12 conflicts automatically. 3 remaining need review.
+Resolved 9/13 conflicts automatically. 4 remaining need review.
 
 ### UU — complex (3)
 
 - `src/scene/init.ts` — both sides restructured the mount sequence
 - `src/net/socket.ts` — same `reconnect()` retry loop modified by both sides
 - `pnpm-lock.yaml` — regenerated on both branches
+
+### DU — deleted by ours, changed by theirs (1)
+
+- `src/net/legacy.ts` — substantive: 1 file changed, 24 insertions(+), 6 deletions(-); `< 3f1c2aa remove legacy transport`, `> 9b07d1e add backoff to legacy reconnect`
 
 Checks: `pnpm typecheck` — 2 errors in `src/scene/init.ts`, both from the unresolved markers.
 ```

@@ -17,8 +17,8 @@ Link: <url>
 
 | Group | Type | Count | Resolution |
 |-------|------|-------|------------|
-| DU | deleted by theirs | N | `git rm` |
-| UD | deleted by ours | N | `git rm` |
+| DU | deleted by ours, changed by theirs | N | `git rm` if trivial, else user decides |
+| UD | changed by ours, deleted by theirs | N | `git rm` if trivial, else user decides |
 | DD | both deleted | N | `git rm` |
 | AA | both added | N | Classified with UU |
 | AU / UA | added by one side | N | Accept the side that added it |
@@ -31,19 +31,21 @@ Link: <url>
 After the summary table, list each non-empty group:
 
 ```
-### DU — deleted by theirs (N)
+### DU — deleted by ours, changed by theirs (N)
 
-Files exist in our branch but were deleted on the target. Safe to remove.
+Our side deleted these files and their side changed them. Whitespace-only changes are removed with
+the deletion; substantive ones wait for your decision.
 
-- `path/to/file.ts`
+- `path/to/file.ts` — trivial
+- `path/to/other.ts` — substantive: <shortstat>; <git log --left-right one-liners>
 ```
 
 ```
-### UD — deleted by ours (N)
+### UD — changed by ours, deleted by theirs (N)
 
-Files were deleted in our branch but modified on the target. Our deletion stands.
+Our side changed these files and their side deleted them. Same rule as DU.
 
-- `path/to/file.ts`
+- `path/to/file.ts` — substantive: <shortstat>; <git log --left-right one-liners>
 ```
 
 ```
@@ -88,9 +90,10 @@ Overlapping changes requiring deeper analysis.
 
 ## Rules
 
-- Omit empty groups entirely (don't show "DU — deleted by theirs (0)")
+- Omit empty groups entirely (don't show "DD — both deleted (0)")
 - Groups with >10 files use `<details><summary>N files</summary>` collapsible sections
-- Simple and complex UU files carry a one-line explanation each
+- Simple and complex UU files carry a one-line explanation each; DU and UD files carry their
+  rating, and a substantive one its shortstat and commits
 - PR context header (PR/Branches/Link) is only shown in PR mode. Omit in local/conditional mode.
 
 ## Final Report
