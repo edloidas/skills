@@ -31,7 +31,10 @@ JSX-only search uses `-g '*.tsx' -g '*.jsx'`.
 
 ## Workflow
 
-### Step 1 — Confirm the project actually uses Three.js / R3F
+### Step 1 — Resolve the audit root and confirm Three.js / R3F
+
+The audit root is `<target-dir>` when the user passed one, otherwise the current directory.
+Run every later command from that root.
 
 ```bash
 jq -r '
@@ -39,10 +42,23 @@ jq -r '
   | to_entries
   | map(select(.key | test("^(three$|@react-three/)")))
   | .[].key
-' package.json 2>/dev/null
+' package.json
 ```
 
-If nothing matches, stop and tell the user the audit doesn't apply.
+Read the outcome by its cause. Stop only where a row says so:
+
+| Outcome | Action |
+|---|---|
+| A `three` or `@react-three/*` key printed | Continue to Step 2 |
+| `jq` not on `PATH` | Read `package.json` directly; if it cannot be read either, put `project detection — jq missing` on the not-run list and let Step 2's anchors decide |
+| No match, and the root is a workspace (`pnpm-workspace.yaml`, or a `workspaces` field) | Run the workspace search below, then Steps 2–5 once per matching package with its directory as the root; findings keep repo-relative paths. No match → stop: does not apply |
+| No `package.json` at the root | Stop: no Node project at `<root>` — name the path so the user can pass a `<target-dir>` |
+| No match, not a workspace | Stop: the audit does not apply |
+
+```bash
+# Workspace members that depend on Three.js or R3F
+rg -l -g '**/package.json' -g '!**/node_modules/**' '"(three|@react-three/[^"]+)"\s*:' .
+```
 
 ### Step 2 — Find renderer entry points
 
@@ -70,20 +86,22 @@ activate each one only on its signal:
 
 ```bash
 # useframe-priority — is a priority argument used anywhere?
-rg -n 'useFrame\([^)]*\},\s*-?\d' -g '*.tsx' -g '*.jsx'
+# Multiline, PCRE2: a numeric last argument at the call's own depth, e.g.
+# useFrame((state, delta) => {...}, 1). Without PCRE2, read the `useFrame(` hits.
+rg -U -P -n 'useFrame\((?:[^()]|(\((?:[^()]|(?1))*\)))*,\s*-?\d+\s*\)' -g '*.tsx' -g '*.jsx'
 
 # scene-dom-separation — is there a scene directory distinct from components?
 ls -d src/scene src/three src/webgl src/components 2>/dev/null
 
-# store-wiring — is there an external atom store?
-jq -r '((.dependencies // {}) + (.devDependencies // {})) | keys[]' package.json 2>/dev/null \
-  | rg 'nanostores|zustand|jotai|valtio'
+# store-wiring — does the project use nanostores? (its detection is nanostores-only)
+jq -r '((.dependencies // {}) + (.devDependencies // {})) | keys[]' package.json \
+  | rg '^nanostores$|^@nanostores/'
 ```
 
 No signal → skip that check and record it. Each check file restates its own
 activation condition; follow that over this summary if they disagree.
 
-Keep a running **not-run list** from here to the report. Every check that does
+Keep a running **not-run list** from Step 1 to the report. Every check that does
 not execute goes in it with its reason, whatever the reason: a conditional check
 with no signal, a check `--check=<name>` excluded, a check whose detection needs
 `rg` or `jq` where neither is on `PATH`, a check whose target files could not be
@@ -123,9 +141,13 @@ A filled report:
 **What's wrong:** `<Canvas dpr={window.devicePixelRatio}>` is uncapped, so a 2x
 Retina display at fullscreen shades 4x the pixels of the dev preview.
 
-**Suggested fix:**
+**Suggested fix:** cap by a pixel budget, not a ratio alone:
 \`\`\`tsx
-<Canvas dpr={[1, Math.min(window.devicePixelRatio, 2)]}>
+const getDpr = () =>
+  Math.max(1, Math.min(window.devicePixelRatio, 1.5,
+    Math.sqrt(1_650_000 / (window.innerWidth * window.innerHeight))))
+
+<Canvas dpr={getDpr()}>
 \`\`\`
 
 **Why it matters:** This is the "smooth in the preview pane, choppy fullscreen"
@@ -149,7 +171,7 @@ useFrame(() => { tmp.set(x, y, z); mesh.current.position.copy(tmp) })
 2 findings: 2 high, 0 medium, 0 low
 
 **Not run:**
-- `store-wiring` — no atom store dependency in `package.json`
+- `store-wiring` — no `nanostores` dependency in `package.json`
 - `useframe-priority` — no `useFrame` priority argument anywhere in the tree
 - `texture-budget` — `public/textures/` is git-lfs and the pointers did not
   resolve; on-disk sizes could not be read
@@ -160,7 +182,7 @@ second pass over the same catalog.
 
 ## Lens Mode
 
-`review:changes-review` invokes this skill as a stack lens when the diff touches Three.js or R3F
+`changes-review` invokes this skill as a stack lens when the diff touches Three.js or R3F
 files. In that mode:
 
 - The caller supplies the scope. Audit exactly the files it resolved and no more — a whole-scene

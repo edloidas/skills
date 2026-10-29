@@ -41,8 +41,8 @@ lazy-loading a chunk changes mount order and moves the bug around.
 # Every frame callback, with and without a priority argument
 rg -n 'useFrame\(' -g '*.tsx' -g '*.jsx'
 
-# Calls that pass a priority
-rg -n 'useFrame\([^)]*\},\s*-?\d' -g '*.tsx' -g '*.jsx'
+# Calls that pass a priority — multiline, needs ripgrep built with PCRE2
+rg -U -P -n 'useFrame\((?:[^()]|(\((?:[^()]|(?1))*\)))*,\s*-?\d+\s*\)' -g '*.tsx' -g '*.jsx'
 ```
 
 Establish whether the convention is in force: if some callbacks pass a priority

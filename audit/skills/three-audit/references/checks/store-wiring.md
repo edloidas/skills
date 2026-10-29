@@ -2,9 +2,10 @@
 
 **Severity:** medium (perf / convention)
 **Applies to:** React Three Fiber with an external state store
-**Conditional:** only when the project depends on `nanostores` (or an
-equivalent atom store — Zustand, Jotai, Valtio). Skip in projects that keep
-scene state in React state alone.
+**Conditional:** only when the project depends on `nanostores`. The detection
+below is nanostores-only, so a Zustand, Jotai, or Valtio project does not
+activate it — record it on the not-run list as `store is <name>; detection is
+nanostores-only`.
 
 ## What it is
 
@@ -41,7 +42,7 @@ Confirm the store first:
 
 ```bash
 jq -r '((.dependencies // {}) + (.devDependencies // {})) | keys[]' package.json \
-  | rg 'nanostores|zustand|jotai|valtio'
+  | rg '^nanostores$|^@nanostores/'
 ```
 
 Then:
@@ -146,10 +147,6 @@ them to the rate a human can read (10–20 Hz is plenty for a HUD).
 - **`useStore` on a computed atom is the right way to select a slice** —
   subscribing to a whole object atom re-renders on every field change.
   Recommend `computed()` over subscribing broadly.
-- **`batch()` is nanostores-specific.** The equivalents are Zustand's single
-  `set()` with a partial object, Jotai's `useSetAtom` with one write, and
-  Valtio's natural batching through proxies. Match the store the repo uses
-  rather than proposing nanostores.
 - **This is a project convention** absorbed into the audit. Enforce it where
   the project already uses the store; do not propose adopting a store in a
   project that has none.

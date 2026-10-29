@@ -166,5 +166,6 @@ If a setPixelRatio call is uncapped or hard-coded, report:
 
 If `setPixelRatio` is missing entirely, report as `missing` rather than
 `uncapped` — the default behavior depends on context (vanilla Three.js
-defaults to 1; R3F defaults to `window.devicePixelRatio`), so naming the
-state explicitly helps the user reason about what changed.
+defaults to 1; R3F's `<Canvas>` defaults to `dpr={[1, 2]}`, the
+`Math.min(..., 2)` half-fix above), so naming the state explicitly helps the
+user reason about what changed.
