@@ -18,15 +18,22 @@
 #   head=issue-123
 #   base=master
 #   url=https://github.com/owner/repo/pull/123
+#   state=OPEN|CLOSED|MERGED
+#   head_repo=owner/repo          the repository <head> lives in; a fork for a fork PR
+#   cross_repository=true|false   true when head_repo is not the PR's own repository
+#   maintainer_can_modify=true|false
 #   mergeable_state=dirty|clean|unknown
 #
+# Requires gh (authenticated) and jq.
+#
 # Exit codes:
-#   0 = success, PR found
+#   0 = success, open PR found and not known to be clean
 #   1 = input parsing failed
-#   2 = gh CLI not authenticated or not installed
+#   2 = gh or jq not installed, or gh not authenticated
 #   3 = PR/issue not found
 #   4 = issue has no linked PR
 #   5 = PR has no conflicts (mergeable_state is clean)
+#   6 = PR is closed or merged; the key=value lines are still printed
 
 set -e
 
@@ -93,7 +100,7 @@ fi
 # Try to fetch as PR first (unless we know it's an issue)
 PR_JSON=""
 if [[ "$INPUT_TYPE" != "issue" ]]; then
-    PR_JSON=$(gh pr view "$NUMBER" "${REPO_ARGS[@]}" --json number,title,headRefName,baseRefName,url,mergeable,state 2>/dev/null || true)
+    PR_JSON=$(gh pr view "$NUMBER" "${REPO_ARGS[@]}" --json number,title,headRefName,baseRefName,url,mergeable,state,headRepository,headRepositoryOwner,isCrossRepository,maintainerCanModify 2>/dev/null || true)
 fi
 
 # If not a PR (or PR fetch failed), try as issue and find linked PR
@@ -108,11 +115,11 @@ if [[ -z "$PR_JSON" || "$PR_JSON" == "null" ]]; then
 
     # Try to find a PR linked to this issue
     # Method 1: Look for a branch named issue-<number> with an open PR
-    PR_JSON=$(gh pr list "${REPO_ARGS[@]}" --head "issue-$NUMBER" --json number,title,headRefName,baseRefName,url,mergeable,state --limit 1 2>/dev/null | jq '.[0] // empty' 2>/dev/null || true)
+    PR_JSON=$(gh pr list "${REPO_ARGS[@]}" --head "issue-$NUMBER" --json number,title,headRefName,baseRefName,url,mergeable,state,headRepository,headRepositoryOwner,isCrossRepository,maintainerCanModify --limit 1 2>/dev/null | jq '.[0] // empty' 2>/dev/null || true)
 
     # Method 2: Search PR body/title for issue reference
     if [[ -z "$PR_JSON" || "$PR_JSON" == "null" ]]; then
-        PR_JSON=$(gh pr list "${REPO_ARGS[@]}" --search "#$NUMBER" --json number,title,headRefName,baseRefName,url,mergeable,state --limit 1 2>/dev/null | jq '.[0] // empty' 2>/dev/null || true)
+        PR_JSON=$(gh pr list "${REPO_ARGS[@]}" --search "#$NUMBER" --json number,title,headRefName,baseRefName,url,mergeable,state,headRepository,headRepositoryOwner,isCrossRepository,maintainerCanModify --limit 1 2>/dev/null | jq '.[0] // empty' 2>/dev/null || true)
     fi
 
     if [[ -z "$PR_JSON" || "$PR_JSON" == "null" ]]; then
@@ -130,6 +137,9 @@ PR_BASE=$(echo "$PR_JSON" | jq -r '.baseRefName')
 PR_URL=$(echo "$PR_JSON" | jq -r '.url')
 PR_MERGEABLE=$(echo "$PR_JSON" | jq -r '.mergeable')
 PR_STATE=$(echo "$PR_JSON" | jq -r '.state')
+HEAD_REPO=$(echo "$PR_JSON" | jq -r '"\(.headRepositoryOwner.login // "")/\(.headRepository.name // "")"')
+CROSS_REPO=$(echo "$PR_JSON" | jq -r '.isCrossRepository // false')
+CAN_MODIFY=$(echo "$PR_JSON" | jq -r '.maintainerCanModify // false')
 
 # Determine mergeable state
 # gh returns: MERGEABLE, CONFLICTING, or UNKNOWN
@@ -140,20 +150,6 @@ case "$PR_MERGEABLE" in
     *)          MERGEABLE_STATE="unknown" ;;
 esac
 
-# If PR has no conflicts, exit with code 5
-if [[ "$MERGEABLE_STATE" == "clean" ]]; then
-    echo "type=pr"
-    echo "number=$PR_NUMBER"
-    echo "title=$PR_TITLE"
-    echo "head=$PR_HEAD"
-    echo "base=$PR_BASE"
-    echo "url=$PR_URL"
-    echo "state=$PR_STATE"
-    echo "mergeable_state=$MERGEABLE_STATE"
-    exit 5
-fi
-
-# Output PR info
 echo "type=pr"
 echo "number=$PR_NUMBER"
 echo "title=$PR_TITLE"
@@ -161,4 +157,18 @@ echo "head=$PR_HEAD"
 echo "base=$PR_BASE"
 echo "url=$PR_URL"
 echo "state=$PR_STATE"
+echo "head_repo=$HEAD_REPO"
+echo "cross_repository=$CROSS_REPO"
+echo "maintainer_can_modify=$CAN_MODIFY"
 echo "mergeable_state=$MERGEABLE_STATE"
+
+# A closed or merged PR has nothing to rebase onto, and pushing to its branch
+# would only rewrite history nobody will merge.
+if [[ "$PR_STATE" != "OPEN" ]]; then
+    echo "ERROR: PR #$PR_NUMBER is $PR_STATE" >&2
+    exit 6
+fi
+
+if [[ "$MERGEABLE_STATE" == "clean" ]]; then
+    exit 5
+fi

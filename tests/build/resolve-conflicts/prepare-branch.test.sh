@@ -96,6 +96,42 @@ test_missing_remote_branch_exits_4() {
   assert_contains "$STDERR" "origin/nope not found" "error output"
 }
 
+# `git switch` refuses a branch another worktree has checked out, so the script
+# names that worktree instead of failing halfway.
+test_branch_checked_out_in_another_worktree_exits_5() {
+  published_repo
+  git worktree add --quiet ../elsewhere feature
+  git worktree add --quiet --detach ../work
+
+  cd ../work
+  prepare feature
+  assert_eq 5 "$STATUS" "exit status"
+  assert_contains "$STDOUT" "worktree=" "worktree line"
+  assert_contains "$(value_of worktree)" "elsewhere" "reported worktree"
+  assert_eq "" "$(git symbolic-ref -q --short HEAD || true)" "work stays detached"
+}
+
+test_branch_checked_out_in_this_worktree_is_moved() {
+  published_repo
+  git checkout --quiet feature
+
+  prepare feature
+  assert_eq 0 "$STATUS" "exit status"
+  assert_eq "$(git rev-parse origin/feature)" "$(git rev-parse HEAD)" "HEAD"
+}
+
+# A fork PR's head lives on a remote other than origin.
+test_named_remote_is_used_instead_of_origin() {
+  published_repo
+  git remote rename origin fork
+  git branch --quiet -D feature
+
+  prepare feature fork
+  assert_eq 0 "$STATUS" "exit status"
+  assert_eq "$(git rev-parse fork/feature)" "$(value_of before)" "before"
+  assert_eq feature "$(git symbolic-ref --short HEAD)" "checked-out branch"
+}
+
 test_no_argument_exits_1() {
   published_repo
   prepare

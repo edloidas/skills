@@ -10,7 +10,7 @@ Print before starting conflict resolution. Shows all groups with file lists.
 ## Conflict Analysis Report
 
 PR: <title>
-Branches: <base> ← <head>
+Branches: <base> ← <head_repo>:<head>
 Link: <url>
 
 ### Summary
@@ -22,7 +22,7 @@ Link: <url>
 | DD | both deleted | N | `git rm` |
 | AA | both added | N | Classified with UU |
 | AU / UA | added by one side | N | Accept the side that added it |
-| UU | trivial | N | Accept the dominant side |
+| UU | trivial | N | Resolve the conflict blocks toward the dominant side |
 | UU | simple | N | Auto-resolve with context |
 | UU | complex | N | Deep analysis |
 | **Total** | | **N** | |
@@ -59,7 +59,7 @@ Both branches deleted this file. Safe to remove.
 ```
 ### AA — both added (N)
 
-Both branches added this file. Classified with the UU files; a trivial one takes the side the classifier names.
+Both branches added this file. Classified with the UU files; a trivial one resolves its conflict blocks toward the side the classifier names.
 
 - `path/to/file.ts`
 ```
@@ -67,7 +67,7 @@ Both branches added this file. Classified with the UU files; a trivial one takes
 ```
 ### UU — trivial (N)
 
-Conflicts are only in import statements, whitespace, or one side dominates.
+Every conflict block favors one side; only those blocks take it, and the cleanly merged hunks stay.
 
 - `path/to/file.ts`
 ```
@@ -111,3 +111,5 @@ Resolved X/N conflicts automatically. Y remaining need review.
 ```
 
 Followed by the initial report structure but showing ONLY unresolved files. The summary table shows only unresolved groups. Group descriptions remain the same.
+
+Both end with one line naming the checks Verification ran and their result — `Checks: <command> — <pass | N errors in <files>>` — or `Checks: not run — <reason>`.
