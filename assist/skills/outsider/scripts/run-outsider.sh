@@ -81,9 +81,10 @@ build_cmd() {
   case "$agent" in
     codex)
       # -o keeps the answer out of the echoed transcript, which would
-      # otherwise return the whole prompt back to the caller.
+      # otherwise return the whole prompt back to the caller. Callers often
+      # run from a directory that is not a repo, where codex refuses to start.
       OUT_FILE="$TMP_ROOT/outsider-codex-$$.out"
-      CMD=(codex exec --ephemeral -s read-only)
+      CMD=(codex exec --ephemeral --skip-git-repo-check -s read-only)
       if [[ -n "$model" ]]; then CMD+=(-m "$model"); fi
       if [[ -n "$effort" ]]; then CMD+=(-c "model_reasoning_effort=$effort"); fi
       if [[ ${#extra[@]} -gt 0 ]]; then CMD+=("${extra[@]}"); fi
@@ -205,7 +206,7 @@ check_preamble() {
 }
 
 run_agent() {
-  local agent="$1" timeout_s="$2" raw rc=0
+  local agent="$1" timeout_s="$2" raw err rc=0
   # Reported before the agent name, so the message never reads as the agent's
   # fault — which is exactly how a bare exit 127 from a missing `timeout` read.
   if [[ -z "$TIMEOUT_BIN" ]]; then
@@ -215,8 +216,9 @@ run_agent() {
     return 0
   fi
   raw="$TMP_ROOT/outsider-$agent-$$.raw"
+  err="$TMP_ROOT/outsider-$agent-$$.err"
   echo "[outsider] agent: $agent${SELECTED_MODEL:+ (model: $SELECTED_MODEL)}"
-  "$TIMEOUT_BIN" "${timeout_s}s" "${CMD[@]}" >"$raw" 2>/dev/null || rc=$?
+  "$TIMEOUT_BIN" "${timeout_s}s" "${CMD[@]}" >"$raw" 2>"$err" || rc=$?
   local src=""
   if [[ -n "$OUT_FILE" && -s "$OUT_FILE" ]]; then src="$OUT_FILE"
   elif [[ -s "$raw" ]]; then src="$raw"; fi
@@ -226,12 +228,17 @@ run_agent() {
     # agent did not end with one and the next line would run into its answer.
     if [[ -n "$(tail -c1 "$src")" ]]; then echo; fi
   fi
-  rm -f "$raw" ${OUT_FILE:+"$OUT_FILE"}
   if [[ $rc -eq 124 ]]; then
     echo "$agent timed out after ${timeout_s}s."
   elif [[ $rc -ne 0 ]]; then
     echo "$agent failed (exit code $rc)."
+    if [[ -s "$err" ]]; then
+      echo "$agent stderr (last 20 lines):"
+      tail -n 20 "$err" | strip_ansi
+      if [[ -n "$(tail -c1 "$err")" ]]; then echo; fi
+    fi
   fi
+  rm -f "$raw" "$err" ${OUT_FILE:+"$OUT_FILE"}
   return 0
 }
 

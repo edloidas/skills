@@ -143,7 +143,7 @@ response is not interpretable without knowing who gave it.
 - Highlight agreements; flag disagreements and explain which side you land on and why
 - The responder only ever saw what you piped it. Discount findings that are really requests for
   context it could not see
-- Empty output or an error line means it had nothing to offer — say so and move on
+- Empty output means it had nothing to offer — say so and move on
 
 ```text
 Codex's take: it agrees the cache key is wrong and would key on tenant + URL,
@@ -163,6 +163,8 @@ outside opinion is the whole deliverable.
 
 - **No agent installed, or only the host is** — the script says so and exits 0. Don't retry.
 - **Timeout** — the script prints a timeout message. Note it and proceed without.
+- **Agent failed** — the script prints the exit code and the last 20 lines of the agent's stderr.
+  Quote the reason in one line, so a dropped outside opinion is never silent, and proceed without.
 - **No `timeout` binary** — the script skips and says which tool is missing, per
   **Requirements**. Report that and proceed without an outside opinion; do not retry.
 

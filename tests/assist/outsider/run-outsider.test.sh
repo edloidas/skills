@@ -275,6 +275,15 @@ test_codex_answer_is_read_from_its_output_file() {
   assert_eq "" "$(ls "$TMPDIR"/outsider-codex-*.out 2>/dev/null || true)" "leftover codex output file"
 }
 
+# Callers such as pr-triage run from a directory holding many clones, which is
+# not itself a repo, and codex refuses to start there without this flag.
+test_codex_is_invoked_with_skip_git_repo_check() {
+  only_agents claude codex
+  stub_recording codex
+  outsider ask --host claude <<< "question"
+  assert_contains "$(calls_of codex)" "exec --ephemeral --skip-git-repo-check -s read-only" "codex arguments"
+}
+
 # ------------------------------------------------------------------- review ----
 
 test_review_of_a_clean_tree_reports_no_changes() {
@@ -358,6 +367,37 @@ EOF
   assert_eq 0 "$STATUS" "exit status"
   assert_contains "$STDOUT" "partial output" "output"
   assert_contains "$STDOUT" "opencode failed (exit code 3)" "output"
+}
+
+# A bare exit code hides why the agent refused, so its stderr has to reach the
+# caller, bounded to the tail.
+test_a_failing_agent_reports_its_stderr() {
+  only_agents claude opencode
+  stub opencode <<'EOF'
+cat > /dev/null
+for i in $(seq 1 25); do echo "noise $i" >&2; done
+echo "Not inside a trusted directory" >&2
+exit 1
+EOF
+  outsider ask --host claude <<< "question"
+  assert_eq 0 "$STATUS" "exit status"
+  assert_contains "$STDOUT" "opencode failed (exit code 1)" "output"
+  assert_contains "$STDOUT" "Not inside a trusted directory" "output"
+  assert_contains "$STDOUT" "noise 25" "output"
+  assert_not_contains "$STDOUT" $'noise 5\n' "output"
+  assert_eq "" "$(ls "$TMPDIR"/outsider-opencode-*.err 2>/dev/null || true)" "leftover stderr file"
+}
+
+test_a_successful_agent_does_not_echo_its_stderr() {
+  only_agents claude opencode
+  stub opencode <<'EOF'
+cat > /dev/null
+echo "STDERR-CHATTER" >&2
+echo "GOOD-ANSWER"
+EOF
+  outsider ask --host claude <<< "question"
+  assert_contains "$STDOUT" "GOOD-ANSWER" "output"
+  assert_not_contains "$STDOUT" "STDERR-CHATTER" "output"
 }
 
 test_a_hanging_agent_is_timed_out() {

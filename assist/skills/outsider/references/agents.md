@@ -10,7 +10,7 @@ pins a model or a reasoning level: unset means the agent's own current default.
 
 | Agent | Binary | Invocation | Status |
 | --- | --- | --- | --- |
-| `codex` | `codex` | `codex exec --ephemeral -s read-only -o <file> -` | Verified |
+| `codex` | `codex` | `codex exec --ephemeral --skip-git-repo-check -s read-only -o <file> -` | Verified |
 | `claude` | `claude` | `claude -p --permission-mode auto --allowed-tools "Read,Grep,Glob,Bash(git:*)" --disallowed-tools "Edit,Write,NotebookEdit"` | Verified |
 | `opencode` | `opencode` | `opencode run --agent plan` | Verified |
 | `pi` | `pi` | `pi --print --no-session -xt edit,write` | Verified |
@@ -18,7 +18,8 @@ pins a model or a reasoning level: unset means the agent's own current default.
 Notes on the non-obvious flags:
 
 - **codex** writes to `-o <file>` because `codex exec` otherwise echoes the entire prompt back as
-  part of its transcript — on a review that returns the whole diff to the caller.
+  part of its transcript — on a review that returns the whole diff to the caller. It also passes
+  `--skip-git-repo-check`, since `codex exec` otherwise refuses to start outside a git repository.
 - **opencode** uses its built-in `plan` agent, which is read-only. It emits ANSI colour and a
   `> plan · <model>` banner; the runner strips the escape codes.
 - **pi** uses the `-xt` denylist rather than a `-t` allowlist so extension tools keep working.
