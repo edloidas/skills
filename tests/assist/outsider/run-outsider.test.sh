@@ -470,7 +470,23 @@ test_uncommitted_review_without_confirmation_sends_nothing() {
   assert_contains "$STDOUT" "[outsider] uncommitted payload: 2 files (1 untracked)" "output"
   assert_contains "$STDOUT" "would go to opencode" "output"
   assert_contains "$STDOUT" "--confirm-uncommitted" "output"
+  assert_contains "$STDOUT" "  file.txt" "file list"
+  assert_contains "$STDOUT" "  added.txt (untracked)" "file list"
   assert_eq "" "$(calls_of opencode)" "agent invocations"
+}
+
+test_uncommitted_file_list_is_capped_at_20_with_a_remainder() {
+  dirty_repo
+  local i
+  for i in $(seq 1 23); do printf 'x\n' > "new-$i.txt"; done
+  only_agents claude opencode
+  stub_recording opencode
+  outsider review --host claude --uncommitted
+  assert_eq 3 "$STATUS" "exit status"
+  assert_contains "$STDOUT" "25 files (24 untracked)" "output"
+  assert_eq 20 "$(printf '%s\n' "$STDOUT" | grep -c '^  [^+]')" "listed paths"
+  assert_contains "$STDOUT" "  +5 more" "remainder"
+  assert_not_contains "$(printf '%s\n' "$STDOUT" | grep '^  ' | head -n 20)" "  file.txt" "tracked file cut before untracked ones"
 }
 
 # The default scope is uncommitted, so it is gated the same way.
@@ -544,6 +560,8 @@ test_ask_attaching_a_modified_file_is_gated() {
   outsider ask --host claude --attach file.txt --attach added.txt <<< "question"
   assert_eq 3 "$STATUS" "exit status"
   assert_contains "$STDOUT" "[outsider] uncommitted payload: 2 files (1 untracked)" "output"
+  assert_contains "$STDOUT" "  file.txt" "file list"
+  assert_contains "$STDOUT" "  added.txt (untracked)" "file list"
   assert_eq "" "$(calls_of opencode)" "agent invocations"
 }
 

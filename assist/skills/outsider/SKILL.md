@@ -138,14 +138,23 @@ bash <skill-dir>/scripts/run-outsider.sh review --host <host> --uncommitted 540
 ## Uncommitted Gate
 
 The script refuses to send uncommitted or untracked content without `--confirm-uncommitted`. It
-exits `3`, invokes no agent, and prints one line:
+exits `3`, invokes no agent, and prints a summary line followed by the files, at most 20, then
+`+N more`:
 
 ```text
 [outsider] uncommitted payload: 6 files (2 untracked), 14210 bytes, would go to codex. Nothing was sent; re-run with --confirm-uncommitted to send.
+  notes/draft.md (untracked)
+  .env.local (untracked)
+  src/auth/session.ts
+  src/auth/token.ts
+  src/config.ts
+  test/auth.test.ts
 ```
 
-Ask, per **Asking the User**, quoting that line and naming where it goes — codex to OpenAI, claude
-to Anthropic, opencode and pi to whichever provider their configured model uses:
+Untracked files are listed first. Ask, per **Asking the User**, with that output in a fenced block,
+unedited — the file list is what tells the user what would leave the machine. On a `+N more`
+line, say the list is partial and show the rest with `git status --short` before asking. Name
+where it goes — codex to OpenAI, claude to Anthropic, opencode and pi to whichever provider their configured model uses:
 
 - `Send it (Recommended)` — re-run the same command with `--confirm-uncommitted` added
 - `Don't send` — no outside opinion this time

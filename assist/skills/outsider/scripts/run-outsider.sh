@@ -20,8 +20,8 @@
 # Exits 0, with errors and skips reported on stdout — except exit 2 when a
 # review's --base or --commit does not resolve, so a wrong scope is never reviewed,
 # and exit 3 when the payload holds uncommitted or untracked content and
-# --confirm-uncommitted was not passed. Exit 3 sends nothing and prints one
-# `[outsider] uncommitted payload:` line for the caller to put to the user.
+# --confirm-uncommitted was not passed. Exit 3 sends nothing and prints an
+# `[outsider] uncommitted payload:` line plus the file list, for the caller to put to the user.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -198,18 +198,27 @@ count_nul() {
   printf '%s' "$((n))"
 }
 
-# Sets GATE_FILES, GATE_UNTRACKED and GATE_BYTES for the uncommitted part of the
-# payload; GATE_FILES=0 means the payload is committed-only.
+# Sets GATE_FILES, GATE_UNTRACKED, GATE_BYTES and GATE_NAMES (one path per
+# element, untracked ones suffixed) for the uncommitted part of the payload;
+# GATE_FILES=0 means the payload is committed-only.
 GATE_FILES=0
 GATE_UNTRACKED=0
 GATE_BYTES=0
+GATE_NAMES=()
 measure_uncommitted() {
   local f st n
   if [[ "$MODE" == "review" ]]; then
     [[ "$SCOPE" == "uncommitted" ]] || return 0
-    GATE_UNTRACKED="$(git ls-files --others --exclude-standard -z 2>/dev/null | count_nul)"
-    n="$(git diff HEAD --name-only -z 2>/dev/null | count_nul)"
-    GATE_FILES=$((n + GATE_UNTRACKED))
+    # Untracked first: new files are where secrets turn up, so they must not be
+    # the ones cut off by the 20-path cap.
+    while IFS= read -r -d '' f; do
+      GATE_NAMES+=("$f (untracked)")
+      GATE_UNTRACKED=$((GATE_UNTRACKED + 1))
+    done < <(git ls-files --others --exclude-standard -z 2>/dev/null)
+    while IFS= read -r -d '' f; do
+      GATE_NAMES+=("$f")
+    done < <(git diff HEAD --name-only -z 2>/dev/null)
+    GATE_FILES=${#GATE_NAMES[@]}
     n="$(printf '%s' "$DIFF" | wc -c)"
     GATE_BYTES=$((n))
     return 0
@@ -220,9 +229,13 @@ measure_uncommitted() {
   for f in "${ATTACH[@]}"; do
     if st="$(git status --porcelain --ignored --untracked-files=all -- "$f" 2>/dev/null)"; then
       [[ -n "$st" ]] || continue
-      case "$st" in '??'*|'!!'*) GATE_UNTRACKED=$((GATE_UNTRACKED + 1)) ;; esac
+      case "$st" in
+        '??'*|'!!'*) GATE_UNTRACKED=$((GATE_UNTRACKED + 1)); GATE_NAMES+=("$f (untracked)") ;;
+        *) GATE_NAMES+=("$f") ;;
+      esac
     else
       GATE_UNTRACKED=$((GATE_UNTRACKED + 1))
+      GATE_NAMES+=("$f (untracked)")
     fi
     GATE_FILES=$((GATE_FILES + 1))
     n="$(wc -c < "$f")"
@@ -441,6 +454,16 @@ fi
 measure_uncommitted
 if [[ $GATE_FILES -gt 0 && -z "$CONFIRM_UNCOMMITTED" && -n "$TIMEOUT_BIN" ]]; then
   echo "[outsider] uncommitted payload: $GATE_FILES files ($GATE_UNTRACKED untracked), $GATE_BYTES bytes, would go to $AGENT. Nothing was sent; re-run with --confirm-uncommitted to send."
+  GATE_SHOWN=20
+  i=0
+  while [[ $i -lt ${#GATE_NAMES[@]} && $i -lt $GATE_SHOWN ]]; do
+    # Control characters stripped, so a crafted name cannot forge or hide a line.
+    printf '  %s\n' "$(printf '%s' "${GATE_NAMES[$i]}" | tr -d '[:cntrl:]')"
+    i=$((i + 1))
+  done
+  if [[ ${#GATE_NAMES[@]} -gt $GATE_SHOWN ]]; then
+    echo "  +$(( ${#GATE_NAMES[@]} - GATE_SHOWN )) more"
+  fi
   exit 3
 fi
 
