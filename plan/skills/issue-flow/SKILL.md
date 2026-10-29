@@ -618,7 +618,7 @@ or the user asking to merge in conversation. Otherwise stop after Step 5 — nev
 ### Confirm exactly once
 
 The merge is confirmed **once per flow**, and this section decides where that happens.
-Classify the entry, then take one branch and skip the other.
+First resolve `<method>` per `references/merging.md` → **Method**; when that asks, print the pre-merge summary first, and its answer is this flow's confirmation. Otherwise classify the entry and take one branch.
 
 | Entry | Confirmation |
 | ----- | ------------ |
@@ -652,11 +652,10 @@ gh pr view <pr-number> --json state,mergeable
 
 ```bash
 if command -v timeout >/dev/null 2>&1; then
-  TIMEOUT_BIN=timeout
+  timeout 5m gh pr checks <pr-number> --watch --fail-fast
 else
-  TIMEOUT_BIN=gtimeout
+  gtimeout 5m gh pr checks <pr-number> --watch --fail-fast
 fi
-"$TIMEOUT_BIN" 5m gh pr checks <pr-number> --watch --fail-fast
 ```
 
 - Exit 0 (all passed/skipped) → proceed to step 3
@@ -678,8 +677,10 @@ If conflicts appeared, **Rebase and re-check**, then re-run step 2. Keep the ful
 ### Merge
 
 ```bash
-gh pr merge <pr-number> --rebase --delete-branch --match-head-commit <headRefOid>  # never bare: that merges the checked-out branch's PR
+gh pr merge <pr-number> --<method> --delete-branch --match-head-commit <headRefOid>  # never bare: that merges the checked-out branch's PR
 ```
+
+A refusal — protection, merge queue, stack, permission — is handled per `references/merging.md` → **Refused**, never by retrying another method or `--admin`.
 
 Find Step 2's stash in `git stash list` by its `issue-<number> from <current-branch>` message — a fresh invocation has no other record of it. If the merge left you on that `<current-branch>`, run `git stash pop "stash@{<n>}"` with `<n>` from the entry's line — never a bare `stash@{0}`. On any other branch, leave it. A conflicted pop keeps the entry: stop, list the conflicted files, and never reset. Both add `Stashed:` to the report.
 

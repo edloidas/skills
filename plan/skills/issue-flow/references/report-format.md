@@ -106,7 +106,7 @@ Print this summary before asking the user to merge. Always use full URLs, not `o
 ### [6] Summary
 Issue:  <issue-title> — <issue-url>
 PR:     <pr-title> — <pr-url>
-Branch: issue-<number> → <base> (rebase, <N> commits)
+Branch: issue-<number> → <base> (<method>, <N> commits)
 Commit: <short-sha> <commit-subject> (<N> files, +<insertions>/-<deletions>)
 ```
 
@@ -128,6 +128,16 @@ Branch issue-<number> deleted
 Issue #<number> closed          (every merge; on a non-default base, by the landed comment)
 Epic PR #<epic-pr>: ticked      (only for a landed sub-issue; `commented` when no checklist line)
 Stashed: <stash message>        (only when the Step 2 stash was not restored)
+```
+
+### Step 6: Queued
+
+Printed instead of the merged report when the base requires a merge queue (`references/merging.md`):
+
+```
+### [6] Queued
+PR #<pr-number> queued for <base> (merge queue) | <method>
+Not merged yet: issue #<number> stays open, project status unchanged
 ```
 
 ## Rules
