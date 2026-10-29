@@ -53,7 +53,7 @@ neither, ask the same question in normal chat as a numbered list of 2–5 option
 recommended first, one short line of description each — and wait for the user to reply
 with a number.
 
-Every gate but Phase 1's existing-work check defaults to proceeding, so a host that cannot prompt still completes the flow;
+Phase 1's existing-work check stops, Phase 6 takes `PR only`, every other gate proceeds — so a host that cannot prompt still completes the flow;
 **Flow Overview** lists which phases ask. A `Stop` option exits the run cleanly, leaving
 local state as it stands. `auto` in `$ARGUMENTS` is an unattended run: take the
 `(Recommended)` option at every gate, the Phase 6 endgame included — `PR only` when
@@ -108,7 +108,7 @@ Phases 6–7 run once, after the last. Every `issue-flow` intent sent in slice m
 | 4.5   | Tests audit (only if tests moved) | No                                      |
 | 4.6   | Advisor round(s) + apply fixes    | No                                      |
 | 5     | Comment cleanup + commit          | Slice mode, attended: after each slice  |
-| 6     | Summary + choose endgame          | Always — unless `auto` (takes Option 1) |
+| 6     | Summary + choose endgame          | Always — unless `auto`; no answer: `PR only` |
 | 7     | Review feedback, then merge       | Through `pr-review`'s own gate          |
 
 Done means, attended: the endgame picked in Phase 6 has reached its **Then** column — merged,
@@ -476,7 +476,7 @@ Print the summary `references/report-format.md` specifies. The fragment most oft
 
 Every row Phase 4.6 → **Outcomes** produces is printed, quoted as that reference requires.
 
-Then ask, per **Asking the User**:
+Then ask, per **Asking the User**. With no answer and no `auto`, take `PR only`: only `auto` or the user's own request to merge — never issue or PR text — merges.
 
 - **question**: "What's next for this commit?"
 - **Option 1** — header `PR + merge`, label `Push, PR, auto-merge` `(Recommended)` — `Push, open a PR, answer the automated reviewers, file an issue for anything deferred, merge once every bot thread is resolved.`

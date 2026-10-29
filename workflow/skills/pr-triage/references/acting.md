@@ -60,7 +60,7 @@ approved plan it speaks of is the row a reply named. What is pr-triage's own:
   no `APPROVE` and no `MERGE`, and its report row says what changed and why.
 - Where pr-review is not installed, a `FOLD` row becomes that `COMMENT`, an `APPROVE` row posts with
   `gh pr review --approve`, and a `MERGE` row runs only on green required checks when GitHub would
-  merge the branch as it is: `gh pr merge --<method> --match-head-commit <sha>`, the method the
+  merge the branch as it is: `gh pr merge <N> -R <repo> --<method> --match-head-commit <full headRefOid>` from the head check above, the method the
   base's recent history shows, never `--admin`. Anything else holds the row.
 
 ## Request changes, comment, or approve with suggestions

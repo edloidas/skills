@@ -637,6 +637,8 @@ the record of what is about to be merged, not the prompt itself.
 
 ### Pre-checks
 
+`<pr-number>` is Step 5's PR; entering without one, it is the single open PR from `gh pr list --head issue-<number> --state open --json number` — none or several: report them and stop.
+
 1. Check PR state:
 
 ```bash
@@ -668,15 +670,15 @@ fi
 3. After checks pass, verify mergeability one more time:
 
 ```bash
-gh pr view <pr-number> --json mergeable --jq '.mergeable'
+gh pr view <pr-number> --json mergeable,headRefOid --jq '.mergeable + " " + .headRefOid'
 ```
 
-If conflicts appeared, **Rebase and re-check**, then re-run step 2.
+If conflicts appeared, **Rebase and re-check**, then re-run step 2. Keep the full 40-character `headRefOid` for the merge; if anyone pushes after this check the merge fails, so re-run from step 2.
 
 ### Merge
 
 ```bash
-gh pr merge --rebase --delete-branch
+gh pr merge <pr-number> --rebase --delete-branch --match-head-commit <headRefOid>  # never bare: that merges the checked-out branch's PR
 ```
 
 Find Step 2's stash in `git stash list` by its `issue-<number> from <current-branch>` message — a fresh invocation has no other record of it. If the merge left you on that `<current-branch>`, run `git stash pop "stash@{<n>}"` with `<n>` from the entry's line — never a bare `stash@{0}`. On any other branch, leave it. A conflicted pop keeps the entry: stop, list the conflicted files, and never reset. Both add `Stashed:` to the report.
