@@ -10,8 +10,10 @@
 #   - a row missing from the fresh scan is skipped (it changed or went away)
 #   - risk `never` is always refused
 #   - risk `named` needs its id passed with --only
-#   - risk `safe` is acted on, unless --only is given and does not name it
+#   - risk `safe` is acted on, unless --only is given and does not name it, or
+#     the report showed the row as anything but `safe` and its id is not named
 #   - a file row must sit exactly two levels under a known root
+#   - an --only id that is no row of the requested kind is a `fail ... unknown id`
 #
 # Processes get SIGTERM, then SIGKILL for survivors after a second. Right before
 # each signal the PID's start time is read again and compared with the id
@@ -86,6 +88,17 @@ bad() { say fail "$1" "$2" "$3"; FAILED=$((FAILED + 1)); }
 
 ROWS="$(awk -F'\t' 'NF == 7 && ($1 == "process" || $1 == "branch" || $1 == "worktree" || $1 == "file")' "$REPORT")"
 
+# A mistyped id would otherwise match nothing and vanish from the tally.
+while IFS= read -r want; do
+  [ -n "$want" ] || continue
+  printf '%s\n' "$ROWS" | awk -F'\t' -v i="$want" -v k="$KIND" '$6 == i && (k == "all" ||
+      (k == "processes" && $1 == "process") || (k == "git" && ($1 == "branch" || $1 == "worktree")) ||
+      (k == "files" && $1 == "file")) { f = 1 } END { exit !f }' \
+    || bad "$KIND" "$want" "unknown id: no $KIND row in the report has it"
+done <<EOF
+$ONLY
+EOF
+
 while IFS="$TAB" read -r kind owner age size risk id detail; do
   [ -n "$kind" ] || continue
   selected "$kind" || continue
@@ -101,6 +114,8 @@ while IFS="$TAB" read -r kind owner age size risk id detail; do
   if [ -z "$fresh" ]; then skip "$kind" "$id" "not in a fresh scan: changed or gone"; continue; fi
   if [ "$frisk" = never ]; then skip "$kind" "$id" "refused: $fdetail"; continue; fi
   if [ "$frisk" = named ] && ! named "$id"; then skip "$kind" "$id" "needs its id named with --only: $fdetail"; continue; fi
+  # The user approved what the report showed; a row that became safe since was not shown as safe.
+  if [ "$risk" != safe ] && ! named "$id"; then skip "$kind" "$id" "was $risk in the report; name its id with --only"; continue; fi
 
   case "$kind" in
     process)

@@ -228,6 +228,42 @@ test_clean_worktree_is_removed_and_its_branch_kept() {
   git -C clones/app show-ref --verify -q refs/heads/agent-2 || fail "branch agent-2 was deleted"
 }
 
+# Without /proc nothing says whether a shell sits in the worktree, so a clean
+# old worktree cannot be batch-removed on age alone.
+test_clean_worktree_without_proc_is_named() {
+  clones
+  git -C clones/app worktree add --quiet -b agent-3 "$SANDBOX/clones/app/.wt/agent-3"
+  SESSION_CLEANUP_PROC="$SANDBOX/no-such-proc"
+  scan git --no-gh --min-age-days 0 clones
+  assert_eq named "$(risk_of "$(git_row worktree '/.wt/agent-3')")" "worktree risk"
+  assert_contains "$(git_row worktree '/.wt/agent-3')" "cannot tell whether a process holds it open"
+}
+
+# The batch approves what the user saw. A row the report showed as named that
+# a fresh scan now calls safe was never approved as part of the batch.
+test_row_named_in_the_report_is_not_batch_applied_when_it_turns_safe() {
+  clones
+  git -C clones/app worktree add --quiet -b agent-5 "$SANDBOX/clones/app/.wt/agent-5"
+  scan git --no-gh --min-age-days 0 clones
+  printf '%s\n' "$STDOUT" | awk -F'\t' -v OFS='\t' '$1 == "worktree" { $5 = "named" } { print }' > report.tsv
+  apply git report.tsv
+  assert_contains "$STDOUT" "was named in the report; name its id with --only"
+  assert_contains "$STDOUT" "applied 0, skipped 1, failed 0"
+  [ -d clones/app/.wt/agent-5 ] || fail "worktree agent-5 was removed"
+}
+
+test_mistyped_only_id_fails_in_the_tally() {
+  clones
+  git -C clones/app worktree add --quiet -b agent-4 "$SANDBOX/clones/app/.wt/agent-4"
+  scan git --no-gh --min-age-days 0 clones
+  printf '%s\n' "$STDOUT" > report.tsv
+  apply git report.tsv --only "$SANDBOX/clones/app|$SANDBOX/clones/app/.wt/agent-44"
+  assert_eq 1 "$STATUS" "exit status"
+  assert_contains "$STDOUT" "unknown id: no git row in the report has it"
+  assert_contains "$STDOUT" "applied 0, skipped 0, failed 1"
+  [ -d clones/app/.wt/agent-4 ] || fail "worktree agent-4 was removed"
+}
+
 # -------------------------------------------------------------------- files ---
 
 session_dir() {  # slug uuid -> creates an idle session scratch dir, returns path

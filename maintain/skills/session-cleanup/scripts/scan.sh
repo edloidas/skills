@@ -336,6 +336,10 @@ scan_repo() {
       risk=named; detail="detached HEAD with $uniq commit(s) on no branch — removing it orphans them"
     elif [ "$age" -lt $((MIN_AGE_DAYS * 86400)) ]; then
       risk=named; detail="clean, but active within ${MIN_AGE_DAYS}d"
+    elif [ ! -d "$PROC" ]; then
+      # A shell sitting in the worktree leaves no trace in its mtime, so age
+      # alone cannot clear it for a batch.
+      risk=named; detail="clean, but no $PROC: cannot tell whether a process holds it open"
     else
       risk=safe; detail="clean${br:+, branch $br is kept}"
     fi
