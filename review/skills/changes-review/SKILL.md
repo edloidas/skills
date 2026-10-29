@@ -5,7 +5,7 @@ description: >
   each with a single job and no access to the implementer's reasoning: one hunts correctness
   bugs blind to the issue, one hunts requirement gaps against the issue text, one runs outside
   the process entirely. Optionally re-attacks its own findings, then synthesizes what is left.
-  Returns findings and changes nothing — no tooling, no autofix, no edits. On request it
+  Returns findings and changes nothing in the repo — no autofix, no edits. On request it
   publishes to the author, gated on demonstrated evidence. Every phase is configurable.
 when_to_use: >
   Before committing, when a change should be attacked rather than assessed, or as the find
@@ -22,7 +22,8 @@ metadata:
 # Changes Review
 
 Attack a change from several directions at once and report what survives. This skill **finds**;
-it never fixes, never runs tooling, and leaves the working tree as it found it. It does not post anywhere
+it never fixes and leaves the working tree as it found it. Its reviewers read, run read-only
+commands, and run throwaway probes, whose leftovers Phase 5 cleans up. It does not post anywhere
 unless the caller asks, and then only through the gate in Phase 8.
 
 It is a primitive. Whoever calls it — a person, a PR workflow, an issue workflow — gets the same
@@ -167,8 +168,9 @@ On a host with no subagents, run each prompt in turn and never show one reviewer
 Say in the report that they were not isolated — a sequential run leaks earlier findings into later
 ones.
 
-Record `git status --porcelain --untracked-files=all` before the first dispatch; seats may extract
-a dependency, run a probe, or leave a scratch file. Phase 5 cleans up against it.
+Record `git status --porcelain --ignored=matching --untracked-files=all` and a `git hash-object` of
+every non-ignored file it lists before the first dispatch; seats may extract a dependency, run a
+probe, or leave a scratch file. Phase 5 cleans up against it.
 
 ### Reviewer 1 — cold (always)
 
@@ -283,9 +285,11 @@ reasoning-only findings first, then anything a reviewer rated low confidence.
 
 Print one line with the counts: `Verification: 3 refuted, 1 narrowed, 2 re-rated up.`
 
-Once the verification lenses return: against that snapshot, delete each untracked path that appeared
-since and `git restore` each tracked file newly modified — never one listed before — then print
-`Cleanup: removed <paths>, restored <paths>` or `Cleanup: nothing left behind`.
+Once the verification lenses return: against that snapshot, delete each untracked or ignored path
+that appeared since and `git restore` each tracked file newly modified. Never restore a file listed
+before: the user's own edits live there, so one whose hash changed is reported, not reverted. Print
+`Cleanup: removed <paths>, restored <paths>, changed but kept <paths>` or `Cleanup: nothing left
+behind`. A file added inside an ignored directory that already existed is not seen.
 
 ## Phase 6: Rate and order
 

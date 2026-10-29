@@ -13,7 +13,7 @@ when_to_use: >
   PRD review, or weighing trade-offs, prior art, blast radius, and lock-in.
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
-allowed-tools: Read Glob Grep Task Skill Write(*/outsider-*) Bash(git status:*) Bash(git restore:*) Bash(rm:*)
+allowed-tools: Read Glob Grep Task Skill Write(*/outsider-*) Bash(git status:*) Bash(git hash-object:*) Bash(git restore:*) Bash(rm:*)
 argument-hint: "[short] [prior-art] [focus]"
 metadata:
   author: edloidas
@@ -121,8 +121,9 @@ The native seats read their prompt from `references/` with `{{FRAME}}` replaced 
 a subagent per seat that returns records in the shape its prompt specifies; on a host with no subagent
 facility, run the same prompt inline.
 
-Record `git status --porcelain --untracked-files=all` before the first dispatch; seats may extract
-a dependency, run a probe, or leave a scratch file. Phase 5 cleans up against it.
+Record `git status --porcelain --ignored=matching --untracked-files=all` and a `git hash-object` of
+every non-ignored file it lists before the first dispatch; seats may extract a dependency, run a
+probe, or leave a scratch file. Phase 5 cleans up against it.
 
 - **Novator** — `references/novator-prompt.md`
 - **Occam** — `references/occam-prompt.md`
@@ -212,9 +213,11 @@ is ranked as adjusted.
 Print `Verification: 1 refuted, 2 narrowed, 3 design notes, 1 unknown, 3 stand`. One pass, then
 synthesize — no second round, and no objections of your own added at this stage.
 
-Once the lenses return: against that snapshot, delete each untracked path that appeared since and
-`git restore` each tracked file newly modified — never one listed before — then print
-`Cleanup: removed <paths>, restored <paths>` or `Cleanup: nothing left behind`.
+Once the lenses return: against that snapshot, delete each untracked or ignored path that appeared
+since and `git restore` each tracked file newly modified. Never restore a file listed before: the
+user's own edits live there, so one whose hash changed is reported, not reverted. Print `Cleanup:
+removed <paths>, restored <paths>, changed but kept <paths>` or `Cleanup: nothing left behind`. A
+file added inside an ignored directory that already existed is not seen.
 
 ## Phase 6: Synthesize
 
