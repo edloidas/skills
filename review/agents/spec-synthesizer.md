@@ -31,6 +31,7 @@ Your prompt will contain:
   - `contracts.md`
   - `deep/<module-name>.md` (one per flagged critical module, multiple; may be empty list)
   - `audit-global.md` and `audit/<module-name>.md` (multiple)
+- The list of stages that failed or were skipped (may be empty). Each goes under `audit.md` → Missing Coverage; a missing `contracts.md` or global audit is also named under Known gaps in `README.md`, and `contracts.md` is then written as N/A with that reason.
 
 ## Workflow
 
