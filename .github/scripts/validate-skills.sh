@@ -102,8 +102,8 @@ skill_has_codex_compatibility() {
 
 # A skill that names Codex, OpenCode, or Pi has to work there. These mechanisms exist
 # only in Claude Code, so a portable skill that instructs the agent to use one ships a
-# step three of its four declared hosts cannot execute — which is what let the `commit`
-# skill sit in the Codex catalog with its whole context-gathering section unresolvable.
+# step three of its four declared hosts cannot execute — which is what let the since-retired
+# `commit` skill sit in the Codex catalog with its whole context-gathering section unresolvable.
 # Claude-only skills are exempt: for them these are the correct mechanism.
 skill_declares_non_claude_host() {
   local skill_dir="$1"

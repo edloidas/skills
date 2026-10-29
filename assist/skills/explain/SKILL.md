@@ -8,7 +8,7 @@ when_to_use: >
   When the user asks how or why something works, wants a walkthrough or a step-by-step, says
   an earlier answer did not land ("explain again", "simpler", "I still don't get it"), asks
   again on a subject already explained, or asks whether what they wrote about it is right.
-  Not for taking a position on a decision — that is discuss.
+  Not for choosing between approaches — that is consilium; a quick outside opinion is outsider.
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
 allowed-tools: Read Glob Grep Bash Task

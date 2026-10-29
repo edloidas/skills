@@ -1,7 +1,7 @@
 {
   "name": "edloidas-maintain",
   "version": "5.18.0",
-  "description": "A Codex-safe maintenance bundle for agent instruction setup, label sync, lint migration, and repo hardening.",
+  "description": "A Codex-safe maintenance bundle for label sync, editor config, repo hardening, and session cleanup.",
   "author": {
     "name": "Mikita Taukachou",
     "url": "https://edloidas.io"
@@ -13,17 +13,15 @@
     "skills",
     "codex",
     "maintain",
-    "agents",
     "labels",
     "sync",
-    "lint",
     "processes"
   ],
   "skills": "./skills/",
   "interface": {
     "displayName": "Edloidas Maintain",
-    "shortDescription": "Agent config, label sync, lint migration, and hardening.",
-    "longDescription": "Install the maintenance bundle from edloidas/skills for setting up a repo's agent instruction layer, syncing GitHub labels, migrating lint configs, and hardening repository security from Codex.",
+    "shortDescription": "Label sync, editor config, hardening, and cleanup.",
+    "longDescription": "Install the maintenance bundle from edloidas/skills for syncing GitHub labels and editor configs, hardening repository security, and cleaning up after sessions from Codex.",
     "developerName": "Mikita Taukachou",
     "category": "Coding",
     "websiteURL": "https://github.com/edloidas/skills",

@@ -46,9 +46,9 @@
       "group": "build",
       "name": "edloidas-build",
       "displayName": "Edloidas Build",
-      "description": "A Codex-safe build bundle for merge-conflict resolution, commit creation, and live behavioral probes.",
-      "shortDescription": "Conflict resolution, commits, probes.",
-      "longDescription": "Install the build bundle from edloidas/skills for semi-automatic merge-conflict resolution, conventional commits, commit message summaries, and settling behavioral claims by running the project from Codex.",
+      "description": "A Codex-safe build bundle for merge-conflict resolution, commit message bodies, and live behavioral probes.",
+      "shortDescription": "Conflict resolution, commit bodies, probes.",
+      "longDescription": "Install the build bundle from edloidas/skills for semi-automatic merge-conflict resolution, commit message bodies, and settling behavioral claims by running the project from Codex.",
       "category": "Coding",
       "websiteURL": "https://github.com/edloidas/skills",
       "keywords": [
@@ -63,7 +63,6 @@
       "skills": [
         "build/skills/commit-summary",
         "build/skills/resolve-conflicts",
-        "build/skills/commit",
         "build/skills/live-probe"
       ]
     },
@@ -135,26 +134,22 @@
       "group": "maintain",
       "name": "edloidas-maintain",
       "displayName": "Edloidas Maintain",
-      "description": "A Codex-safe maintenance bundle for agent instruction setup, label sync, lint migration, and repo hardening.",
-      "shortDescription": "Agent config, label sync, lint migration, and hardening.",
-      "longDescription": "Install the maintenance bundle from edloidas/skills for setting up a repo's agent instruction layer, syncing GitHub labels, migrating lint configs, and hardening repository security from Codex.",
+      "description": "A Codex-safe maintenance bundle for label sync, editor config, repo hardening, and session cleanup.",
+      "shortDescription": "Label sync, editor config, hardening, and cleanup.",
+      "longDescription": "Install the maintenance bundle from edloidas/skills for syncing GitHub labels and editor configs, hardening repository security, and cleaning up after sessions from Codex.",
       "category": "Coding",
       "websiteURL": "https://github.com/edloidas/skills",
       "keywords": [
         "skills",
         "codex",
         "maintain",
-        "agents",
         "labels",
         "sync",
-        "lint",
         "processes"
       ],
       "skills": [
-        "maintain/skills/agent-config",
         "maintain/skills/editor-config",
         "maintain/skills/labels-sync",
-        "maintain/skills/lint-sync",
         "maintain/skills/repo-hardening",
         "maintain/skills/session-cleanup"
       ]
@@ -201,7 +196,6 @@
       "skills": [
         "assist/skills/explain",
         "assist/skills/outsider",
-        "assist/skills/discuss",
         "assist/skills/handoff",
         "assist/skills/bro"
       ]

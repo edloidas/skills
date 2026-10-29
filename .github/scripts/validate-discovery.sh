@@ -176,7 +176,7 @@ else
   # The CLI prints each skill name alone on its own line and its description on a later,
   # more deeply indented line. Strip ANSI codes and the leading box-drawing gutter, then a
   # name is any line whose entire remaining content is a single slug. Anchoring per line
-  # matters: several descriptions mention other skills by name ("commit", "codex", "ask"),
+  # matters: several descriptions mention other skills by name ("issue-flow", "codex", "ask"),
   # so searching the whole blob would let a description mask a genuinely missing skill.
   cli_names=$(printf '%s\n' "$cli_raw" |
     sed -e $'s/\033\\[[?0-9;]*[A-Za-z]//g' |

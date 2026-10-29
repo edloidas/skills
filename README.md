@@ -10,14 +10,14 @@
 
 <p align="center">
   <img src="https://img.shields.io/github/v/tag/edloidas/skills?style=flat-square&color=FD3DB5&label=release" alt="Release">
-  <img src="https://img.shields.io/badge/skills-41-FD3DB5?style=flat-square" alt="41 skills">
+  <img src="https://img.shields.io/badge/skills-37-FD3DB5?style=flat-square" alt="37 skills">
   <img src="https://img.shields.io/badge/agents-4-FD3DB5?style=flat-square" alt="4 agents">
   <img src="https://img.shields.io/badge/license-MIT-FD3DB5?style=flat-square" alt="MIT license">
 </p>
 
 ---
 
-41 skills for planning, building, reviewing, auditing, maintaining, and shipping software —
+37 skills for planning, building, reviewing, auditing, maintaining, and shipping software —
 written once and distributed to [Claude Code](https://docs.anthropic.com/en/docs/claude-code),
 [Codex](https://developers.openai.com/codex), [OpenCode](https://opencode.ai), and
 [pi](https://pi.dev), following the [Agent Skills specification](https://agentskills.io/specification).
@@ -28,12 +28,12 @@ it. Nothing runs in the background, nothing is injected into every prompt.
 | Group | What it covers | Skills |
 | ----- | -------------- | -----: |
 | [plan](#plan) | Issue drafting, scope analysis, next-issue picks, full issue lifecycle | 4 |
-| [build](#build) | Conflict resolution, commits, live probes | 4 |
+| [build](#build) | Conflict resolution, commit bodies, live probes | 3 |
 | [review](#review) | Adversarial change review, cleanup, claim verification, approach boards, PR feedback, spec extraction | 6 |
 | [audit](#audit) | CI, scripts, security, skills, workspace, tsconfig, Three.js, React, tests | 9 |
-| [maintain](#maintain) | Agent config, label and editor config sync, lint migration, repo hardening, session cleanup | 6 |
+| [maintain](#maintain) | Label and editor config sync, repo hardening, session cleanup | 4 |
 | [ship](#ship) | npm releases | 1 |
-| [assist](#assist) | Explanations, external opinions, design discussion, handoffs, restatement | 5 |
+| [assist](#assist) | Explanations, external opinions, handoffs, restatement | 4 |
 | [write](#write) | Markdown, READMEs, repository documentation | 1 |
 | [obsidian](#obsidian) | Working documents in an Obsidian vault | 1 |
 | [workflow](#workflow) | End-to-end issue workflow, orchestration, review queue, issue backlog | 4 |
@@ -277,12 +277,11 @@ when you ask what is next.
 
 ### Build
 
-Conflict resolution, commit summaries, quick commits, and live behavioral probes.
+Conflict resolution, commit summaries, and live behavioral probes.
 
 | Skill | Description |
 | ----- | ----------- |
 | [resolve-conflicts](./build/skills/resolve-conflicts/) | Semi-automatic merge and rebase conflict resolution |
-| [commit](./build/skills/commit/) | Fast staged-or-scoped commit with conventional message |
 | [commit-summary](./build/skills/commit-summary/) | Derive a commit message body from the code behind the change |
 | [live-probe](./build/skills/live-probe/) | Settle a claim about observable behavior by running it once |
 
@@ -360,14 +359,12 @@ stack lenses for `changes-review`.
 
 ### Maintain
 
-Agent instruction setup and drift check, label sync, lint migration, editor config sync, repo security hardening, and session cleanup.
+Label sync, editor config sync, repo security hardening, and session cleanup.
 
 | Skill | Description |
 | ----- | ----------- |
-| [agent-config](./maintain/skills/agent-config/) | Init a repo's agent instruction layer and check it for drift |
 | [labels-sync](./maintain/skills/labels-sync/) | Check, apply, or export GitHub repository labels as reusable JSON |
 | [editor-config](./maintain/skills/editor-config/) | Init or merge `.zed` / `.vscode` editor configs from a canonical set |
-| [lint-sync](./maintain/skills/lint-sync/) | Migrate ESLint and Prettier to Biome or Oxc, or modernize an existing config |
 | [repo-hardening](./maintain/skills/repo-hardening/) | Apply a GitHub security baseline: rulesets, Actions defaults, immutable releases, environments |
 | [session-cleanup](./maintain/skills/session-cleanup/) | Memory report, then clean up leftover processes, worktrees, merged branches, and session files |
 
@@ -381,12 +378,11 @@ Release workflows for npm packages.
 
 ### Assist
 
-Explanations, design discussion, external opinions, handoffs, and plain restatement.
+Explanations, external opinions, handoffs, and plain restatement.
 
 | Skill | Description |
 | ----- | ----------- |
 | [explain](./assist/skills/explain/) | Explain how something works by tracing the mechanism, not describing it |
-| [discuss](./assist/skills/discuss/) | Talk a design through — investigate, take a position, push back; never writes |
 | [handoff](./assist/skills/handoff/) | Compact the session into a handoff — inline text or per-project doc file |
 | [outsider](./assist/skills/outsider/) | Quick opinion or review from an agent CLI outside this session |
 | [bro](./assist/skills/bro/) | Say the last message again, straight — shorter, plainer, decision last |

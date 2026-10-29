@@ -77,12 +77,12 @@ paths, deliberately outside every skill and every distribution tree — see
 
 **Plugin groups:**
 - `plan/` — Issue drafting, analysis, next-issue selection, and the full issue lifecycle (4 skills)
-- `build/` — Conflict resolution, commit summaries, quick commits, and live behavioral probes (4 skills)
+- `build/` — Conflict resolution, commit summaries, and live behavioral probes (3 skills)
 - `review/` — Adversarial change review, cleanup, claim verification, approach boards, PR feedback triage, and spec extraction (6 skills)
 - `audit/` — CI, script, security, skill, workspace, tsconfig, Three.js, React, and test-suite auditing (9 skills)
-- `maintain/` — Agent instruction layer setup and drift check, label sync, lint migration, editor config sync, repo security hardening, and session cleanup (6 skills)
+- `maintain/` — Label sync, editor config sync, repo security hardening, and session cleanup (4 skills)
 - `ship/` — Release workflows for npm packages (1 skill)
-- `assist/` — External opinion, design discussion, assistance, handoffs, and plain restatement tools (5 skills)
+- `assist/` — Explanations, external opinion, handoffs, and plain restatement tools (4 skills)
 - `write/` — Markdown, README, and repository documentation writing (1 skill)
 - `obsidian/` — Obsidian vault organization and working document management (1 skill)
 - `workflow/` — End-to-end workflows that orchestrate multiple skills (4 skills)
@@ -190,7 +190,7 @@ When a Codex-exposed skill needs bundled-script paths, keep the current `<skill-
 `Codex`, `OpenCode`, or `Pi` that contains `` !`command` `` injection, a `${CLAUDE_*}`
 substitution, `ToolSearch`, `TodoWrite`, `SlashCommand`, or `subagent_type` — in `SKILL.md`
 or any bundled `.md`. Claude-only skills are exempt, since for them these are the correct
-mechanism. The rule exists because advice did not hold: `build/skills/commit` sat in the
+mechanism. The rule exists because advice did not hold: the since-retired `build/skills/commit` sat in the
 Codex catalog with its entire context-gathering section written as seven injected commands,
 plus three body lines instructing the agent not to gather the context itself. On Codex,
 OpenCode, and pi the skill had no git state and was told not to look for any.
@@ -447,8 +447,8 @@ row is a decision that needs a reason in this table.
 It used to skip each `---` in the file rather than only the two delimiters, which made a
 body measure smaller than what the agent actually loads: `issue-writer` reported 498 lines
 against a real 507, because nine `---` rules sit inside its issue templates. Six other
-skills were undercounted too, none of them across a ceiling — `lint-sync` at 493 is now
-the closest to the cap. A checker that reads low is worse than no checker, so if the two
+skills were undercounted too, none of them across a ceiling — `changes-review` at 451 is now
+the closest to the line cap. A checker that reads low is worse than no checker, so if the two
 counts ever disagree again, trust neither until you know which one is wrong.
 
 `skill-audit` does not re-score a budgeted skill for its size. The validator owns the
@@ -617,8 +617,8 @@ not a prohibition.
 
 ### Delegation
 
-- **Every dispatch site carries a numeric threshold or a named trigger.** `build/skills/commit` is
-  the model: "~500 changed lines or ~20 files AND you need actual diff content". An adjective like
+- **Every dispatch site carries a numeric threshold or a named trigger.** `assist/skills/explain` is
+  the model: "Read it yourself up to about 5 files or 1000 lines. Past that, dispatch subagents". An adjective like
   "when the surface is wide" leaves it to the model, so one host spawns and another does not.
 - **An inline fallback for a chained skill is at most 5 lines and a pointer.** A fallback longer
   than the invocation gets taken every time, and it is a second copy of the skill it replaces —
