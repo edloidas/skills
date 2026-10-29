@@ -2,7 +2,8 @@
 # run-outsider.sh — picks an agent CLI that is not the current host and runs it
 # read-only. Two properties carry the whole design: it never invokes the host
 # (recursion), and it never fails the caller (exit 0, skips reported on
-# stdout) — except exit 2 for a review ref that does not resolve, and exit 3 for
+# stdout) — except exit 2 for a review that cannot start (no repository, an unborn
+# HEAD, a ref that does not resolve), and exit 3 for
 # an uncommitted payload the user has not approved. Everything else is selection
 # bookkeeping.
 #
@@ -323,6 +324,32 @@ test_review_of_a_clean_tree_reports_no_changes() {
   outsider review --host claude
   assert_eq 0 "$STATUS" "exit status"
   assert_eq "Nothing to review: no uncommitted changes." "$STDOUT" "output"
+}
+
+# Both used to print "Nothing to review", which reads as a clean tree.
+test_review_outside_a_git_repository_errors_without_running_the_agent() {
+  mkdir norepo
+  cd norepo
+  export GIT_CEILING_DIRECTORIES="$SANDBOX"
+  only_agents claude opencode
+  stub_recording opencode
+  outsider review --host claude
+  assert_eq 2 "$STATUS" "exit status"
+  assert_contains "$STDOUT" "not inside a git work tree" "output"
+  assert_not_contains "$STDOUT" "Nothing to review" "output"
+  assert_eq "" "$(calls_of opencode)" "agent invocations"
+}
+
+test_review_on_an_unborn_head_errors_without_running_the_agent() {
+  init_repo repo main
+  cd repo
+  printf 'NEW\n' > file.txt
+  only_agents claude opencode
+  stub_recording opencode
+  outsider review --host claude
+  assert_eq 2 "$STATUS" "exit status"
+  assert_contains "$STDOUT" "HEAD has no commit yet" "output"
+  assert_eq "" "$(calls_of opencode)" "agent invocations"
 }
 
 # A ref that does not resolve used to yield an empty diff, and the script then

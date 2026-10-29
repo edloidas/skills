@@ -56,12 +56,12 @@ with a number.
 
 ## Agent Selection
 
-The script picks the agent. Pass `--host <the agent you are>` on every invocation — `claude`,
-`codex`, `opencode`, or `pi` — so it never asks you to review your own work. Add `--agent <name>` only when
+The script picks the agent. Pass `--host <host>` on every invocation, with `<host>` the agent you
+are — `claude`, `codex`, `opencode`, or `pi` — so it never asks you to review your own work. Add `--agent <name>` only when
 the user named one; that overrides everything, host included.
 
 ```bash
-bash <skill-dir>/scripts/run-outsider.sh list --host claude
+bash <skill-dir>/scripts/run-outsider.sh list --host <host>
 ```
 
 `list` prints what is installed and what would be selected, and spends nothing.
@@ -108,7 +108,7 @@ and how to add an agent.
    `Asking codex (ask mode, up to 5 min).`
 
    ```bash
-   bash <skill-dir>/scripts/run-outsider.sh ask --host claude [--attach <file>]... <TMP>/outsider-<ID>-question.md
+   bash <skill-dir>/scripts/run-outsider.sh ask --host <host> [--attach <file>]... <TMP>/outsider-<ID>-question.md
    ```
 
    Exit `3` means an attachment is uncommitted — follow **Uncommitted Gate**.
@@ -129,7 +129,7 @@ timer fires first and can print its timeout message, and set the surrounding com
 the highest value the host allows:
 
 ```bash
-bash <skill-dir>/scripts/run-outsider.sh review --host claude --uncommitted 540
+bash <skill-dir>/scripts/run-outsider.sh review --host <host> --uncommitted 540
 ```
 
 `--uncommitted`, explicit or as the default, exits `3` until the user approves — follow
@@ -160,7 +160,7 @@ Both modes prepend a prompt file to whatever you pipe them — `references/promp
 `--preamble <file>` to swap it, in either mode:
 
 ```bash
-bash <skill-dir>/scripts/run-outsider.sh ask --host claude \
+bash <skill-dir>/scripts/run-outsider.sh ask --host <host> \
   --preamble <caller-skill-dir>/references/its-own-prompt.md <TMP>/outsider-<ID>-question.md
 ```
 
@@ -177,7 +177,9 @@ response is not interpretable without knowing who gave it.
 - Highlight agreements; flag disagreements and explain which side you land on and why
 - The responder saw what you piped it and whatever it chose to read in the working directory —
   never this conversation. Discount findings that are really requests for context it did not have
-- Empty output means it had nothing to offer — say so and move on
+- Nothing after the `[outsider] agent:` line, and no failure or timeout message, means it had
+  nothing to add — say so and move on. A failure or timeout line means no answer came back; that is
+  not "nothing to offer", so quote the line instead
 
 ```text
 Codex's take: it agrees the cache key is wrong and would key on tenant + URL,
@@ -198,7 +200,8 @@ outside opinion is the whole deliverable.
 - **No agent installed, or only the host is** — the script says so and exits 0. Don't retry.
 - **Timeout** — the script prints a timeout message. Note it and proceed without.
 - **`--base` or `--commit` does not resolve** — the script exits 2 and sends nothing. Correct the
-  ref; never re-run as `--uncommitted`, which reviews a different change. An empty `--base` or
+  ref; never re-run as `--uncommitted`, which reviews a different change. Review mode outside a git
+  work tree, or on a branch with no commit yet, also exits 2 — say why the review could not start. An empty `--base` or
   uncommitted diff prints `Nothing to review:` and exits 0.
 - **Agent failed** — the script prints the exit code and the last 20 lines of the agent's stderr.
   Quote the reason in one line, so a dropped outside opinion is never silent, and proceed without.
@@ -222,8 +225,8 @@ call is owned here, in place of **Presenting Output** and its stop sentence, whi
   Gate**, in the caller's own asking convention, and re-run with `--confirm-uncommitted` only on
   their approval. A caller with no user to answer — autonomous, a subagent, or running unattended —
   drops the leg and reports `uncommitted payload not approved`.
-- **The leg is droppable.** Exit 2 is the exception: a `--base` or `--commit` that does not resolve
-  is the caller's error to surface, not a skip. A skip, a timeout, or a failure is not retried; the caller continues and
+- **The leg is droppable.** Exit 2 is the exception: a review that cannot start — no repository, an
+  unborn HEAD, a `--base` or `--commit` that does not resolve — is the caller's error to surface, not a skip. A skip, a timeout, or a failure is not retried; the caller continues and
   its report says which happened. So does a host without this skill installed — it ships in the
   assist bundle.
 - **Name the agent** from the first output line, `[outsider] agent: <name>`. Without that line no

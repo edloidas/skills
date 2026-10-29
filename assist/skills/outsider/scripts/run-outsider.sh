@@ -369,6 +369,14 @@ fi
 # Resolved before an agent is chosen: a ref that does not resolve is an error,
 # never a fallback to another scope.
 if [[ "$MODE" == "review" ]]; then
+  if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    echo "Cannot review: $PWD is not inside a git work tree. Nothing was sent."
+    exit 2
+  fi
+  if ! git rev-parse --verify --quiet HEAD >/dev/null 2>&1; then
+    echo "Cannot review: HEAD has no commit yet (unborn branch). Commit once, or use ask mode with --attach. Nothing was sent."
+    exit 2
+  fi
   if [[ "$SCOPE" != "uncommitted" ]] &&
      ! git rev-parse --verify --quiet "${SCOPE_REF:-}^{commit}" >/dev/null 2>&1; then
     echo "Cannot review --$SCOPE '${SCOPE_REF}': not a commit in this repository. Nothing was sent."
