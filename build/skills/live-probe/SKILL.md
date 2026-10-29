@@ -26,18 +26,11 @@ changes what it is observing.
 
 ## The premise
 
-**Reading settles claims about code structure. Only running settles claims about observable
-output.** A missing writer, an unreachable branch, a wrong framework default — those are read by
-grepping and by opening the resolved artifact. Layout, rendering, wire format, exit code, timing,
-log content — those leave no trace in the source that reading can check.
-
-A claim of the second kind reported as "verified by reading" is **not verified**. That is the whole
-gap this skill fills, and it is the one place a review is most likely to be confidently wrong: "I
-fixed the overflow" cannot be refuted from a diff, and neither can it be confirmed.
-
-**This is not debugging.** One hypothesis, one observation, one verdict. A probe that does not
-answer its question is a probe that ends — it does not become an investigation. Debugging is a
-different activity with a different budget, and conflating them is how a verify step eats an hour.
+Reading settles claims about code structure; only running settles claims about observable output
+— layout, rendering, wire format, exit code, timing, log content. A claim of the second kind
+reported as "verified by reading" is **not verified**. This is not debugging: one hypothesis, one
+observation, one verdict, and a probe that does not answer its question ends rather than becoming
+an investigation.
 
 ## What a probe is
 

@@ -21,15 +21,10 @@ not allow a published version to be replaced. Steps 0-7 are local and undoable; 
 
 ## Package manager detection
 
-Detect the active package manager by lockfile first. Priority order:
-
-1. `pnpm-lock.yaml` → **pnpm**
-2. `bun.lock` or `bun.lockb` → **bun**
-3. `package-lock.json` → **npm**
-
-If no lockfile is present, fall back to tool availability in the same preference order: pnpm → bun → npm. If a lockfile is present but its tool is missing, error out — don't silently switch managers.
-
-`release-prepare.sh` runs this check and prints `Package manager: <name>`. Read that output and use the same manager consistently in every later step. All command blocks below list pnpm first, then bun, then npm — pick the one for the detected manager.
+`release-prepare.sh` detects the manager — lockfile first (pnpm → bun → npm), then tool
+availability — and prints `Package manager: <name>`. Use that manager in every later step — command blocks below
+list pnpm, bun, then npm; run only the detected one's line. A
+lockfile whose tool is missing is an error; never switch managers to get past it.
 
 ## Bundled Scripts
 
@@ -96,12 +91,8 @@ End the step with one line naming what you found, defaults included:
 bash scripts/release-prepare.sh
 ```
 
-Or manually:
-
-```bash
-git branch --show-current   # must be master, main, or the project's documented release branch
-git status --porcelain      # must be empty
-```
+Where the script cannot run, check by hand: `git branch --show-current` is the release branch
+and `git status --porcelain` is empty.
 
 If the branch is wrong or the tree is dirty, name which in one line, suggest `git stash && [retry]`
 or committing first, and stop there. Do not stash, commit, or switch branches yourself to clear
@@ -133,18 +124,9 @@ End the step with one line: `Dry run passed: 42 files, 128 kB`.
 bash scripts/release-analyze.sh
 ```
 
-Or manually:
-
-```bash
-# Get last version tag
-git describe --tags --abbrev=0
-
-# Show commits since last tag
-git log $(git describe --tags --abbrev=0)..HEAD --oneline
-
-# Show detailed changes if needed
-git log $(git describe --tags --abbrev=0)..HEAD --stat
-```
+Where the script cannot run, `git log $(git describe --tags --abbrev=0)..HEAD --oneline` gives
+the same commit list. With no tag at all this is a first release: ask the user for the
+baseline — `v0.1.0` or `v1.0.0`.
 
 | Bump | When |
 | ---- | ---- |
@@ -165,28 +147,13 @@ End the step with one line: `12 commits since v0.15.3 (4 feat, 6 fix, 2 chore) -
 Update `package.json` version. Use the detected package manager; always pass the flag that disables the automatic commit/tag, so this step cannot create either by accident.
 
 ```bash
-# pnpm
-pnpm version minor --no-git-tag-version
-pnpm version patch --no-git-tag-version
-
-# Bun (uses bun pm version)
-bun pm version minor --no-git-tag-version
-bun pm version patch --no-git-tag-version
-
-# npm
-npm version minor --no-git-tag-version
-npm version patch --no-git-tag-version
+pnpm version <major|minor|patch> --no-git-tag-version
+bun pm version <major|minor|patch> --no-git-tag-version
+npm version <major|minor|patch> --no-git-tag-version
 ```
 
-**Prerelease bumps** (alpha/beta/rc) use `prerelease` with an explicit preid:
-
-```bash
-# pnpm / npm
-pnpm version prerelease --preid=alpha --no-git-tag-version
-npm  version prerelease --preid=alpha --no-git-tag-version
-# Bun
-bun pm version prerelease --preid=alpha --no-git-tag-version
-```
+A prerelease (alpha/beta/rc) uses `prerelease` with an explicit preid:
+`<manager> version prerelease --preid=alpha --no-git-tag-version` (`bun pm version` for bun).
 
 Stop once `package.json` carries the new version. Commit, tag, and push belong to Steps 5, 6,
 and 8 — do not run any of them here.
@@ -201,10 +168,7 @@ Use the **release commit message format captured in Step 0**. Only fall back to 
 # Stage package.json and whichever lockfile exists
 git add package.json pnpm-lock.yaml bun.lock bun.lockb package-lock.json 2>/dev/null || true
 
-# Commit with the format from Step 0 (examples — pick ONE):
-git commit -m "Release v{{VERSION}}"              # fallback default
-git commit -m "chore: release v{{VERSION}}"       # Conventional Commits
-git commit -m "release: v{{VERSION}}"             # project-specific alternative
+git commit -m "<Step 0 commit format, filled with {{VERSION}}>"
 ```
 
 If the project uses a non-obvious template (commit body, trailers, sign-off), reproduce it exactly as documented. Never invent a format the project didn't specify.
@@ -213,7 +177,7 @@ End the step with one line: `Committed Release v0.16.0 (a1b2c3d)`. The tag is St
 
 ### Step 6: Create Git Tag
 
-Tag the release commit with a **signed** tag (`-s` implies `-a`, so the tag is also annotated — required for `--follow-tags`, preserves tagger/date/message, and provides a verifiable signature regardless of the user's `tag.gpgSign` config):
+Tag the release commit with a **signed** tag — `-s` implies `-a`, and `--follow-tags` in Step 8 pushes only annotated tags:
 
 ```bash
 git tag -s v{{VERSION}} -m "Release v{{VERSION}}"
@@ -288,28 +252,6 @@ that is already running.
 A failing step ends the workflow where it stands: report the error and the corrective action,
 one line each, and do not run the steps after it. Do not retry a failed command with different
 flags to get past the failure.
-
-## Common Issues
-
-**Uncommitted changes:**
-
-- Suggest: `git stash` then retry, or commit changes first
-
-**Wrong branch:**
-
-- Suggest: `git checkout master` then retry
-
-**Failed dry-run:**
-
-- Build errors: Fix and retry
-- Lint errors: Run the project's lint-fix script (`pnpm lint:fix` / `bun run lint:fix` / `npm run lint:fix`) then retry
-- Type errors: Fix TypeScript issues first
-- Project-specific gate failures (e.g. missing CHANGELOG section): see what Step 0 surfaced and resolve before retrying
-
-**No tags found:**
-
-- First release: Suggest starting with v0.1.0 or v1.0.0
-- Ask user which version to use as baseline
 
 ## Advanced: Manual Publishing
 

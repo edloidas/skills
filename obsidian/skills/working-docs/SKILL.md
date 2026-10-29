@@ -28,14 +28,8 @@ document to update a header field.
 
 Prefer the `obsidian:obsidian-cli` skill for vault interactions (read, create, search, manage notes). Fall back to reading and writing the vault path directly only if that skill is unavailable.
 
-## When to Use
-
-- Multi-step or multi-session tasks — create a working document
-- Starting work on a topic that may span sessions — check for existing docs first
-- Research findings, implementation plans, PRDs — persistent Claude docs
-- Quick findings during debugging or exploration — inbox dump
-
-**Skip** for one-off questions, quick fixes, or trivial tasks.
+Starting work on a topic that may span sessions, check for existing docs first. **Skip** this
+skill for one-off questions, quick fixes, or trivial tasks.
 
 ## Two-Tier System
 
@@ -127,7 +121,7 @@ Use for quick dumps during active work — findings, partial research, debug not
 
 Use for structured, persistent documents that will be referenced across sessions.
 
-1. Check for existing docs first (see **Find** above)
+1. Check for existing docs first (see **Find Existing Documents** above)
 2. Determine type (`PRD`, `Plan`, `Note`, `Research`, `Log`) from content purpose
 3. Determine scope from project/topic context
 4. Write to `~/Documents/Obsidian Vault/Dev/Claude/<Type> - <Scope> - <Description>.md`
@@ -152,7 +146,7 @@ When an Inbox note has grown into structured content worth keeping long-term:
 2. Determine the appropriate Type and Scope for Claude naming
 3. Write the new file at `~/Documents/Obsidian Vault/Dev/Claude/<Type> - <Scope> - <Description>.md`
 4. Update the header: set proper status, bump `**Updated**` date
-5. Delete the original Inbox file
+5. Read the new file back; only once it holds the note, delete the original Inbox file
 6. Update the index file
 7. Print one line naming both paths: `Promoted Inbox/<old> -> Dev/Claude/<new>, index updated`
 

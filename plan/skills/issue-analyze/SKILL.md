@@ -26,9 +26,7 @@ list. Standalone — no forced next step.
 
 **Reports only; the tree stays byte-identical.** Every call it makes is a read: `gh issue
 view`, `gh api` **GET**s and GraphQL queries — never a `mutation` — `git rev-parse`, and local
-file reads. `allowed-tools` cannot
-express a method restriction, so its `gh` and `git` grants are wider than that — this
-sentence is the limit, not the declaration.
+file reads. This sentence is the limit; the `gh` and `git` grants in `allowed-tools` are wider.
 
 ## Phase 1: Resolve & Fetch
 
@@ -127,17 +125,9 @@ Find the git root:
 git rev-parse --show-toplevel
 ```
 
-Check whether any of these local context sources exist. If none do, skip this phase
-entirely — do not mention it in output.
-
-- `<git-root>/AGENTS.md`
-- `<git-root>/CLAUDE.md`
-- `<git-root>/.claude/`
-- `<git-root>/.agents/`
-
 ### Find doc files
 
-Glob for:
+Glob for these; if none exist, skip to the closing line:
 - `<git-root>/AGENTS.md`
 - `<git-root>/CLAUDE.md`
 - `<git-root>/.claude/*.md`
@@ -145,8 +135,6 @@ Glob for:
 - `<git-root>/.agents/*.md`
 - `<git-root>/.agents/docs/*.md`
 - `<git-root>/docs/superpowers/**/*.md`
-
-If no files found, skip phase.
 
 ### Search for issue number
 

@@ -10,7 +10,7 @@ when_to_use: >
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
 argument-hint: "[instructions]"
-allowed-tools: Read Grep Bash(git:*) Agent Skill
+allowed-tools: Read Grep Bash(git:*) Bash(gh issue view:*) Agent Skill
 metadata:
   author: edloidas
 ---
@@ -117,14 +117,19 @@ diff inline, and the main thread already has the conventions context.
    - Single-line title, ≤72 chars, `<type>: <description>`.
    - Types: `feat`, `fix`, `docs`, `chore`, `refactor`, `test`, `style`, `ci`.
    - Follow the project convention from **Current state** when present.
-   - If the current branch is `issue-<N>`, append ` #<N>` to the title.
+   - If the current branch is `issue-<N>`, the title is `<Issue Title> #<N>`, matching
+     `issue-flow` — fetch it with `gh issue view <N> --json title --jq .title`. Where `gh`
+     fails, fall back to `<type>: <description> #<N>` and say so.
    - A hint in `$ARGUMENTS` — whatever the Arguments table did not match — steers the
      message, not the staging: let it shape the title's description, and pass it
      verbatim to `commit-summary` so the body reflects it too. It narrows what the
      message leads with; it never drops changes the commit contains.
-   - Body: invoke the `commit-summary` skill and use what it returns. It weighs
-     the change and either derives a body from the code or returns two to three
-     mechanical lines. See **Body** below for the inline fallback.
+   - Body: invoke the `commit-summary` skill and use what it returns. Where the host
+     cannot chain skills or it is not installed, write past-tense paragraphs wrapped at 80
+     answering, from the code rather than the diff, what forced the change, which call
+     paths reach it, how it failed, and what breaks on update, dropping any with no answer
+     and naming no hash or path a command did not return. A rename or regenerated tree gets
+     two or three mechanical lines. A project convention from **Current state** overrides both.
    - Attribution: this step runs the `git commit`, so it is the last place a
      footer can be caught. Read the assembled message and **remove** any
      "Drafted with AI" or "Generated with" line, session or transcript link,
@@ -152,19 +157,3 @@ diff inline, and the main thread already has the conventions context.
    work into a second commit, and do not rewrite history beyond the single
    `--amend --no-edit` above.
 
-## Body
-
-The body is the part a reader cannot recover from the diff: what the running code does
-that forced the change, which call paths reach it, how it failed observably, what breaks
-on update, when it broke, what the tests pin, and what was deliberately left alone.
-
-Invoke the `commit-summary` skill to compose it. Where the host cannot chain skills or that
-skill is not installed, answer that list against the code rather than the diff, in past-tense
-paragraphs wrapped at 80 — dropping every question with no answer, and naming no hash or call
-path a command did not return. The stub loses the gate that keeps a rename or a regenerated
-tree down to two mechanical lines, and the worked bodies that set the register.
-
-A project convention found in **Current state** overrides both. Some repos cap body
-width or forbid paragraphs outright.
-
-Nothing is appended after the last paragraph — see the trailer rule in step 5.

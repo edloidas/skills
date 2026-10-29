@@ -130,19 +130,11 @@ Add only when it applies, after a blank line:
 
 ## No attribution
 
-The body ends on its last paragraph. Emit no "Drafted with AI" or "Generated with"
-line, no session or transcript link, no `<sub>` line, no `---` rule, no badge, and no
-`Co-Authored-By` trailer crediting an assistant. Never copy one forward from an
-existing message — a trailer already in the log is not licence to repeat it.
-
-This skill returns text and never runs `git commit`, so it cannot be the only guard.
-The skill that assembles the final message strips these on the way to the commit —
-see `build:commit` step 5 and `issue-flow` Step 3.
+The body ends on its last paragraph: no AI, session-link, or assistant co-author footer, and
+none copied forward. Callers strip any that slip through at commit time.
 
 ## Out of scope
 
-- Subject lines, conventional-commit types, and issue-number suffixes.
-- Running `git commit`. This skill returns text.
-- Splitting a change into multiple commits. Question 7 makes the seam visible; the
-  caller decides what to do about it.
-- PR bodies and release notes. Different audience, different contract.
+Subject lines — the reference examples show one only for context; the caller writes it. Running
+`git commit`, and splitting a change into several commits — Question 7 shows the seam,
+the caller decides. Release notes, like PR bodies, are a different contract.

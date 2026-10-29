@@ -133,3 +133,66 @@ directly after the sentence describing what goes wrong:}}
 
 {{Include only if the approach is already known — brief notes on what needs to be done}}
 ```
+
+## Template Section Guidelines
+
+### Description (Required)
+The opening paragraph before any sections, written to the writing rules in Step 5 of `SKILL.md`. Length by format: Short 4-6 sentences, Default 4-8 sentences, Full 1-2 sentences (the detailed sections follow).
+
+### Rationale (Optional)
+Explain the "why" when it's not obvious:
+- Business/technical value
+- Why this approach vs alternatives
+- Architectural decisions
+
+### References (Optional)
+Links that provide context:
+- Design files (Figma, screenshots)
+- Similar implementations
+- Documentation or RFCs
+- Related issues/PRs
+
+### Things to Consider (Optional)
+Important aspects affecting implementation:
+- Edge cases
+- Performance considerations
+- Integration points
+- Future extensibility
+
+### Implementation (Medium/Large scope)
+Functional checklist, not micromanagement:
+- Clear about WHAT needs to be done
+- Context for WHY
+- Code snippets for complex patterns
+- Logical order — in a repo whose instruction file asks for one commit per slice, and only
+  when the scope is settled, order it as working increments that can each land on their own
+
+### UI Behavior (If applicable)
+Expected user interactions:
+- Focus management
+- Keyboard navigation
+- Animations/transitions
+- Responsive behavior
+
+### Acceptance Criteria (Required)
+Testable yes/no checkboxes defining completion.
+
+### Testing Steps (Optional)
+How to find and test in the application:
+- Navigation steps
+- Actions to trigger
+- Expected outcomes
+
+### Examples (Optional)
+Screenshots, mockups, or code examples showing expected result. A bug's repro image is not
+an example — it belongs beside the actual-behaviour sentence, per Step 5 of `SKILL.md`.
+
+### Out of Scope (Optional)
+What is explicitly NOT part of this task. Prevents scope creep.
+
+### Technical Constraints (Optional)
+Specific requirements:
+- Performance targets
+- Browser support
+- Accessibility standards
+

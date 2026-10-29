@@ -45,19 +45,8 @@ Follow these steps in order.
 bash .claude/skills/skills-release/scripts/release-prepare.sh
 ```
 
-This checks:
-
-- Current branch is `master` or `main`
-- Working tree is clean (no uncommitted changes)
-- `.claude-plugin/marketplace.json` exists
-- `scripts/codex/catalog.json` exists
-- Each plugin's `.claude-plugin/plugin.json` exists
-- Each generated Codex wrapper plugin manifest exists and matches the catalog version
-- `jq` is available
-- `bash .github/scripts/validate-skills.sh` passes
-- `./scripts/validate-codex.sh` passes
-- `./scripts/skills-packaging.sh sync-repo` leaves the working tree clean
-- Every version-bearing file agrees on the current version
+It checks the branch, a clean tree, every manifest and the catalog, `jq`, both validators, that
+`sync-repo` leaves the tree clean, and that every version-bearing file agrees.
 
 If any check fails, report which one and the fix, and stop there — no analysis, no bump. Do not
 commit generated changes yourself to make `sync-repo` come back clean; that is the user's call.
@@ -70,15 +59,8 @@ End the step with one line: `Pre-flight passed: 10 plugins, version 5.5.1, tree 
 bash .claude/skills/skills-release/scripts/release-analyze.sh
 ```
 
-This will:
-
-- Find the last release tag (or handle first release)
-- List all commits since that tag
-- Count commits by conventional type using anchored regex
-- Detect breaking changes (`type!:` suffix or `BREAKING CHANGE` in body)
-- Detect skills removed or renamed since the last tag, and list them by name
-- Show file change statistics
-- Print a version bump recommendation
+It prints commit counts by type, breaking markers, skills removed or renamed since the last tag,
+file stats, and a bump recommendation.
 
 **Version bump criteria:**
 
@@ -88,11 +70,8 @@ This will:
 | **Minor** | New features — any `feat:` commits                             |
 | **Patch** | Everything else — `fix:`, `docs:`, `refactor:`, `chore:`, etc. |
 
-Trust the removal check over the commit subjects. v5.0.0 deleted 17 skills and renamed 2 across
-plugin groups under `refactor:` and `chore:` subjects, so the marker counters reported
-`Breaking: 0` and the script recommended MINOR for the most breaking release this repo has had.
-A skill present at the last tag and absent at HEAD breaks whoever installed it, whatever the
-subject line called it.
+Trust the removal check over the commit subjects — v5.0.0 removed 17 skills under `refactor:`
+subjects and would have shipped as MINOR without it.
 
 When the script prints a **Skills Removed or Renamed** section, map old to new in the
 release notes before publishing. A rename is invisible to a user whose slash command
@@ -142,7 +121,8 @@ bash .claude/skills/skills-release/scripts/release-bump.sh {{VERSION}}
 
 The script rewrites every version file, regenerates the wrapper manifests, verifies each one
 landed on `{{VERSION}}`, stages them, commits as `Release v{{VERSION}}`, and creates the signed
-`v{{VERSION}}` tag. It does **not** push, and neither do you here — Step 5 gates that.
+`v{{VERSION}}` tag. It does **not** push, and neither do you here — Step 5 gates that. It
+refuses a tag that already exists: delete the old tag or choose another version.
 
 End the step with one line: `Bumped 24 manifests to 5.6.0, committed, tagged v5.6.0 (not pushed)`.
 
@@ -198,21 +178,3 @@ follow-up version, and do not edit the published release unless asked.
 
 A failing step ends the workflow where it stands: report the error and the corrective action,
 and do not run the steps after it.
-
-## Common Issues
-
-**Uncommitted changes:**
-- Suggest: `git stash` then retry, or commit changes first
-
-**Wrong branch:**
-- Suggest: `git checkout master` then retry
-
-**Version mismatch between files:**
-- Fix manually or bump both to the same version before releasing
-
-**No tags found:**
-- First release: The analyze script handles this and recommends MINOR
-
-**Tag already exists:**
-- `release-bump.sh` refuses to create a duplicate tag
-- Either delete the old tag or choose a different version

@@ -37,20 +37,9 @@ template. Every other file touched already exists — notably the deploy workflo
 is changed with targeted edits per hunk, never a whole-file rewrite, so the diff carries the job
 split and nothing else.
 
-`audit:security-audit` is the read half of the pair. It detects the same gaps and never
-mutates anything — no file edit, no `gh api` write. Its findings are this skill's input.
-Run this skill after an audit, or standalone to set the baseline proactively on a new repo
-or pipeline. When the user wants gaps listed rather than changes made, use that skill instead.
-Its reference checklists carry the *why* for every item here in more depth, and are worth
-reading when a user questions an item.
-
-## When to Use This Skill
-
-Use when the user asks to:
-- "Harden this repo", "secure the repository", "apply security settings"
-- "Protect master/main", "set up rulesets", "protect release tags"
-- "Move deploy secrets to an environment", "lock down the Cloudflare/Vercel/AWS token"
-- "Set up a new repo securely", "bootstrap repo settings"
+`audit:security-audit` is the read-only half of the pair: its findings are this skill's input,
+it is the skill to use when the user wants gaps listed rather than changed, and its reference
+checklists carry the *why* for each item when a user questions one.
 
 Org-level policies, SSO, and GitHub Enterprise controls are out of scope.
 
@@ -59,6 +48,33 @@ Org-level policies, SSO, and GitHub Enterprise controls are out of scope.
 - `gh` CLI authenticated as a repo **admin** (`gh auth status`; rulesets, environments,
   and settings PATCHes all require admin).
 - Resolve the target once: `gh repo view --json nameWithOwner --jq .nameWithOwner`.
+
+## Asking the User
+
+Every question in this skill is written as `AskUserQuestion` options. Use that tool where
+the host offers it, or the host's nearest structured-choice equivalent. Where the host has
+neither, ask the same question in normal chat as a numbered list of 2–5 options —
+recommended first, one short line of description each — and wait for the user to reply
+with a number.
+
+Before applying (after Step 0's inventory), confirm scope in one round:
+
+1. **Ruleset strictness** — Solo (admin bypass, 0 approvals; recommended for
+   single-maintainer repos) / Team (no bypass, 1+ approvals) / Skip rulesets.
+2. **Deploy secrets** — Migrate to environment now (recommended; previews break) / Leave
+   at repo level (records a critical finding in the report).
+3. **Immutable releases** — Enable (recommended; not retroactive, and breaks automation
+   that re-uploads release assets) / Skip. Ask only when Step 0 found releases or a
+   tag-triggered workflow.
+
+Required status checks and the environment name are derived from the repo (CI run check
+names; provider name like `cloudflare-production`) — state them in the confirmation
+rather than asking. Same for the workflow linter in Step 6: apply it if
+`.github/workflows/` exists, and raise the required-check decision there rather than in
+this round.
+
+Keep it to one round. If the repo has no deploy secrets and no releases, questions 2 and 3
+drop and only ruleset strictness is asked.
 
 ## Workflow
 
@@ -228,29 +244,8 @@ all, that line says so and Step 8 records the reason.
 
 #### 6b. Add the linting workflow
 
-Write `.github/workflows/check-workflows.yml`:
-
-```yaml
-name: Lint CI workflows
-on:
-  push:
-    branches: ['<default-branch>']
-  pull_request:
-    branches: ['**']
-jobs:
-  zizmor:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      actions: read
-    steps:
-      - uses: actions/checkout@<sha>
-        with:
-          persist-credentials: false
-      - uses: zizmorcore/zizmor-action@<sha>
-        with:
-          advanced-security: false
-```
+Write `.github/workflows/check-workflows.yml` from `assets/check-workflows.yml`, replacing
+`<default-branch>` with the repo's default branch.
 
 Resolve both `<sha>` values to real 40-char commit SHAs before writing the file — a
 workflow-linting workflow that is itself tag-pinned fails its own check. Set
@@ -283,22 +278,9 @@ Neither is a `gh api` write, so both are reported in Step 8 rather than applied:
 
 These cannot be done via `gh`; list them for the user in the final report:
 
-- **npm** (when the repo publishes packages), at
-  `https://www.npmjs.com/package/<name>/access` — give the user the resolved URL, one per
-  public package in a monorepo, not a generic "your package settings":
-  - Trusted Publisher pinned to the exact `owner/repo` + release workflow filename.
-  - **Enable only "Allow npm stage publish"**, so a plain `npm publish` from that workflow
-    is rejected and every release has to pass through a maintainer's 2FA approval
-    (`npm stage approve <stage-id>`, or Staged Packages on npmjs.com). This is the control
-    a fully compromised CI job cannot forge — the workflow holds a legitimate OIDC
-    identity, and staging is what stops that identity from being enough. It only binds if
-    it is set registry-side; the workflow using `npm stage publish` without this
-    restriction is a convention, not a control.
-  - Publishing access set to *require 2FA and disallow bypass tokens* once OIDC is the
-    only publish path. Warn first: this revokes existing tokens, so any other automation
-    publishing with a token breaks.
-  - Requires npm CLI >= 11.15.0 and Node >= 22.14.0 in the release workflow. Check the
-    workflow's `node-version` before recommending the switch.
+- **npm**, when the repo publishes packages: Trusted Publisher, stage-publish-only, and 2FA
+  without bypass tokens, set at `https://www.npmjs.com/package/<name>/access` — read
+  `references/npm-publishing.md` for the items, their order, and the version floor.
 - **Provider token scope**: the deploy token itself should be least-privilege (e.g.
   Cloudflare: only `Account · Cloudflare Pages · Edit`). Verified in the provider
   dashboard, not the repo.
@@ -328,30 +310,3 @@ to org-level settings.
 | `sha_pinning_required`      | deferred — `gh api -X PUT repos/o/r/actions/permissions/workflow -F sha_pinning_required=true` |
 | npm Trusted Publisher       | manual (user) — https://www.npmjs.com/package/voidvigil/access |
 ```
-
-## Asking the User
-
-Every question in this skill is written as `AskUserQuestion` options. Use that tool where
-the host offers it, or the host's nearest structured-choice equivalent. Where the host has
-neither, ask the same question in normal chat as a numbered list of 2–5 options —
-recommended first, one short line of description each — and wait for the user to reply
-with a number.
-
-Before applying (after Step 0's inventory), confirm scope in one round:
-
-1. **Ruleset strictness** — Solo (admin bypass, 0 approvals; recommended for
-   single-maintainer repos) / Team (no bypass, 1+ approvals) / Skip rulesets.
-2. **Deploy secrets** — Migrate to environment now (recommended; previews break) / Leave
-   at repo level (records a critical finding in the report).
-3. **Immutable releases** — Enable (recommended; not retroactive, and breaks automation
-   that re-uploads release assets) / Skip. Ask only when Step 0 found releases or a
-   tag-triggered workflow.
-
-Required status checks and the environment name are derived from the repo (CI run check
-names; provider name like `cloudflare-production`) — state them in the confirmation
-rather than asking. Same for the workflow linter in Step 6: apply it if
-`.github/workflows/` exists, and raise the required-check decision there rather than in
-this round.
-
-Keep it to one round. If the repo has no deploy secrets and no releases, questions 2 and 3
-drop and only ruleset strictness is asked.

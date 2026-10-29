@@ -145,25 +145,24 @@ Same as Local Mode but:
 - No push questions
 - Return control to calling skill silently after resolution
 
----
-
 ## Resolution Pipeline
 
 ### Phase 1: Classify
 
 1. `cd "$(git rev-parse --show-toplevel)"`, then run `scripts/classify-conflicts.sh`.
-   Its paths are relative to the repository root, so every resolution command below
-   has to run from there too. Exit 3 means a conflicted path contains a newline, which
+   Its paths are relative to the repository root and printed verbatim, unescaped, so run
+   every resolution command below from the root and always quote the path. Exit 3 means a conflicted path contains a newline, which
    a line-oriented report cannot represent — surface the message and stop; do not
    resolve a partial list.
 2. Parse the output — extract counts and file lists per status code
-3. If there are UU files, classify them by difficulty:
+3. If there are UU or AA files, classify them by difficulty:
    - Read `references/conflict-analyzer-prompt.md` and dispatch a read-only
-     subagent with it as the prompt body plus the UU file list. It classifies
-     each file trivial / simple / complex and resolves nothing.
+     subagent with it as the prompt body plus the UU and AA file list. It classifies
+     each file trivial / simple / complex, names the dominant side of each trivial
+     file, and resolves nothing.
    - If the host has no subagent facility, classify inline using the same prompt.
-   - Parse the classifier output to get the UU trivial/simple/complex subgroups
-4. Combine bash output (DU/UD/DD/AA/AU/UA) with classifier output
+   - Parse the classifier output to get the trivial/simple/complex subgroups
+4. Combine bash output (DU/UD/DD/AU/UA) with classifier output
 5. Print the initial report (see `references/report-format.md`)
 
 ### Phase 2: Auto-Resolve
@@ -175,20 +174,19 @@ Resolve groups that need no LLM analysis:
 | DU | `git rm "<file>"` for each file |
 | UD | `git rm "<file>"` for each file |
 | DD | `git rm "<file>"` for each file |
-| AA | `git checkout --theirs "<file>" && git add "<file>"` — but if the classifier treated it as UU (both have meaningful content), treat as UU |
-| AU | `git checkout --theirs "<file>" && git add "<file>"` |
-| UA | `git checkout --theirs "<file>" && git add "<file>"` |
-| UU trivial | `git checkout --theirs "<file>" && git add "<file>"` |
+| AA | Classified with the UU files; from here on, every UU count and step includes them |
+| AU | `git checkout --ours "<file>" && git add "<file>"` — only our side has a version |
+| UA | `git checkout --theirs "<file>" && git add "<file>"` — only their side has a version |
+| UU trivial | `git checkout --<side> "<file>" && git add "<file>"`, `<side>` as the classifier named it |
 
-`classify-conflicts.sh` prints each path verbatim — unquoted and unescaped, so a name
-with a space or a non-ASCII character arrives intact. Two consequences: always quote it
-when passing it back to git, because the report does not escape it for you; and run from
-the repository root, because the paths are relative to it.
+The side is read from marker position, not fixed: `--theirs` is the replayed commit in a rebase
+but the incoming branch in a merge, so a fixed side keeps your work in one and discards it in the
+other.
 
 Batch all trivial UU files into one resolver subagent for parallel execution.
 
 When the group is done, print one line: `Auto-resolved <N> of <T> conflicts (DU <n>, UD <n>, DD <n>,
-AA <n>, UU trivial <n>)`.
+AU <n>, UA <n>, UU trivial <n>)`.
 
 ### Phase 3: Context-Aware Resolve
 
@@ -234,8 +232,6 @@ After all resolvable conflicts are handled:
    - Show final report with unresolved files
    - In PR/Local mode: stop and wait for user
    - In Conditional mode: return with status indicating unresolved conflicts
-
----
 
 ## Verification
 

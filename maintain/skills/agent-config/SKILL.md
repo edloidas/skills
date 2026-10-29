@@ -26,16 +26,7 @@ No user-level file is read or written (step 2).
 
 ## Purpose
 
-A repository's agent layer is one document read by many agents under different filenames.
-This skill establishes that layout and then keeps the document honest:
-
-- **Init** — establish the file-and-symlink layout in **Canonical Layout**.
-- **Check** — find documented commands, paths, directory structures, and counts that have
-  drifted from the actual repo.
-
-It never seeds an ambient rules directory. Code-shaped conventions are applied on demand by
-`code-cleanup` and the `audit/` skills; only the comment block below is cheap enough to live
-in always-loaded instructions.
+Establishes one instruction file read by every agent through symlinks (`init`), then reports where it has drifted from the repo (`check`). It never seeds an ambient rules directory — code-shaped conventions are applied on demand by `code-cleanup` and the `audit/` skills.
 
 ## Asking the User
 
@@ -67,9 +58,7 @@ both are read-only, so approve them or skip the Commands category and say so in 
 
 ## Auto-Activation
 
-Trigger phrases live in `when_to_use`. When activating on your own initiative rather than
-on a request — right after build scripts, directory names, tooling, or documented counts
-changed — always run `check` first and never apply without showing the report.
+When you activate this skill on your own initiative — after build scripts, directory names, tooling, or documented counts changed — run `check` first and never apply without showing the report.
 
 ## Canonical Layout
 
@@ -179,16 +168,10 @@ Re-run `status`, then `git status` and `git diff` so the user sees exactly what 
 new symlink shows up in `git diff` as a mode `120000` entry — that is correct, not a
 mistake.
 
-Then stop. Do not stage or commit, and do not run `editor-config` or `repo-hardening` off the
-back of this run — they are separate decisions (**Adjacent Skills**).
-
-## Adjacent Skills
-
-- `editor-config` owns `.zed` / `.vscode` and is a separate decision — mention it as a
-  follow-up when this skill has just initialized a repo, but do not run it implicitly.
-- `repo-hardening` owns GitHub-side settings. Unrelated to the instruction layer.
-- `skill-audit`, `ci-audit`, and the rest of `audit/` own quality judgments. This skill only
-  checks factual agreement between the instruction file and the repo.
+Then stop. Do not stage or commit, and do not run `editor-config` (`.zed` / `.vscode`) or
+`repo-hardening` (GitHub settings) off the back of this run — after an `init`, name
+`editor-config` as a possible follow-up. Quality judgments belong to `audit/`; this skill
+checks only factual agreement between the instruction file and the repo.
 
 ## Edge Cases
 

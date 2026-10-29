@@ -20,16 +20,9 @@ It never stages, commits, pushes, or calls a remote service.
 
 ## Purpose
 
-Drop a small, opinionated set of editor configuration files into a project. The
-skill is the **source of truth** — its bundled configs in `assets/` are what
-every target repo gets. To update the canonical configs, edit the files in this
-skill and commit; the next run propagates the change everywhere else.
-
-## When to Use This Skill
-
-Trigger phrases: "editor config", "editor-config", "init editor", "setup editor",
-"apply editor config", "sync editor config", "init zed", "init vscode", "set up
-.zed", "set up .vscode", "configure editor".
+Drops a small, opinionated set of editor configuration files into a project. The bundled
+`assets/` are the source of truth; changing them is maintainer work, described in
+`references/maintaining.md`.
 
 ## Canonical Set
 
@@ -50,8 +43,7 @@ For each target file:
   - `settings.json` files: deep-merge with **our values winning** every conflict.
     Keys the user has that we do not define are preserved.
   - `extensions.json`: **union** the `recommendations` and
-    `unwantedRecommendations` arrays. No duplicates, order preserved with our
-    entries appended first.
+    `unwantedRecommendations` arrays, de-duplicated (the result is sorted).
 
 Existing files are read tolerantly — `//` line comments and `/* … */` block
 comments (valid in JSONC) are stripped before parsing. The output is always
@@ -65,9 +57,6 @@ confirmation before writing.
 `scripts/editor-config.sh` owns every write to a target repo, and it generates each target
 file whole from the merge result — that is correct here, because the merge already carries
 the user's own keys forward. Do not hand-edit a target file instead of re-running the script.
-
-Editing the canonical `assets/` files is the opposite case: apply targeted edits per key, never
-a whole-file rewrite, so the diff carries the key you changed and nothing else.
 
 ## Asking the User
 
@@ -93,7 +82,8 @@ with a number.
 
      In chat, accept one or more numbers comma-separated (e.g. `1,2`).
 
-2. **Run the apply script** for each selection.
+2. **Run the script with `--dry-run`** for the selection — without `--yes` the script waits on
+   a terminal prompt an agent cannot answer.
 
    ```bash
    bash <skill-dir>/scripts/editor-config.sh [--dry-run] [--yes] <editor> [<editor> ...]
@@ -108,8 +98,9 @@ with a number.
    (`Write`, `Merge`, `Identical`). Show that table and end the phase with one line carrying
    the counts: `3 targets: 1 write, 1 merge, 1 identical`.
 
-4. **Confirm.** Type `y` to apply. Anything else aborts. A `ParseError` row blocks the whole
-   run — report which file failed and stop; do not repair the file to get past it unless the
+4. **Confirm**, per **Asking the User**, then re-run the same command with `--yes` in place of
+   `--dry-run`. A `Merge` drops JSONC comments from that file; say so in the question. A
+   `ParseError` row blocks the whole run — report which file failed and stop; do not repair the file to get past it unless the
    user asks.
 
 5. **Report the changed files** the script lists, then stop. Do not stage or commit them, and
@@ -132,34 +123,10 @@ Then the phase line: `3 targets: 1 write, 1 merge, 1 identical`.
 
 ## Edge Cases
 
-- **`jq` missing.** The script requires `jq` for parsing and merging. Install
-  with `brew install jq` (or your package manager).
-- **JSONC with non-standard syntax.** The comment stripper handles `//` and
-  `/* … */`. Trailing commas are not handled — if the existing file has them,
-  the script reports a parse error and exits without writing. Remove trailing
-  commas and re-run.
+- **`jq` missing, or a target with trailing commas.** The script needs `jq`, and reports a
+  trailing comma as a parse error without writing — report either and stop.
 - **Existing `recommendations` array contains a string we also define.** The
   union de-duplicates by exact string match, so no double entries appear.
 - **The user has set a key we also define to a different value.** Ours wins —
   this is the explicit design. If a user customization needs to survive,
-  remove that key from `assets/<editor>/settings.json` in this skill (the
-  canonical set).
-
-## Updating the Canonical Configs
-
-The bundled files in `assets/` are the source of truth. Edit them in place and
-commit; the next run in any other repo picks up the new content.
-
-When adding a brand-new target file:
-
-1. Drop the file into `assets/<editor>/`.
-2. Add a row to the **Canonical Set** table above.
-3. Extend the editor block in `scripts/editor-config.sh` (the `apply_<editor>`
-   function and the `TARGETS_<EDITOR>` array).
-
-When adding a brand-new editor:
-
-1. Create `assets/<editor>/` with the relevant files.
-2. Add the editor to the script's `KNOWN_EDITORS` list and add an
-   `apply_<editor>` function.
-3. Add it to the **Canonical Set** table and the `AskUserQuestion` options.
+  remove that key from `assets/<editor>/settings.json` (see `references/maintaining.md`).

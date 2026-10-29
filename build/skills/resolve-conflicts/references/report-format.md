@@ -20,8 +20,9 @@ Link: <url>
 | DU | deleted by theirs | N | `git rm` |
 | UD | deleted by ours | N | `git rm` |
 | DD | both deleted | N | `git rm` |
-| AA | both added | N | Accept theirs / analyze |
-| UU | trivial | N | Accept theirs |
+| AA | both added | N | Classified with UU |
+| AU / UA | added by one side | N | Accept the side that added it |
+| UU | trivial | N | Accept the dominant side |
 | UU | simple | N | Auto-resolve with context |
 | UU | complex | N | Deep analysis |
 | **Total** | | **N** | |
@@ -56,7 +57,7 @@ Both branches deleted this file. Safe to remove.
 ```
 ### AA — both added (N)
 
-Both branches added this file. Accept theirs or analyze if content differs.
+Both branches added this file. Classified with the UU files; a trivial one takes the side the classifier names.
 
 - `path/to/file.ts`
 ```
