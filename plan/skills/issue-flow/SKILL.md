@@ -398,6 +398,8 @@ Print one line: `Linked <N> sub-issues to #<parent>`.
 
 When a new issue will be linked as a child of an existing parent, resolve its projects via **## Project Inheritance From Parent** before creating it, so the child lands on the same project board(s) as the parent.
 
+A follow-up filed while working on #N (per **## Project Inheritance From Parent**) is linked by the Procedure above to #N's parent, if any — see `references/github-relationships.md` → **Parent of an Issue**.
+
 ## Project Inheritance From Parent
 
 When a new issue is being created as a child of an existing parent (sub-issue link, "attach to #N", "linked to #N"), or as a follow-up filed while working on #N (the `issue-<N>` branch is checked out, or a caller names the issue it is working on), inherit #N's project membership instead of using the generic Project picker. Below, "parent" means #N in both cases.
@@ -566,13 +568,10 @@ from — a body another skill returned, text a caller passed in, a message being
 - a `<sub>` attribution line, a trailing `---` rule, a badge, or a promotional line
 - a `Co-Authored-By` trailer crediting an assistant
 
-Do not add one either, and **do not copy one forward from the previous commit.** A trailer
-already in the log is not licence to repeat it; mirroring the last commit's footer is how one
-reproduces itself indefinitely.
-
-A trailer crediting a *human* is fine where the repo's convention asks for one. The only
-exception is an explicit request — the repo's instruction file, the user's configuration, or
-the user's prompt asking for attribution outright. Finding one in `git log` is not that.
+Do not add one, and **do not copy one forward from the previous commit** — mirroring the last
+footer is how one reproduces itself. A trailer crediting a *human* is fine where the repo asks for
+one. The only exception is an explicit request in the repo's instruction file, the user's
+configuration, or the prompt; finding one in `git log` is not that.
 
 ### Consolidate
 
@@ -810,11 +809,11 @@ Closes #<number>
 
 ### Assignee and Reviewer
 
-Follow **### Assignment Defaults**. Reviewer selection is separate from assignment — see **### Assignees** below.
+Pick reviewers here. **### Assignees** derives the PR's assignees from them; the `KIND` prompt is for issues only.
 
-In a `KIND=personal` repo, skip the reviewer prompt entirely unless the repo's CLAUDE.md sets a reviewer rule or the user asked for one — a solo repo has no one else to review, and the reviewer question is the step where assignment silently gets dropped.
+In a `KIND=personal` repo, skip the reviewer prompt unless the repo's CLAUDE.md sets a reviewer rule or the user asked for one — a solo repo has no one else to review.
 
-Check the target repo's CLAUDE.md for reviewer rules (e.g., "PRs to main should be reviewed by @username", default reviewer for specific branches). If a matching rule exists, use that reviewer directly.
+Check the target repo's CLAUDE.md for reviewer rules (e.g., "PRs to main should be reviewed by @username"). If one matches, use that reviewer directly.
 
 Otherwise, run `pr-reviewers.sh` to find users with actual recent PR review activity:
 
@@ -822,7 +821,7 @@ Otherwise, run `pr-reviewers.sh` to find users with actual recent PR review acti
 bash "<skill-dir>/scripts/pr-reviewers.sh"
 ```
 
-Output: `<user>\t<count>` per row, up to 3 rows (excludes self and bots; counts both reviews submitted and review-requests received across the last 100 PRs in any state).
+Output: `<user>\t<count>` per row, up to 3 rows (excludes self and bots; counts reviews and review requests across the last 100 PRs in any state).
 
 - **0 results**: skip the prompt entirely and create the PR without `--reviewer` — no collaborator-list fallback, for the reason Step 1 gives.
 - **1+ results**: compose `AskUserQuestion`:
@@ -830,35 +829,25 @@ Output: `<user>\t<count>` per row, up to 3 rows (excludes self and bots; counts 
   2. Second result (if any), description: `"<count> review events across the last 100 PRs"`
   3. "No reviewer"
 
-Check if the selected reviewer is the same as the PR creator:
-
-```bash
-gh api user --jq .login
-```
-
-If same, skip `--reviewer` flag (GitHub doesn't allow self-review).
+Drop the creator from the reviewers (the login from **### Assignment Defaults**) — GitHub rejects self-review.
 
 ### Assignees
 
-The PR creator (`@me`, i.e. the current user) is **always** an assignee — in personal and org repos alike, with or without a reviewer. Setting a reviewer never replaces the creator on Assignees; it adds to it.
+A reviewer approves; assignees own the merge and the PR's work. So the creator (`@me`) is always an assignee, in every repo kind, and so is every human reviewer, on top of the review request. A bot reviewer (Copilot, any `[bot]` login) is only requested, never assigned. With no reviewer, `@me` alone — never zero assignees. Explicit instructions still win, per **### Assignment Defaults**.
 
-- **Reviewer set** (and not the creator): assign `@me` **and** the reviewer.
-  - e.g. creator `alice` sets `octocat` as reviewer → Reviewers: `octocat`, Assignees: `octocat`, `alice`.
-- **No reviewer** (or reviewer is the creator / self-review): assign only `@me`.
-
-There is no branch of this step that produces zero assignees. If a reviewer prompt is skipped or `pr-reviewers.sh` returns nothing, `@me` still goes on `--assignee`.
+e.g. creator `alice`, reviewers `octocat` and Copilot → Reviewers: `octocat`, Copilot; Assignees: `alice`, `octocat`.
 
 ### Create
 
 Write the PR body to `<TMPDIR>/pr-body.md` with the host's file-write tool, then create the PR with `--body-file`, spelling `<TMPDIR>` out as Step 1 does (`mktemp -d` if this flow has none yet).
 
-With a reviewer (pass `--assignee` once per assignee):
+With reviewers — `--assignee` for `@me` and per human reviewer, `--reviewer` per reviewer:
 
 ```bash
 gh pr create --title "<title>" --body-file <TMPDIR>/pr-body.md --base <base> --assignee @me --assignee <reviewer> --reviewer <reviewer>
 ```
 
-Without a reviewer (or self-review):
+Without a human reviewer:
 
 ```bash
 gh pr create --title "<title>" --body-file <TMPDIR>/pr-body.md --base <base> --assignee @me
@@ -907,7 +896,7 @@ Print the Step 5 report, including the `Mergeable:` line. Then stop: Step 6 runs
 
 ### Skip Condition
 
-Determine the current user: `gh api user --jq .login`. If the PR reviewer OR assignee is someone **other than** the current user, **skip Step 6**:
+Determine the current user: `gh api user --jq .login`. If a human PR reviewer OR assignee is someone **other than** the current user, **skip Step 6**; a bot reviewer does not count:
 
 ```
 PR #<number> is ready for review by @<reviewer> (mergeable: <state from Step 5>). Merge skipped — awaiting external review.
@@ -949,7 +938,7 @@ the record of what is about to be merged, not the prompt itself.
 The suggestion branch additionally requires all of:
 - Issue assignee is the current user
 - PR assignee is the current user
-- No external reviewer was set on the PR
+- No external human reviewer was set on the PR
 
 If any of those is false, the **Skip Condition** above already applies and Step 6 ends.
 
@@ -999,12 +988,13 @@ gh pr merge --rebase --delete-branch
 
 Find Step 2's stash in `git stash list` by its `issue-<number> from <current-branch>` message — a fresh invocation has no other record of it. If the merge left you on that `<current-branch>`, run `git stash pop "stash@{<n>}"` with `<n>` from the entry's line — never a bare `stash@{0}`. On any other branch, leave it. A conflicted pop keeps the entry: stop, list the conflicted files, and never reset. Both add `Stashed:` to the report.
 
-`Closes #<number>` in the PR body auto-closes the issue when merging into the default branch. Only verify and manually close if the merge target is a non-default branch (e.g., epic-*, next, or a stack parent):
+`Closes #<number>` fires only on the default branch. On any other base (epic-*, next, a stack parent), confirm `gh pr view <pr-number> --json state,mergeCommit` reads `MERGED` (otherwise report the state and stop), then close each `Closes` issue with exactly this, `<short-sha>` = `mergeCommit.oid` cut to 7:
 
 ```bash
-# Only run this if base branch is NOT the default branch
-gh issue close <number>
+gh issue close <number> --comment 'Landed on `<base>` in <short-sha> via #<pr-number>.'
 ```
+
+On an `epic-*` base, then link it on the epic's PR per `references/github-relationships.md` → **Landed Sub-Issues**.
 
 Update project status to "Done":
 

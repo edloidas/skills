@@ -46,5 +46,5 @@ derives `from` from `git log` on every call; never carry a slice SHA across a sy
 ## Step 5 and Step 6
 
 The PR targets `BASE=`. Merging a stacked pull request into its parent closes no issue — close it
-by hand, as for any non-default base. A branch stacked above one that just changed moves on its own
-next sync; nothing here rewrites another issue's branch.
+per Step 6 → **Merge**, as for any non-default base. A branch stacked above one that just changed
+moves on its own next sync; nothing here rewrites another issue's branch.

@@ -71,12 +71,12 @@ report that reads like an ordinary push hides that.
 ```
 ### [5] PR Created
 PR #<pr-number>: <title>
-Base: <base> <- issue-<number> | Reviewer: @<login> | Assignees: @<login>, @<login>
+Base: <base> <- issue-<number> | Reviewers: @<login> | Assignees: @<login>, @<login>
 Mergeable: yes
 <pr-url>
 ```
 
-Omit `Reviewer:` when none was set. List every assignee on `Assignees:` — `@me` plus the reviewer when one was set.
+Omit `Reviewers:` when none was set. List every assignee on `Assignees:` — `@me` plus every human reviewer.
 
 `Mergeable:` is mandatory — it is the outcome of the Step 5 mergeability check. Values:
 
@@ -112,7 +112,8 @@ Print before running `gh pr checks --watch`. After checks pass, print the merged
 ### [6] Merged
 PR #<pr-number> merged into <base>
 Branch issue-<number> deleted
-Issue #<number> closed
+Issue #<number> closed          (every merge; on a non-default base, by the landed comment)
+Epic PR #<epic-pr>: ticked      (only for a landed sub-issue; `commented` when no checklist line)
 Stashed: <stash message>        (only when the Step 2 stash was not restored)
 ```
 
@@ -164,5 +165,5 @@ Branch issue-69 deleted
 Issue #69 closed
 ```
 
-`Reviewer:` is absent from `[5]` because this is a personal repo, where the reviewer prompt is
+`Reviewers:` is absent from `[5]` because this is a personal repo, where the reviewer prompt is
 skipped — that is the expected shape, not a missing field.
