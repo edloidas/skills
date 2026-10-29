@@ -259,8 +259,8 @@ select(.state == "PENDING") | .html_url'`. For an issue or own-PR unit it is
 | `closed` | Blocked: the PR was closed unmerged — brief the user | Same |
 
 `HUMAN_THREADS` above zero never sends a worker: no unattended worker resolves a person's thread.
-The worker's **Held drafts** go to the user in the unit summary, verbatim, as one numbered
-**Needs you** item. On the user's word, an own-PR unit posts exactly the approved replies,
+The worker's **Held drafts** go to the user in the unit summary as one numbered **Needs you** item,
+each draft unedited in a `> ` blockquote under its thread URL. On the user's word, an own-PR unit posts exactly the approved replies,
 re-requests those reviewers, and resolves nothing they own.
 
 Poll as a background wait where the host offers one — the script re-checks every minute, for at
@@ -328,6 +328,10 @@ whether that was acceptable.
 
 **Checks:** `pnpm run check` passed · `pnpm run test` 257 passed · `./gradlew build` passed · PR CI green
 **Issue edits:** none
+
+**Needs you**
+1. One reply held for a person's thread — post it as written? https://github.com/enonic/cloud-api/pull/2603#discussion_r1880214
+   > Kept the flag opt-in so the REST callers keep failing loudly on a disabled cluster; only the GraphQL resolvers skip.
 ```
 
 Then dispatch the next unit in the same message. End each summary with one line: `Next: <unit>`
