@@ -53,7 +53,7 @@ a fork's code is read, never executed. The holder:
 
 1. Confirms the tree is clean and records the branch it found.
 2. Works on a disposable local branch: `git checkout -B triage/<N> <remote>/pr/<N>` for analysis,
-   `fold/<N>` for a fold that will be pushed (`acting.md`).
+   `fold/<N>` for a fold that will be pushed (pr-review's `references/landing.md`).
 3. Reverts every tracked file its own commands rewrote that the task did not ask to change — a
    package manager rewriting the lockfile is the usual one.
 4. Returns to the recorded branch with a clean tree before releasing the lease, and reinstalls

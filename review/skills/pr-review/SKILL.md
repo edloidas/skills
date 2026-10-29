@@ -3,17 +3,20 @@ name: pr-review
 description: >
   Handle a pull request from whichever side you are on. On someone else's branch it attacks
   the diff through changes-review, then publishes a real review with per-line comments and a
-  verdict. On your own it works the threads people and bots left — decides its standing in
-  each, verifies the claim before answering, runs the project's checks, then replies and
-  resolves. Changes no code unless asked.
+  verdict — or, asked to land it, approves and merges, folding small fixes in first. On your
+  own it works the threads people and bots left — decides its standing in each, verifies the
+  claim before answering, runs the project's checks, then replies and resolves. Changes no
+  code unless asked.
 when_to_use: >
   When a pull request needs reviewing, when PR feedback needs addressing or answering, when
-  Copilot or other bot comments need dealing with, or on "what is still open on this PR". Not for
-  the whole queue of pull requests waiting on you — that is pr-triage.
+  Copilot or other bot comments need dealing with, or on "what is still open on this PR". Also
+  on "approve and merge it if it's good", "fix the nits, squash and merge" on someone else's pull
+  request; merging your own is issue-flow. Not for the whole queue of pull requests waiting on
+  you — that is pr-triage.
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
-allowed-tools: Bash(git:*) Bash(gh:*) Bash(pnpm:*) Bash(npm:*) Read Glob Grep Edit Task Skill
-argument-hint: "[PR number | URL | #discussion_r<id> | author | text] [--fix] [--full] [--auto] [--draft]"
+allowed-tools: Bash(git:*) Bash(gh:*) Bash(pnpm:*) Bash(npm:*) Read Glob Grep Edit Write Task Skill
+argument-hint: "[PR number | URL | #discussion_r<id> | author | text] [--fix] [--full] [--auto] [--draft] [--land]"
 metadata:
   author: edloidas
 ---
@@ -30,7 +33,8 @@ comment per finding, a body, and a verdict.
 is even your business, check whether the claim is true, then reply and close what is finished.
 
 **Mutation class**: writes to external services. Reviews, replies, resolutions and review re-requests go to GitHub behind
-a confirmation gate; local files change only under `--fix`. The skill **verifies before it speaks**,
+a confirmation gate; local files change only under `--fix` or `--land`, and only `--land` pushes
+or merges. The skill **verifies before it speaks**,
 and its default output is an action report plus whatever it posted.
 
 ## The premise
@@ -40,14 +44,13 @@ premise is wrong far more often than the conclusion.** The claim rests on how a 
 and your repository's own code says nothing about it — so "read the code" is not enough, and two
 agents agreeing is not verification.
 
-The ordering is therefore fixed and not negotiable:
+The ordering is therefore fixed:
 
 **verify → fix → build → speak.**
 
 Never post a verdict you have not executed. A `reject` needs evidence that can be pasted; a `fix`
-needs the project's own checks passing on it. `references/verifying-a-claim.md` has the traps, the
-version-pinning discipline, and the run where a fabricated claim reached two independent
-confirmations and was caught only because the fix would not compile.
+needs the project's own checks passing on it. `references/verifying-a-claim.md` has the traps and
+the version-pinning discipline.
 
 ## Configuration
 
@@ -57,12 +60,14 @@ confirmations and was caught only because the fix would not compile.
 | Verification breadth | `--full` | Bot claims, plus anything heading for `fix` or `reject` |
 | Unattended | `--auto` | Off — previews and confirmations are shown. Never covers a human-rooted thread |
 | Hold the review unsubmitted | `--draft` | Off — reviewer mode submits with its verdict; in author mode, replies print unsent |
+| Land it | `--land` | Off — reviewer mode ends at the review. On: Phase 8 approves and merges, folding small fixes first |
 
 **Explicit instructions in the invocation override the default posture in both directions.** "Just
 triage this" stays read-only however the postures resolve; "answer Anna" acts on a human thread that
 the table below would have left alone.
 
-`--fix` is meaningless in reviewer mode — you do not fix a colleague's branch. Say so and ignore it.
+`--fix` is meaningless in reviewer mode — you do not fix a colleague's branch; `--land` is how a
+reviewer changes it. `--land` is meaningless in author mode. Say so and ignore either.
 
 ## Asking the User
 
@@ -169,8 +174,7 @@ Six:
 | `ack` | Praise or an FYI. Nothing to answer |
 
 `discuss` triggers on **authority, not difficulty**. A hard fix you are confident about is a `fix`.
-It has one other trigger: **unverifiability**. A claim about observable output that no probe could
-settle is `discuss` with the reason, never `reject` — the premise may hold and nobody checked.
+It has one other trigger: **unverifiability**, per Phase 4.
 
 ## Phase 6: Fix (`--fix` only)
 
@@ -194,23 +198,24 @@ Composition is in `references/answering.md`: the answer in the first clause, rea
 descriptions, a link where one exists, ready concessions, and the decision handed back. A fix reply is
 shorter — what changed, why, and the check that passed.
 
-Reviewer mode publishes instead of replying. Invoke `review:changes-review` to attack the diff and
-verify what it finds, passing the pull request's own issue as the requirement and any system facts you
-have, then let its publication phase post the review with `--review`. It owns the inline anchoring,
-the grouping of minors, and the verdict mapping; do not rebuild them here. Where the host cannot
+Reviewer mode publishes instead of replying. Every word the author will read — body, inline
+comments, approval — is in the voice `references/review-voice.md` sets; read it before composing.
+Invoke `review:changes-review` to attack the diff and verify what it finds, passing the pull
+request's own issue as the requirement, any system facts you have, and that file's path, then let
+its publication phase post the review with `--review`. It owns the inline anchoring, the grouping of
+minors, and the verdict mapping; do not rebuild them here. Under `--land`, skip that publication
+phase and its confirmation, and go to Phase 8. Where the host cannot
 invoke another skill, run the same attack inline and publish by the rules `changes-review` documents
 for it — one inline comment per finding, minors grouped, nothing published without a demonstration
 and an attribution. Submit once, as `event`, `body` and `comments` (`path`, `line`, `side`) posted to
 `repos/<owner>/<repo>/pulls/<N>/reviews`, with `event` set by whether a blocker survived.
 
-**An approval is a different document.** One body, no inline comments, two to four sentences on what
-now holds up for a user — nothing about what you ran or measured, which goes in the operator report.
+**An approval is a different document** — one body, no inline comments, nothing about what you ran.
 `changes-review` owns the rule and carries the example, under **`APPROVE` has its own shape** in its
 publishing reference.
 
 **Non-blocking suggestions do not ride along on an approval.** Withhold them, report them to the
-operator as their own block, and offer to raise them as a follow-up issue. A suggestion anchored to
-a line of an approved pull request asks the author to revisit code nobody needs to reopen.
+operator as their own block, and offer to raise them as a follow-up issue.
 
 **"Draft it", "keep it in progress", "hold it", "don't publish it" mean hold, not skip: run the
 whole review and leave it on GitHub pending, for the user to submit.** The word is about the
@@ -223,23 +228,17 @@ returns nothing; report the recommended verdict rather than baking it in. In aut
 review to hold: print the composed replies and post nothing.
 
 **Confirm before anything leaves.** Show the composed text **verbatim and complete** — every word
-that would be posted, quoted, in the message itself. Not a summary of it, not a description of what
-it covers, not a count of comments and a claim about their content: the reader is approving the
-words, so the words are what they have to see. In author mode that is every composed reply; in
+that would be posted, quoted, in the message itself. Not a summary or a count: the reader is
+approving the words. In author mode that is every composed reply; in
 reviewer mode the body and each inline comment. Then ask, once, in prose, as the last line — per
 **Asking the User**. `--auto` skips the question for bot-rooted threads and posts those directly,
 and still prints what it sent. `--draft` skips it in reviewer mode: the gate exists to put the words
 in front of a reader before they reach the author, and a pending review does that on its own.
 
-**`--auto` covers bot-rooted threads only.** It skips the gate where Phase 3 standing already reads
-*Act* — a thread a bot rooted, with no human in it. Any other thread is composed and **held unsent**
-whatever the flag says: one a human rooted, and the mixed case the standing table calls *bot-rooted,
-last comment by another human*. Its draft goes in the report for a person to send. A bot has
-no standing to be offended and its claim was verified before the reply; a human thread involves
-someone whose own words are being answered, and nobody has read the answer. Without this scope
-`--auto` would post a `reject` on a colleague's comment that no one approved, which the standing
-table's "confirm before posting" exists to prevent — and a global flag silently overriding a
-per-thread posture is a contract nobody can reason about.
+**`--auto` covers bot-rooted threads only** — where Phase 3 standing reads *Act*. Every other
+thread, human-rooted or bot-rooted with a human's last comment, is composed and **held unsent**, its
+draft in the report for a person to send: a human's own words are being answered, and nobody has
+read the answer.
 
 Nothing you post carries an AI attribution footer — not a review, not a reply, not a general comment,
 whatever the target repository's instruction file says.
@@ -262,9 +261,32 @@ the bot one only.
 Fixes not on the head yet: list the requests under `Re-request:` as pending, for whoever pushes. A
 request GitHub refuses is reported, not retried.
 
-Once what was approved has gone out, print what was sent and stop. Do not re-read the pull request
+Once what was approved has gone out, print what was sent and stop (under `--land`, Phase 8 ends it). Do not re-read the pull request
 for a second pass, do not answer a thread the standing table left alone, and do not follow a posted
 reply with an unasked fix.
+
+## Phase 8: Land (`--land`, reviewer mode)
+
+`--land` is the asking: the review routes to one ending instead of being posted.
+
+| What the verified review left | Ending |
+| ----------------------------- | ------ |
+| Nothing, or only suggestions an approval would withhold | Approve, then merge |
+| Only small, certain fixes of defects inside the change's scope, each an exact edit | Fold them, approve, merge — or the report-only row below, when `references/landing.md` refuses the fold |
+| Anything else — a fix only the author can make, a design question, code that belongs elsewhere | Report only, no writes: why it does not land, and the review a run without `--land` would post |
+
+The commands, the merge method, the lease, and the fold's authorship — set by the user's own words,
+"squash into one, mathias author" — are `references/landing.md`; read it before the first write.
+
+**The gate.** A fold rewrites someone else's branch and a merge cannot be recalled. Before the
+first write, show in one message the ending, each fix as its diff, the commit's author, co-authors
+and message, the approval body, thread replies and resolves verbatim, the push target, the merge method, and
+any branch update or close-and-reopen the merge needs — then ask once, per
+**Asking the User**. `--auto` does not cover it; with `--draft` the review is held per Phase 7 and nothing lands. Without
+a yes, nothing is written.
+
+End with one line: `Landed #573: 2 fixes folded into 1 commit (mathias, co-author ashklianko),
+approved, squash-merged as 4e1a9c2.` Then stop: no second look at the merged code.
 
 ## Output
 
@@ -280,27 +302,22 @@ Held: <what awaits your confirmation, what --fix would have changed, and any hum
 
 <the composed text, verbatim>
 
-Verdict: <APPROVE | COMMENT | REQUEST_CHANGES, or the replies and resolves> — <one clause of why>
+Verdict: <APPROVE | COMMENT | REQUEST_CHANGES | LAND: merge, fold + merge, or report only, or the replies and resolves> — <one clause of why>
 Posted: <what actually went out, the pending review's URL under --draft, or nothing yet>
 Re-request: <who was asked for another look, who waits on a push, or none>
 ```
 
-**The verdict goes last, on its own line.** It is the one thing the reader is looking for, and a
-header at the top scrolls past before the evidence that justifies it has been read. Where
-suggestions were withheld, say so on that line too — an approval that silently swallowed two of
-them reads as a clean run.
+**The verdict goes last, on its own line** — a header at the top scrolls past before its evidence
+is read. Where suggestions were withheld, say so on that line too, or the approval reads as a clean
+run.
 
 **Each finding appears once in what you print.** The per-thread line is a pointer — the claim in a
-clause, the verdict, the action, and the evidence in a clause at most — never the mechanism, which
-lives in the composed text that **Confirm before anything leaves** already requires in full. In
-reviewer mode `changes-review`'s own report is an
-intermediate: do not reprint it. Carry each finding into the per-thread line with its corroboration
-as a clause (`reproduced`, `2 reviewers`) and let the composed review carry the rest. The reader
-should be able to read the header and the per-thread lines, skip to the verdict, and open the
-composed text only to approve the words.
+clause, the verdict, the action, the evidence or corroboration (`reproduced`, `2 reviewers`) in a
+clause at most — never the mechanism, which lives in the composed text. In reviewer mode
+`changes-review`'s own report is an intermediate: do not reprint it.
 
-Deferrals are always listed even though their threads are closed. A deferral nobody can see is
-backlog that does not exist yet.
+Deferrals are always listed even though their threads are closed — an unseen deferral is lost
+backlog.
 
 One filled-in instance, author mode, so the shape is not left to interpretation:
 
@@ -357,5 +374,5 @@ Posted: pending review with 3 inline comments, https://github.com/o/r/pull/612/f
 | A reply posts but the resolve fails | Say which thread is half-answered. Do not repost the reply |
 | `--fix` and the checks were already failing | Establish the baseline first; never blame a pre-existing failure on the fix |
 | Host cannot invoke another skill | Run the review inline, per Phase 7 |
-| `--fix` in reviewer mode | Ignore it and say why |
+| `--fix` in reviewer mode, `--land` in author mode | Ignore it and say why |
 | The project's check command is outside the pre-approved set | It will prompt for approval. Run it anyway — an unrun check is not a green check |

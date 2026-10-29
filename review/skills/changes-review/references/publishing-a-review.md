@@ -105,7 +105,7 @@ introduced as such.
 | The attribution clause, inline in the claim | The base already had the blamed code, or part of it. New on this branch is what a reader assumes and needs no sentence |
 | A suggested fix, offered as an option | The fix is not the plain inverse of the claim. "The guard is inverted" needs no fix paragraph; "use `pointerdown` instead" does |
 | An explicit withdrawal, one clause | An earlier round of this review said something this round found wrong. A review that visibly corrects itself is cheaper to trust |
-| A lead paragraph | Two or more findings. One sentence on which need a change and which are judgement calls, one on what held up in the issue's terms. Standing is a clause inside it — `I ran the AppRoot story in Storybook` — never a paragraph: each reproduction below is the proof of method |
+| A lead paragraph | Two or more findings. One sentence, to the author, on which need a change and which are judgement calls, one on what held up in the issue's terms. Standing is a clause inside it — `I ran the AppRoot story in Storybook` — never a paragraph: each reproduction below is the proof of method |
 | A closing paragraph | Grouped minors or unverified residue exist. One sentence per minor, one for the residue with why it could not be shown |
 
 ## Order
@@ -180,8 +180,12 @@ overridden here — say so if it comes up rather than silently complying.
 
 Voice is not free of the author. Both calibration rounds read as first-person prose from the account
 that posted them. The rules above are all about **substance** — demonstration, attribution,
-withdrawal, open decision — and those transfer to anyone. Cadence does not, so do not prescribe it
-beyond *write plainly and lead with the point*, which `write:markdown-writing` already says.
+withdrawal, open decision — and those transfer to anyone. Cadence is the caller's: on someone
+else's pull request it is pr-review's `references/review-voice.md`. pr-review passes its path; on a
+direct `--review`, read it from the installed pr-review skill. Wherever no voice file is in hand —
+a direct `--comment`, or pr-review missing — prescribe nothing beyond *write plainly and lead with
+the point*, which `write:markdown-writing` already says, addressed to the author in the first person
+and in the language the repository's pull requests use.
 
 ## Publishing as a review (someone else's pull request)
 

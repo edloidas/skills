@@ -334,7 +334,7 @@ recommendation of what to do next.
 | [code-cleanup](./review/skills/code-cleanup/) | Prune comments aggressively, apply project conventions, simplify correct code |
 | [consilium](./review/skills/consilium/) | Approach board — generate candidate approaches, attack them comparatively, recommend one |
 | [doubt](./review/skills/doubt/) | Verify a set of claims with two seats blind to the reasoning behind them — one verdict each |
-| [pr-review](./review/skills/pr-review/) | Review someone else's PR, or verify and answer the feedback on yours — replies and resolves |
+| [pr-review](./review/skills/pr-review/) | Review someone else's PR, or land it with `--land` — approve and merge, folding small fixes first; or verify and answer the feedback on yours — replies and resolves |
 | [code-to-spec](./review/skills/code-to-spec/) | Extract a behavioral spec from a codebase (1 file up to 500+ files) |
 
 `code-to-spec` is the collection's only Claude Code-only skill. It dispatches six
