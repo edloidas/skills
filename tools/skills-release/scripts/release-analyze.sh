@@ -60,8 +60,8 @@ echo "Last release tag: $LAST_TAG"
 COMMIT_COUNT=$(git rev-list "$LAST_TAG"..HEAD --count)
 
 if [[ $COMMIT_COUNT -eq 0 ]]; then
-  echo "INFO: No new commits since last release"
-  exit 0
+  echo "STOP: No new commits since $LAST_TAG; there is nothing to release"
+  exit 1
 fi
 
 echo "Commits since last release: $COMMIT_COUNT"
@@ -163,4 +163,6 @@ elif [[ $DOCS_COUNT -gt 0 ]] || [[ $CHORE_COUNT -gt 0 ]] || [[ $STYLE_COUNT -gt 
   echo "PATCH bump (maintenance changes)"
 else
   echo "MANUAL review needed (no conventional commits found)"
+  echo "STOP: No bump can be recommended; the user picks one from the commit history above"
+  exit 1
 fi

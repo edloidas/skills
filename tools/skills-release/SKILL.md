@@ -65,6 +65,12 @@ bash .claude/skills/skills-release/scripts/release-analyze.sh
 It prints commit counts by type, breaking markers, skills removed or renamed since the last tag,
 file stats, and a bump recommendation.
 
+A `STOP:` line with a non-zero exit ends the release here — no Step 3 question, no bump. It
+prints one in two cases: no commits since the last tag (report `Nothing to release since
+v<last>` and stop), and a `MANUAL review needed` recommendation, where no commit carries a
+recognised conventional type (report the unclassified commit subjects and stop; the user names
+the bump in a new request).
+
 **Version bump criteria:**
 
 | Bump      | When                                                           |
@@ -110,7 +116,7 @@ AskUserQuestion:
       description: "Abort the release"
 ```
 
-Replace `{{CURRENT}}` with current version, and compute `{{MAJOR}}`, `{{MINOR}}`, `{{PATCH}}` by incrementing the appropriate segment (reset lower segments to 0).
+Replace `{{CURRENT}}` with the script's `Current version`, and compute `{{MAJOR}}`, `{{MINOR}}`, `{{PATCH}}` by incrementing the appropriate segment (reset lower segments to 0). `{{RECOMMENDATION}}` is the script's recommended bump (`MINOR`), and `{{NEXT}}` is the one of `{{MAJOR}}`/`{{MINOR}}`/`{{PATCH}}` it names. `{{VERSION}}` in the steps below is the version the user picked, without the leading `v` (`5.6.0`).
 
 If user selects **Cancel**, stop the workflow and leave the tree untouched.
 

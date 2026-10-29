@@ -65,12 +65,15 @@ test_no_tags_recommends_minor_as_a_first_release() {
   assert_contains "$(recommendation)" "MINOR bump (first release)" "recommendation"
 }
 
-test_no_new_commits_since_the_tag() {
+# An empty release must stop the run, not exit 0 and leave the next step to ask
+# which bump to apply to nothing.
+test_no_new_commits_since_the_tag_stops() {
   skills_repo
   git tag -a v4.5.2 -m "Release v4.5.2"
   analyze
-  assert_eq 0 "$STATUS" "exit status"
-  assert_contains "$STDOUT" "No new commits" "output"
+  assert_eq 1 "$STATUS" "exit status"
+  assert_contains "$STDOUT" "STOP: No new commits since v4.5.2" "output"
+  assert_not_contains "$STDOUT" "=== Recommendation ===" "output"
 }
 
 # --------------------------------------------------------------- baseline ----
@@ -152,6 +155,15 @@ test_an_unclassified_commit_counts_as_other() {
   analyze
   assert_eq 1 "$(summary_of Other)" "Other"
   assert_contains "$(recommendation)" "MANUAL review" "recommendation"
+}
+
+test_a_manual_review_recommendation_stops() {
+  skills_repo
+  git tag -a v4.5.2 -m "Release v4.5.2"
+  commit "improvement: not a conventional type" a.txt
+  analyze
+  assert_eq 1 "$STATUS" "exit status"
+  assert_contains "$STDOUT" "STOP: No bump can be recommended" "output"
 }
 
 # --------------------------------------------------------------- breaking ----
