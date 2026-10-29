@@ -91,12 +91,91 @@ test_a_feature_commit_recommends_minor() {
   assert_contains "$(recommendation)" "MINOR bump" "recommendation"
 }
 
-test_a_breaking_commit_recommends_minor() {
+test_a_bang_subject_after_1_0_recommends_major() {
   pkg_repo 1.2.3
   git tag -a v1.2.3 -m "Release v1.2.3"
-  commit "breaking: drop the old API" a.txt
+  commit "feat!: drop the old API" a.txt
   analyze
   assert_eq 1 "$(summary_of Breaking)" "breaking count"
+  assert_contains "$(recommendation)" "MAJOR bump" "recommendation"
+}
+
+test_a_scoped_bang_subject_is_breaking() {
+  pkg_repo 1.2.3
+  git tag -a v1.2.3 -m "Release v1.2.3"
+  commit "refactor(api)!: rename the entry point" a.txt
+  analyze
+  assert_eq 1 "$(summary_of Breaking)" "breaking count"
+  assert_contains "$(recommendation)" "MAJOR bump" "recommendation"
+}
+
+test_a_breaking_change_footer_is_breaking() {
+  pkg_repo 2.0.0
+  git tag -a v2.0.0 -m "Release v2.0.0"
+  FIXTURE_CLOCK=$((FIXTURE_CLOCK + 60))
+  _git_dates
+  printf 'x\n' > a.txt
+  git add a.txt
+  git commit --quiet -m "fix: tighten parsing" -m "BREAKING CHANGE: rejects trailing commas"
+  analyze
+  assert_eq 1 "$(summary_of Breaking)" "breaking count"
+  assert_contains "$(recommendation)" "MAJOR bump" "recommendation"
+}
+
+test_a_breaking_change_before_1_0_recommends_minor() {
+  pkg_repo 0.4.1
+  git tag -a v0.4.1 -m "Release v0.4.1"
+  commit "feat!: drop the old API" a.txt
+  analyze
+  assert_eq 1 "$(summary_of Breaking)" "breaking count"
+  assert_contains "$(recommendation)" "MINOR bump" "recommendation"
+}
+
+test_a_breaking_change_with_a_non_semver_version_asks_for_review() {
+  pkg_repo 1.2.3
+  git tag -a v1.2.3 -m "Release v1.2.3"
+  printf '{"name":"demo"}\n' > package.json
+  git add package.json
+  git commit --quiet -m "chore: drop version"
+  commit "feat!: drop the old API" a.txt
+  analyze
+  assert_contains "$(recommendation)" "MANUAL review needed" "recommendation"
+}
+
+test_break_inside_a_word_is_not_breaking() {
+  pkg_repo 1.2.3
+  git tag -a v1.2.3 -m "Release v1.2.3"
+  commit "fix: breakfast menu no longer breaks the layout" a.txt
+  analyze
+  assert_eq 0 "$(summary_of Breaking)" "breaking count"
+  assert_contains "$(recommendation)" "PATCH bump" "recommendation"
+}
+
+test_add_inside_a_word_is_not_a_feature() {
+  pkg_repo 1.2.3
+  git tag -a v1.2.3 -m "Release v1.2.3"
+  commit "fix: address the padding regression" a.txt
+  analyze
+  assert_eq 0 "$(summary_of Features)" "feature count"
+  assert_contains "$(recommendation)" "PATCH bump" "recommendation"
+}
+
+test_a_type_word_mid_subject_is_not_counted() {
+  pkg_repo 1.2.3
+  git tag -a v1.2.3 -m "Release v1.2.3"
+  commit "chore: feat: and docs: mentioned in passing" a.txt
+  analyze
+  assert_eq 0 "$(summary_of Features)" "feature count"
+  assert_eq 0 "$(summary_of Documentation)" "docs count"
+  assert_contains "$(recommendation)" "MANUAL review needed" "recommendation"
+}
+
+test_a_scoped_feature_is_counted() {
+  pkg_repo 1.2.3
+  git tag -a v1.2.3 -m "Release v1.2.3"
+  commit "feat(cli): add a flag" a.txt
+  analyze
+  assert_eq 1 "$(summary_of Features)" "feature count"
   assert_contains "$(recommendation)" "MINOR bump" "recommendation"
 }
 

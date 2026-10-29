@@ -153,7 +153,11 @@ If the commit subjects don't settle it, read the diffs of the files they touch:
 git diff $(git describe --tags --abbrev=0)..HEAD -- [key-files]
 ```
 
-End the step with one line: `12 commits since v0.15.3 (4 feat, 6 fix, 2 chore) -> recommend minor`.
+The script counts only conventional-commit subjects (`type(scope)!:`) and `BREAKING CHANGE:`
+footers. `MANUAL review needed` means none of them settled it — read the commit list and the diffs,
+pick the bump yourself, and say so in the closing line.
+
+End the step with one line: `12 commits since v0.15.3 (4 feat, 6 fix, 2 other) -> recommend minor`.
 
 ### Step 4: Bump Version
 

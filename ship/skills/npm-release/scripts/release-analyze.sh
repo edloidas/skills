@@ -74,12 +74,25 @@ echo "=== File Changes ==="
 git diff "$LAST_TAG"..HEAD --stat
 echo ""
 
-# Analyze commit types
-FEAT_COUNT=$(git log "$LAST_TAG"..HEAD --format=%s | grep -i -E "(feat|feature|add)" | wc -l | tr -d ' ')
-FIX_COUNT=$(git log "$LAST_TAG"..HEAD --format=%s | grep -i -E "(fix|bug)" | wc -l | tr -d ' ')
-REFACTOR_COUNT=$(git log "$LAST_TAG"..HEAD --format=%s | grep -i -E "(refactor|refact)" | wc -l | tr -d ' ')
-DOCS_COUNT=$(git log "$LAST_TAG"..HEAD --format=%s | grep -i -E "(doc|docs)" | wc -l | tr -d ' ')
-BREAKING_COUNT=$(git log "$LAST_TAG"..HEAD --format=%s | grep -i -E "(breaking|break)" | wc -l | tr -d ' ')
+# Classify by conventional-commit type, anchored to the start of the subject, so
+# "address" is not a feature and "breakfast" is not a breaking change.
+count_type() {
+  git log "$LAST_TAG"..HEAD --format=%s | grep -c -E "^$1(\([^)]*\))?!?:" || true
+}
+
+FEAT_COUNT=$(count_type feat)
+FIX_COUNT=$(count_type fix)
+REFACTOR_COUNT=$(count_type refactor)
+DOCS_COUNT=$(count_type docs)
+
+# Breaking: a `type!:` / `type(scope)!:` subject, or a `BREAKING CHANGE:` footer.
+BREAKING_COUNT=0
+for sha in $(git rev-list "$LAST_TAG"..HEAD); do
+  if git log -1 --format=%s "$sha" | grep -q -E '^[a-z]+(\([^)]*\))?!:' ||
+     git log -1 --format=%b "$sha" | grep -q -E '^BREAKING[ -]CHANGE:'; then
+    BREAKING_COUNT=$((BREAKING_COUNT + 1))
+  fi
+done
 
 echo "=== Change Summary ==="
 echo "Features: $FEAT_COUNT"
@@ -89,10 +102,20 @@ echo "Documentation: $DOCS_COUNT"
 echo "Breaking: $BREAKING_COUNT"
 echo ""
 
-# Recommendation
+# Breaking is MAJOR from 1.0.0 on; below it, semver puts breaking changes in MINOR.
+MAJOR_PART="${CURRENT_VERSION%%.*}"
+
 echo "=== Recommendation ==="
-if [[ $BREAKING_COUNT -gt 0 ]] || [[ $FEAT_COUNT -gt 0 ]]; then
-  echo "MINOR bump (new features or breaking changes)"
+if [[ $BREAKING_COUNT -gt 0 ]]; then
+  if ! [[ "$MAJOR_PART" =~ ^[0-9]+$ ]]; then
+    echo "MANUAL review needed (breaking changes, but package.json version '$CURRENT_VERSION' is not semver)"
+  elif [[ "$MAJOR_PART" == "0" ]]; then
+    echo "MINOR bump (breaking changes, pre-1.0)"
+  else
+    echo "MAJOR bump (breaking changes)"
+  fi
+elif [[ $FEAT_COUNT -gt 0 ]]; then
+  echo "MINOR bump (new features)"
 elif [[ $FIX_COUNT -gt 0 ]] || [[ $REFACTOR_COUNT -gt 0 ]]; then
   echo "PATCH bump (fixes or refactoring)"
 elif [[ $DOCS_COUNT -gt 0 ]]; then
