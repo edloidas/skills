@@ -36,7 +36,9 @@ if ! command -v jq &> /dev/null; then
 fi
 
 if git tag -l | grep -q "^$TAG_NAME$"; then
-  echo "ERROR: Tag $TAG_NAME already exists"
+  echo "ERROR: Tag $TAG_NAME already exists. Nothing was changed."
+  echo "       Choose another version, or, if $TAG_NAME was never pushed, the user may delete it with:"
+  echo "         git tag -d $TAG_NAME"
   exit 1
 fi
 
