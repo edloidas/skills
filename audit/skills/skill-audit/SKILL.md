@@ -55,30 +55,33 @@ note reduced confidence rather than reimplementing it.
 
 | Invocation | Scope |
 | ---------- | ----- |
-| `/skill-audit` | Skills changed on this branch; falls back to all when nothing changed |
-| `/skill-audit changed` | Skills changed on this branch only |
-| `/skill-audit all` | Every skill, excluding `skill-audit` itself |
-| `/skill-audit <name> [<name> ...]` | Named skills, including `skill-audit` when named |
+| No argument, or `changed` | Skills changed on this branch, working tree included |
+| `all` | Every skill, excluding `skill-audit` itself |
+| `<name> [<name> ...]` | Named skills, including `skill-audit` when named |
 
 ## Workflow
 
 ### Step 1: Resolve scope
 
-For `changed` mode, list skill directories touched by the branch, working tree included:
+For `changed` mode, list skill directories touched by the branch, working tree included —
+published skills at `<group>/skills/<name>` and repo-only ones at `tools/<name>`:
 
 ```bash
 BASE=${BASE:-$(git symbolic-ref --quiet --short refs/remotes/origin/HEAD 2>/dev/null || echo origin/HEAD)}
 { git diff --name-only "$(git merge-base HEAD "$BASE")"...HEAD; git status --porcelain | awk '{print $NF}'; } \
-  | grep -oE '^[a-z]+/skills/[a-z0-9-]+' | sort -u
+  | grep -oE '^([a-z]+/skills/[a-z0-9-]+|tools/[a-z0-9-]+)' | sort -u
 ```
 
 `BASE` defaults to the repository's default branch. Set it explicitly when the branch forked
 from somewhere else — `BASE=epic-6` under an epic — or the scope picks up the whole epic.
 
-A deleted skill directory appears here and cannot be audited — report it as removed and
-move on. If the scope resolves to nothing, say "No skills to audit" and stop.
+Keep only paths that hold a `SKILL.md`. A deleted skill directory appears here and cannot be
+audited — report it as removed and move on. If the scope resolves to nothing, say
+`No skills to audit — pass "all" or skill names to widen the scope.` and stop; an empty
+`changed` scope never falls back to `all`.
 
-For named skills, resolve each argument against `<group>/skills/<name>/SKILL.md`. If one
+For named skills, resolve each argument against `<group>/skills/<name>/SKILL.md`, then
+`tools/<name>/SKILL.md`. If one
 does not resolve, list the available skill paths and stop rather than guessing.
 
 Close the step with one line: `Scope: 6 skills (changed), 1 removed`.
@@ -93,8 +96,10 @@ bash scripts/validate-codex.sh
 ```
 
 Reproduce the `::error::` lines unedited in the report's fenced block; if you truncate one,
-say where you cut. Every error naming a skill in scope belongs in that skill's report; the
-rest go under cross-cutting issues. A validator that cannot run — missing `jq`, missing
+say where you cut. Every error naming a skill in scope belongs in that skill's report and
+counts against its verdict. An error naming no in-scope skill — another skill, a manifest,
+the README counts — goes under **Structural Errors** marked `(outside scope)` and fails no
+audited skill. A validator that cannot run — missing `jq`, missing
 file — is recorded as such, not treated as a pass.
 
 Never run `scripts/skills-packaging.sh sync-repo` during an audit; a stale generated layer
@@ -150,9 +155,9 @@ and either confirm the score or raise it to 3. Then per skill:
 
 | Verdict | Bar |
 | ------- | --- |
-| **PASS** | No structural errors, and every category ≥ 4 |
-| **PASS WITH NOTES** | No structural errors, and the lowest category is 3 |
-| **FAIL** | Any structural error, or any category ≤ 2 |
+| **PASS** | No structural error naming this skill, and every category ≥ 4 |
+| **PASS WITH NOTES** | No structural error naming this skill, and the lowest category is 3 |
+| **FAIL** | A structural error naming this skill, or any category ≤ 2 |
 | **AUDIT INCOMPLETE** | A worker failed or returned unparseable output, or a category could not be scored. Report the scores that exist, `—` for the rest, Overall and Min as `—`, and one line naming the unscored categories and why. Never counts as PASS; a structural error still makes it FAIL |
 
 Overall is the mean of the six categories to one decimal. Report the minimum next to it —
@@ -183,6 +188,7 @@ Then, when they apply:
 ```markdown
 ### Structural Errors
 1. `::error::Skill 'recap': description is 1104 chars; the limit is 1024` — assist/skills/recap
+2. `::error::README lists 35 skills; found 36` — (outside scope)
 
 ### Checks Not Run
 1. `scripts/validate-codex.sh` — `jq` not installed. Catalog membership and the host-subset
