@@ -44,8 +44,8 @@ The skill auto-selects a tier based on resolved bundle size:
 
 | Tier | Range | Pipeline |
 |------|-------|----------|
-| **Small** | ≤ 6 files or ≤ 1500 LOC | `spec-analyzer` → `spec-auditor` → single-file output |
-| **Medium** | 7–30 files | `spec-scout` → parallel `spec-module-analyzer` → `spec-contract-resolver` → `spec-synthesizer` → `spec-auditor` |
+| **Small** | ≤ 6 files and ≤ 1500 LOC | `spec-analyzer` → `spec-auditor` → single-file output |
+| **Medium** | ≤ 30 files, when not Small | `spec-scout` → parallel `spec-module-analyzer` → `spec-contract-resolver` → `spec-synthesizer` → `spec-auditor` |
 | **Large** | 31+ files, up to 500+ | Medium pipeline + parallel `spec-analyzer` deep dives on flagged critical modules |
 
 ## Dependencies
@@ -83,7 +83,7 @@ For guide mode: use the guide string to drive `Grep` across the project (case-in
 ```
 file_count = number of files after filtering
 loc = sum of line counts (use `Bash: wc -l` for speed)
-tier = Small if file_count ≤ 6 or loc ≤ 1500
+tier = Small if file_count ≤ 6 and loc ≤ 1500
        Medium if file_count ≤ 30
        Large otherwise
 ```
