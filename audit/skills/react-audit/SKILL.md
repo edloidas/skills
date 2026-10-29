@@ -199,8 +199,9 @@ detailed version and record every track that found it. react-doctor and Track C 
 `no-fetch-in-effect` diagnostic and Effects #13 are usually one finding, and react-doctor's `help`
 text plus the rule's `.txt` file often sharpen the fix Track C would have written alone.
 
-**Drop what is out of scope.** Anything Biome or ESLint already reports, and anything outside the
-target paths.
+**Drop what is out of scope.** Anything Biome or ESLint already reports, anything outside the
+target paths, and react-doctor diagnostics about dead code, unused files or exports, security, or
+dependencies — the pinned 0.9.18 has no flag to exclude them, and none of those is a React finding.
 
 Close Phase 3 with one line carrying both counts: `28 raw findings -> 17 after dedupe and scope filter`.
 

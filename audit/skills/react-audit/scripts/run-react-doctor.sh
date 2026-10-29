@@ -40,6 +40,9 @@ if [[ -z "$DIAGNOSTICS_DIR" ]]; then
   exit 4
 fi
 mkdir -p "$DIAGNOSTICS_DIR" 2>/dev/null || true
+# Both paths outlive the cd into the project below, so anchor them now.
+[[ "$OUTPUT_FILE" == /* ]] || OUTPUT_FILE="$PWD/$OUTPUT_FILE"
+[[ "$DIAGNOSTICS_DIR" == /* ]] || DIAGNOSTICS_DIR="$PWD/$DIAGNOSTICS_DIR"
 
 # Pinned: verified against the flags below and the diagnostics.json shape SKILL.md reads.
 # To bump, run the new version over a small React project and confirm both still hold.
@@ -92,6 +95,13 @@ else
   exit 3
 fi
 
+# react-doctor has no --cwd; it scans the working directory, so the probe and the run
+# both happen from the project, where a project-local runner config applies to each.
+if ! cd "$PROJECT_DIR"; then
+  echo "ERROR: cannot enter project directory: $PROJECT_DIR" > "$OUTPUT_FILE"
+  exit 4
+fi
+
 # Probe before committing to a full run, so "tool unavailable" is distinguishable
 # from "tool ran and found issues" — both of which react-doctor reports as non-zero.
 if ! run_with_timeout "$PROBE_TIMEOUT" "${RUNNER[@]}" --version >/dev/null 2>&1 < /dev/null; then
@@ -103,8 +113,6 @@ fi
 echo "Running react-doctor via ${RUNNER[*]}..." >&2
 
 run_with_timeout "$RUN_TIMEOUT" "${RUNNER[@]}" \
-  --cwd "$PROJECT_DIR" \
-  --no-dead-code \
   --no-supply-chain \
   --no-telemetry \
   --no-score \
