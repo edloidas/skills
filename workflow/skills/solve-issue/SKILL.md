@@ -65,8 +65,7 @@ required" kind — invoke `consilium` with the decision and its candidates, take
 recommendation, and record it in the Phase 6 summary as `Decided unattended: <choice> —
 <one-line reason>`; without `consilium`, stop as an attended run would. A blocker no
 decision resolves — missing credentials, a service down, an open blocking issue — still
-stops the run. Notes are filed only where Phase 7's bar admits them — see Phase 7 →
-**File the deferrals before merging**.
+stops the run.
 
 ### Delegating to Other Skills
 
@@ -297,8 +296,8 @@ Apply only when **all** hold:
 - It makes the code shorter *and* clearer, not merely shorter
 
 Anything heavier — splitting functions, reshaping control flow, extracting utilities,
-renaming exported symbols — is **not applied**. Record it for the Phase 6 summary and move
-on: a refactor that is merely nice is out of scope for an issue the user called simple.
+renaming exported symbols — is **not applied**. Record it as a Note and move on: a
+refactor that is merely nice is out of scope for an issue the user called simple.
 
 Re-run the Phase 4 checks the simplifications could plausibly break. Revert anything that
 fails rather than fixing around it — behavior-preserving was the bar, and a failing check
@@ -332,35 +331,31 @@ revert that assert. Never loosen it back to make the suite green.
 
 End Phase 4.5 with one line: `Phase 4.5: <N> tests audited — <N> tightened, <N> rewritten,
 <N> deleted, <N> noted.` Then stop. Do not widen the audit to tests this branch never
-touched — a verdict on one of those is a Note for Phase 6, not work for this issue, with
-the single exception the reference's Tighten row names.
+touched — a verdict on one of those is a Note, not work for this issue, with the single
+exception the reference's Tighten row names.
 
 ## Phase 4.6: Advisor Round
 
 Independent reviewers attack the change in parallel; the findings are then triaged and
 fixed. This always runs once verification is green.
 
-The review itself belongs to `changes-review`. This phase owns only workflow policy:
-freezing the diff, triaging findings, and deciding whether to run a second round. Do not
-duplicate the reviewer prompts here, and do not invoke `consilium` — that board ranks
-candidate approaches and has nothing to say about whether a finished diff is correct.
+The review itself belongs to `changes-review`; this phase owns freezing the diff, triage,
+and the round decision. Do not invoke `consilium` — it ranks approaches, not diffs.
 
 ### Freeze the diff first
 
 Every reviewer must see the same change set. Before dispatching, delete the cruft listed
 under Phase 5 → Remove cruft — the snapshot stages everything, and a baked-in scratch file
-is invisible to Phase 5's untracked check.
-
-Then, if the tree is dirty, take a snapshot per **Phase 3** — `issue-flow` with intent
-`"snapshot"`.
+is invisible to Phase 5's untracked check. Then, if the tree is dirty, take a snapshot per
+**Phase 3** — `issue-flow` with intent `"snapshot"`.
 
 Each round freezes again — round 2 must snapshot the round-1 fixes before dispatching, or
 the reviewers re-review the diff they already saw. Round 2 and later also pass
 `--mode simple` with the previous round's snapshot as the base, so the reviewers attack
 the fix rather than re-reading the whole branch to check a two-line change.
 
-Carry your own list of findings you accepted rather than fixed: the reviewers are blind to
-previous rounds by design, so recognizing a repeat is your job.
+Carry your own list of findings you did not fix: the reviewers are blind to previous
+rounds by design, so recognizing a repeat is your job.
 
 ### Run the review
 
@@ -372,8 +367,7 @@ reviewers, re-attacks its own findings — verification is on by default for a `
 Pass **no other context** — not the plan, not the Risks section, not a summary of intent,
 not the previous round's findings or triage. Its value is reviewers blind to your reasoning.
 
-If `changes-review` is not installed, note that in the Phase 6 summary, skip this phase,
-and go to Phase 5. Do not hand-roll a reviewer round in its place.
+Without `changes-review`, say so in the summary and go to Phase 5; never hand-roll a round.
 
 ### Triage and fix
 
@@ -382,22 +376,21 @@ Classify every returned finding:
 | Class      | Meaning                                                          | Action                    |
 | ---------- | ---------------------------------------------------------------- | ------------------------- |
 | **Fix**    | Real defect or a genuine requirement gap                          | Apply now                 |
-| **Note**   | Valid but out of scope for this issue                             | Report in Phase 6         |
-| **Reject** | Wrong, or the reviewer lacked context that makes the code correct | Report in Phase 6         |
+| **Note**   | Valid but out of scope for this issue                             | A state, per **Outcomes** |
+| **Reject** | Wrong, or the reviewer lacked context that makes the code correct | `declined: refuted`       |
 
-Rules that keep triage honest — you are judging reviews of your own work, and the pull
-toward dismissal is real:
+Triage rules — you are judging reviews of your own work, and the pull is toward dismissal:
 
 - **Uncertainty defaults to Fix.** If you cannot show a finding is wrong, it is not rejected.
 - **A Reject must name the specific context the reviewer lacked** — the file it could not
   see, the invariant it did not know. "I don't think that's right" is not a rejection.
-- **Rejects survive verbatim.** Phase 6 carries the reviewer's own wording, not your
-  paraphrase of it. The user grades the rejection, not your summary. Under `auto` no user
-  does, so `doubt` grades it first — `references/review-feedback.md` → **Doubting Rejects**.
+- **Rejects survive verbatim**, so the user grades the rejection, not your paraphrase of
+  it. Under `auto` no user does, so `doubt` grades it first —
+  `references/review-feedback.md` → **Doubting Rejects**.
 
-Apply the Fix items, then re-run the Phase 4 checks the fixes could plausibly break.
-Verification must be green again before continuing. If a check the fixes broke still fails
-after two attempts, revert those fixes, list them as Notes, and go to Phase 5.
+Apply the Fix items, then re-run the Phase 4 checks the fixes could plausibly break. If a
+check the fixes broke still fails after two attempts, revert those fixes, list them as
+Notes, and go to Phase 5.
 
 ### Round 2
 
@@ -409,16 +402,29 @@ Run a second round if **any** of these hold:
 - You rejected more than half of all findings
 
 The last two exist because a wrongly rejected bug does not change the diff, so no
-size-based trigger sees it.
-
-Otherwise stop at one round. **Hard cap: two rounds.** If round 2 surfaces another large
-batch, do not run a third — apply the clear fixes, list the rest as Notes, and let the PR
-review catch them.
+size-based trigger sees it. Otherwise stop at one round. **Hard cap: two rounds.** If
+round 2 surfaces another large batch, do not run a third — apply the clear fixes and list
+the rest as Notes.
 
 End each round with one line: `Phase 4.6 round <N>: <N> findings — <N> fixed, <N> noted,
 <N> rejected.` A round ends only in one of three states: no findings, findings triaged
 with the Fix items applied and verification green, or the cap reached. A description of
 what a further round would attack is not a state — either run it or go to Phase 5.
+
+### Outcomes
+
+A Note is not an outcome. Every finding and out-of-scope observation — Phases 4.4–5's
+Notes, 4.6's Rejects, Phase 7's threads — ends in exactly one state: `fixed` (in scope, or
+brought into scope by the user), `filed` (a `defer`, or a Note over the bar, on a run that
+files), `declined` (refuted, not worth the fix, already tracked by #<M>, or under the bar —
+with why), or `blocked` (on a named credential, live service, or decision). The bar: a
+confirmed defect, a regression, or absent test coverage for shipped behaviour — being true
+is not it. Only `auto` on `PR + merge` files a Note; until Phase 7 does, its row reads
+`filed: pending Phase 7`. `blocked: decision — <question>` is only for a call the user
+alone can make: a product choice, or a `defer` or Note over the bar on a run that cannot
+file — not one the code settles, however many reviewers raised it. A user who said not to
+file follow-ups, or to fix under this issue, removes `filed`, `pr-review` included: fix
+what that brings into scope, decline or block the rest.
 
 ## Phase 5: Cleanup + Commit
 
@@ -427,9 +433,9 @@ what a further round would attack is not a state — either run it or go to Phas
 Invoke `code-cleanup --comments-only`, scoped to the change — it removes comments that
 restate the code, compacts genuine gotchas to a line or two, and surfaces design rationale
 for the commit body. `--comments-only` is deliberate — **no code changes at commit time**;
-a simplification found here is a Note for Phase 6, not work, because it would ship
-unreviewed. Its **Suggested for commit message** section is an input to the commit body —
-pass it along under Commit below.
+a simplification found here is a Note, not work, because it would ship unreviewed. Its
+**Suggested for commit message** section is an input to the commit body — pass it along
+under Commit below.
 
 If `code-cleanup` is not installed, delete comments that restate the code or a nearby
 comment; leave documentation comments and `HACK`/`FIXME`/`TODO` markers alone.
@@ -469,20 +475,20 @@ asks — no push, no pull request.
 
 ## Phase 6: Summary + Endgame
 
-Print the summary `references/report-format.md` specifies — what changed, what was
-verified, what the tests audit moved, what the advisors found, and the commit. That file
-carries the shape and a full example; the fragment that is most often wrong is this one:
+Print the summary `references/report-format.md` specifies. The fragment most often wrong:
 
 ```text
-**Not applied**
-- Note: out of scope — the same clamp exists in `Popover.tsx`, untouched by this issue
-  > `Popover.tsx:88` repeats the clamped-rect bug this change fixes in `Tooltip`.
-- Reject: the reviewer could not see `ResizeObserver` is installed by `useAnchorRect`
-  > The rect is never recomputed on resize, so the flip is stale after a window resize.
+**Outcomes**
+| State | Finding | Where / why |
+| --- | --- | --- |
+| fixed | Flip logic ignored `scrollY` | `Tooltip.tsx:41` |
+| declined | "The rect is never recomputed on resize, so the flip is stale after a window resize." | refuted — `useAnchorRect` installs a `ResizeObserver` |
+
+**Needs you**
+- blocked: decision — keep the 300 ms open delay on touch, which the issue never mentions?
 ```
 
-Never omit a Reject: a rejected finding the user never sees is the one failure mode this
-whole phase is built to prevent, and Phase 4.6 requires the reviewer's own wording.
+Every row Phase 4.6 → **Outcomes** produces is printed, a Reject in the reviewer's own words.
 
 Then ask, per **Asking the User**:
 
@@ -541,21 +547,16 @@ After the push, run both detection queries again against the new head, per
 
 ### File the deferrals before merging
 
-On `PR + merge` only. Before the merge intent, invoke `issue-flow` with intent `"create an
-issue"` for each `defer` in `pr-review`'s report, and put the numbers in the report.
-Choosing `PR + merge` is the approval — this is the one mutation with no gate of its own.
-Phase 6 Notes are filed under `auto` only, and then only where a Note is a confirmed
-defect, a regression, or absent test coverage for shipped behaviour — being true is not the
-bar. `doubt` rules on the set first; without `doubt`, file nothing. An attended run files
-no Note at all: they stay in the report for the user. `references/review-feedback.md` →
-**Filing the deferrals** has what goes in each issue, why filing any earlier is impossible,
-how Notes are grouped, and what to do when the host cannot reach `issue-flow`.
+On `PR + merge` only, before the merge intent, invoke `issue-flow` with intent `"create an
+issue"` per `defer` in `pr-review`'s report — and, under `auto`, per Note over Phase 4.6 →
+**Outcomes**' bar, once `doubt` rules (without it, no Note). Choosing `PR + merge` is the
+approval, unless the user said not to file. `references/review-feedback.md` → **Filing the
+deferrals** has the issue shape, the grouping, and the no-`issue-flow` case.
 
 ### Report and close
 
-Append the **Review feedback** block `references/report-format.md` specifies — including
-what the fixes changed, because the merge ships code the Phase 6 summary did not describe
-— then close the endgame:
+Append the **Review feedback** block `references/report-format.md` specifies, then close
+the endgame:
 
 - **PR + merge** — invoke `issue-flow` with intent `"merge #<N>"` once every bot thread is
   resolved; its Step 6 waits on CI. A bot silent past its budget does not block the merge;

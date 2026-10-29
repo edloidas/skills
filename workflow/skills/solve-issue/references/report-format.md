@@ -26,11 +26,17 @@ Print this shape, omitting rows that do not apply:
 **Advisors** (N round(s))
 - cold (<model>) · intent (<model>) · external (<cli>|skipped)
 - N findings — N fixed, N noted, N rejected
-- <one line per fixed finding>
 
-**Not applied**
-- <Note: out of scope | Reject: the context the reviewer lacked>
-  > <the finding, quoted verbatim in the reviewer's own words>
+**Outcomes**
+| State | Finding | Where / why |
+| --- | --- | --- |
+| fixed | <one line> | `<file:line>` |
+| filed | "<verbatim>" | #<issue> |
+| declined | "<verbatim>" | refuted, not worth the fix, already tracked by #<M>, or under the bar — <why; for refuted, the context the reviewer lacked> |
+| blocked | "<verbatim>" | <the credential or live service it waits on> |
+
+**Needs you**
+- blocked: decision — <the question only the user can answer>
 
 **Commit** `<short-sha>` <subject>
 **Stashed** `<stash message>` — in `git stash list`
@@ -41,20 +47,25 @@ Omit, when they do not apply:
 - the **Advisors** detail lines when the reviewers came back clean — a single
   `no findings` line is enough
 - **Tests** when Phase 4.5 was skipped
-- **Not applied** when there is nothing in it
+- **Outcomes** and **Needs you** when there is nothing in them
 - **Related work** when the plan had none — it is the record of where the commit departs
   from the issue text, so a Skip or Correct the plan made is never left out of it
 - **Stashed** when Phase 2 took no stash. The summary prints before any merge, so the row
   never claims a restore; on the merge path the line after the merge settles it
 
-The blockquote under **Not applied** is not decoration. Reproduce the finding in the
-reviewer's own words, unedited; if you shorten it, say how many lines you cut and from
-where. The user grades the rejection, and a paraphrase is the implementer grading itself.
+Every finding and observation the run produced is one row, in the state SKILL.md's Phase
+4.6 → **Outcomes** assigns; a `blocked: decision` row goes under **Needs you** instead,
+phrased as the question. There is no free-form notes list: an entry with no state is the
+open end this table exists to close.
 
-**Not applied is a record to be graded, not a backlog proposal.** List the entries flat, in
-the order found. Do not rank them, single any out, or close the report by offering to file
-them — Phase 7's bar already decides what becomes an issue. A report ending in a pitch
-turns finished work back into pending work.
+The quoted finding is not decoration. Every row but `fixed` carries the source's own words,
+unedited; if you shorten it, say how many sentences you cut and from where. The user grades
+the rejection, and a paraphrase is the implementer grading itself.
+
+**Outcomes is a record to be graded, not a backlog proposal.** List rows flat, in the
+order found. Do not rank them, single any out, or close the report by offering to file or
+fix them — the state already says what happens. A report ending in a pitch turns finished
+work back into pending work.
 
 ### A filled-in summary
 
@@ -83,15 +94,18 @@ turns finished work back into pending work.
 
 **Advisors** (1 round)
 - cold · intent · external (codex)
-- 4 findings — 2 fixed, 1 noted, 1 rejected
-- Flip logic ignored `scrollY`, so the check passed on a scrolled page
-- `useAnchorRect` re-measured on every render; memoized on the anchor node
+- 5 findings — 2 fixed, 2 noted, 1 rejected
 
-**Not applied**
-- Note: out of scope — the same clamp exists in `Popover.tsx`, untouched by this issue
-  > `Popover.tsx:88` repeats the clamped-rect bug this change fixes in `Tooltip`.
-- Reject: the reviewer could not see `ResizeObserver` is installed by `useAnchorRect`
-  > The rect is never recomputed on resize, so the flip is stale after a window resize.
+**Outcomes**
+| State | Finding | Where / why |
+| --- | --- | --- |
+| fixed | Flip logic ignored `scrollY`, so the check passed on a scrolled page | `Tooltip.tsx:41` |
+| fixed | `useAnchorRect` re-measured on every render | `useAnchorRect.ts:18`, memoized on the anchor node |
+| declined | "`Popover.tsx:88` repeats the clamped-rect bug this change fixes in `Tooltip`." | already tracked — #413 owns `Popover` placement |
+| declined | "The rect is never recomputed on resize, so the flip is stale after a window resize." | refuted — `useAnchorRect` installs a `ResizeObserver` |
+
+**Needs you**
+- blocked: decision — the 300 ms open delay feels slow on touch; the issue never mentions it. Drop it to 0 on touch?
 
 **Commit** `a3f91c2` fix: flip tooltip placement at the viewport edge #412
 **Stashed** `issue-412 from master` — in `git stash list`
@@ -107,9 +121,8 @@ Phase 7 appends to the summary above rather than reprinting it:
   | none requested on this PR (timeline checked <time>)
 - N threads — N fixed, N rejected, N discuss, N deferred
 - Re-requested: <who, or none>
-- <one line per thread acted on>
-- Deferred to: #<issue> — <claim>   (merge path only; `—` when nothing was deferred)
-- Notes filed: #<issue> — <claim>   (`auto` merge path only; `—` on an attended run)
+- Outcomes: one row per thread acted on, and one per Phase 6 row whose state changed —
+  a `filed` Note gets its number — in the Phase 6 table's shape
 - Shipped after the summary above: <files and one line each, or `nothing`>
 - Held unsent: <human thread, and the draft reply composed for it>
 ```
@@ -123,9 +136,12 @@ The reviewer line reports **what was read, not what exists**. "None requested on
 with the time it was checked is a fact about the timeline; `No automated reviewers` is a
 claim about the repository that no query supports.
 
-The **Deferred to** line is the deferral's only durable home on the merge path: the pull
-request closes and takes the resolved thread with it, so a deferral without an issue
-number here has been lost.
+Thread verdicts map onto the states: fix is `fixed`, reject is `declined: refuted`, defer
+is `filed`, and `discuss` is `blocked: decision` under **Needs you**. A `filed` row is a
+deferral's only durable home on the merge path: the pull request closes and takes the
+resolved thread with it, so a deferral without an issue number here has been lost. A
+`defer` nothing files — `PR only`, or a user who said not to file — is not left as a
+thread: it is fixed, declined, or `blocked: decision`.
 
 The **Shipped after the summary** line is not optional when it is non-empty. Phase 6
 printed a summary of the commit, and any fix applied here changes what merges — a merge

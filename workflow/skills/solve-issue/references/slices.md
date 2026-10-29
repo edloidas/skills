@@ -54,12 +54,12 @@ from the open one. Git history is the only record — never write a slice file.
 - Changed: <one line per logical change>
 - Verified: <groups, as Phase 4's closing line>
 - Advisors: <N> findings — <N> fixed, <N> noted, <N> rejected
-- Not applied: <entries in the Phase 6 shape, reviewer's words verbatim>
+- Outcomes: <rows in the Phase 6 shape, reviewer's words verbatim>
 - Next: <k+1> <subject> | none — Phase 6 next
 ```
 
 The Phase 6 summary then lists **Commits**, one `<short-sha> <subject>` line per slice, in
-place of the single **Commit** line, and carries every slice's Not applied entries.
+place of the single **Commit** line, and carries every slice's Outcomes rows.
 
 ## Review feedback (Phase 7)
 

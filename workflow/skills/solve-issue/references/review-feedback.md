@@ -186,13 +186,14 @@ which is the reasoning `doubt` must not see.
 | *falls* | Reject, standing, with `doubt`'s verdict beside it |
 
 The Round 2 triggers and the closing line count the Rejects that stand. The Phase 6 summary
-lists every converted one as `Overturned by doubt: <finding> -> Fix | Note`, so no Reject
+marks every converted one `overturned by doubt` in its Outcomes row, so no Reject
 disappears from the report. Without `doubt`, the Rejects stand and the summary says
 `doubt` was unavailable.
 
 ## Filing the deferrals
 
-On `PR + merge` only, and before the merge intent. One `issue-flow` `"create an issue"`
+On `PR + merge` only, before the merge intent, and never when the user said not to file
+follow-ups — SKILL.md Phase 4.6 → **Outcomes**. One `issue-flow` `"create an issue"`
 invocation per `defer` in `pr-review`'s report:
 
 - **Title** — the reviewer's claim, reduced to a title.
@@ -207,16 +208,22 @@ the deferral goes with it. Filing any earlier is impossible — `pr-review` owns
 threads and replies and resolves in one pass, so the in-thread reply cannot carry a number
 that does not exist yet.
 
-**Notes, under `auto` only.** An attended run leaves Notes in the Phase 6 summary for the
-user to decide on. Unattended, nobody reads them until the run is over, so they are filed
-here alongside the deferrals, subject to the bar Phase 7 states. `doubt` rules first:
-*falls*, *nobody can settle it*, and *true but not worth the fix* are dropped; *holds only
-in a narrower case* is filed with that narrowing in the body. The rest stay in the report.
-Notes naming the same file or mechanism go into one issue; the rest get one each.
+**Notes, under `auto` only.** Unattended, nobody reads the summary until the run is over,
+so Notes are filed here alongside the deferrals, subject to the bar **Outcomes** states,
+and their `filed: pending Phase 7` rows get their numbers. `doubt`
+rules first: *falls*, *nobody can settle it*, and *true but not worth the fix* become
+`declined` with that verdict as the reason; *holds only in a narrower case* is filed with
+that narrowing in the body. A Note under the bar is `declined` with the bar it missed. An
+attended run files no Note: one the bar would admit is `blocked: decision — file it or fix
+it here?` under **Needs you**.
+Notes naming the same file or mechanism go into one issue; the rest get one each. A
+`filed: pending Phase 7` row that nothing files — no `doubt`, or `issue-flow` unreachable —
+becomes `blocked: decision — file it or fix it here?` under **Needs you**.
 Body: the Note quoted verbatim in a blockquote, `doubt`'s verdict, the pull request
 number, and the reviewer that raised it.
 
 Nothing deferred files nothing. `PR only` files nothing either — the pull request stays
-open with the report in front of the user. Where the host cannot reach `issue-flow` to
-file, do **not** merge silently: report the deferrals as unfiled and leave the pull
-request open, because that is the state the merge was going to destroy.
+open with the report in front of the user, and each `defer` is `blocked: decision` there.
+Where the host cannot reach `issue-flow` to file, do **not** merge silently: report each
+deferral as `blocked: issue-flow unreachable` and leave the pull request open, because
+that is the state the merge was going to destroy.
