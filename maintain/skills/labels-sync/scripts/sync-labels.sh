@@ -84,6 +84,21 @@ if [ "$EXPORT" = true ] && { [ "$APPLY" = true ] || [ "$NO_DELETE" = true ]; }; 
     exit 1
 fi
 
+if ! command -v jq >/dev/null 2>&1; then
+    echo "ERROR: jq is required but not installed. Install it (https://jqlang.org/download/) and re-run" >&2
+    exit 1
+fi
+
+if ! command -v gh >/dev/null 2>&1; then
+    echo "ERROR: gh (GitHub CLI) is required but not installed. Install it (https://cli.github.com/) and re-run" >&2
+    exit 1
+fi
+
+if ! gh auth status --active >/dev/null 2>&1; then
+    echo "ERROR: gh is not authenticated. Run 'gh auth login' and re-run" >&2
+    exit 1
+fi
+
 if [ "$EXPORT" = true ]; then
     CURRENT_LABELS=$(fetch_current_labels)
     printf '%s\n' "$CURRENT_LABELS" | jq '

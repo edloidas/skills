@@ -36,6 +36,9 @@ with a number.
 
 ## Execution Steps
 
+`<skill-dir>` below is the directory holding this `SKILL.md`. Run every command from the target
+repository, since `gh` resolves the repo from the working directory.
+
 Done means: in get mode the Step 2 JSON is presented, in check mode the Step 4 results; in sync
 mode Step 6 has reported — or the Step 5 gate is waiting on the user.
 
@@ -60,7 +63,7 @@ If intent is unclear or no arguments are provided, ask per **Asking the User**:
 For **get/export** mode, fetch and return the current repository labels directly:
 
 ```bash
-scripts/sync-labels.sh --get
+bash <skill-dir>/scripts/sync-labels.sh --get
 ```
 
 Return the output in a fenced `json` block so the user can copy it into another repository later. Keep the fields in the reusable definition shape:
@@ -84,7 +87,7 @@ Run the dry-run first, in every mode including apply — the diff is what the ap
 is given against:
 
 ```bash
-cat references/labels.json | scripts/sync-labels.sh
+bash <skill-dir>/scripts/sync-labels.sh < <skill-dir>/references/labels.json
 ```
 
 ### Step 4: Present Results
@@ -141,8 +144,8 @@ the choice — `--no-delete` moves the extra labels from `delete` to `kept` and 
 `gh label delete` call:
 
 ```bash
-cat references/labels.json | scripts/sync-labels.sh --apply --no-delete   # without deletes
-cat references/labels.json | scripts/sync-labels.sh --apply               # with deletes
+bash <skill-dir>/scripts/sync-labels.sh --apply --no-delete < <skill-dir>/references/labels.json   # without deletes
+bash <skill-dir>/scripts/sync-labels.sh --apply < <skill-dir>/references/labels.json               # with deletes
 ```
 
 ### Step 6: Report and Stop
@@ -160,6 +163,6 @@ whole-file rewrite; each entry needs `name` (case-sensitive), `description`, and
 
 ## Prerequisites
 
-- `gh` CLI authenticated (`gh auth login`)
-- `jq` installed
+- `gh` CLI authenticated (`gh auth login`) and `jq` installed — the script checks both first and
+  exits 1 naming the missing one; report that line and stop
 - Must be run from within a GitHub repository

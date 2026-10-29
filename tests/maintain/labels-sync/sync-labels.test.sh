@@ -10,6 +10,10 @@ SYNC="maintain/skills/labels-sync/scripts/sync-labels.sh"
 
 setup() {
   stub gh <<EOF
+if [ "\$1" = "auth" ] && [ "\$2" = "status" ]; then
+  [ -f "$SANDBOX/logged-out" ] && exit 1
+  exit 0
+fi
 if [ "\$1" = "label" ] && [ "\$2" = "list" ]; then
   cat "$SANDBOX/current.json"
   exit 0
@@ -112,6 +116,30 @@ test_get_exports_reusable_shape() {
 test_get_rejects_no_delete() {
   run bash "$(script "$SYNC")" --get --no-delete
   assert_eq 1 "$STATUS" "exit status"
+}
+
+test_missing_jq_is_named_before_any_gh_call() {
+  unstub jq
+  sync
+  assert_eq 1 "$STATUS" "exit status"
+  assert_contains "$STDERR" "jq is required but not installed" "stderr"
+  assert_eq "" "$(calls_of gh)" "gh calls"
+}
+
+test_missing_gh_is_named() {
+  unstub gh
+  sync
+  assert_eq 1 "$STATUS" "exit status"
+  assert_contains "$STDERR" "gh (GitHub CLI) is required" "stderr"
+}
+
+test_unauthenticated_gh_stops_before_reading_labels() {
+  touch "$SANDBOX/logged-out"
+  sync --apply
+  assert_eq 1 "$STATUS" "exit status"
+  assert_contains "$STDERR" "gh is not authenticated" "stderr"
+  assert_eq "" "$STDOUT" "stdout"
+  assert_eq "" "$(calls_of gh)" "gh writes"
 }
 
 test_non_array_input_is_rejected() {
