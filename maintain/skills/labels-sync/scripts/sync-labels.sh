@@ -1,11 +1,11 @@
-#!/bin/zsh
+#!/usr/bin/env bash
 # sync-labels.sh
 # Generic GitHub labels synchronization script
 #
 # Reads label definitions from stdin (JSON array) and syncs with repository,
 # or exports the current repository labels in the same reusable JSON format.
 #
-# Usage: echo "$LABELS_JSON" | sync-labels.sh [--apply]
+# Usage: echo "$LABELS_JSON" | sync-labels.sh [--apply] [--no-delete]
 #        sync-labels.sh --get
 #
 # Input format (stdin):
@@ -16,45 +16,54 @@
 #
 # Flags:
 #   --apply          Apply changes (default: dry-run, show what would change)
+#   --no-delete      Keep labels absent from the definition; they are reported
+#                    under "kept" instead of "delete"
 #   --get, --export  Print the current repository labels as reusable JSON
 #
-# Output: JSON report of changes to stdout
+# Output: JSON report of changes to stdout; with --apply, a progress log and a
+# final "Created N, updated N, deleted N" line on stderr. The first failing
+# gh call stops the run with its own error, before any later step — deletes run last.
 #
 # Examples:
-#   echo "$LABELS" | sync-labels.sh            # Dry-run
-#   echo "$LABELS" | sync-labels.sh --apply    # Apply changes
-#   cat labels.json | sync-labels.sh --apply   # From file
-#   sync-labels.sh --get                       # Export current repo labels
+#   echo "$LABELS" | sync-labels.sh                         # Dry-run
+#   echo "$LABELS" | sync-labels.sh --apply                 # Apply changes
+#   cat labels.json | sync-labels.sh --apply --no-delete    # Apply, keep extras
+#   sync-labels.sh --get                                    # Export current repo labels
 
-set -e
+set -euo pipefail
 
-# Parse arguments
 APPLY=false
 EXPORT=false
+NO_DELETE=false
 
 usage() {
     cat >&2 <<'EOF'
 Usage:
-  echo '$LABELS_JSON' | sync-labels.sh [--apply]
+  echo '$LABELS_JSON' | sync-labels.sh [--apply] [--no-delete]
   sync-labels.sh --get
 
 Flags:
   --apply          Apply changes (default: dry-run, show what would change)
+  --no-delete      Keep labels that are not in the definition
   --get, --export  Print current repository labels as reusable JSON
 EOF
 }
 
 fetch_current_labels() {
-    gh label list --json name,description,color || {
+    gh label list --limit 1000 --json name,description,color || {
         echo "ERROR: Failed to fetch labels. Check 'gh auth status' and repo access." >&2
         exit 1
     }
 }
 
-while [[ $# -gt 0 ]]; do
+while [ $# -gt 0 ]; do
     case $1 in
         --apply)
             APPLY=true
+            shift
+            ;;
+        --no-delete)
+            NO_DELETE=true
             shift
             ;;
         --get|--export)
@@ -69,15 +78,15 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-if [[ "$APPLY" = true && "$EXPORT" = true ]]; then
-    echo "ERROR: --apply cannot be combined with --get/--export" >&2
+if [ "$EXPORT" = true ] && { [ "$APPLY" = true ] || [ "$NO_DELETE" = true ]; }; then
+    echo "ERROR: --apply and --no-delete cannot be combined with --get/--export" >&2
     usage
     exit 1
 fi
 
-if [[ "$EXPORT" = true ]]; then
+if [ "$EXPORT" = true ]; then
     CURRENT_LABELS=$(fetch_current_labels)
-    echo "$CURRENT_LABELS" | jq '
+    printf '%s\n' "$CURRENT_LABELS" | jq '
         map({
             name,
             description: (.description // ""),
@@ -88,8 +97,7 @@ if [[ "$EXPORT" = true ]]; then
     exit 0
 fi
 
-# Read labels from stdin
-if [[ -t 0 ]]; then
+if [ -t 0 ]; then
     echo "ERROR: No labels provided via stdin" >&2
     usage
     exit 1
@@ -97,36 +105,30 @@ fi
 
 DEFINED_LABELS_JSON=$(cat)
 
-# Validate JSON input
-if ! echo "$DEFINED_LABELS_JSON" | jq empty 2>/dev/null; then
-    echo "ERROR: Invalid JSON input" >&2
+if ! printf '%s\n' "$DEFINED_LABELS_JSON" | jq -e 'type == "array"' >/dev/null 2>&1; then
+    echo "ERROR: Invalid JSON input (expected an array of labels)" >&2
     exit 1
 fi
 
 CURRENT_LABELS=$(fetch_current_labels)
 
-# Use jq to compute all differences
 RESULT=$(jq -n \
     --argjson defined "$DEFINED_LABELS_JSON" \
     --argjson current "$CURRENT_LABELS" \
+    --argjson no_delete "$NO_DELETE" \
 '
-# Normalize: lowercase name as key, lowercase color
-def normalize_color: . | ascii_downcase | ltrimstr("#");
-def normalize_name: . | ascii_downcase;
+# Names match case-insensitively; colors compare lowercase without "#"
+def normalize_color: ascii_downcase | ltrimstr("#");
+def normalize_name: ascii_downcase;
 
-# Build lookup maps
-($defined | map({key: (.name | normalize_name), value: .}) | from_entries) as $defined_map |
 ($current | map({key: (.name | normalize_name), value: .}) | from_entries) as $current_map |
 ($defined | map(.name | normalize_name)) as $defined_keys |
 ($current | map(.name | normalize_name)) as $current_keys |
 
-# Find labels to create (in defined but not in current)
 ($defined | map(select((.name | normalize_name) as $k | $current_keys | index($k) | not))) as $to_create |
 
-# Find labels to delete (in current but not in defined)
-($current | map(select((.name | normalize_name) as $k | $defined_keys | index($k) | not))) as $to_delete |
+($current | map(select((.name | normalize_name) as $k | $defined_keys | index($k) | not)) | map({name})) as $extra |
 
-# Find labels to update or unchanged
 ($defined | map(
     (.name | normalize_name) as $key |
     select($current_keys | index($key)) |
@@ -134,7 +136,7 @@ def normalize_name: . | ascii_downcase;
     {
         defined_name: .name,
         current_name: $curr.name,
-        defined_desc: .description,
+        defined_desc: (.description // ""),
         current_desc: ($curr.description // ""),
         defined_color: (.color | normalize_color),
         current_color: ($curr.color | normalize_color)
@@ -159,49 +161,68 @@ def normalize_name: . | ascii_downcase;
 {
     create: $to_create,
     update: [$compared[] | select(.changes) | {name, target_name, changes, target_desc, target_color}],
-    delete: [$to_delete[] | {name}],
+    delete: (if $no_delete then [] else $extra end),
+    kept: (if $no_delete then $extra else [] end),
     unchanged: [$compared[] | select(.unchanged) | .unchanged]
 }
 ')
 
-# Output report
-echo "$RESULT" | jq .
+printf '%s\n' "$RESULT" | jq .
 
-# Apply changes if requested
-if [[ "$APPLY" = true ]]; then
-    echo "" >&2
-    echo "Applying changes..." >&2
+if [ "$APPLY" != true ]; then
+    exit 0
+fi
 
-    # Create new labels (--force updates if already exists)
-    echo "$RESULT" | jq -c '.create[]' 2>/dev/null | while read -r entry; do
-        name=$(echo "$entry" | jq -r '.name')
-        desc=$(echo "$entry" | jq -r '.description')
-        color=$(echo "$entry" | jq -r '.color')
-        echo "  Creating: $name" >&2
-        gh label create "$name" --description "$desc" --color "$color" --force
-    done
+echo "" >&2
+echo "Applying changes..." >&2
 
-    # Update existing labels
-    echo "$RESULT" | jq -c '.update[]' 2>/dev/null | while read -r entry; do
-        name=$(echo "$entry" | jq -r '.name')
-        target_name=$(echo "$entry" | jq -r '.target_name')
-        desc=$(echo "$entry" | jq -r '.target_desc')
-        color=$(echo "$entry" | jq -r '.target_color')
-        echo "  Updating: $name" >&2
-        # If name changed, include --name flag
-        if [[ "$name" != "$target_name" ]]; then
-            gh label edit "$name" --name "$target_name" --description "$desc" --color "$color"
-        else
-            gh label edit "$name" --description "$desc" --color "$color"
-        fi
-    done
+created=0
+updated=0
+deleted=0
 
-    # Delete extra labels
-    echo "$RESULT" | jq -c '.delete[]' 2>/dev/null | while read -r entry; do
-        name=$(echo "$entry" | jq -r '.name')
-        echo "  Deleting: $name" >&2
-        gh label delete "$name" --yes
-    done
+# --force makes create idempotent if the label appeared since the diff was read
+while IFS= read -r entry; do
+    [ -n "$entry" ] || continue
+    name=$(printf '%s\n' "$entry" | jq -r '.name')
+    desc=$(printf '%s\n' "$entry" | jq -r '.description // ""')
+    color=$(printf '%s\n' "$entry" | jq -r '.color | ltrimstr("#")')
+    echo "  Creating: $name" >&2
+    gh label create "$name" --description "$desc" --color "$color" --force
+    created=$((created + 1))
+done <<EOF
+$(printf '%s\n' "$RESULT" | jq -c '.create[]')
+EOF
 
-    echo "Done!" >&2
+while IFS= read -r entry; do
+    [ -n "$entry" ] || continue
+    name=$(printf '%s\n' "$entry" | jq -r '.name')
+    target_name=$(printf '%s\n' "$entry" | jq -r '.target_name')
+    desc=$(printf '%s\n' "$entry" | jq -r '.target_desc')
+    color=$(printf '%s\n' "$entry" | jq -r '.target_color')
+    echo "  Updating: $name" >&2
+    if [ "$name" != "$target_name" ]; then
+        gh label edit "$name" --name "$target_name" --description "$desc" --color "$color"
+    else
+        gh label edit "$name" --description "$desc" --color "$color"
+    fi
+    updated=$((updated + 1))
+done <<EOF
+$(printf '%s\n' "$RESULT" | jq -c '.update[]')
+EOF
+
+while IFS= read -r entry; do
+    [ -n "$entry" ] || continue
+    name=$(printf '%s\n' "$entry" | jq -r '.name')
+    echo "  Deleting: $name" >&2
+    gh label delete "$name" --yes
+    deleted=$((deleted + 1))
+done <<EOF
+$(printf '%s\n' "$RESULT" | jq -c '.delete[]')
+EOF
+
+kept=$(printf '%s\n' "$RESULT" | jq '.kept | length')
+if [ "$kept" -gt 0 ]; then
+    echo "Created $created, updated $updated, deleted $deleted, kept $kept" >&2
+else
+    echo "Created $created, updated $updated, deleted $deleted" >&2
 fi

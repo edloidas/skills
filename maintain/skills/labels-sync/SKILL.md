@@ -14,15 +14,16 @@ argument-hint: "[apply|check|get]"
 
 # Labels Sync: GitHub Label Synchronization
 
-**Writes to an external service.** `apply` mode creates, renames, recolours and **deletes**
-labels on the GitHub repository through `gh`. Deleting a label strips it from every issue and
-PR that carries it and cannot be undone, so apply runs only after the diff has been shown and
-approved (**Step 5**). `check` and `get` modes read only and change nothing, locally or remotely.
+**Writes to an external service.** `apply` mode creates, renames, recolours and, unless the
+user keeps them, deletes labels on the GitHub repository through `gh`, and runs only after the
+diff has been shown and approved (**Step 5**). `check` and `get` modes read only and change
+nothing, locally or remotely.
 
 ## Purpose
 
 Compares a repository's labels against `references/labels.json` and reports each as CREATE,
-UPDATE (name case, description, or color), DELETE, or UNCHANGED; applies that diff; or exports
+UPDATE (name case, description, or color), DELETE, or UNCHANGED; applies that diff, with or
+without the deletes; or exports
 the repo's current labels as reusable JSON (`name`, `description`, `color`).
 
 ## Asking the User
@@ -123,28 +124,33 @@ Then the phase line: `2 to create, 2 to update, 1 to delete, 4 unchanged`.
 In **check** mode, stop after Step 4 (and in **get** mode, after Step 2). Do not offer to apply, and do not run the
 script again with `--apply`.
 
-In **apply** mode, the diff from Step 4 is on screen; deletions cannot be undone. Ask, per
-**Asking the User**, naming the target repo (`gh repo view --json nameWithOwner`), the counts,
-and every label in the delete list:
+In **apply** mode, the diff from Step 4 is on screen. Name the target repo
+(`gh repo view --json nameWithOwner`) and the create and update counts, then print the delete
+list on its own, one label per line, followed by this line verbatim:
 
-1. `Apply all` (Recommended) — create 2, update 2, delete 1 (`wontfix`)
-2. `Apply without deletes` — create and update only; leave extra labels in place
+> Deleting a label strips it from every issue and PR that carries it, and cannot be undone.
+
+Ask, per **Asking the User**:
+
+1. `Sync without deletes` (Recommended) — create 2, update 2; keep `wontfix`
+2. `Sync with deletes` — create 2, update 2, delete 1 (`wontfix`)
 3. `Cancel` — change nothing
 
-Then run the choice:
+When the delete list is empty, skip the deletion line and offer only `Sync` and `Cancel`. Run
+the choice — `--no-delete` moves the extra labels from `delete` to `kept` and makes no
+`gh label delete` call:
 
 ```bash
-cat references/labels.json | scripts/sync-labels.sh --apply
+cat references/labels.json | scripts/sync-labels.sh --apply --no-delete   # without deletes
+cat references/labels.json | scripts/sync-labels.sh --apply               # with deletes
 ```
-
-`--apply` performs the whole diff, so `Apply without deletes` means editing the definition or
-running the create/update `gh` calls individually — never `--apply` with a delete the user
-declined.
 
 ### Step 6: Report and Stop
 
-Report what the script's stderr log confirms — `Created 2, updated 2, deleted 1` — and name any
-`gh` error verbatim. Then stop: do not re-run the diff to confirm, and do not touch issues,
+Report the script's last stderr line — `Created 2, updated 2, deleted 0, kept 1` — and name
+any `gh` error verbatim. The script re-reads the labels before writing, so if its counts differ
+from the ones approved at Step 5, say which. The first failing `gh` call stops the run, so name
+which writes before it landed; deletes run last. Then stop: do not re-run the diff to confirm, and do not touch issues,
 milestones, or anything else in the repo.
 
 ## Customization
