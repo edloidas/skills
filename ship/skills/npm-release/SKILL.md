@@ -36,7 +36,7 @@ of these.
 
 | Script | Does | Run at |
 | ------ | ---- | ------ |
-| `release-prepare.sh` | Checks the branch is the repo's default (or the one passed as `--branch <name>`) and the tree is clean, detects and prints the package manager, runs the dry-run release | Step 1 |
+| `release-prepare.sh` | Checks the branch is the repo's default (or the one passed as `--branch <name>`) and the tree is clean, detects and prints the package manager, runs the project's `release:dry` script or, without one, the manager's own `publish --dry-run` | Step 1 |
 | `release-analyze.sh` | Finds the last tag, lists and classifies commits since it, prints file-change stats and a bump recommendation | Step 3 |
 | `release-execute.sh` | Reads the version from `package.json`, re-checks the branch and a clean tree, creates the tag if absent or verifies the existing one, **pushes** branch and tag atomically to the branch's upstream remote (else `origin`), confirms both on the remote | Step 8 only — it pushes, so never run it before the Step 7 approval |
 
@@ -57,10 +57,12 @@ neither, ask the same question in normal chat as a numbered list of 2–5 option
 recommended first, one short line of description each — and wait for the user to reply
 with a number.
 
-Questions occur at **Step 0** (ambiguous conventions) and **Step 7** (release approval). Neither
-is skippable on your own judgement: ask, and wait for the reply before continuing.
+Questions occur at **Step 0** (ambiguous conventions), **Step 7** (release approval), and
+**Manual Publishing** (publish approval). None is skippable on your own judgement: ask, and wait
+for the reply before continuing.
 
-Done means: Step 9 has reported the pushed release, or a gate is waiting on the user.
+Done means: Step 9 has reported the pushed release — and, with no publish workflow, Manual
+Publishing has published it or been cancelled — or a gate is waiting on the user.
 
 ## Release Workflow
 
@@ -77,9 +79,9 @@ Read the project's instruction files first, so the release honors local conventi
 Extract and apply whatever applies to this release:
 
 - **Release commit message format** — e.g. `chore: release v<version>` or a project-specific template. This overrides the default `Release v<version>` used in Step 5.
-- **Pre-release prerequisites** — e.g. updating `CHANGELOG.md` via a separate skill, regenerating docs, running a project-specific validation script. Run these **before** bumping the version so `release:dry` in Step 2 can gate on them.
+- **Pre-release prerequisites** — e.g. updating `CHANGELOG.md` via a separate skill, regenerating docs, running a project-specific validation script. Run these **before** bumping the version so the Step 2 dry run can gate on them.
 - **Branch policy** — the default is the repo's default branch, whatever it is called. Some projects release from version branches (`x.y`) or restrict by environment; a release branch other than the default must be named by the project docs or the user, and is passed to Step 1 as `--branch <name>`.
-- **Tag format** — default is `v<version>`. If the project documents something else, use it.
+- **Tag format** — the bundled scripts handle only `v<version>`. If the project documents another format, do Steps 3, 6, and 8 by their by-hand paths with that format instead of the scripts.
 - **Dist-tag policy** — how prerelease versions are routed (`alpha`/`beta`/`rc`/`next`).
 
 If `CLAUDE.md` / `AGENTS.md` doesn't exist or doesn't say anything about releases, fall back to the defaults below. If an instruction is ambiguous, ask the user, per **Asking the User**.
@@ -113,12 +115,13 @@ End the step with one line: `Pre-flight: branch develop (default), tree clean, p
 ### Step 2: Validate Release Build
 
 `release-prepare.sh` already ran the dry run — read its output rather than running it twice. To
-run it alone:
+run it alone, use the project's `release:dry` script if `package.json` has one
+(`pnpm release:dry`, `bun run release:dry`, `npm run release:dry`), else the manager's own:
 
 ```bash
-pnpm release:dry
+pnpm publish --dry-run --no-git-checks
 # or
-bun run release:dry
+bun publish --dry-run
 # or
 npm publish --dry-run
 ```
@@ -175,9 +178,15 @@ End the step with one line: `Bumped package.json to 0.16.0`.
 Use the **release commit message format captured in Step 0**. Only fall back to the generic `Release v<version>` if the project did not specify one.
 
 ```bash
-# Stage package.json and whichever lockfile exists
-git add package.json pnpm-lock.yaml bun.lock bun.lockb package-lock.json 2>/dev/null || true
+# Stage package.json and only the lockfiles that exist — a missing pathspec aborts the whole add
+git add -- package.json $(for f in pnpm-lock.yaml bun.lock bun.lockb package-lock.json; do [ -e "$f" ] && echo "$f"; done)
+git diff --cached --name-only | grep -qx package.json && echo "Staged: package.json"
+```
 
+Commit only after that printed `Staged: package.json`. Without it, stop and report that the
+version bump is not staged: a release commit without it tags the old version.
+
+```bash
 git commit -m "<Step 0 commit format, filled with {{VERSION}}>"
 ```
 
@@ -258,7 +267,8 @@ End the step with one line: `Pushed master + v0.16.0`.
 Report in one block:
 
 - The release is pushed
-- Whether CI publishes it. If the repo has no publish workflow, say so — publishing is still owed, see **Advanced: Manual Publishing**
+- Whether CI publishes it. If the repo has no publish workflow under `.github/workflows/`, say
+  that publishing is still owed, and continue to **Advanced: Manual Publishing**, whose gate asks
 - Links you can construct: GitHub release page, npm package page, any deployment URL
 
 Then stop. Do not start a second release, and do not publish manually on top of a CI workflow
@@ -273,13 +283,28 @@ flags to get past the failure.
 ## Advanced: Manual Publishing
 
 Prefer CI/CD for publishing — it keeps the published artifact consistent and keeps the npm token
-off local machines. Where CI is not configured, or the user asks for a manual publish:
+off local machines. Where CI is not configured, or the user asks for a manual publish, publish
+only after Step 8 pushed the tag.
+
+Publishing cannot be undone: npm refuses to replace a published version, and an unpublish is
+limited and visible. Show the package name, the version, the dist-tag, the access level, and the
+registry (`npm config get registry`), and wait for approval, per **Asking the User**: `Publish`
+(Recommended) or `Cancel`. The Step 7 approval covers the push, not this.
+
+- **Dist-tag:** `latest` for a stable version. For a prerelease, the Step 0 policy's tag, else
+  the version's preid (`1.2.0-beta.1` → `beta`).
+- **Access:** `publishConfig.access` from `package.json` when set. Otherwise `public` for an
+  unscoped name; for a scoped name, ask — `public` publishes a package npm would keep private.
 
 ```bash
-# After pushing tags
-pnpm publish --access public
+pnpm publish --access <access> --tag <dist-tag>
 # or
-bun publish --access public
+bun publish --access <access> --tag <dist-tag>
 # or
-npm publish --access public
+npm publish --access <access> --tag <dist-tag>
 ```
+
+A prerelease version always carries its prerelease dist-tag — published without one it becomes
+`latest` and every plain install picks it up.
+
+End with one line: `Published @acme/widget@0.16.0 to https://registry.npmjs.org/ (latest)`.

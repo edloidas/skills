@@ -112,31 +112,37 @@ fi
 echo "Package manager: $PKG_MANAGER"
 
 # Run dry-run release
-echo "Running dry-run release..."
+# A project's own `release:dry` script wins; without one, the package manager's
+# own publish dry run stands in, so no project-specific setup is required.
+has_release_dry() {
+  if command -v jq &> /dev/null; then
+    jq -e '.scripts["release:dry"] // empty' package.json > /dev/null 2>&1
+  else
+    grep -q '"release:dry"' package.json
+  fi
+}
 
 case "$PKG_MANAGER" in
   pnpm)
-    if pnpm release:dry; then
-      echo "SUCCESS: All pre-flight checks passed"
-    else
-      echo "ERROR: Release dry-run failed"
-      exit 1
-    fi
+    if has_release_dry; then DRY_RUN=(pnpm release:dry)
+    # The branch and tree checks above already ran; pnpm's own would refuse a
+    # release branch it does not know.
+    else DRY_RUN=(pnpm publish --dry-run --no-git-checks); fi
     ;;
   bun)
-    if bun run release:dry; then
-      echo "SUCCESS: All pre-flight checks passed"
-    else
-      echo "ERROR: Release dry-run failed"
-      exit 1
-    fi
+    if has_release_dry; then DRY_RUN=(bun run release:dry)
+    else DRY_RUN=(bun publish --dry-run); fi
     ;;
   npm)
-    if npm publish --dry-run; then
-      echo "SUCCESS: All pre-flight checks passed"
-    else
-      echo "ERROR: Release dry-run failed"
-      exit 1
-    fi
+    if has_release_dry; then DRY_RUN=(npm run release:dry)
+    else DRY_RUN=(npm publish --dry-run); fi
     ;;
 esac
+
+echo "Running dry-run release: ${DRY_RUN[*]}"
+if "${DRY_RUN[@]}"; then
+  echo "SUCCESS: All pre-flight checks passed"
+else
+  echo "ERROR: Release dry-run failed"
+  exit 1
+fi

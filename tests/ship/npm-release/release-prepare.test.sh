@@ -183,7 +183,7 @@ test_pnpm_lockfile_selects_pnpm() {
   prepare
   assert_eq 0 "$STATUS" "exit status"
   assert_contains "$STDOUT" "Package manager: pnpm" "output"
-  assert_contains "$STDOUT" "dry-run invoked: release:dry" "output"
+  assert_contains "$STDOUT" "dry-run invoked: publish --dry-run --no-git-checks" "output"
 }
 
 test_pnpm_lockfile_without_pnpm_exits_1() {
@@ -206,7 +206,7 @@ test_bun_lockfile_selects_bun() {
   prepare
   assert_eq 0 "$STATUS" "exit status"
   assert_contains "$STDOUT" "Package manager: bun" "output"
-  assert_contains "$STDOUT" "dry-run invoked: run release:dry" "output"
+  assert_contains "$STDOUT" "dry-run invoked: publish --dry-run" "output"
 }
 
 test_binary_bun_lockfile_selects_bun() {
@@ -265,6 +265,51 @@ test_no_package_manager_at_all_exits_1() {
 }
 
 # -------------------------------------------------------------------- dry run --
+
+# A project's own release:dry script is preferred over the publish dry run.
+with_release_dry() {
+  printf '{"name":"demo","version":"1.2.3","scripts":{"release:dry":"true"}}\n' > package.json
+  git add package.json && git commit --quiet -m "release:dry"
+}
+
+test_pnpm_runs_the_project_release_dry_script_when_present() {
+  pkg_repo main
+  with_release_dry
+  stub_pm pnpm 0
+  prepare
+  assert_eq 0 "$STATUS" "exit status"
+  assert_contains "$STDOUT" "dry-run invoked: release:dry" "output"
+}
+
+test_bun_runs_the_project_release_dry_script_when_present() {
+  pkg_repo main
+  with_release_dry
+  : > bun.lock
+  git add bun.lock && git commit --quiet -m "lockfile"
+  stub_pm bun 0
+  prepare
+  assert_eq 0 "$STATUS" "exit status"
+  assert_contains "$STDOUT" "dry-run invoked: run release:dry" "output"
+}
+
+test_npm_runs_the_project_release_dry_script_when_present() {
+  pkg_repo main
+  with_release_dry
+  stub_pm npm 0
+  prepare
+  assert_eq 0 "$STATUS" "exit status"
+  assert_contains "$STDOUT" "dry-run invoked: run release:dry" "output"
+}
+
+# Without release:dry, pnpm falls back to its own publish dry run instead of
+# failing on a missing script.
+test_pnpm_without_release_dry_uses_publish_dry_run() {
+  pkg_repo main
+  stub_pm pnpm 0
+  prepare
+  assert_eq 0 "$STATUS" "exit status"
+  assert_contains "$STDOUT" "dry-run invoked: publish --dry-run --no-git-checks" "output"
+}
 
 test_failing_dry_run_exits_1() {
   pkg_repo main
