@@ -77,7 +77,7 @@ paths, deliberately outside every skill and every distribution tree — see
 
 **Plugin groups:**
 - `plan/` — Issue drafting, analysis, next-issue selection, and the full issue lifecycle (4 skills)
-- `build/` — Conflict resolution, commit summaries, quick commits, findings fixes, and live behavioral probes (5 skills)
+- `build/` — Conflict resolution, commit summaries, quick commits, and live behavioral probes (4 skills)
 - `review/` — Adversarial change review, cleanup, claim verification, approach boards, PR feedback triage, and spec extraction (6 skills)
 - `audit/` — CI, script, security, skill, workspace, tsconfig, Three.js, React, and test-suite auditing (9 skills)
 - `maintain/` — Agent instruction layer setup and drift check, label sync, lint migration, editor config sync, repo security hardening, and session cleanup (6 skills)

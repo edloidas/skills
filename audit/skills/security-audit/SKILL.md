@@ -198,7 +198,7 @@ Audited Actions, Release, Repo Settings, Package Manager. Code not checked (conf
 The audit stops here. Step 4 produces two artifacts side by side — a task queue for
 downstream work, and a Planned Changes report for the user to read. Do not edit files, run
 `gh api` writes, create issues, or invoke `/maintain:repo-hardening`,
-`/build:fix-and-reverify`, `/plan:issue-flow`, or any other skill on the user's behalf.
+`/review:changes-review`, `/plan:issue-flow`, or any other skill on the user's behalf.
 
 Hosts differ in whether they have a task tracker; where none exists, the Planned Changes
 report *is* the handoff and the options below collapse to option 4.
@@ -257,7 +257,7 @@ Plan-of-record (not an execution transcript). Render of the Step 3 findings as c
 
 After rendering the report and emitting tasks, print one of:
 
-- Option 1: "N tasks emitted. Run `/maintain:repo-hardening` for the `gh api` changes, or `/build:fix-and-reverify` to walk through the file edits."
+- Option 1: "N tasks emitted. Run `/maintain:repo-hardening` for the `gh api` changes, or fix the file edits, then run `/review:changes-review`."
 - Option 2: "N tasks emitted with `file_issue` flag. Run `/plan:issue-flow` per task when you're ready."
 - Option 3: "Single summary task emitted. Run `/plan:issue-flow` to file it as a tracking issue."
 - Option 4: "No tasks emitted; the report above is the full audit output."

@@ -55,7 +55,7 @@ skill built to catch it.
 ### Never
 
 - **Inside a loop.** Once per claim set; a second panel on the same propositions measures sampling
-  noise. This is what excludes `build:fix-and-reverify` rounds.
+  noise. This is what excludes the rounds of a fix-and-review loop.
 - **When something runnable settles it.** If a test, a build, or `build:live-probe` answers the
   claim, run that — two models reasoning about observable behavior is worse than one observation.
 - **On cheap-to-reverse work.** If undoing it is one command, the panel costs more than the mistake.

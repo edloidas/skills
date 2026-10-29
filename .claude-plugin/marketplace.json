@@ -23,7 +23,7 @@
     {
       "name": "build",
       "source": "./build",
-      "description": "Conflict resolution, commit summaries, quick commits, and findings fixes",
+      "description": "Conflict resolution, commit summaries, quick commits, and live behavioral probes",
       "version": "5.18.0",
       "author": {
         "name": "Mikita Taukachou",
