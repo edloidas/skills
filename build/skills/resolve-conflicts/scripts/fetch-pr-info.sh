@@ -19,6 +19,7 @@
 #   base=master
 #   url=https://github.com/owner/repo/pull/123
 #   state=OPEN|CLOSED|MERGED
+#   base_repo=owner/repo          the repository the PR targets, where <base> lives
 #   head_repo=owner/repo          the repository <head> lives in; a fork for a fork PR
 #   cross_repository=true|false   true when head_repo is not the PR's own repository
 #   maintainer_can_modify=true|false
@@ -137,6 +138,11 @@ PR_BASE=$(echo "$PR_JSON" | jq -r '.baseRefName')
 PR_URL=$(echo "$PR_JSON" | jq -r '.url')
 PR_MERGEABLE=$(echo "$PR_JSON" | jq -r '.mergeable')
 PR_STATE=$(echo "$PR_JSON" | jq -r '.state')
+# gh has no baseRepository field; the PR's own URL names the repository it targets.
+BASE_REPO=""
+if [[ "$PR_URL" =~ github\.com/([^/]+/[^/]+)/pull/ ]]; then
+    BASE_REPO="${BASH_REMATCH[1]}"
+fi
 HEAD_REPO=$(echo "$PR_JSON" | jq -r '"\(.headRepositoryOwner.login // "")/\(.headRepository.name // "")"')
 CROSS_REPO=$(echo "$PR_JSON" | jq -r '.isCrossRepository // false')
 CAN_MODIFY=$(echo "$PR_JSON" | jq -r '.maintainerCanModify // false')
@@ -157,6 +163,7 @@ echo "head=$PR_HEAD"
 echo "base=$PR_BASE"
 echo "url=$PR_URL"
 echo "state=$PR_STATE"
+echo "base_repo=$BASE_REPO"
 echo "head_repo=$HEAD_REPO"
 echo "cross_repository=$CROSS_REPO"
 echo "maintainer_can_modify=$CAN_MODIFY"

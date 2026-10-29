@@ -73,14 +73,21 @@ Display the context header, including when stopping:
 
 ```
 PR: <title>
-Branches: <base> ← <head_repo>:<head>
+Branches: <base_repo>:<base> ← <head_repo>:<head>
+Remotes: base <base_remote>, head <remote>
 Link: <url>
 ```
 
-`<remote>` is where `<head>` lives. When `cross_repository=false` it is `origin`. For a fork PR it
-is the existing remote whose URL names `<head_repo>` (`git remote -v`); with none, add one —
-`git remote add pr-<owner> https://github.com/<head_repo>.git` — and say so. If
-`maintainer_can_modify=false` on a fork you do not own, add a header line: `Push: the fork does
+Resolve both remotes from `git remote -v`, matching the `owner/repo` in each URL:
+
+- `<base_remote>`, where `<base>` lives: the remote whose URL names `<base_repo>`. In a fork clone
+  that is usually `upstream`, and `origin/<base>` is the fork's stale copy. With none, add one —
+  `git remote add pr-base https://github.com/<base_repo>.git` — and say so. Only an empty
+  `base_repo` (a PR URL not on github.com) falls back to `origin`.
+- `<remote>`, where `<head>` lives: `<base_remote>` when `cross_repository=false`; for a fork PR,
+  the remote whose URL names `<head_repo>`, and with none, add `pr-<owner>` the same way.
+
+If `maintainer_can_modify=false` on a fork you do not own, add a header line: `Push: the fork does
 not allow maintainer edits; Step 5 will be rejected`.
 
 On a fork PR, Phase 3's lockfile regeneration and Verification run tooling and config the PR
@@ -105,7 +112,7 @@ stop so the user can resume there.
 ### Step 3: Fetch and Rebase
 
 ```bash
-git fetch origin <base>
+git fetch <base_remote> <base>
 git fetch <remote> <head>
 bash <skill-dir>/scripts/prepare-branch.sh <head> <remote>
 ```
@@ -117,7 +124,7 @@ it was.
 
 | Exit | Meaning | Action |
 |------|---------|--------|
-| 0 | Branch is at `<remote>/<head>` | Keep `before=` as `$before`, run `git rebase origin/<base>` |
+| 0 | Branch is at `<remote>/<head>` | Keep `before=` as `$before`, run `git rebase <base_remote>/<base>` |
 | 1 | Not a git repository, or `<head>` missing | Show the error, stop |
 | 2 | Work tree not clean | Stop and show the listed files. Step 2 should have moved to a worktree |
 | 3 | Local `<head>` has commits the remote lacks | Show the listed commits and the recovery point, then stop. Do not reset or delete the branch to get past this; the user pushes those commits or rebases the branch themselves |

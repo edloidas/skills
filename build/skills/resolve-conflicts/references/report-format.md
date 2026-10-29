@@ -10,7 +10,8 @@ Print before starting conflict resolution. Shows all groups with file lists.
 ## Conflict Analysis Report
 
 PR: <title>
-Branches: <base> ← <head_repo>:<head>
+Branches: <base_repo>:<base> ← <head_repo>:<head>
+Remotes: base <base_remote>, head <remote>
 Link: <url>
 
 ### Summary

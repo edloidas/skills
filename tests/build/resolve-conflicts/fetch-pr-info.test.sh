@@ -53,6 +53,15 @@ test_fork_pr_names_the_fork_as_head_repo() {
   assert_eq true "$(value_of maintainer_can_modify)" "maintainer_can_modify"
 }
 
+# The base repository is the PR's own, even for a fork: the rebase target is
+# fetched from there, not from whatever origin happens to be.
+test_fork_pr_names_the_target_as_base_repo() {
+  stub_gh_with "$(pr_json OPEN CONFLICTING contributor true)"
+  fetch 7
+  assert_eq 0 "$STATUS" "exit status"
+  assert_eq acme/app "$(value_of base_repo)" "base_repo"
+}
+
 test_merged_pr_exits_6() {
   stub_gh_with "$(pr_json MERGED UNKNOWN acme false)"
   fetch 7
