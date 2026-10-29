@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # run-outsider.sh — picks an agent CLI that is not the current host and runs it
 # read-only. Two properties carry the whole design: it never invokes the host
-# (recursion), and it never fails the caller (always exit 0, skips reported on
-# stdout). Everything else is selection bookkeeping.
+# (recursion), and it never fails the caller (exit 0, skips reported on
+# stdout) — except exit 2 for a review ref that does not resolve. Everything
+# else is selection bookkeeping.
 #
 # Every case pins PATH to a sandbox, so "installed" means "a stub exists" and no
 # real agent CLI on the machine can influence the result.
@@ -284,6 +285,32 @@ test_codex_is_invoked_with_skip_git_repo_check() {
   assert_contains "$(calls_of codex)" "exec --ephemeral --skip-git-repo-check -s read-only" "codex arguments"
 }
 
+# The outside agent is launched read-only, so no responder may be granted a
+# write-capable tool or a blanket git grant.
+test_claude_is_invoked_with_read_only_tools_only() {
+  only_agents codex claude
+  stub_recording claude
+  outsider ask --host codex <<< "question"
+  local calls
+  calls="$(calls_of claude)"
+  assert_contains "$calls" "--permission-mode dontAsk" "claude arguments"
+  assert_contains "$calls" "--tools Read,Grep,Glob,Bash " "claude arguments"
+  assert_contains "$calls" "Bash(git diff:*),Bash(git log:*),Bash(git show:*)" "claude arguments"
+  assert_not_contains "$calls" "Bash(git:*)" "claude arguments"
+  assert_not_contains "$calls" "--permission-mode auto" "claude arguments"
+  local allowed="${calls##*--allowed-tools }"
+  assert_not_contains "$allowed" "Edit" "claude allowed tools"
+  assert_not_contains "$allowed" "Write" "claude allowed tools"
+}
+
+test_pi_is_invoked_with_read_only_tools_only() {
+  only_agents claude pi
+  stub_recording pi
+  outsider ask --host claude <<< "question"
+  assert_contains "$(calls_of pi)" "-t read,grep,find,ls" "pi arguments"
+  assert_not_contains "$(calls_of pi)" "bash" "pi arguments"
+}
+
 # ------------------------------------------------------------------- review ----
 
 test_review_of_a_clean_tree_reports_no_changes() {
@@ -294,7 +321,48 @@ test_review_of_a_clean_tree_reports_no_changes() {
   stub_agent opencode
   outsider review --host claude
   assert_eq 0 "$STATUS" "exit status"
-  assert_eq "No changes to review." "$STDOUT" "output"
+  assert_eq "Nothing to review: no uncommitted changes." "$STDOUT" "output"
+}
+
+# A ref that does not resolve used to yield an empty diff, and the script then
+# reviewed the uncommitted changes instead — a scope nobody asked for.
+test_review_with_an_unresolvable_base_errors_without_running_the_agent() {
+  init_repo repo main
+  cd repo
+  commit "initial"
+  printf 'UNCOMMITTED\n' >> file.txt
+  only_agents claude opencode
+  stub_recording opencode
+  outsider review --host claude --base no-such-branch
+  assert_eq 2 "$STATUS" "exit status"
+  assert_contains "$STDOUT" "Cannot review --base 'no-such-branch'" "output"
+  assert_eq "" "$(calls_of opencode)" "agent invocations"
+}
+
+test_review_with_an_unresolvable_commit_errors_without_running_the_agent() {
+  init_repo repo main
+  cd repo
+  commit "initial"
+  printf 'UNCOMMITTED\n' >> file.txt
+  only_agents claude opencode
+  stub_recording opencode
+  outsider review --host claude --commit deadbeef
+  assert_eq 2 "$STATUS" "exit status"
+  assert_contains "$STDOUT" "Cannot review --commit 'deadbeef'" "output"
+  assert_eq "" "$(calls_of opencode)" "agent invocations"
+}
+
+test_review_of_an_empty_base_diff_does_not_switch_scope() {
+  init_repo repo main
+  cd repo
+  commit "initial"
+  printf 'UNCOMMITTED\n' >> file.txt
+  only_agents claude opencode
+  stub_recording opencode
+  outsider review --host claude --base main
+  assert_eq 0 "$STATUS" "exit status"
+  assert_eq "Nothing to review: --base 'main' has an empty diff." "$STDOUT" "output"
+  assert_eq "" "$(calls_of opencode)" "agent invocations"
 }
 
 test_review_includes_uncommitted_changes() {

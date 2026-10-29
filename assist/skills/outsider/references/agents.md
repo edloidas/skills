@@ -5,15 +5,18 @@ This file records what each arm does, which arms are verified, and how to config
 
 ## Implemented agents
 
-Every invocation is non-interactive, read-only, and takes the prompt on **stdin**. None of them
-pins a model or a reasoning level: unset means the agent's own current default.
+Every invocation is non-interactive, launched with read-only tool grants, and takes the prompt on
+**stdin**. Only codex's is an OS sandbox; the others are tool allowlists, with the gaps noted below,
+and `OUTSIDER_ARGS_<AGENT>` is appended after them, so it can widen any of them. None of them pins
+a model or a reasoning level: unset means the agent's own current default — for claude, its built-in
+default, since its settings files are not read.
 
 | Agent | Binary | Invocation | Status |
 | --- | --- | --- | --- |
 | `codex` | `codex` | `codex exec --ephemeral --skip-git-repo-check -s read-only -o <file> -` | Verified |
-| `claude` | `claude` | `claude -p --permission-mode auto --allowed-tools "Read,Grep,Glob,Bash(git:*)" --disallowed-tools "Edit,Write,NotebookEdit"` | Verified |
+| `claude` | `claude` | `claude -p --setting-sources "" --permission-mode dontAsk --tools "Read,Grep,Glob,Bash" --allowed-tools "Read,Grep,Glob,Bash(git diff:*),Bash(git log:*),Bash(git show:*)"` | Verified (2.1.312) |
 | `opencode` | `opencode` | `opencode run --agent plan` | Verified |
-| `pi` | `pi` | `pi --print --no-session -xt edit,write` | Verified |
+| `pi` | `pi` | `pi --print --no-session -t read,grep,find,ls` | From pi's documented read-only mode; not re-run |
 
 Notes on the non-obvious flags:
 
@@ -22,7 +25,14 @@ Notes on the non-obvious flags:
   `--skip-git-repo-check`, since `codex exec` otherwise refuses to start outside a git repository.
 - **opencode** uses its built-in `plan` agent, which is read-only. It emits ANSI colour and a
   `> plan · <model>` banner; the runner strips the escape codes.
-- **pi** uses the `-xt` denylist rather than a `-t` allowlist so extension tools keep working.
+- **claude** runs in `dontAsk`, which denies every call not on `--allowed-tools`, and `--tools` removes
+  every other built-in. `--setting-sources ""` stops the user's own allow rules from widening that
+  set — and with them any default model in settings, so pin one with `OUTSIDER_MODEL_CLAUDE`. A
+  `touch` probe under these flags was refused while `git log` ran. `--output=<file>` on `git diff`,
+  `log` or `show` is a write the allowed subset may still permit; this was not probed.
+- **pi** uses the `-t` allowlist of its four read-only built-ins. The earlier `-xt edit,write`
+  denylist left `bash` enabled, which can write; extension tools are now off too, since nothing
+  says they are read-only.
 
 Default preference order is `codex claude opencode pi`. The host agent is dropped from it, so
 running under Claude Code picks `codex` and running under Codex picks `claude`.

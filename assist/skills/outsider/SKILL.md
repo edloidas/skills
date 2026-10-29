@@ -24,7 +24,8 @@ Get a fast opinion from an agent CLI running outside this session. One reviewer,
 — a sanity check, not an exhaustive review. Use `review:consilium` when you want a board.
 
 This skill writes one temp file per run — the question — and nothing else. The responder is
-launched read-only: it reports, and it does not edit the repo.
+launched with read-only tool grants — a sandbox for codex, an allowlist for the others — listed with
+their known gaps in `references/agents.md`; `OUTSIDER_ARGS_<AGENT>` can widen them.
 
 The value is structural: the responder shares none of this conversation's context and runs in its
 own process, usually on a different model family. Which vendor answers is incidental, which is why
@@ -53,7 +54,7 @@ Default order is `codex claude opencode pi`, minus the host. A missing CLI is a 
 failure: the script prints why and exits 0. Callers can treat this leg as droppable.
 
 **No model or reasoning level is set by default** — the chosen agent runs on whatever it is already
-configured to use. To pin one, or to change the preference order, edit
+configured to use, except claude, which skips its settings files and runs its built-in default. To pin one, or to change the preference order, edit
 `~/.config/edloidas/outsider/config` (`OUTSIDER_AGENTS`, `OUTSIDER_MODEL_<AGENT>`,
 `OUTSIDER_EFFORT_<AGENT>`, `OUTSIDER_ARGS_<AGENT>`); the same names work as environment variables
 and override the file. `references/agents.md` has the full registry, the config keys with examples,
@@ -156,6 +157,9 @@ outside opinion is the whole deliverable.
 
 - **No agent installed, or only the host is** — the script says so and exits 0. Don't retry.
 - **Timeout** — the script prints a timeout message. Note it and proceed without.
+- **`--base` or `--commit` does not resolve** — the script exits 2 and sends nothing. Correct the
+  ref; never re-run as `--uncommitted`, which reviews a different change. An empty `--base` or
+  uncommitted diff prints `Nothing to review:` and exits 0.
 - **Agent failed** — the script prints the exit code and the last 20 lines of the agent's stderr.
   Quote the reason in one line, so a dropped outside opinion is never silent, and proceed without.
 
@@ -174,7 +178,8 @@ call is owned here, in place of **Presenting Output** and its stop sentence, whi
   first and prints its message, and set the surrounding command timeout to the highest value the
   host allows. An answer that stopped at the mode default — 300s ask, 600s review — never received
   the argument.
-- **The leg is droppable.** A skip, a timeout, or a failure is not retried; the caller continues and
+- **The leg is droppable.** Exit 2 is the exception: a `--base` or `--commit` that does not resolve
+  is the caller's error to surface, not a skip. A skip, a timeout, or a failure is not retried; the caller continues and
   its report says which happened. So does a host without this skill installed — it ships in the
   assist bundle.
 - **Name the agent** from the first output line, `[outsider] agent: <name>`. Without that line no

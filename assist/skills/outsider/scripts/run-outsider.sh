@@ -13,7 +13,8 @@
 # $OUTSIDER_AGENTS that is not the host. Model and effort are never set unless
 # configured — see references/agents.md.
 #
-# Always exits 0. Errors and skips are reported on stdout.
+# Exits 0, with errors and skips reported on stdout — except exit 2 when a
+# review's --base or --commit does not resolve, so a wrong scope is never reviewed.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -91,9 +92,11 @@ build_cmd() {
       CMD+=(-o "$OUT_FILE" -)
       ;;
     claude)
-      CMD=(claude -p --permission-mode auto
-        --allowed-tools "Read,Grep,Glob,Bash(git:*)"
-        --disallowed-tools "Edit,Write,NotebookEdit")
+      # dontAsk denies anything not allowed here; no setting sources, so a
+      # user's own allow rules cannot widen it.
+      CMD=(claude -p --setting-sources "" --permission-mode dontAsk
+        --tools "Read,Grep,Glob,Bash"
+        --allowed-tools "Read,Grep,Glob,Bash(git diff:*),Bash(git log:*),Bash(git show:*)")
       if [[ -n "$model" ]]; then CMD+=(--model "$model"); fi
       if [[ -n "$effort" ]]; then CMD+=(--effort "$effort"); fi
       if [[ ${#extra[@]} -gt 0 ]]; then CMD+=("${extra[@]}"); fi
@@ -106,7 +109,7 @@ build_cmd() {
       if [[ ${#extra[@]} -gt 0 ]]; then CMD+=("${extra[@]}"); fi
       ;;
     pi)
-      CMD=(pi --print --no-session -xt edit,write)
+      CMD=(pi --print --no-session -t read,grep,find,ls)
       if [[ -n "$model" ]]; then CMD+=(--model "$model"); fi
       if [[ -n "$effort" ]]; then CMD+=(--thinking "$effort"); fi
       if [[ ${#extra[@]} -gt 0 ]]; then CMD+=("${extra[@]}"); fi
@@ -256,6 +259,8 @@ AGENT_ARG=""
 PREAMBLE=""
 INPUT_FILE=""
 DIFF=""
+SCOPE="uncommitted"
+SCOPE_REF=""
 TIMEOUT=""
 SELECTED_MODEL=""
 
@@ -264,9 +269,9 @@ while [[ $# -gt 0 ]]; do
     --host)        HOST_ARG="${2:-}"; shift; shift 2>/dev/null || true ;;
     --agent)       AGENT_ARG="${2:-}"; shift; shift 2>/dev/null || true ;;
     --preamble)    PREAMBLE="${2:-}"; shift; shift 2>/dev/null || true ;;
-    --uncommitted) DIFF="$(collect_uncommitted)"; shift ;;
-    --base)        DIFF="$(git diff "${2:-}"...HEAD 2>/dev/null || true)"; shift; shift 2>/dev/null || true ;;
-    --commit)      DIFF="$(git show "${2:-}" 2>/dev/null || true)"; shift; shift 2>/dev/null || true ;;
+    --uncommitted) SCOPE="uncommitted"; shift ;;
+    --base)        SCOPE="base"; SCOPE_REF="${2:-}"; shift; shift 2>/dev/null || true ;;
+    --commit)      SCOPE="commit"; SCOPE_REF="${2:-}"; shift; shift 2>/dev/null || true ;;
     [0-9]*)        TIMEOUT="$1"; shift ;;
     *)
       if [[ -f "$1" ]]; then
@@ -306,6 +311,34 @@ if [[ "$MODE" == "list" ]]; then
   exit 0
 fi
 
+# Resolved before an agent is chosen: a ref that does not resolve is an error,
+# never a fallback to another scope.
+if [[ "$MODE" == "review" ]]; then
+  if [[ "$SCOPE" != "uncommitted" ]] &&
+     ! git rev-parse --verify --quiet "${SCOPE_REF:-}^{commit}" >/dev/null 2>&1; then
+    echo "Cannot review --$SCOPE '${SCOPE_REF}': not a commit in this repository. Nothing was sent."
+    exit 2
+  fi
+  case "$SCOPE" in
+    base)
+      if ! DIFF="$(git diff "$SCOPE_REF"...HEAD 2>/dev/null)"; then
+        echo "Cannot review --base '$SCOPE_REF': it shares no merge base with HEAD. Nothing was sent."
+        exit 2
+      fi
+      ;;
+    commit) DIFF="$(git show "$SCOPE_REF")" ;;
+    *)      DIFF="$(collect_uncommitted)" ;;
+  esac
+  if [[ -z "$DIFF" ]]; then
+    if [[ "$SCOPE" == "uncommitted" ]]; then
+      echo "Nothing to review: no uncommitted changes."
+    else
+      echo "Nothing to review: --$SCOPE '$SCOPE_REF' has an empty diff."
+    fi
+    exit 0
+  fi
+fi
+
 if ! select_agent "$HOST" "$AGENT_ARG"; then
   echo "$SELECT_MSG"
   exit 0
@@ -332,13 +365,6 @@ case "$MODE" in
     echo "$PROMPT" | run_agent "$AGENT" "${TIMEOUT:-300}"
     ;;
   review)
-    if [[ -z "$DIFF" ]]; then
-      DIFF="$(collect_uncommitted)"
-    fi
-    if [[ -z "$DIFF" ]]; then
-      echo "No changes to review."
-      exit 0
-    fi
     PROMPT_FILE="${PREAMBLE:-$SCRIPT_DIR/../references/review-prompt.md}"
     if ! check_preamble "$PROMPT_FILE"; then exit 0; fi
     PROMPT=""
