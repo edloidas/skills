@@ -14,7 +14,7 @@ when_to_use: >
   pr-review's job, not this one.
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
-allowed-tools: Bash(git diff:*) Bash(git ls-files:*) Bash(git status:*) Bash(git hash-object:*) Bash(git show:*) Bash(git log:*) Bash(git blame:*) Bash(git branch --show-current) Bash(git restore -- *) Bash(gh issue view:*) Bash(gh pr view:*) Bash(gh pr comment:*) Bash(gh api user:*) Bash(gh api repos/*/pulls/*/reviews --input *) Bash(gh api repos/*/pulls/*/reviews --jq *) Bash(gh --version) Read Glob Grep Task Skill
+allowed-tools: Bash(git diff:*) Bash(git ls-files:*) Bash(git status:*) Bash(git hash-object:*) Bash(git show:*) Bash(git log:*) Bash(git blame:*) Bash(git branch --show-current) Bash(gh issue view:*) Bash(gh pr view:*) Bash(gh pr comment:*) Bash(gh api user:*) Bash(gh api repos/*/pulls/*/reviews --input *) Bash(gh api repos/*/pulls/*/reviews --jq *) Bash(gh --version) Read Glob Grep Task Skill
 argument-hint: "[--base <branch> | --uncommitted | --commit <sha>] [--issue <N>] [--mode <simple|standard|deep>] [--no-external] [--no-lens] [--comment | --review] [--draft]"
 metadata:
   author: edloidas

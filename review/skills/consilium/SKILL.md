@@ -13,7 +13,7 @@ when_to_use: >
   PRD review, or weighing trade-offs, prior art, blast radius, and lock-in.
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
-allowed-tools: Read Glob Grep Task Skill Write(*/outsider-*) Bash(git status:*) Bash(git hash-object:*) Bash(git restore:*) Bash(rm:*)
+allowed-tools: Read Glob Grep Task Skill Write(*/outsider-*) Bash(git status:*) Bash(git hash-object:*)
 argument-hint: "[short] [prior-art] [focus]"
 metadata:
   author: edloidas

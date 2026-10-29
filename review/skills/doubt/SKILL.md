@@ -16,7 +16,7 @@ when_to_use: >
   "sanity-check this before I go on". Not inside a fix-verify loop, and not for a diff.
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
-allowed-tools: Read Glob Grep Task Skill Write(*/outsider-*) Bash(git status:*) Bash(git hash-object:*) Bash(git restore -- *) Bash(git clean -fdx -- *)
+allowed-tools: Read Glob Grep Task Skill Write(*/outsider-*) Bash(git status:*) Bash(git hash-object:*)
 argument-hint: "[what to doubt, or empty for the session's most recent claim set]"
 metadata:
   author: edloidas
