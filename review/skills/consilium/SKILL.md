@@ -41,7 +41,10 @@ into the report as an open question with its assumed answer.
 
 **Cost.** This is the most expensive skill in the collection: three or four generators, two critics,
 and two verification lenses — seven or eight agents, typically 15–25 minutes. Spend it on decisions
-that are expensive to reverse, not on questions one seat could answer.
+that are expensive to reverse, not on questions one seat could answer. A request that reached this
+skill through "think hard" or "ultrathink" and does not name consilium runs the board only when it
+describes a decision or a problem with more than one way to solve it; otherwise answer it directly,
+say the board did not run, and stop.
 
 ## Arguments
 
@@ -109,8 +112,10 @@ batch:
 If the decision cannot be stated in one sentence, present what you have — the candidate readings of
 the decision and what would separate them — as the report, and stop. That is the one early exit.
 
-Announce the frame as labelled lines, one per item. Items 1–6 are **the frame** every seat receives;
-nothing else about the conversation reaches them.
+Announce the frame as labelled lines, one per item. Items 1–6 are **the frame** every seat receives,
+ending with the line `Do not modify files; probes go in a fresh temp directory outside the repository,
+deleted before you report.`; nothing else about the conversation reaches them. A filled frame:
+`references/frame-example.md`.
 
 ## Phase 2: Diverge
 
