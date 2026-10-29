@@ -1,6 +1,8 @@
-## Optimized pnpm Workspace Template (10.26+)
+# Workspace Template (pnpm 10.26+)
 
-### pnpm-workspace.yaml
+Workspace-section reference: the target shape Steps 4–5 audit against.
+
+## pnpm-workspace.yaml
 ```yaml
 packages:
   - 'packages/*'
@@ -22,7 +24,8 @@ catalogMode: force
 # Remove unused catalog entries on install (10.15+)
 cleanupUnusedCatalogs: true
 
-# Supply-chain settings follow security-audit's package-manager checklist (pnpm 10.26+).
+# Supply-chain settings: graded by security-audit, not by package-audit — Step 1 only records
+# which keys are set. Shown so the template is complete (pnpm 10.26+).
 # Release-age gate in minutes: 4320 = 72h, the audit's floor
 minimumReleaseAge: 4320
 minimumReleaseAgeStrict: true
@@ -51,25 +54,12 @@ overrides:
 #     vite: '*'
 ```
 
-### Root package.json
-```json
-{
-  "name": "my-monorepo",
-  "private": true,
-  "type": "module",
-  "scripts": {
-    "build": "pnpm -r run build",
-    "test": "pnpm -r run test",
-    "check": "pnpm -r run check"
-  },
-  "engines": {
-    "node": ">= 22.0.0",
-    "pnpm": ">= 10.26.0"
-  }
-}
-```
+## Root package.json
 
-### Individual package/app package.json
+`private: true`, `engines` pinning `node` and `pnpm` (`>= 10.26.0` for the fields above), and
+scripts that delegate — the Monorepo root family in `role-templates.md`.
+
+## Individual package/app package.json
 ```json
 {
   "name": "@myorg/app",
@@ -88,19 +78,24 @@ overrides:
 }
 ```
 
-### .npmrc
+## .npmrc
 
-Only include settings that meaningfully change behavior. Most copy-pasted `.npmrc` settings are already defaults in pnpm 10 or are superseded by the workspace protocol.
+Only include settings that change behavior. Most copy-pasted `.npmrc` lines are pnpm defaults
+or superseded by the workspace protocol — Step 5 flags these:
+
+| Setting | Issue |
+|---|---|
+| `auto-install-peers=true` | Default in pnpm 9+ — redundant |
+| `prefer-frozen-lockfile=true` | Default in pnpm 10 — redundant; use `--frozen-lockfile` in CI for hard-fail behavior |
+| `prefer-workspace-packages=true` | Superseded by the `workspace:` protocol |
+| `strict-peer-dependencies=true` | Not a default; keep only when hard failures on peer mismatches are wanted |
+
+Legitimate entries:
 
 ```ini
-# Private registry for scoped packages (if needed)
+# Private registry for scoped packages
 # @myorg:registry=https://npm.myorg.com/
 
 # Windows cross-platform script compatibility
 # shell-emulator=true
 ```
-
-**Avoid:**
-- `auto-install-peers=true` — default in pnpm 9+
-- `prefer-frozen-lockfile=true` — default in pnpm 10; use `--frozen-lockfile` CLI flag in CI for hard-fail
-- `prefer-workspace-packages=true` — superseded by `workspace:` protocol

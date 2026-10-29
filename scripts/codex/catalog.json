@@ -100,9 +100,9 @@
       "group": "audit",
       "name": "edloidas-audit",
       "displayName": "Edloidas Audit",
-      "description": "A Codex-safe audit bundle for skill quality, GitHub Actions, package scripts, workspace and tsconfig configuration, React, and test suites.",
-      "shortDescription": "Audit skills, CI, scripts, workspace, tsconfig, React, and tests.",
-      "longDescription": "Install the audit bundle from edloidas/skills to inspect skill quality, CI workflows, package scripts, pnpm workspace configuration, tsconfig options, React code, and test-suite quality from Codex.",
+      "description": "A Codex-safe audit bundle for skill quality, GitHub Actions, package scripts and pnpm workspace setup, tsconfig configuration, React, and test suites.",
+      "shortDescription": "Audit skills, CI, package setup, tsconfig, React, and tests.",
+      "longDescription": "Install the audit bundle from edloidas/skills to inspect skill quality, CI workflows, package scripts and pnpm workspace configuration, tsconfig options, React code, and test-suite quality from Codex.",
       "category": "Coding",
       "websiteURL": "https://github.com/edloidas/skills",
       "keywords": [
@@ -120,11 +120,10 @@
       ],
       "skills": [
         "audit/skills/ci-audit",
+        "audit/skills/package-audit",
         "audit/skills/skill-audit",
-        "audit/skills/scripts-audit",
         "audit/skills/security-audit",
         "audit/skills/three-audit",
-        "audit/skills/workspace-audit",
         "audit/skills/react-audit",
         "audit/skills/tests-audit",
         "audit/skills/tsconfig-audit"

@@ -44,7 +44,9 @@ than gaps listed, that is the skill to use.
 
 **Not yet implemented:** non-GitHub CI, containers, secret scanning beyond GitHub's native feature, runtime config (CSP, CORS, headers), dependency policy.
 
-Workflows are split with `audit:ci-audit` by consequence: this skill owns the security surface (pinning, `permissions:`, `pull_request_target`, OIDC, cache poisoning), and pinning is graded here only. `ci-audit` hands over required-check names no workflow produces; `audit:workspace-audit` hands over pnpm build-script, release-age, and exotic-subdep settings.
+Workflows are split with `audit:ci-audit` by consequence: this skill owns the security surface (pinning, `permissions:`, `pull_request_target`, OIDC, cache poisoning), and pinning is graded here only. `ci-audit` hands over required-check names no workflow produces.
+
+`audit:package-audit` owns workspace and script hygiene and records which supply-chain keys a `pnpm-workspace.yaml` sets; build-script allowlists, `strictDepBuilds`, `minimumReleaseAge`, `trustPolicy`, and `blockExoticSubdeps` are graded here only.
 
 **Not for:**
 - Applying the fixes → `maintain:repo-hardening`

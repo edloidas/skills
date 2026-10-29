@@ -1,6 +1,7 @@
 # Role Templates
 
-One pattern family per package role. Audit against the family Step 2 selected and ignore the others.
+Scripts-section templates: one pattern family per package role. Audit against the family Step 2
+selected and ignore the others.
 
 ## App (Vite Plus)
 
@@ -55,7 +56,7 @@ Prefer delegation over re-implementing leaf commands in the root package.
   "format:check": "biome format .",
   "check": "pnpm typecheck && pnpm lint && pnpm format:check",
   "check:fix": "pnpm typecheck && pnpm lint:fix && pnpm format",
-  "build": "pnpm clean && pnpm build:*",
+  "build": "pnpm clean && pnpm /^build:.+/",
   "test": "vitest run",
   "test:watch": "vitest",
   "test:ci": "vitest run --coverage",

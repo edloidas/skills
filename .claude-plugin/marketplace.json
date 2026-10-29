@@ -45,7 +45,7 @@
     {
       "name": "audit",
       "source": "./audit",
-      "description": "CI, script, security, skill, workspace, Three.js, React, and test-suite auditing skills",
+      "description": "CI, package setup, security, skill, tsconfig, Three.js, React, and test-suite auditing skills",
       "version": "5.18.0",
       "author": {
         "name": "Mikita Taukachou",

@@ -1,7 +1,7 @@
 {
   "name": "edloidas-audit",
   "version": "5.18.0",
-  "description": "A Codex-safe audit bundle for skill quality, GitHub Actions, package scripts, workspace and tsconfig configuration, React, and test suites.",
+  "description": "A Codex-safe audit bundle for skill quality, GitHub Actions, package scripts and pnpm workspace setup, tsconfig configuration, React, and test suites.",
   "author": {
     "name": "Mikita Taukachou",
     "url": "https://edloidas.io"
@@ -25,8 +25,8 @@
   "skills": "./skills/",
   "interface": {
     "displayName": "Edloidas Audit",
-    "shortDescription": "Audit skills, CI, scripts, workspace, tsconfig, React, and tests.",
-    "longDescription": "Install the audit bundle from edloidas/skills to inspect skill quality, CI workflows, package scripts, pnpm workspace configuration, tsconfig options, React code, and test-suite quality from Codex.",
+    "shortDescription": "Audit skills, CI, package setup, tsconfig, React, and tests.",
+    "longDescription": "Install the audit bundle from edloidas/skills to inspect skill quality, CI workflows, package scripts and pnpm workspace configuration, tsconfig options, React code, and test-suite quality from Codex.",
     "developerName": "Mikita Taukachou",
     "category": "Coding",
     "websiteURL": "https://github.com/edloidas/skills",

@@ -1,7 +1,7 @@
 {
   "name": "audit",
   "version": "5.18.0",
-  "description": "CI, script, security, skill, workspace, Three.js, React, and test-suite auditing skills",
+  "description": "CI, package setup, security, skill, tsconfig, Three.js, React, and test-suite auditing skills",
   "author": {
     "name": "Mikita Taukachou",
     "url": "https://edloidas.io"

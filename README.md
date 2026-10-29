@@ -10,14 +10,14 @@
 
 <p align="center">
   <img src="https://img.shields.io/github/v/tag/edloidas/skills?style=flat-square&color=FD3DB5&label=release" alt="Release">
-  <img src="https://img.shields.io/badge/skills-37-FD3DB5?style=flat-square" alt="37 skills">
+  <img src="https://img.shields.io/badge/skills-36-FD3DB5?style=flat-square" alt="36 skills">
   <img src="https://img.shields.io/badge/agents-4-FD3DB5?style=flat-square" alt="4 agents">
   <img src="https://img.shields.io/badge/license-MIT-FD3DB5?style=flat-square" alt="MIT license">
 </p>
 
 ---
 
-37 skills for planning, building, reviewing, auditing, maintaining, and shipping software —
+36 skills for planning, building, reviewing, auditing, maintaining, and shipping software —
 written once and distributed to [Claude Code](https://docs.anthropic.com/en/docs/claude-code),
 [Codex](https://developers.openai.com/codex), [OpenCode](https://opencode.ai), and
 [pi](https://pi.dev), following the [Agent Skills specification](https://agentskills.io/specification).
@@ -30,7 +30,7 @@ it. Nothing runs in the background, nothing is injected into every prompt.
 | [plan](#plan) | Issue drafting, scope analysis, next-issue picks, full issue lifecycle | 4 |
 | [build](#build) | Conflict resolution, commit bodies, live probes | 3 |
 | [review](#review) | Adversarial change review, cleanup, claim verification, approach boards, PR feedback, spec extraction | 6 |
-| [audit](#audit) | CI, scripts, security, skills, workspace, tsconfig, Three.js, React, tests | 9 |
+| [audit](#audit) | CI, package setup, security, skills, tsconfig, Three.js, React, tests | 8 |
 | [maintain](#maintain) | Label and editor config sync, repo hardening, session cleanup | 4 |
 | [ship](#ship) | npm releases | 1 |
 | [assist](#assist) | Explanations, external opinions, handoffs, restatement | 4 |
@@ -341,21 +341,20 @@ nothing to port until that changes.
 
 ### Audit
 
-CI, script, security, skill, workspace, tsconfig, Three.js, React, and test-suite auditing skills.
+CI, package setup, security, skill, tsconfig, Three.js, React, and test-suite auditing skills.
 Every one of them finds and reports; none of them edits. `react-audit` and `three-audit` double as
 stack lenses for `changes-review`.
 
 | Skill | Description |
 | ----- | ----------- |
 | [ci-audit](./audit/skills/ci-audit/) | Audit GitHub Actions for wall clock, spend, and whether the gating actually gates |
-| [scripts-audit](./audit/skills/scripts-audit/) | Analyze package.json scripts for naming, composition, and consistency |
+| [package-audit](./audit/skills/package-audit/) | Audit package.json scripts against each package's role and, in a pnpm workspace, catalogs, protocol, overrides, and hoisting |
 | [security-audit](./audit/skills/security-audit/) | Find supply-chain gaps in Actions, release config, repo settings, and package manager — read-only |
 | [skill-audit](./audit/skills/skill-audit/) | Gate a skill change on discovery, instructions, context cost, portability, and safety |
 | [three-audit](./audit/skills/three-audit/) | Audit Three.js / React Three Fiber code for perf and best-practice issues |
 | [react-audit](./audit/skills/react-audit/) | Audit React code for effect misuse, memoization, state architecture, and conventions |
 | [tests-audit](./audit/skills/tests-audit/) | Audit a test suite and report keep/tighten/rewrite/delete per test |
 | [tsconfig-audit](./audit/skills/tsconfig-audit/) | Audit tsconfig.json against TypeScript 7 and report what to drop, add, and keep |
-| [workspace-audit](./audit/skills/workspace-audit/) | Analyze pnpm workspace and monorepo setup |
 
 ### Maintain
 
