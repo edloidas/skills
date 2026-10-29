@@ -14,7 +14,7 @@ setup() {
   stub react-doctor <<STUB
 [ "\$1" = "--version" ] && { echo 0.9.18; exit 0; }
 printf '%s\n' "\$*" > "$SANDBOX/args"
-pwd > "$SANDBOX/cwd"
+pwd -P > "$SANDBOX/cwd"
 while [ \$# -gt 0 ]; do
   if [ "\$1" = "--output-dir" ]; then echo '[]' > "\$2/diagnostics.json"; fi
   shift
@@ -27,7 +27,7 @@ STUB
 test_runs_from_the_project_without_unsupported_flags() {
   run bash "$(script "$RUN")" project out.txt diag --scope files --include-untracked
   assert_eq 0 "$STATUS" "exit status"
-  assert_eq "$SANDBOX/project" "$(cat "$SANDBOX/cwd")" "react-doctor working directory"
+  assert_eq "$(cd "$SANDBOX/project" && pwd -P)" "$(cat "$SANDBOX/cwd")" "react-doctor working directory"
   assert_not_contains "$(cat "$SANDBOX/args")" "--cwd" "arguments"
   assert_not_contains "$(cat "$SANDBOX/args")" "--no-dead-code" "arguments"
   assert_contains "$(cat "$SANDBOX/args")" "--scope files --include-untracked" "arguments"
