@@ -22,7 +22,10 @@ Make the call, record it, and report it.
   them, and do not do their work.
 - Blockers that are earlier units of this run count as cleared: <#N, …>.
 - Resume (optional): branch `<b>` already holds work on this issue from an earlier worker. Check it
-  out before you start, so `solve-issue` resumes it instead of stopping on existing work.
+  out before you start, so `solve-issue` resumes it instead of stopping on existing work. That
+  worker may not have stopped: lease every push on the remote tip you expect —
+  `<full head sha>` (empty if it was never pushed) first, then the commit you last pushed. A
+  rejected lease means someone else pushed: push nothing more and report `blocked: head moved`.
 
 ## Run solve-issue
 Invoke `solve-issue <N> auto` for endgame merge, or `solve-issue <N> auto pr-only` for PR only.
@@ -37,7 +40,8 @@ phase you skipped or compressed.
 - <co-author rule>.
 - PR: the user said "assign <logins>; <reviewers <logins> | no human reviewer>" — pass it to
   `issue-flow` as their instruction.
-- <Endgame merge only:> the user asked for this merge.
+- <Endgame merge only:> the user asked for this merge — unless a person's review thread on the PR
+  is unresolved; then do not merge, and report the thread URLs.
 
 ## Review bot
 <one of:>

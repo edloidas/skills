@@ -227,8 +227,6 @@ working copy and creates it itself (a worktree where the host offers one).
 
 While workers run:
 
-- **Interim notifications** — "still running", "waiting on background work" — get no message.
-  The user hears from you when a unit finishes or a gate needs them.
 - **A report from a worker's own subagent** that reaches you instead of the worker is forwarded
   to that worker unchanged, with one line saying it was misrouted. Do not act on it.
 - **A grant or constraint the user types** is messaged to the running worker and appended to
@@ -251,8 +249,8 @@ select(.state == "PENDING") | .html_url'`. For an issue or own-PR unit it is
 
 | `VERDICT` | Endgame `pr` | Endgame `merge` |
 | --------- | ------------ | --------------- |
-| `done` | The unit is done | The worker should have merged: own-PR unit to merge |
-| `timeout` | Done; the bot was skipped — say so | Own-PR unit to merge without it |
+| `done` | The unit is done | `HUMAN_THREADS=0`: own-PR unit to merge. Otherwise done at its PR |
+| `timeout` | Done; the bot was skipped — say so | `HUMAN_THREADS=0`: own-PR unit to merge without it. Otherwise done at its PR |
 | `wait` | Poll until it changes (below), then read this table again | Same |
 | `act` — red CI, bot threads, a conflict | Own-PR unit to work it | Same |
 | `merged` | — | The unit is done |
@@ -276,13 +274,14 @@ script failing, not a stuck check: read its error.
 **A refused write is a blocker, not a retry.** A report's `blocked: permission — <command>` marks
 the unit `blocked` with that line as `outcome`, goes into `notes.md` as `standing:`, and becomes a
 **Needs you** item with the exact command. No successor is sent for it until the user runs or
-allows it.
+allows it. `blocked: head moved` is handled the same way: someone else pushed, so brief it.
 
 **A worker that stops short gets a successor.** When the report's `Unfinished` is not "none", or
 the table above sends a unit on, dispatch the unit that finishes it — an own-PR unit when a PR
 exists, the same unit again with its resume line when none does. Before a second worker touches a
-PR, message the first to stand down — no pushes, replies or resolves; a worker that has ended, or
-has not acknowledged within five minutes, counts as stood down. `attempts` counts every worker sent
+PR, message the first to stand down — no pushes, replies or resolves. One silent for five minutes
+is stopped if the host can; either way the successor gets the full head SHA last read and leases
+every push on it. `attempts` counts every worker sent
 on a unit, the first included; at most three, and a unit still short after the third is `blocked`.
 A `blocked` unit stops the queue under `sequential` and `stack`, since later units build on it —
 brief the user. Under `parallel` the others continue.

@@ -15,7 +15,11 @@ Its state when you were sent:
 <the pr-state.sh output, pasted>
 
 The user is not available: do not ask questions. You own this PR until you hand back; nobody else
-pushes to it meanwhile.
+pushes to it meanwhile. An earlier worker may not have stopped, so lease every push: the first on
+`<full head sha>`, each later one on the commit you last pushed —
+`git push --force-with-lease=<branch>:<sha>`, or that SHA handed to `issue-flow` as the lease.
+A rejected lease means someone else pushed: push nothing more and report `blocked: head moved`
+under Unfinished.
 
 ## Your job
 <every line that applies:>
@@ -39,12 +43,13 @@ pushes to it meanwhile.
 Read the repo instruction file first. `<check commands>` must all pass on the final tree.
 <One commit on an `issue-<N>` branch:> amend it with its message unchanged through `issue-flow`
 ("amend and push #<N>"), which force-pushes with a lease.
-<Otherwise:> add one commit in the repo's message format and push it without force.
+<Otherwise:> add one commit in the repo's message format and push it with the lease above.
 
 ## Merge <only when the endgame is merge — otherwise: "Do not merge.">
 When CI is green and no bot thread is unresolved, invoke `issue-flow` with "merge PR #<M>" — the
 user asked for it, so its reviewer skip does not apply. After the merge, check out `<default>` and
-pull.
+pull. A thread a person opened that is still unresolved blocks the merge: do not merge, and report
+`not merged — <N> open human threads` with their URLs.
 
 ## Standing instructions
 <every `standing:` line of notes.md, verbatim>
