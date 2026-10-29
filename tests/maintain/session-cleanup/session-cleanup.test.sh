@@ -24,9 +24,30 @@ setup() {
   : > "$SANDBOX/ps/table"
   # `ps` prints whatever the case wrote to ps/table, in the column order
   # scan.sh asks for: pid ppid uid etime rss lstart(5 words) command.
+  # apply.sh's `ps -o lstart= -p <pid>` gets that row's start time while the PID
+  # is really alive, or ps/reused-start when a case wrote one.
   stub ps <<EOF
-cat "$SANDBOX/ps/table"
+case " \$* " in
+  *" -p "*)
+    for pid; do :; done
+    kill -0 "\$pid" 2>/dev/null || exit 1
+    if [ -f "$SANDBOX/ps/reused-start" ]; then cat "$SANDBOX/ps/reused-start"; exit 0; fi
+    awk -v p="\$pid" '\$1 == p { print \$6, \$7, \$8, \$9, \$10 }' "$SANDBOX/ps/table" ;;
+  *) cat "$SANDBOX/ps/table" ;;
+esac
 EOF
+}
+
+teardown() {
+  [ -n "${SLEEPER:-}" ] && kill -KILL "$SLEEPER" 2>/dev/null
+  return 0
+}
+
+# A real process for the kill path, started in a subshell that exits at once so
+# it is reparented and reaped elsewhere: a child of this shell would linger as a
+# zombie that `kill -0` still finds.
+start_sleeper() {
+  SLEEPER="$( (sleep 300 >/dev/null 2>&1 & echo $!) )"
 }
 
 # proc <pid> <ppid> <etime> <command...> — one row of the stubbed process table,
@@ -87,6 +108,36 @@ test_busy_gradle_daemon_needs_a_name() {
   scan processes
   assert_eq named "$(risk_of "$(process_row 700)")" "daemon risk"
   assert_contains "$(process_row 700)" "busy"
+}
+
+test_orphaned_process_is_killed() {
+  start_sleeper
+  proc 1 0 10-00:00:00 /sbin/init
+  proc "$SLEEPER" 1 02:00:00 bash -c until false\; do sleep 30\; done
+  scan processes
+  printf '%s\n' "$STDOUT" > report.tsv
+  assert_eq safe "$(risk_of "$(process_row "$SLEEPER")")" "sleeper risk"
+  apply processes report.tsv
+  assert_eq 0 "$STATUS" "exit status"
+  assert_contains "$STDOUT" "done	process	$SLEEPER@Thu-Oct-29-10:00:00-2026	killed"
+  assert_contains "$STDOUT" "applied 1, skipped 0, failed 0"
+  if kill -0 "$SLEEPER" 2>/dev/null; then fail "sleeper $SLEEPER is still running"; fi
+}
+
+# The fresh scan still lists the row, but by the time of the signal the PID
+# belongs to a process started at another time: it must not be signalled.
+test_reused_pid_is_not_killed() {
+  start_sleeper
+  proc 1 0 10-00:00:00 /sbin/init
+  proc "$SLEEPER" 1 02:00:00 bash -c until false\; do sleep 30\; done
+  scan processes
+  printf '%s\n' "$STDOUT" > report.tsv
+  printf 'Fri Oct 30 11:00:00 2026\n' > ps/reused-start
+  apply processes report.tsv
+  assert_eq 0 "$STATUS" "exit status"
+  assert_contains "$STDOUT" "skip	process	$SLEEPER@Thu-Oct-29-10:00:00-2026	pid reused: now started Fri-Oct-30-11:00:00-2026"
+  assert_contains "$STDOUT" "applied 0, skipped 1, failed 0"
+  kill -0 "$SLEEPER" 2>/dev/null || fail "sleeper $SLEEPER was killed"
 }
 
 # ------------------------------------------------------------------- memory ---

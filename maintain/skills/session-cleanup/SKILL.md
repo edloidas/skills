@@ -10,10 +10,11 @@ when_to_use: >
   On "memory usage", "what's eating memory", "out of memory", "OOM", "exit 137", "the
   machine is slow", "что с памятью", "что жрёт память". Also on "kill leftover processes",
   "what is still running", "clean up worktrees", "delete stale branches", "clean up after
-  the agents", or when ports stay busy after a session ended.
+  the agents", or when ports stay busy after a session ended. Not for a heap OOM or a memory
+  leak inside the user's own application code.
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
-allowed-tools: Bash Read AskUserQuestion
+allowed-tools: Bash(bash *session-cleanup/scripts/scan.sh*) Bash(bash *session-cleanup/scripts/apply.sh*) Bash(mktemp *) Read AskUserQuestion
 argument-hint: "[report|apply] [processes|git|files|all] [<dir>]"
 ---
 
@@ -30,6 +31,14 @@ the scan marked `never`.
 - `processes`, `git`, `files`, or `all` (default). The memory summary is always printed.
 - `<dir>` — a folder of clones (each child with a `.git` directory is scanned) or one clone.
   Default: the parent of the current clone, else the current directory.
+
+## Requirements
+
+`git`, `awk`, and `ps` are required. `gh` is optional: without it squash-merged branches are
+not detected. `jq` is optional: without it an orchestrate `run.json` is read with `sed`.
+Available memory, swap, tmpfs, and whether a process holds a worktree or scratch dir open
+need Linux `/proc`; elsewhere the memory lines say `not measured` and worktree and file liveness fall
+back to age alone.
 
 ## Risk levels
 

@@ -13,7 +13,9 @@
 #   - risk `safe` is acted on, unless --only is given and does not name it
 #   - a file row must sit exactly two levels under a known root
 #
-# Processes get SIGTERM as one set, then SIGKILL for survivors after a second.
+# Processes get SIGTERM, then SIGKILL for survivors after a second. Right before
+# each signal the PID's start time is read again and compared with the id
+# (`<pid>@<start>`), so a PID reused since the scan is never signalled.
 # Worktrees go through `git worktree remove` (`--force` only for a named dirty
 # one) or `git worktree prune`; branches through `git branch -D`.
 #
@@ -76,7 +78,7 @@ under_root() {  # path -> 0 if it is <root>/<a>/<b> for a known root, no dot seg
 }
 
 DONE=0; SKIPPED=0; FAILED=0
-KILL_PIDS=""; KILL_IDS=""
+KILL_IDS=""
 say() { printf '%s\t%s\t%s\t%s\n' "$1" "$2" "$3" "$4"; }
 skip() { say skip "$1" "$2" "$3"; SKIPPED=$((SKIPPED + 1)); }
 ok() { say done "$1" "$2" "$3"; DONE=$((DONE + 1)); }
@@ -102,7 +104,7 @@ while IFS="$TAB" read -r kind owner age size risk id detail; do
 
   case "$kind" in
     process)
-      KILL_PIDS="$KILL_PIDS ${id%%@*}"; KILL_IDS="$KILL_IDS $id" ;;
+      KILL_IDS="$KILL_IDS $id" ;;
     worktree)
       repo="${id%%|*}"; path="${id#*|}"
       case "$fdetail" in
@@ -121,15 +123,33 @@ done <<EOF
 $ROWS
 EOF
 
-if [ -n "$KILL_PIDS" ]; then
-  # shellcheck disable=SC2086
-  kill -TERM $KILL_PIDS 2>/dev/null
-  sleep 1
-  for pid in $KILL_PIDS; do kill -0 "$pid" 2>/dev/null && kill -KILL "$pid" 2>/dev/null; done
-  sleep 1
+start_of() {  # pid -> its start time in the id's `Day-Mon-D-HH:MM:SS-YYYY` form, empty when gone
+  ps -o lstart= -p "$1" 2>/dev/null | awk 'NF >= 5 { printf "%s-%s-%s-%s-%s", $1, $2, $3, $4, $5; exit }'
+}
+
+if [ -n "$KILL_IDS" ]; then
+  TERMED=""
   for id in $KILL_IDS; do
-    if kill -0 "${id%%@*}" 2>/dev/null; then bad process "$id" "still running after SIGKILL"; else ok process "$id" "killed"; fi
+    now="$(start_of "${id%%@*}")"
+    if [ -z "$now" ]; then ok process "$id" "already gone"
+    elif [ "$now" != "${id#*@}" ]; then skip process "$id" "pid reused: now started $now"
+    else kill -TERM "${id%%@*}" 2>/dev/null; TERMED="$TERMED $id"
+    fi
   done
+  if [ -n "$TERMED" ]; then
+    sleep 1
+    for id in $TERMED; do
+      [ "$(start_of "${id%%@*}")" = "${id#*@}" ] && kill -KILL "${id%%@*}" 2>/dev/null
+    done
+    sleep 1
+    for id in $TERMED; do
+      now="$(start_of "${id%%@*}")"
+      if [ "$now" = "${id#*@}" ]; then bad process "$id" "still running after SIGKILL"
+      elif [ -n "$now" ]; then ok process "$id" "killed (pid reused since, not signalled again)"
+      else ok process "$id" "killed"
+      fi
+    done
+  fi
 fi
 
 echo "applied $DONE, skipped $SKIPPED, failed $FAILED"
