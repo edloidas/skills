@@ -24,7 +24,9 @@ false.
    the next round has to review them.
 4. **Check the case the finding named.** Run it if it can be run: execute the failing input, compile
    the change, write a throwaway probe. A fix you demonstrated is worth more than three you reasoned
-   your way to.
+   your way to. The probe goes in a fresh temp directory outside the repository (`mktemp -d`) and
+   is deleted before you report; a probe that only runs inside the repository is named in your
+   report and deleted first. Your only edits inside the repository are the fix.
 
 ## What you do not do
 

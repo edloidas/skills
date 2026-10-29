@@ -22,7 +22,7 @@ metadata:
 # Changes Review
 
 Attack a change from several directions at once and report what survives. This skill **finds**;
-it never fixes, never runs tooling, and never touches the working tree. It does not post anywhere
+it never fixes, never runs tooling, and leaves the working tree as it found it. It does not post anywhere
 unless the caller asks, and then only through the gate in Phase 8.
 
 It is a primitive. Whoever calls it — a person, a PR workflow, an issue workflow — gets the same
@@ -166,6 +166,11 @@ On a host with no subagents, run each prompt in turn and never show one reviewer
 Say in the report that they were not isolated — a sequential run leaks earlier findings into later
 ones.
 
+Record `git status --porcelain --untracked-files=all` before the first dispatch. Once Phase 5 returns,
+delete each untracked path that appeared since and `git restore` each tracked file newly modified
+— never one listed before — then print `Cleanup: removed <paths>, restored <paths>` or
+`Cleanup: nothing left behind`.
+
 ### Reviewer 1 — cold (always)
 
 Dispatch a reviewer that hunts correctness bugs and returns findings in the shape its prompt
@@ -204,10 +209,7 @@ Tell `/outsider` to run **review** mode and pass it exactly three things:
 - **the scope this run resolved in Phase 1**, as the matching scope flag — `--uncommitted`,
   `--base <branch>`, or `--commit <sha>`. A different scope means Phase 4 dedupes two different
   change sets, which is worse than skipping this reviewer
-- a timeout of `540`, with the surrounding command timeout set to its maximum
-
-Do not retry, and never block on it. A missing CLI is a skipped leg, not a failed run: the skill
-reports why and exits cleanly, and the report notes the reviewer was unavailable.
+- a timeout of `540`, with the surrounding command timeout set to its maximum; no retry, never block
 
 This leg only ever gets a piped diff, so it is structurally cold — good at internal contradictions in
 the diff, prone to asking for context it cannot see. Never upgrade its confidence to match a native
@@ -348,8 +350,7 @@ clause still riding along, a decision filed as a defect, and at most one area no
 cannot add findings.
 
 Apply what it returns, or say why not, and print one line: `Synthesis critique: 3 points, 2 applied,
-1 declined (ranking kept).` One critique per run: do not dispatch a second critic on the revision. It reads a report rather than a repository, so it is the
-cheapest agent in the run — and the only one that sees the findings as a set.
+1 declined (ranking kept).` One critique per run: do not dispatch a second critic on the revision.
 
 ## Report
 

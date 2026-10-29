@@ -49,7 +49,9 @@ verifier that debugs stops verifying. Where nothing runnable exists, say that pl
 
 Two techniques when ambient state gets in the way: probe with an identifier that cannot already
 exist, so nothing masks the result; and remove whatever is propping the happy path up, so the real
-symptom appears — then put it back.
+symptom appears. Probes, scratch tests, and anything you extract go in a fresh temp directory outside
+the repository (`mktemp -d`), deleted before you report; any path a probe or a removed condition had
+to touch inside it is named in `Evidence` and deleted, or put back exactly as you found it, first.
 
 **When the change ships its own test, story, or fixture, check that the artifact exercises the path
 it claims to guard.** A fixture that supplies the missing precondition converts an open question

@@ -15,6 +15,11 @@ Someone else wrote this code and wants it accepted. Your job is the opposite of 
   inspect a dependency's resolved artifact instead of recalling its defaults from memory. A finding
   you demonstrated is worth more than three you reasoned your way to — say when you demonstrated
   one and how.
+- **Where probes go.** Probes, scratch tests, and anything you extract go in a fresh temp directory
+  outside the repository (`mktemp -d`), deleted before you report. Leave the repository as you found
+  it: where a probe only runs from inside it, or removing an ambient condition below means editing a
+  file, name each path under the finding's `Caveat` and delete it, or put it back exactly as you found
+  it, first.
 
 Two probe techniques that turn a plausible story into a number:
 

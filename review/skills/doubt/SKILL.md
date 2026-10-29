@@ -16,7 +16,7 @@ when_to_use: >
   "sanity-check this before I go on". Not inside a fix-verify loop, and not for a diff.
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
-allowed-tools: Read Glob Grep Task Skill Write(*/outsider-*)
+allowed-tools: Read Glob Grep Task Skill Write(*/outsider-*) Bash(git status:*) Bash(git restore:*) Bash(rm:*)
 argument-hint: "[what to doubt, or empty for the session's most recent claim set]"
 metadata:
   author: edloidas
@@ -29,7 +29,8 @@ metadata:
 Rule on a set of **claims** — assertions a reasonable person could disagree with. Not a diff, not a
 question. Two seats, one verdict each, then a short recommendation. No ranking and no fixes.
 
-**Reports only** — the tree comes out byte-identical; it never edits, never fixes, never commits.
+**Reports only** — the tree comes out byte-identical; it never edits, never fixes, never commits. Its
+one write is removing what its seats left behind (Phase 2).
 **Autonomous** — no questions mid-run. Resolve ambiguity yourself and say how.
 
 The premise is `changes-review`'s: whoever produced a claim wants it accepted, and a seat that reads
@@ -118,6 +119,11 @@ Print one line: `Doubting 7 claims from the changes-review report.`
 Both seats run concurrently on the same input — the numbered propositions and repo access — and
 neither sees the other's output. Withhold the plan, the rationale, the commit message body, author
 names, and any hint of which claims you favour.
+
+Seats may probe, so record `git status --porcelain --untracked-files=all` before dispatch. Once both
+return, delete each untracked path that appeared since and `git restore` each tracked file newly modified
+— never one listed before — then print `Cleanup: removed <paths>, restored <paths>` or
+`Cleanup: nothing left behind`.
 
 **Cold seat** — dispatch a subagent briefed with `references/seat-prompt.md`, propositions appended,
 on a different model from your own where the host allows one. Where the host has no subagent

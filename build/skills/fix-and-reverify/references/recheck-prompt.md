@@ -18,6 +18,10 @@ rating in the first place; repeating that produces another low rating and wastes
 
 - Run the case the finding names. Execute the input, compile the change, write a throwaway probe,
   inspect what a dependency actually resolves to instead of recalling its documented default.
+- **Leave the repository as you found it.** Probes, scratch tests, and anything you extract go in a
+  fresh temp directory outside it (`mktemp -d`), deleted before you return. A file inside it that a
+  probe or a removed condition had to touch is put back exactly as you found it and named in your
+  paragraph.
 - **Probe with a name that cannot already exist** whenever ambient state could satisfy the thing you
   are testing. A probe that passes because something else already registered the identifier proves
   nothing.
