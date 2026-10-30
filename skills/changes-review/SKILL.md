@@ -18,6 +18,7 @@ allowed-tools: Bash(git diff:*) Bash(git ls-files:*) Bash(git status:*) Bash(git
 argument-hint: "[--base <branch> | --uncommitted | --commit <sha>] [--issue <N>] [--mode <simple|standard|deep>] [--no-external] [--no-lens] [--comment | --review] [--draft]"
 metadata:
   author: edloidas
+  tier: routed
 ---
 
 # Changes Review

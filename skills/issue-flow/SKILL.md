@@ -14,6 +14,7 @@ allowed-tools: Bash(gh:*) Bash(git:*) Bash(bash *issue-flow/scripts/*) Bash(mkte
 argument-hint: "[issue-number or description]"
 metadata:
   author: edloidas
+  tier: routed
 ---
 
 # Issue Flow

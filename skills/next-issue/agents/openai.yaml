@@ -3,4 +3,4 @@ interface:
   short_description: "Recommend the next GitHub issues to work on, with size and fit"
   default_prompt: "Use $next-issue to recommend which issue to work on next."
 policy:
-  allow_implicit_invocation: true
+  allow_implicit_invocation: false

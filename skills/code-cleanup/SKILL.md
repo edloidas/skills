@@ -16,6 +16,8 @@ license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
 allowed-tools: Bash(git:*) Read Edit Glob Grep AskUserQuestion
 argument-hint: "[files | commit-ref] [--dry-run] [--comments-only] [--no-simplify]"
+metadata:
+  tier: routed
 ---
 
 # Code Cleanup

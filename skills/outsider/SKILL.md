@@ -14,6 +14,7 @@ allowed-tools: Bash(bash *outsider/scripts/run-outsider.sh *) Bash(bash *outside
 argument-hint: "[review] [agent], or empty for ask mode"
 metadata:
   author: edloidas
+  tier: auto
 ---
 
 # Outsider — Quick Opinion From Another Agent

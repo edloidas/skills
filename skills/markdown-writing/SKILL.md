@@ -12,6 +12,7 @@ compatibility: Claude Code, Codex, OpenCode, Pi
 argument-hint: "[file or topic]"
 metadata:
   author: edloidas
+  tier: auto
 ---
 
 # Markdown Writing

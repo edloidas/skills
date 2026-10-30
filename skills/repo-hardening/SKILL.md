@@ -13,8 +13,11 @@ when_to_use: >
   "what hardening is missing" — the same baseline, reported without writing.
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
+disable-model-invocation: true
 allowed-tools: Bash Read AskUserQuestion
 argument-hint: "[apply|check]"
+metadata:
+  tier: manual
 ---
 
 # Repo Hardening: GitHub Security Baseline

@@ -14,6 +14,7 @@ allowed-tools: Read Write Glob Grep Task Bash
 argument-hint: "[path(s), feature description, or empty for active repo]"
 metadata:
   author: edloidas
+  tier: routed
 ---
 
 # Spec Extractor

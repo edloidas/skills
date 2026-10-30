@@ -62,6 +62,33 @@ skill_has_codex_compatibility() {
   '
 }
 
+skill_tier() {
+  read_frontmatter "$1" | awk '
+    /^metadata:[ \t]*$/ { inmeta = 1; next }
+    inmeta && !/^[ \t]/ { inmeta = 0 }
+    inmeta && /^[ \t]+tier:/ { sub(/^[ \t]+tier:[ \t]*/, ""); gsub(/["'"'"']/, ""); print; exit }
+  '
+}
+
+# Codex's only discovery switch: an auto skill may fire on its own, a routed or manual
+# one is reached by name or through another skill, so it must not.
+validate_implicit_invocation() {
+  local skill_dir="$1" skill_path="$2" tier expected actual
+  tier=$(skill_tier "$skill_dir")
+  case "$tier" in
+    auto) expected=true ;;
+    routed | manual) expected=false ;;
+    *)
+      error "'$skill_path' has no valid metadata.tier, so its allow_implicit_invocation cannot be checked"
+      return
+      ;;
+  esac
+  actual=$(sed -n 's/^[ \t]*allow_implicit_invocation:[ \t]*\([a-z]*\).*/\1/p' "$skill_dir/agents/openai.yaml" | head -n 1)
+  if [ "$actual" != "$expected" ]; then
+    error "'$skill_path' is tier '$tier', so agents/openai.yaml needs allow_implicit_invocation: $expected (found '${actual:-none}')"
+  fi
+}
+
 require_jq() {
   command -v jq >/dev/null 2>&1 || {
     error "jq is required"
@@ -139,6 +166,8 @@ main() {
 
     if [ ! -f "$skill_dir/agents/openai.yaml" ]; then
       error "Catalog exposes '$skill_path' but agents/openai.yaml is missing"
+    else
+      validate_implicit_invocation "$skill_dir" "$skill_path"
     fi
 
     exposed_skills=$(append_line "$exposed_skills" "$skill_path")

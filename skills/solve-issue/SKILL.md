@@ -19,6 +19,7 @@ allowed-tools: Bash(bash:*) Bash(git diff:*) Bash(git status:*) Bash(git log:*) 
 argument-hint: "[issue-number] [auto] [pr-only] [slices]"
 metadata:
   author: edloidas
+  tier: routed
 ---
 
 # Solve Issue

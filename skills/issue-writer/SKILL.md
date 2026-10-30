@@ -13,6 +13,8 @@ license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
 allowed-tools: Bash Read Glob AskUserQuestion
 argument-hint: "[description or issue number]"
+metadata:
+  tier: routed
 ---
 
 # GitHub Issue Writer

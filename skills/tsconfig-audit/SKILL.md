@@ -12,6 +12,8 @@ license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
 allowed-tools: Bash(node:*) Read Glob Grep Edit
 argument-hint: "[path-to-tsconfig]"
+metadata:
+  tier: routed
 ---
 
 # tsconfig Audit

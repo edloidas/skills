@@ -13,6 +13,7 @@ compatibility: Claude Code, Codex, OpenCode, Pi
 allowed-tools: Read Write Edit Glob Grep Bash(ls:*)
 metadata:
   author: edloidas
+  tier: routed
 ---
 
 # Obsidian Working Documents

@@ -17,6 +17,7 @@ allowed-tools: Read Glob Grep Task Skill Write(*/outsider-*) Bash(git status:*) 
 argument-hint: "[short] [prior-art] [focus]"
 metadata:
   author: edloidas
+  tier: routed
 ---
 
 # Consilium — Approach Board

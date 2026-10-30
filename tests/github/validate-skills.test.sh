@@ -14,14 +14,15 @@ validate() {
 }
 
 # make_skill skills/<name> <compatibility> [extra frontmatter line]
-# Body is read from stdin.
+# Body is read from stdin. TIER sets metadata.tier (default routed); TIER=none omits it.
 make_skill() {
-  local dir="$1" compat="$2" extra="${3:-}"
+  local dir="$1" compat="$2" extra="${3:-}" tier="${TIER:-routed}"
   mkdir -p "$dir"
   {
     printf -- '---\nname: %s\ndescription: Formats a changelog entry from a commit range.\n' "$(basename "$dir")"
     printf 'compatibility: %s\n' "$compat"
     [ -z "$extra" ] || printf '%s\n' "$extra"
+    [ "$tier" = none ] || printf 'metadata:\n  tier: %s\n' "$tier"
     printf -- '---\n\n'
     cat
   } > "$dir/SKILL.md"
@@ -191,6 +192,49 @@ This skill asks one question in prose, as the last line of its report, and never
 EOF
   validate skills/pr-review
   assert_eq 0 "$STATUS" "exit status"
+}
+
+# --------------------------------------------------------------------- tiers --
+
+test_missing_tier_fails() {
+  printf '# Untiered\n' | TIER=none make_skill skills/untiered "$portable"
+  validate skills/untiered
+  assert_eq 1 "$STATUS" "exit status"
+  assert_contains "$STDERR" "has no metadata.tier" "error output"
+}
+
+test_unknown_tier_fails() {
+  printf '# Odd\n' | TIER=hidden make_skill skills/odd "$portable"
+  validate skills/odd
+  assert_eq 1 "$STATUS" "exit status"
+  assert_contains "$STDERR" "'hidden' is not one of auto, routed, manual" "error output"
+}
+
+test_manual_without_the_flag_fails() {
+  printf '# Manual\n' | TIER=manual make_skill skills/manual "$portable"
+  validate skills/manual
+  assert_eq 1 "$STATUS" "exit status"
+  assert_contains "$STDERR" "tier 'manual' needs disable-model-invocation: true" "error output"
+}
+
+test_manual_with_the_flag_passes() {
+  printf '# Manual\n' | TIER=manual make_skill skills/manual "$portable" "disable-model-invocation: true"
+  validate skills/manual
+  assert_eq 0 "$STATUS" "exit status"
+}
+
+test_routed_with_the_flag_fails() {
+  printf '# Routed\n' | make_skill skills/routed "$portable" "disable-model-invocation: true"
+  validate skills/routed
+  assert_eq 1 "$STATUS" "exit status"
+  assert_contains "$STDERR" "tier 'routed' with disable-model-invocation: true" "error output"
+}
+
+test_auto_with_the_flag_fails() {
+  printf '# Auto\n' | TIER=auto make_skill skills/auto "$portable" "disable-model-invocation: true"
+  validate skills/auto
+  assert_eq 1 "$STATUS" "exit status"
+  assert_contains "$STDERR" "tier 'auto' with disable-model-invocation: true" "error output"
 }
 
 run_tests

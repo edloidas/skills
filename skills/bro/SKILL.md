@@ -13,6 +13,7 @@ disable-model-invocation: true
 argument-hint: "[focus]"
 metadata:
   author: edloidas
+  tier: manual
 ---
 
 # Bro

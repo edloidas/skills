@@ -329,13 +329,32 @@ frontmatter_scalar() {
   ' "$skill_dir/SKILL.md"
 }
 
+# Reads one key from the frontmatter's `metadata:` map, e.g. `metadata_value <dir> tier`.
+metadata_value() {
+  awk -v key="$2" '
+    BEGIN { depth = 0; inmeta = 0 }
+    $0 == "---" { depth++; if (depth >= 2) exit; next }
+    depth == 1 {
+      if ($0 ~ /^metadata:[ \t]*$/) { inmeta = 1; next }
+      if (inmeta && $0 !~ /^[ \t]/) inmeta = 0
+      if (inmeta && $0 ~ "^[ \t]+" key ":") {
+        value = $0
+        sub("^[ \t]+" key ":[ \t]*", "", value)
+        gsub(/^["'"'"']|["'"'"']$/, "", value)
+        print value
+        exit
+      }
+    }
+  ' "$1/SKILL.md"
+}
+
 # Hard per-skill rules. Judgment belongs to the skill-audit skill; everything checked
 # here is mechanical, unambiguous, and must never regress.
 validate_skill_content() {
   local skill_dir="$1"
   local skill_name="$2"
   local declared_name description when_to_use combined ref body_lines body_tokens body_budget
-  local rule label pattern hit key field match canonical
+  local rule label pattern hit key field match canonical tier dmi
 
   if [ "$(head -n 1 "$skill_dir/SKILL.md")" != "---" ]; then
     error "Skill '$skill_name': SKILL.md does not open with a YAML frontmatter block"
@@ -372,6 +391,29 @@ validate_skill_content() {
       error "Skill '$skill_name': description + when_to_use is ${#combined} chars; the discovery entry is truncated past 1536"
     fi
   fi
+
+  # A manual skill carries disable-model-invocation, which also blocks other skills from
+  # invoking it, so a skill that is chained into has to be auto or routed.
+  tier=$(metadata_value "$skill_dir" "tier")
+  dmi=$(frontmatter_scalar "$skill_dir" "disable-model-invocation")
+  case "$tier" in
+    auto | routed)
+      if [ "$dmi" = "true" ]; then
+        error "Skill '$skill_name': tier '$tier' with disable-model-invocation: true. That flag hides the skill from the model and from every skill that chains into it; only a manual skill sets it"
+      fi
+      ;;
+    manual)
+      if [ "$dmi" != "true" ]; then
+        error "Skill '$skill_name': tier 'manual' needs disable-model-invocation: true, or the model can still load it on its own"
+      fi
+      ;;
+    "")
+      error "Skill '$skill_name': frontmatter has no metadata.tier; declare auto, routed, or manual (docs/writing-skills.md#tiers)"
+      ;;
+    *)
+      error "Skill '$skill_name': metadata.tier '$tier' is not one of auto, routed, manual"
+      ;;
+  esac
 
   body_lines=$(body_line_count "$skill_dir")
   body_budget=$(body_line_budget "$skill_dir")

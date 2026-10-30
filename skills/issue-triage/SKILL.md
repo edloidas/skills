@@ -19,6 +19,7 @@ allowed-tools: Bash(bash:*) Bash(gh:*) Bash(git:*) Bash(jq:*) Read Write Edit Gl
 argument-hint: "[label <name>] [older-than <days>] [epic <#N>] [<#N> ...] [repo <owner/repo>] [metadata] [report] [short] [resume]"
 metadata:
   author: edloidas
+  tier: routed
 ---
 
 # Issue Triage

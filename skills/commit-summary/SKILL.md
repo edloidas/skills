@@ -13,6 +13,8 @@ license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
 allowed-tools: Read Grep Bash(git status:*) Bash(git diff:*) Bash(git log:*) Bash(git show:*) Bash(git blame:*)
 argument-hint: "['staged only', instructions, or empty]"
+metadata:
+  tier: routed
 ---
 
 # Commit body writer

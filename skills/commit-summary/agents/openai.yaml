@@ -3,4 +3,4 @@ interface:
   short_description: "Derive a commit message body from the code behind the change"
   default_prompt: "Use $commit-summary to write the commit body for the current changes."
 policy:
-  allow_implicit_invocation: true
+  allow_implicit_invocation: false

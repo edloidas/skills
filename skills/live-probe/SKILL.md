@@ -13,9 +13,9 @@ when_to_use: >
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
 allowed-tools: Bash Read Write Edit Glob Grep
-user-invocable: false
 metadata:
   author: edloidas
+  tier: routed
 ---
 
 # Live Probe

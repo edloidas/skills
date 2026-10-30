@@ -12,6 +12,8 @@ when_to_use: >
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
 allowed-tools: Bash(yq:*) Bash(gh:*) Bash(ls:*) Read Glob Grep
+metadata:
+  tier: routed
 ---
 
 # CI Audit (GitHub Actions)

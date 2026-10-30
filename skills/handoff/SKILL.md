@@ -13,6 +13,7 @@ argument-hint: "[doc] [focus...]"
 allowed-tools: Read Write Bash Glob Grep
 metadata:
   author: edloidas
+  tier: auto
 ---
 
 # Handoff — Pass The Baton

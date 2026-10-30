@@ -14,6 +14,7 @@ allowed-tools: Bash(bash *resolve-conflicts/scripts/*) Bash(git:*) Bash(gh:*) Ba
 argument-hint: "[PR number, PR URL, issue number, or issue URL]"
 metadata:
   author: edloidas
+  tier: auto
 ---
 
 # Resolve Conflicts

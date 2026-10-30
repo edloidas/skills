@@ -15,6 +15,7 @@ allowed-tools: Read Glob Grep Bash Task
 argument-hint: "[what to explain]"
 metadata:
   author: edloidas
+  tier: auto
 ---
 
 # Explain

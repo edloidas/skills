@@ -47,6 +47,9 @@ The per-skill rules in `validate-skills.sh` are tested too, in `tests/github/`.
 `validate-skills.sh --skill <dir>` runs only those rules against one skill directory — no
 marketplace, manifests, or README — which is what lets a case build a fixture skill in its
 sandbox. A new per-skill rule gets a failing and a passing case there.
+`scripts/validate-codex.sh` has no such flag; its cases in `tests/github/validate-codex.test.sh`
+copy the script into the sandbox beside a one-skill catalog, since it resolves the repo from
+its own location.
 
 **The suite runs on both axes.** The `test-scripts` job is a matrix over `ubuntu-latest`
 and `macos-latest`, so the bash 3.2 and BSD-userland targets above are verified rather

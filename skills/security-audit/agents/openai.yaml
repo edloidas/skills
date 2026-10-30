@@ -3,4 +3,4 @@ interface:
   short_description: "Read-only audit of Actions, release config, repo settings, and package manager"
   default_prompt: "Use $security-audit to scan this repo for supply-chain risks in GitHub Actions workflows, release configuration, repository settings (rulesets, Actions defaults, immutable releases), and package-manager install-time controls. Report findings only — apply nothing."
 policy:
-  allow_implicit_invocation: true
+  allow_implicit_invocation: false

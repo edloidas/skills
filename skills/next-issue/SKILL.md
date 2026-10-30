@@ -19,9 +19,9 @@ when_to_use: >
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
 allowed-tools: Bash(bash *next-issue/scripts/context.sh*) Bash(gh issue list:*) Bash(gh issue view:*) Bash(gh api repos/*/labels --paginate --jq *) Bash(gh api graphql -f query=*) Bash(git log:*) Read Glob Grep Agent
-user-invocable: false
 metadata:
   author: edloidas
+  tier: routed
 ---
 
 # Next Issue

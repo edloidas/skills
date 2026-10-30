@@ -14,8 +14,11 @@ when_to_use: >
   leak inside the user's own application code.
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
+disable-model-invocation: true
 allowed-tools: Bash(bash *session-cleanup/scripts/scan.sh*) Bash(bash *session-cleanup/scripts/apply.sh*) Bash(mktemp *) Read AskUserQuestion
 argument-hint: "[report|apply] [processes|git|files|all] [<dir>]"
+metadata:
+  tier: manual
 ---
 
 # Session Cleanup

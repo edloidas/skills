@@ -2,4 +2,4 @@ interface:
   display_name: "Code Cleanup"
   short_description: "Prune comments aggressively, apply project conventions, simplify correct code"
 policy:
-  allow_implicit_invocation: true
+  allow_implicit_invocation: false

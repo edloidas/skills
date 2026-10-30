@@ -8,8 +8,11 @@ when_to_use: >
   needs the standard label set applied.
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
+disable-model-invocation: true
 allowed-tools: Bash Read AskUserQuestion
 argument-hint: "[apply|check|get]"
+metadata:
+  tier: manual
 ---
 
 # Labels Sync: GitHub Label Synchronization

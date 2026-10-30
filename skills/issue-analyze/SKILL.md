@@ -16,6 +16,7 @@ arguments: issue
 argument-hint: "<issue-number or URL>"
 metadata:
   author: edloidas
+  tier: routed
 ---
 
 # Issue Analyze

@@ -15,6 +15,8 @@ license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
 allowed-tools: Read Grep Glob Bash(rg:*) Bash(jq:*) Bash(ls:*) Bash(find:*)
 argument-hint: "[<target-dir>] [--check=<name>]"
+metadata:
+  tier: routed
 ---
 
 # Three.js / R3F Audit

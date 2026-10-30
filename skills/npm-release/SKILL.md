@@ -10,6 +10,8 @@ license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
 allowed-tools: Bash Read Glob AskUserQuestion
 argument-hint: "[major, minor, or patch]"
+metadata:
+  tier: auto
 ---
 
 # pnpm / Bun / npm Package Release Workflow

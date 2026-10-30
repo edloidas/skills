@@ -20,6 +20,7 @@ allowed-tools: Bash(bash *pr-triage/scripts/queue.sh*) Bash(git:*) Bash(gh:*) Ba
 argument-hint: "[assigned|created] [current|repo <owner/repo>] [recheck] [merge] [short] [owner <login>] [<owner/repo#N> ...]"
 metadata:
   author: edloidas
+  tier: routed
 ---
 
 # PR Triage

@@ -15,6 +15,7 @@ allowed-tools: Bash(bash:*) Bash(git:*) Bash(jq:*) Bash(grep:*) Bash(mktemp:*) T
 argument-hint: "[file, directory, or empty for changed files]"
 metadata:
   author: edloidas
+  tier: routed
 ---
 
 # React Audit

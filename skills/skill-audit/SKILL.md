@@ -17,6 +17,7 @@ allowed-tools: Read Glob Grep Task Bash(node:*) Bash(git diff:*) Bash(git status
 argument-hint: "[changed | all | skill names]"
 metadata:
   author: edloidas
+  tier: auto
 ---
 
 # Skill Audit

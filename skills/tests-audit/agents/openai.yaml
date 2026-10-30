@@ -2,4 +2,4 @@ interface:
   display_name: "Tests Audit"
   short_description: "Audit a test suite and report keep/tighten/rewrite/delete per test"
 policy:
-  allow_implicit_invocation: true
+  allow_implicit_invocation: false

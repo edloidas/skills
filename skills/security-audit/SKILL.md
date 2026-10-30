@@ -14,6 +14,8 @@ when_to_use: >
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
 allowed-tools: Bash(ls:*) Bash(cat:*) Bash(jq:*) Bash(yq:*) Bash(sed -E:*) Bash(grep:*) Bash(awk:*) Bash(gh api:*) Bash(gh repo view:*) Bash(git fetch:*) Bash(git branch:*) Bash(git diff:*) Bash(git log:*) Bash(git rev-parse:*) Read Agent AskUserQuestion
+metadata:
+  tier: routed
 ---
 
 # Security Audit

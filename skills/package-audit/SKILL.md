@@ -15,6 +15,8 @@ when_to_use: >
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
 allowed-tools: Bash(jq:*) Bash(pnpm dedupe --check) Bash(pnpm -r ls:*) Bash(turbo run build --dry-run:*) Read Glob Grep
+metadata:
+  tier: routed
 ---
 
 # Package Audit

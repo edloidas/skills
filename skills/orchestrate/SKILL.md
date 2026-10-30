@@ -19,6 +19,7 @@ allowed-tools: Bash(bash *orchestrate/scripts/pr-state.sh *) Bash(gh api user --
 argument-hint: "[goal | #N | PR #N ...] [stack|parallel] [merge] [auto] [resume]"
 metadata:
   author: edloidas
+  tier: routed
 ---
 
 # Orchestrate

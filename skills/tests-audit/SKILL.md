@@ -13,6 +13,8 @@ license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
 allowed-tools: Read Grep Glob Bash(grep:*) Bash(rg:*) Bash(fd:*) Bash(cat:*) Bash(wc:*) Bash(xargs:*) Bash(od:*) Bash(git diff:*) Bash(git log:*) Bash(git show:*) Bash(mktemp:*) Bash(cp:*)
 argument-hint: "[files | dir]"
+metadata:
+  tier: routed
 ---
 
 # Tests Audit

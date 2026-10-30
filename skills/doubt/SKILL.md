@@ -20,6 +20,7 @@ allowed-tools: Read Glob Grep Task Skill Write(*/outsider-*) Bash(git status:*) 
 argument-hint: "[what to doubt, or empty for the session's most recent claim set]"
 metadata:
   author: edloidas
+  tier: routed
 ---
 
 # Doubt — Verify Claims From Outside

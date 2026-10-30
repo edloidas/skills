@@ -19,6 +19,7 @@ allowed-tools: Bash(git:*) Bash(gh:*) Bash(pnpm:*) Bash(npm:*) Read Glob Grep Ed
 argument-hint: "[PR number | URL | #discussion_r<id> | author | text] [--fix] [--full] [--auto] [--draft] [--land]"
 metadata:
   author: edloidas
+  tier: routed
 ---
 
 # PR Review

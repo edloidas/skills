@@ -9,8 +9,11 @@ when_to_use: >
   configs".
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
+disable-model-invocation: true
 allowed-tools: Bash Read AskUserQuestion
 argument-hint: "[zed] [vscode] [--dry-run]"
+metadata:
+  tier: manual
 ---
 
 # Editor Config

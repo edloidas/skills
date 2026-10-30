@@ -3,4 +3,4 @@ interface:
   short_description: "Audit package scripts and pnpm workspace setup"
   default_prompt: "Use $package-audit to detect whether this is a single package or a pnpm workspace, classify each package's script role, and report script naming, composition, and lifecycle issues plus, in a workspace, catalog, workspace protocol, overrides, and hoisting problems."
 policy:
-  allow_implicit_invocation: true
+  allow_implicit_invocation: false
