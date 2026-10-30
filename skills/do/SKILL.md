@@ -83,6 +83,7 @@ Five skills start only when the user types them: `bro`, `editor-config`, `labels
 | Find what is wrong with a diff, without fixing it | `changes-review` | `--base <branch>`, `--uncommitted`, or `--commit <sha>` |
 | Tidy correct code: comments, conventions, simplification | `code-cleanup` | Files or a commit; `--comments-only` when only comments were named |
 | Settle one claim about runtime behaviour by running it | `live-probe` | The claim |
+| Write down how to run and observe the project, for agents | `live-probe` | `write-runbook` |
 | Security: supply chain, action pinning, secrets, release and repository settings | `security-audit` | — |
 | CI wall-clock, spend, and gates that check nothing | `ci-audit` | — |
 | package.json scripts or pnpm workspace config | `package-audit` | — |

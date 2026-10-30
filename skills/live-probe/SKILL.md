@@ -1,7 +1,9 @@
 ---
 name: live-probe
 description: >
-  Settle a claim about observable behavior by running the thing once and reading the result.
+  Settle a claim about observable behavior by running the thing and reading the result, or write
+  the project's runbook for doing so.
+argument-hint: "[claim | write-runbook]"
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
 allowed-tools: Bash Read Write Edit Glob Grep
@@ -16,6 +18,10 @@ Runs commands and may create scratch files; every one it creates is removed befo
 except a rendered frame a caller asked to keep. It never edits source, never commits, and never
 changes what it is observing.
 
+With the argument `write-runbook` it runs a second mode instead: it writes the project's
+"Running and observing" section — see [Write-runbook mode](#write-runbook-mode). That mode edits
+one file, the project's agent instruction file, and only when the user asked for it.
+
 ## The premise
 
 Reading settles claims about code structure; only running settles claims about observable output
@@ -28,8 +34,10 @@ an investigation.
 
 Three properties, all required:
 
-- **Bounded** — one command and one observation. If setup alone outgrows a couple of minutes,
-  drop to a cheaper rung or report the claim unverified with that cost named.
+- **Bounded** — one command and one observation. A claim about speed, timing, memory, or frame
+  rate is the one exception: one run cannot settle it, so its observation is a measured series
+  per `references/measuring.md`. If setup alone outgrows a couple of minutes, drop to a cheaper
+  rung or report the claim unverified with that cost named.
 - **Citable** — it yields something specific to point at: a response body, an exit code, a log
   line, a golden diff, a rendered frame, a stack trace with a file and line. "It looked right" is
   not an artifact.
@@ -59,8 +67,9 @@ In this order. The point of the order is that the project and the user already d
 guess that contradicts them is worse than no probe.
 
 1. **The agent instruction layer** — `CLAUDE.md`, `AGENTS.md`, `.claude/rules/`, `.agents/rules/`,
-   and the project docs they point at. Where it names a tool for running the app, driving a
-   browser, or rendering components in isolation, that tool is the answer. It also owns the local
+   and the project docs they point at. A "Running and observing" section is the direct answer.
+   Where it names a tool for running the app, driving a browser, or rendering components in
+   isolation, that tool is the answer. It also owns the local
    conventions: which ports, which flags, where captured artifacts belong.
 2. **The repo's declared commands** — manifest scripts, a `Makefile`, a task runner, the CI
    workflow. CI is the most reliable of these: it is the one list of commands that is known to run.
@@ -68,7 +77,8 @@ guess that contradicts them is worse than no probe.
    installed because the ecosystem usually has it. Absent both sources, the answer is `unverified` —
    do not manufacture a test suite, a harness, or a fixture the project does not have. A repo with
    no way to run itself is reported as such; filling that gap is scope expansion wearing a safety
-   vest.
+   vest. The report names the missing piece and offers the mode that fills it — see
+   [What to return](#what-to-return).
 
 Expect **one** such tool to exist, not a matched pair. A project with a component harness often has
 no browser driver, and the reverse is as common. Detect what is there; do not require a pair.
@@ -141,6 +151,17 @@ specific thing.
 build failed, the observation was ambiguous. A named absence is a usable result; a silent one reads
 as a pass. Never report `reproduced` or `refuted` without an artifact on the evidence line.
 
+When the missing piece is the declared runner itself, add one line naming the instruction file
+that lacks it and the offer:
+
+```text
+- **Missing**: `AGENTS.md` has no "Running and observing" section — how to launch, check
+  readiness, drive the main paths, capture evidence, and clean up. `live-probe write-runbook`
+  writes one, proving each step first.
+```
+
+That line is an offer. The section is written only when the user asks for it.
+
 A filled instance:
 
 ```text
@@ -162,5 +183,17 @@ The same block with a frame kept for the caller to publish:
   `.tmp/screenshots/submenu-320.png` as requested
 ```
 
-Then stop. Do not fix what the probe revealed, do not probe the same code a second time, and do not
-turn the result into an investigation. The caller decides what happens next.
+Then stop. Do not fix what the probe revealed, do not probe the same code a second time, do not
+write a runbook the user has not asked for, and do not turn the result into an investigation. The
+caller decides what happens next.
+
+## Write-runbook mode
+
+Runs only on the argument `write-runbook`, or when a caller passes it on the user's request. It
+writes a "Running and observing" section into the instruction file the project already uses — how
+to launch, how to tell it is ready, a read-only doctor check, how to drive the main user paths, what
+evidence to capture and where, and how to clean up — proving each step by running it before writing
+it down.
+
+The procedure, its gates, the section template with a filled example, and the closing report are in
+`references/write-runbook.md`. Read it before the first step.

@@ -242,7 +242,7 @@ only. Topic rows group the table for reading; they are not separate plugins.
 | **Build** | | | |
 | [resolve-conflicts](./skills/resolve-conflicts/) | All four | auto | Semi-automatic merge and rebase conflict resolution |
 | [commit-summary](./skills/commit-summary/) | All four | routed | Derive a commit message body from the code behind the change |
-| [live-probe](./skills/live-probe/) | All four | routed | Settle a claim about observable behavior by running it once |
+| [live-probe](./skills/live-probe/) | All four | routed | Settle a claim about observable behavior by running it, or write the project's runbook for doing so |
 | **Review** | | | |
 | [changes-review](./skills/changes-review/) | All four | routed | Parallel cold reviewers that hunt bugs and requirement gaps, verify them, and optionally publish as a comment or a full review — finds, never fixes |
 | [code-cleanup](./skills/code-cleanup/) | All four | routed | Prune comments aggressively, apply project conventions, simplify correct code |
