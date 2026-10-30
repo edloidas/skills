@@ -96,18 +96,18 @@ BREAKING_COUNT=$((BREAKING_SUFFIX + BREAKING_BODY))
 # and this script recommended MINOR for the most breaking release the repo has had.
 # Commit subjects are a claim about intent; the tree is the fact.
 #
-# Comparing path sets rather than parsing `--diff-filter=R` catches deletions and
-# renames with one rule: a rename removes the old path, which is exactly the thing
-# that breaks a user's `/slash` command.
-skill_paths_at() {
+# Comparing name sets rather than parsing `--diff-filter=R` catches deletions and
+# renames with one rule: a rename removes the old name, which is exactly the thing
+# that breaks a user's `/slash` command. Names, not paths, so the v6 move from
+# `<group>/skills/<name>` to `skills/<name>` does not read as every skill removed.
+skill_names_at() {
   git ls-tree -r --name-only "$1" 2>/dev/null |
-    grep -E '^[a-z][a-z-]*/skills/[a-z0-9-]+/SKILL\.md$' || true
+    sed -n -E 's#^([a-z][a-z-]*/)?skills/([a-z0-9-]+)/SKILL\.md$#\2#p' | sort -u
 }
 
 REMOVED_SKILLS=$(comm -23 \
-  <(skill_paths_at "$LAST_TAG" | sort) \
-  <(skill_paths_at HEAD | sort) |
-  sed -E 's#^([a-z-]+)/skills/([a-z0-9-]+)/SKILL\.md$#\2 (\1)#')
+  <(skill_names_at "$LAST_TAG") \
+  <(skill_names_at HEAD))
 
 if [[ -n "$REMOVED_SKILLS" ]]; then
   REMOVED_SKILL_COUNT=$(printf '%s\n' "$REMOVED_SKILLS" | grep -c .)

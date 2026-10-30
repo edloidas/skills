@@ -75,7 +75,7 @@ bash .claude/skills/skills-release/scripts/release-prepare.sh --allow-unpushed
 If any other check fails, report which one and the fix, and stop there — no analysis, no bump. Do not
 commit generated changes yourself to make `sync-repo` come back clean; that is the user's call.
 
-End the step with one line: `Pre-flight passed: 10 plugins, version 5.5.1, tree clean` — with
+End the step with one line: `Pre-flight passed: 1 plugin, version 5.5.1, tree clean` — with
 `, 3 unpushed commits included` appended when they were.
 
 ### Step 2: Analyze Commits
@@ -172,7 +172,7 @@ Pushing the tag publishes the release and cannot be recalled: the tag drives the
 workflow, and installers fetch the published GitHub Release. Show the version and the tag, and
 wait for approval. If Step 2 listed removed or renamed skills, also show the
 `## Removed or renamed skills` section Step 7 will put in the release notes — one line per
-skill, `old (group) -> new` or `old (group) -> removed`. Approving the push approves that notes
+skill, `old -> new` or `old -> removed`. Approving the push approves that notes
 edit, so draft it here, not after. If Step 1 included unpushed commits, name their count in the
 question too — this push is the first time they reach origin.
 

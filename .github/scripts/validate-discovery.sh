@@ -39,39 +39,33 @@ pass() {
 # --- Expected counts, derived from the source tree rather than hardcoded ---------------
 
 count_all_skills() {
-  local group total=0
-  for group in plan build review audit maintain ship assist write obsidian workflow; do
-    total=$((total + $(find "$group/skills" -mindepth 2 -maxdepth 2 -name SKILL.md | wc -l)))
-  done
-  printf '%s' "$total"
+  find skills -mindepth 2 -maxdepth 2 -name SKILL.md | wc -l | tr -d ' '
 }
 
 # Skills declaring a host token in `compatibility:`. Split on commas so "Codex" cannot
 # match "OpenCode" by substring.
 count_host_skills() {
-  local label="$1" group count=0 skill_md
-  for group in plan build review audit maintain ship assist write obsidian workflow; do
-    while IFS= read -r skill_md; do
-      [ -n "$skill_md" ] || continue
-      if awk -v label="$label" '
-        /^---$/ { d++; next }
-        d == 1 && /^compatibility:/ {
-          sub(/^compatibility: */, "")
-          n = split($0, parts, ",")
-          for (i = 1; i <= n; i++) {
-            gsub(/^[ \t]+|[ \t]+$/, "", parts[i])
-            if (parts[i] == label) { found = 1 }
-          }
+  local label="$1" count=0 skill_md
+  while IFS= read -r skill_md; do
+    [ -n "$skill_md" ] || continue
+    if awk -v label="$label" '
+      /^---$/ { d++; next }
+      d == 1 && /^compatibility:/ {
+        sub(/^compatibility: */, "")
+        n = split($0, parts, ",")
+        for (i = 1; i <= n; i++) {
+          gsub(/^[ \t]+|[ \t]+$/, "", parts[i])
+          if (parts[i] == label) { found = 1 }
         }
-        d >= 2 { exit }
-        END { exit(found ? 0 : 1) }
-      ' "$skill_md"; then
-        count=$((count + 1))
-      fi
-    done <<EOF
-$(find "$group/skills" -mindepth 2 -maxdepth 2 -name SKILL.md)
+      }
+      d >= 2 { exit }
+      END { exit(found ? 0 : 1) }
+    ' "$skill_md"; then
+      count=$((count + 1))
+    fi
+  done <<EOF
+$(find skills -mindepth 2 -maxdepth 2 -name SKILL.md)
 EOF
-  done
   printf '%s' "$count"
 }
 
@@ -86,8 +80,7 @@ echo "Source tree: $TOTAL skills (Codex $CODEX_EXPECTED, OpenCode $OPENCODE_EXPE
 
 echo
 echo "Canonical layout"
-symlinked=$(find plan build review audit maintain ship assist write obsidian workflow \
-  -mindepth 2 -maxdepth 2 -path '*/skills/*' -type l | wc -l | tr -d ' ')
+symlinked=$(find skills -mindepth 1 -maxdepth 1 -type l | wc -l | tr -d ' ')
 if [ "$symlinked" -ne 0 ]; then
   error "$symlinked skill directories are symlinks; agent skill CLIs cannot discover them"
 else
@@ -139,19 +132,21 @@ if [ -n "$manifest_dirs" ]; then
 $manifest_dirs
 EOF
 
-  # pi.skills must point at the generated .pi/skills tree, not at the group directories.
-  # Group directories hold every skill regardless of `compatibility:`, so listing them
-  # would ship the Claude-only skills to pi as well; the generated tree is exactly the
-  # set that declared Pi support.
+  # pi.skills must point at the generated .pi/skills tree, not at skills/. The canonical
+  # directory holds every skill regardless of `compatibility:`, so listing it would ship
+  # the Claude-only skills to pi as well; the generated tree is exactly the set that
+  # declared Pi support.
   case "$manifest_dirs" in
     *"./.pi/skills"*) ;;
     *) error "pi.skills must list ./.pi/skills so pi receives exactly the declared Pi set" ;;
   esac
-  for group in plan build review audit maintain ship assist write obsidian workflow; do
-    case "$manifest_dirs" in
-      *"./$group/skills"*) error "pi.skills lists ./$group/skills; that ships Claude-only skills to pi. Use ./.pi/skills instead." ;;
+  while IFS= read -r d; do
+    case "$d" in
+      ./skills | ./skills/ | skills | skills/) error "pi.skills lists $d; that ships Claude-only skills to pi. Use ./.pi/skills instead." ;;
     esac
-  done
+  done <<EOF
+$manifest_dirs
+EOF
   [ "$missing" -eq 0 ] && pass "pi.skills points at the generated .pi/skills tree"
 fi
 
@@ -189,22 +184,20 @@ else
     printf '%s\n' "$cli_raw" | tail -40 >&2
   else
     cli_missing=""
-    for group in plan build review audit maintain ship assist write obsidian workflow; do
-      while IFS= read -r skill_md; do
-        [ -n "$skill_md" ] || continue
-        skill_name=$(basename "$(dirname "$skill_md")")
-        printf '%s\n' "$cli_names" | grep -qxF "$skill_name" ||
-          cli_missing="$cli_missing $skill_name"
-      done <<EOF
-$(find "$group/skills" -mindepth 2 -maxdepth 2 -name SKILL.md)
+    while IFS= read -r skill_md; do
+      [ -n "$skill_md" ] || continue
+      skill_name=$(basename "$(dirname "$skill_md")")
+      printf '%s\n' "$cli_names" | grep -qxF "$skill_name" ||
+        cli_missing="$cli_missing $skill_name"
+    done <<EOF
+$(find skills -mindepth 2 -maxdepth 2 -name SKILL.md)
 EOF
-    done
 
     if [ -z "$cli_missing" ]; then
       pass "skills CLI resolves all $TOTAL skills with no extra flags"
     else
       error "skills CLI cannot see these skills:$cli_missing"
-      error "A group directory name may collide with the CLI's skip list (node_modules/.git/dist/build/__pycache__), or a skill directory may have become a symlink."
+      error "A directory on the path may collide with the CLI's skip list (node_modules/.git/dist/build/__pycache__), or a skill directory may have become a symlink."
     fi
   fi
 fi

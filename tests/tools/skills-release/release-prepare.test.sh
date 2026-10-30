@@ -8,19 +8,19 @@
 
 PREPARE="tools/skills-release/scripts/release-prepare.sh"
 
-# A one-plugin repo at 1.0.0 pushed to a bare origin. The validators and
-# sync-repo are stand-ins; sync-repo records that it ran, since it is the
-# first step that writes to the tree.
+# A one-plugin repo at 1.0.0 pushed to a bare origin, shaped like this one: the
+# plugin is the repo root, so its marketplace source is "./". The validators and
+# sync-repo are stand-ins; sync-repo records that it ran, since it is the first
+# step that writes to the tree.
 skills_repo() {
   init_repo repo master
   cd repo
-  mkdir -p .claude-plugin .github/scripts scripts/codex plan/.claude-plugin \
-    plugins/edloidas-plan/.codex-plugin
-  printf '{"plugins":[{"name":"plan","source":"./plan","version":"1.0.0"}]}\n' \
+  mkdir -p .claude-plugin .github/scripts scripts/codex plugins/edloidas/.codex-plugin
+  printf '{"plugins":[{"name":"edloidas","source":"./","version":"1.0.0"}]}\n' \
     > .claude-plugin/marketplace.json
-  printf '{"version":"1.0.0"}\n' > plan/.claude-plugin/plugin.json
-  printf '{"version":"1.0.0","plugins":[{"name":"edloidas-plan"}]}\n' > scripts/codex/catalog.json
-  printf '{"version":"1.0.0"}\n' > plugins/edloidas-plan/.codex-plugin/plugin.json
+  printf '{"version":"1.0.0"}\n' > .claude-plugin/plugin.json
+  printf '{"version":"1.0.0","plugins":[{"name":"edloidas"}]}\n' > scripts/codex/catalog.json
+  printf '{"version":"1.0.0"}\n' > plugins/edloidas/.codex-plugin/plugin.json
   printf '{"private":true,"version":"1.0.0"}\n' > package.json
   printf '#!/bin/bash\nexit 0\n' > .github/scripts/validate-skills.sh
   printf '#!/bin/bash\nexit 0\n' > scripts/validate-codex.sh

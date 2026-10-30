@@ -3,7 +3,7 @@
 #
 #   bash tests/run.sh                        every test file
 #   bash tests/run.sh detect-base            only files whose path matches
-#   bash tests/run.sh plan/ ship/            several filters
+#   bash tests/run.sh issue-flow npm-release several filters
 #
 # Plain bash by design: a contributor runs it from a clean checkout with no
 # install step, and CI provisions nothing. `bats` would read better and cost a
@@ -30,7 +30,7 @@ if [ -z "$ALL_FILES" ]; then
 fi
 
 # Filters match against the path relative to tests/, so `detect-base`,
-# `plan/issue-flow`, and `plan/` all select sensibly.
+# `skills/issue-flow`, and `skills/` all select sensibly.
 FILES=""
 if [ "$#" -eq 0 ]; then
   FILES="$ALL_FILES"

@@ -12,20 +12,19 @@ BUMP="tools/skills-release/scripts/release-bump.sh"
 PUSH="tools/skills-release/scripts/release-push.sh"
 EXECUTE="tools/skills-release/scripts/release-execute.sh"
 
-# A two-plugin repo shaped like this one at version 1.0.0, pushed to a bare
-# origin. skills-packaging.sh is replaced by a stand-in that does only what
-# release-bump.sh relies on: copy the catalog version into the Codex wrappers.
+# A repo shaped like this one at version 1.0.0, pushed to a bare origin: one
+# plugin whose marketplace source is the repo root ("./"). skills-packaging.sh
+# is replaced by a stand-in that does only what release-bump.sh relies on: copy
+# the catalog version into the Codex wrapper.
 skills_repo() {
   init_repo repo master
   cd repo
-  mkdir -p .claude-plugin scripts/codex plan/.claude-plugin build/.claude-plugin \
-    plugins/edloidas-plan/.codex-plugin
-  printf '{"plugins":[{"name":"plan","source":"./plan","version":"1.0.0"},{"name":"build","source":"./build","version":"1.0.0"}]}\n' \
+  mkdir -p .claude-plugin scripts/codex plugins/edloidas/.codex-plugin
+  printf '{"plugins":[{"name":"edloidas","source":"./","version":"1.0.0"}]}\n' \
     > .claude-plugin/marketplace.json
-  printf '{"version":"1.0.0"}\n' > plan/.claude-plugin/plugin.json
-  printf '{"version":"1.0.0"}\n' > build/.claude-plugin/plugin.json
-  printf '{"version":"1.0.0","plugins":[{"name":"edloidas-plan"}]}\n' > scripts/codex/catalog.json
-  printf '{"version":"1.0.0"}\n' > plugins/edloidas-plan/.codex-plugin/plugin.json
+  printf '{"version":"1.0.0"}\n' > .claude-plugin/plugin.json
+  printf '{"version":"1.0.0","plugins":[{"name":"edloidas"}]}\n' > scripts/codex/catalog.json
+  printf '{"version":"1.0.0"}\n' > plugins/edloidas/.codex-plugin/plugin.json
   printf '{"private":true,"version":"1.0.0"}\n' > package.json
   cat > scripts/skills-packaging.sh <<'EOF'
 #!/bin/bash
@@ -97,6 +96,19 @@ test_bump_without_signing_creates_an_annotated_tag_and_says_so() {
   assert_eq 0 "$STATUS" "exit status"
   assert_eq tag "$(git cat-file -t refs/tags/v1.1.0)" "tag type"
   assert_contains "$STDOUT" "creating an unsigned annotated tag" "output"
+}
+
+# The root plugin's source is "./", which strips to an empty path; the bump has to
+# resolve it to the repo root rather than to "/.claude-plugin/plugin.json".
+test_bump_updates_every_version_file_including_the_root_plugin() {
+  skills_repo
+  run bash "$(script "$BUMP")" 1.1.0
+  assert_eq 0 "$STATUS" "exit status"
+  assert_eq 1.1.0 "$(jq -r '.plugins[0].version' .claude-plugin/marketplace.json)" "marketplace"
+  assert_eq 1.1.0 "$(jq -r '.version' .claude-plugin/plugin.json)" "root plugin.json"
+  assert_eq 1.1.0 "$(jq -r '.version' scripts/codex/catalog.json)" "catalog"
+  assert_eq 1.1.0 "$(jq -r '.version' plugins/edloidas/.codex-plugin/plugin.json)" "codex wrapper"
+  assert_eq 1.1.0 "$(jq -r '.version' package.json)" "package.json"
 }
 
 # --------------------------------------------------------------- push -------

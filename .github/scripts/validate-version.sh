@@ -32,7 +32,7 @@ done
 # Check each plugin.json
 for i in $(seq 0 $((plugin_count - 1))); do
   name=$(jq -r ".plugins[$i].name" "$MARKETPLACE")
-  source=$(jq -r ".plugins[$i].source" "$MARKETPLACE" | sed 's|^\./||')
+  source=$(jq -r ".plugins[$i].source" "$MARKETPLACE" | sed -e 's|^\./||' -e 's|/$||' -e 's|^$|.|')
   plugin_json="$source/.claude-plugin/plugin.json"
 
   if [ ! -f "$plugin_json" ]; then

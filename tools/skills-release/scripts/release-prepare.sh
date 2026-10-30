@@ -125,7 +125,7 @@ VERSIONS=()
 
 for i in $(seq 0 $((PLUGIN_COUNT - 1))); do
   name=$(jq -r ".plugins[$i].name" "$MARKETPLACE_JSON")
-  source=$(jq -r ".plugins[$i].source" "$MARKETPLACE_JSON" | sed 's|^\./||')
+  source=$(jq -r ".plugins[$i].source" "$MARKETPLACE_JSON" | sed -e 's|^\./||' -e 's|/$||' -e 's|^$|.|')
   mp_version=$(jq -r ".plugins[$i].version" "$MARKETPLACE_JSON")
   plugin_json="$source/.claude-plugin/plugin.json"
 

@@ -5,13 +5,13 @@ set -euo pipefail
 #
 # Scope:
 # - .claude-plugin/marketplace.json exists and is valid JSON
-# - each marketplace entry points at a source group directory
-# - each source group ships .claude-plugin/plugin.json with the expected
+# - each marketplace entry points at a plugin root (the repo root for `edloidas`)
+# - each plugin root ships .claude-plugin/plugin.json with the expected
 #   matching name and valid JSON structure
-# - each source group contains discoverable skills
-# - each skill is a real directory at <group>/skills/<name>, not a symlink, and the
-#   pre-4.0 <group>/<name> authoring path is gone
-# - source groups do not embed Codex wrapper manifests directly
+# - each plugin root contains discoverable skills under skills/
+# - each skill is a real directory at skills/<name>, not a symlink, and no legacy
+#   group directory (pre-6.0 <group>/skills/<name>, pre-4.0 <group>/<name>) is back
+# - plugin roots do not embed Codex wrapper manifests directly
 # - each SKILL.md declares a name matching its directory, a description within the
 #   discovery caps, and no reference to a bundled file it does not ship
 #
@@ -137,7 +137,7 @@ EOF
 # means a genuine violation inside it would not be caught here — acceptable, because it
 # dispatches as intent and holds no workflow of its own that a host could fail to run.
 # Adding a row is a deliberate decision that needs a reason in CLAUDE.md.
-CLAUDE_ONLY_EXEMPT="audit/skills/skill-audit"
+CLAUDE_ONLY_EXEMPT="skills/skill-audit"
 
 # A tool name in `description` or `when_to_use` is dead weight on every host, Claude Code
 # included: discovery text exists to match what a person types, and nobody asks for a skill
@@ -163,7 +163,7 @@ subagent field|subagent_type"
 # "Pushing the tag publishes it and cannot be recalled. Show the version and the
 # tag, and wait for approval." Same imperative force, no capitals.
 #
-# `IMPORTANT` and `REQUIRED` are deliberately absent. `write/skills/markdown-writing`
+# `IMPORTANT` and `REQUIRED` are deliberately absent. `skills/markdown-writing`
 # documents GitHub's `[!IMPORTANT]` alert as its own subject matter, and `REQUIRED`
 # occurs inside identifiers like `RULESET_REQUIRED_CHECKS`. Both would be false
 # positives on a hard-fail rule, and a validator that cries wolf gets muted.
@@ -200,23 +200,23 @@ Claude-only subagent field|subagent_type"
 # explicit ceiling below rather than a blanket exemption, so it cannot keep growing
 # unnoticed. Adding a row is a deliberate decision that needs a reason in CLAUDE.md.
 BODY_LINE_CAP=500
-BODY_LINE_BUDGETS="plan/skills/issue-flow=697
-workflow/skills/solve-issue=538"
+BODY_LINE_BUDGETS="skills/issue-flow=697
+skills/solve-issue=538"
 
 # The line cap alone let a body grow sideways: changes-review sat at 499 lines and
 # ~7.3k tokens. Estimated as bytes / 4, the same heuristic skill-metrics.mjs prints.
 # The last two rows are grandfathered at their size when this cap arrived — the
 # ceiling stops growth, it does not sanction the size.
 BODY_TOKEN_CAP=5000
-BODY_TOKEN_BUDGETS="plan/skills/issue-flow=9900
-workflow/skills/solve-issue=7410
-review/skills/changes-review=6490
-review/skills/code-cleanup=5590"
+BODY_TOKEN_BUDGETS="skills/issue-flow=9900
+skills/solve-issue=7410
+skills/changes-review=6490
+skills/code-cleanup=5590"
 
 # Skills that answer outward-facing correspondence and refuse structured-choice
 # prompting on purpose; each carries its own `Asking the User` section saying so.
-ASK_REFUSAL_EXEMPT="review/skills/pr-review
-review/skills/changes-review"
+ASK_REFUSAL_EXEMPT="skills/pr-review
+skills/changes-review"
 
 # Lines after the closing frontmatter delimiter.
 #
@@ -279,7 +279,7 @@ prompt_prose() {
 
 # The canonical section's paragraph, whitespace-collapsed. It lives inside skill-audit
 # so the rule travels with the skill into repos that have no copy of this CLAUDE.md.
-CANONICAL_ASK_FILE="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)/audit/skills/skill-audit/references/asking-the-user.md"
+CANONICAL_ASK_FILE="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)/skills/skill-audit/references/asking-the-user.md"
 
 collapse_ws() {
   tr '\n' ' ' | tr -s ' \t' ' ' | sed -E 's/^ //; s/ $//'
@@ -506,7 +506,7 @@ EOF
       if [ -z "$canonical" ]; then
         error "Skill '$skill_name': asks the user, but the canonical section could not be read from $CANONICAL_ASK_FILE"
       elif [ "$(ask_section_text "$skill_dir/SKILL.md")" != "$canonical" ]; then
-        error "Skill '$skill_name': asks the user but its 'Asking the User' section is missing or differs from the canonical wording in audit/skills/skill-audit/references/asking-the-user.md. Copy it verbatim; do not paraphrase it"
+        error "Skill '$skill_name': asks the user but its 'Asking the User' section is missing or differs from the canonical wording in skills/skill-audit/references/asking-the-user.md. Copy it verbatim; do not paraphrase it"
       fi
     fi
   fi
@@ -594,6 +594,8 @@ for i in $(seq 0 $((plugin_count - 1))); do
   name=$(jq -r ".plugins[$i].name // empty" "$MARKETPLACE")
   source_decl=$(jq -r ".plugins[$i].source // empty" "$MARKETPLACE")
   source=${source_decl#./}
+  source=${source%/}
+  source=${source:-.}
   plugin_manifest="$source/.claude-plugin/plugin.json"
 
   if [ -z "$name" ]; then
@@ -616,7 +618,7 @@ for i in $(seq 0 $((plugin_count - 1))); do
   fi
 
   if [ -f "$source/.codex-plugin/plugin.json" ]; then
-    error "Plugin '$name': source group '$source/' must not contain .codex-plugin/plugin.json; Codex wrapper manifests belong under plugins/<plugin-name>/"
+    error "Plugin '$name': plugin root '$source/' must not contain .codex-plugin/plugin.json; Codex wrapper manifests belong under plugins/<plugin-name>/"
   fi
 
   if [ ! -f "$plugin_manifest" ]; then
@@ -640,21 +642,16 @@ for i in $(seq 0 $((plugin_count - 1))); do
     [ -n "$skill_md" ] || continue
     skill_count=$((skill_count + 1))
     skill_dir=$(dirname "$skill_md")
+    skill_dir=${skill_dir#./}
     skill_name=$(basename "$skill_dir")
 
-    # The canonical skill directory is <group>/skills/<name>, and it must be a REAL
+    # The canonical skill directory is skills/<name>, and it must be a REAL
     # directory rather than a symlink. Agent skill CLIs discover skills with
     # readdir(withFileTypes) + entry.isDirectory(), which is false for a symlink, so a
     # symlinked skill is invisible to them. Claude Code's plugin loader reads this same
     # path, so one real directory serves every host.
     if [ -L "$skill_dir" ]; then
       error "Plugin '$name': '$skill_dir' is a symlink; it must be a real directory or agent skill CLIs cannot discover it"
-    fi
-
-    # Exactly one canonical location per skill — the pre-4.0 <group>/<name> authoring
-    # path must not come back, or the same skill gets discovered twice under two paths.
-    if [ -e "$source/$skill_name" ]; then
-      error "Plugin '$name': legacy skill path '$source/$skill_name' still exists; the canonical location is '$skill_dir'"
     fi
 
     validate_skill_content "$skill_dir" "$skill_name"
@@ -666,6 +663,24 @@ for i in $(seq 0 $((plugin_count - 1))); do
 $(find "$source/skills" -mindepth 2 -maxdepth 2 -name SKILL.md -print | sort)
 EOF
 
+  # `find` does not descend into a symlinked directory, so the per-skill -L check above
+  # never sees one; list them directly.
+  while IFS= read -r linked; do
+    [ -n "$linked" ] || continue
+    error "Plugin '$name': '${linked#./}' is a symlink; it must be a real directory or agent skill CLIs cannot discover it"
+  done <<EOF
+$(find "$source/skills" -mindepth 1 -maxdepth 1 -type l | sort)
+EOF
+
+  # Exactly one canonical location per skill. The group directories of the pre-6.0
+  # <group>/skills/<name> and pre-4.0 <group>/<name> layouts must not come back, or a
+  # skill gets discovered twice under two paths.
+  for legacy_group in plan build review audit maintain ship assist write obsidian workflow; do
+    if [ -e "$source/$legacy_group" ]; then
+      error "Plugin '$name': legacy group directory '$source/$legacy_group' exists; skills live at skills/<name>"
+    fi
+  done
+
   if [ "$skill_count" -eq 0 ]; then
     error "Plugin '$name': no skills found in '$source/'"
   else
@@ -676,14 +691,12 @@ EOF
 done
 
 # ------------------------------------------------------ README count drift ----
-# The README states the skill and plugin counts in several hand-maintained places.
-# Every one of them was wrong at v5.0.0: 38 skills against a real 36, 9 wrapper
-# plugins against 10, and a group table summing to 38 while its own rows said 3
-# and 6. The correct values are already computed above, so assert them rather
-# than trusting a person to remember a number in five places.
+# The README states the skill count in hand-maintained places. Every one of them was
+# wrong at v5.0.0: 38 skills against a real 36. The correct value is already computed
+# above, so assert it rather than trusting a person to remember a number.
 #
-# This checks counts only. Whether a skill has a table row at all is a different
-# question, and one a person reading the diff will notice; a wrong number is not.
+# The skills table is checked by name as well as by count: every skill directory has
+# exactly one `[name](./skills/name/)` row, and no row points at a skill that is gone.
 validate_readme_counts() {
   local readme="README.md"
 
@@ -692,15 +705,15 @@ validate_readme_counts() {
     return
   fi
 
-  # Three independent statements of the same total: the shields.io badge, the
-  # opening sentence, and the sum of the group table's own per-group column.
-  local badge intro group_sum
+  # Two independent statements of the total plus the table itself: the shields.io
+  # badge, the opening sentence, and the number of skill rows.
+  local badge intro rows
   badge=$(sed -n 's/.*badge\/skills-\([0-9][0-9]*\)-.*/\1/p' "$readme" | head -n 1)
   intro=$(sed -n 's/^\([0-9][0-9]*\) skills for .*/\1/p' "$readme" | head -n 1)
-  group_sum=$(awk -F'|' '/^\| \[[a-z]+\]\(#/ { gsub(/[^0-9]/, "", $4); sum += $4 } END { print sum + 0 }' "$readme")
+  rows=$(grep -cE '^[|] \[[a-z0-9-]+\]\(\./skills/[a-z0-9-]+/\) [|]' "$readme" || true)
 
   local pair where value
-  for pair in "badge:$badge" "opening sentence:$intro" "group table:$group_sum"; do
+  for pair in "badge:$badge" "opening sentence:$intro" "skills table:$rows"; do
     where=${pair%%:*}
     value=${pair#*:}
     if [ -z "$value" ]; then
@@ -710,20 +723,22 @@ validate_readme_counts() {
     fi
   done
 
-  # Plugin count, stated once per install/verify surface. Each phrase is matched
-  # with its number so a stale one is named rather than merely missed. No
-  # `(^|[[:space:]])` anchor group here: BSD grep treats `^` inside a group as a
-  # literal, so that alternative silently matches nothing on macOS.
-  local phrase found
-  for phrase in "plugin groups" "wrapper plugins" '`@edloidas-skills` plugins'; do
-    found=$(grep -o -E "[0-9][0-9]* $phrase" "$readme" | awk '{print $1}' | sort -u | tr '\n' ' ' || true)
-    found=${found% }
-    if [ -z "$found" ]; then
-      error "README: no '<count> $phrase' statement found; the plugin count is unasserted"
-    elif [ "$found" != "$plugin_count" ]; then
-      error "README: '$phrase' is stated as '$found', but the repo has $plugin_count plugins"
-    fi
-  done
+  local row_name skill_md
+  while IFS= read -r row_name; do
+    [ -n "$row_name" ] || continue
+    [ -f "skills/$row_name/SKILL.md" ] || error "README: the skills table lists '$row_name', which has no skills/$row_name/SKILL.md"
+  done <<EOF
+$(sed -n -E 's/^[|] \[([a-z0-9-]+)\]\(\.\/skills\/([a-z0-9-]+)\/\) [|].*/\2/p' "$readme")
+EOF
+
+  while IFS= read -r skill_md; do
+    [ -n "$skill_md" ] || continue
+    row_name=$(basename "$(dirname "$skill_md")")
+    grep -qE "^[|] \[$row_name\]\(\./skills/$row_name/\) [|]" "$readme" ||
+      error "README: skill '$row_name' has no row in the skills table"
+  done <<EOF
+$(find skills -mindepth 2 -maxdepth 2 -name SKILL.md | sort)
+EOF
 }
 
 validate_readme_counts
@@ -733,4 +748,4 @@ if [ "$errors" -eq 1 ]; then
 fi
 
 echo "Claude marketplace valid. $total_skills skills across $plugin_count plugins ($total_codex_compatible_skills marked Codex-compatible)."
-echo "README counts agree: $total_skills skills, $plugin_count plugins."
+echo "README agrees: $total_skills skills, one table row each."
