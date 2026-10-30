@@ -175,6 +175,11 @@ exists turns on whose line it is:
 A `// TODO:` left on work this change just finished is an AI implementation artifact, and goes.
 One the project or the user placed is a marker, and stays.
 
+A kept comment stating a constraint the code cannot show — "keep in sync with X", "do not reorder"
+— stays; the report names the cheapest check that would enforce it (a type, a test, a lint rule)
+and never adds it. A suppression this change added that silences a correctness rule is reported,
+never edited.
+
 **Test files:** a step-label comment that just narrates the next call (`// focus the field`) is
 restatement — remove it. Keep one only where it conveys intent the calls don't (e.g. "most recent,
 not stale"). The test name and assertions should carry the rest.
@@ -196,9 +201,8 @@ end up telling one story between them. Before applying anything, read the surviv
   roughly a fifth, look again — not to hit a number, but because in practice that ratio has meant
   duplication rather than thoroughness. Report both counts either way.
 
-This phase exists because wording-level trimming cannot reach the problem it solves. A pass that
-shortens three comments and leaves all three still leaves the reader three places to look and three
-places to update, and it is the failure this skill is most often called back to fix.
+Wording-level trimming cannot reach this: three shortened comments still leave three places to
+look and update, the failure this skill is most often called back to fix.
 
 ### Phase 3: Apply
 
@@ -341,6 +345,8 @@ rules imply.
 ### Flagged for review
 - `file.ts:456` FIXME left in place — needs attention
 - `file.ts:88` comment claims X but code does Y
+- `status.ts:9` "keep in sync with LABELS" — a `Record<Status, string>` type would enforce it
+- `api.ts:31` added `eslint-disable no-floating-promises` — silences a correctness rule
 ```
 
 The three **Belongs in** sections carry the text taken out of the source, filed where it should have
