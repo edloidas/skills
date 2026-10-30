@@ -54,6 +54,14 @@ one line — `Route: <route> — <why, one clause>.` — then go straight to Pha
 once: a fact found later that makes it wrong allows one re-route, printed as `Re-route: <old> →
 <new> — <the fact>.`
 
+The `Task:` and `Route:` lines open the reply, in the message that makes the first skill call or
+playbook read — a routed skill's own output comes after them, never instead of them:
+
+```
+Task: make parseDuration("1h30m") return 5400 instead of 90.
+Route: references/bug.md — wrong output from a parser, no issue.
+```
+
 Five skills start only when the user types them: `bro`, `editor-config`, `labels-sync`,
 `repo-hardening`, `session-cleanup`. When one of them fits, print `This is /<name>'s job; run
 /<name> yourself.` and stop.
@@ -65,12 +73,12 @@ Five skills start only when the user types them: `bro`, `editor-config`, `labels
 | One GitHub issue to implement | `solve-issue` | The number or URL as given. `slices` when the user wants one commit per slice; `pr-only` when they want no merge; `auto` only when they said not to ask |
 | One GitHub issue to understand or plan, not build | `issue-analyze` | The number or URL as given, and nothing else |
 | What to work on next | `next-issue` | Filters the user named: a label, "mine", "small" |
-| Issue text to draft or reword, not filed yet | `issue-writer` | The description, or the issue number to update |
+| Issue text to draft, write up or reword, including "an issue for later" — anything short of "file it now" | `issue-writer` | The description, or the issue number to update |
 | Someone else's pull request: review it, or review and land it | `pr-review` | The number or URL. `--land` to approve and merge; `--draft` to hold the review unsent |
 | The review threads on the user's own pull request | `pr-review` | The number or URL; `--fix` when the user wants code changed |
 | Every pull request waiting on the user, or the state of their own | `pr-triage` | `assigned` for the ones waiting on them; `created` for their own; `recheck` for author updates since the last review; `current` for this repo only |
 | A commit message body | `commit-summary` | `staged only` or a commit ref, if named |
-| A lifecycle step: file an issue, branch for #N, commit, snapshot, amend, push, open a PR, merge the user's own PR, link sub-issues or blockers | `issue-flow` | The step, as the user worded it |
+| A lifecycle step: file or create an issue now, branch for #N, commit, snapshot, amend, push, open a PR, merge the user's own PR, link sub-issues or blockers | `issue-flow` | The step, as the user worded it |
 | The open issue backlog, groomed | `issue-triage` | `report` to stop at the plan |
 | Merge or rebase conflicts | `resolve-conflicts` | The PR, if named |
 | Release an npm package | `npm-release` | The bump, if named |
