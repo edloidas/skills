@@ -31,7 +31,8 @@ Run state: <path> (closed)
 
 A refused write's `blocked: permission — <command>` becomes its own **Needs you** item with that
 command, as in the example's item 1. A decision or review unit with no PR of its own takes one row with `—` in the PR columns and its
-outcome in **Notes**. Drop **Decided unattended** and **Filed during the run** when empty.
+outcome in **Notes**. A task unit puts `<branch>` `<sha7>` in the PR column, pushed or local in
+**State**, and `—` in Bot. Drop **Decided unattended** and **Filed during the run** when empty.
 **Needs you** is numbered so the user can answer by number; merge it from every summary in the
 run, drop what a later unit resolved, and order it by what blocks the most. An item that is a
 choice gets a briefing, not a line.

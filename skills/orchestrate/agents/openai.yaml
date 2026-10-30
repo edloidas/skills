@@ -1,6 +1,6 @@
 interface:
   display_name: "Orchestrate"
-  short_description: "Coordinate issues, PR fixes, reviews and decisions from one session, each unit in its own worker."
+  short_description: "Coordinate issues, tasks, PR fixes, reviews and decisions from one session, each unit in its own worker."
   default_prompt: "Use $orchestrate to work through these units one by one — each in its own worker — with a short summary after each one."
 policy:
   allow_implicit_invocation: false

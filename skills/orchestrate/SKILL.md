@@ -5,7 +5,7 @@ description: >
   the code.
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
-allowed-tools: Bash(bash *orchestrate/scripts/pr-state.sh *) Bash(gh api user --jq .login) Bash(gh repo view:*) Bash(gh issue view:*) Bash(gh pr view:*) Bash(gh pr list:*) Bash(gh api repos/*/pulls/*/reviews --jq *) Bash(git status:*) Bash(git branch:*) Bash(git log:*) Bash(git fetch:*) Bash(git worktree:*) Bash(git checkout:*) Bash(git pull:*) Bash(jq:*) Bash(mkdir:*) Bash(date:*) Read Write Task Agent Skill AskUserQuestion
+allowed-tools: Bash(bash *orchestrate/scripts/pr-state.sh *) Bash(gh api user --jq .login) Bash(gh repo view:*) Bash(gh issue view:*) Bash(gh pr view:*) Bash(gh pr list:*) Bash(gh api repos/*/pulls/*/reviews --jq *) Bash(git status:*) Bash(git branch:*) Bash(git log:*) Bash(git ls-remote:*) Bash(git fetch:*) Bash(git worktree:*) Bash(git checkout:*) Bash(git pull:*) Bash(jq:*) Bash(mkdir:*) Bash(date:*) Read Write Task Agent Skill AskUserQuestion
 argument-hint: "[goal | #N | PR #N ...] [stack|parallel] [merge] [auto] [resume]"
 metadata:
   author: edloidas
@@ -17,6 +17,7 @@ metadata:
 One session coordinates; workers do every unit of work. The coordinator holds the goal, the plan,
 the run state, one-line PR states, and worker reports — never a diff, a source file, a build log,
 or a review thread. That is what lets ten pull requests and their follow-ups fit in one session.
+A large goal usually arrives here from `do`; `/orchestrate` works directly too.
 
 **Mutation class: writes to external services, through workers.** Workers branch, commit, push,
 open, edit and merge pull requests, request reviews, post review replies, and file and edit issues
@@ -30,8 +31,8 @@ Between those, a turn may end only while a worker or a poll is running; its noti
 the run.
 
 A host with no subagent facility cannot run this skill — stop with `orchestrate needs subagents;
-run the units one at a time with their own skills instead.` Inline execution would put every
-unit's code in this context, which is the one thing the skill exists to prevent.
+run the units one at a time with their own skills instead.` Inline, every unit's code would land
+in this context, which is what the skill exists to prevent.
 
 ## Units
 
@@ -42,18 +43,17 @@ unit's code in this context, which is the one thing the skill exists to prevent.
 | Own PR | Works bot threads, CI, conflicts, a follow-up change, approved replies, the merge | Bot threads resolved, CI green, endgame reached; human-thread drafts handed back | `references/unit-pr-fix.md` |
 | Others' PR | Reviews it through `pr-review`, left pending for the user | A pending review exists | `references/unit-pr-review.md` |
 | Decision | Settles a choice through `consilium` / `doubt`, or investigates a question; changes nothing | A recommendation with evidence | `references/unit-decision.md` |
-
-A new kind of work is a new row and a new prompt file; nothing else in this skill changes.
+| Task | Runs `do` in unit mode on the branch the plan names: work with no issue | Checks green and commits on the branch: on origin when the plan's `Writes:` include push, otherwise local | `references/unit-task.md` |
 
 ## Settings
 
-Read each setting from the request and the session so far; the user usually states them in prose.
+Read each setting from the request and the session so far.
 A setting nothing states takes its default, and the plan marks it `(default)`.
 
 | Setting | Values | Default |
 | ------- | ------ | ------- |
 | Goal | One sentence: what is true when the run is done | None — Phase 0 |
-| Units | Ordered; a group like "then #2596 and #2598" keeps its order | From the goal |
+| Units | Ordered; a group like "then #2596 and #2598" keeps its order. A task unit's plan line names its branch and base: `task: <statement> — on <branch> from <base>` | From the goal |
 | Branching | `sequential`: each issue branches from the updated default branch. `stack`: from the previous issue's branch, PR into it; the first from the default branch unless the user names one. `parallel`: independent units at once, each in its own working copy | `sequential` |
 | Endgame | `pr`: stop with the PR reviewed and green. `merge`: also merge. Set for the run, or per unit on its plan line | `pr` |
 | People | PR assignees and human reviewers, passed to workers as the user's own instruction | The `gh` user as assignee, no reviewers |
@@ -66,8 +66,8 @@ A setting nothing states takes its default, and the plan marks it `(default)`.
 shows `sequential` + `merge` and says why. `parallel` is only for units that name disjoint files
 or that the request calls independent.
 
-**The review bot rule** is `solve-issue`'s — wait only for an attached bot, a minute after each push
-for it to attach and five more to review, then go on without it and say so. `scripts/pr-state.sh` applies it.
+**The review bot rule** is `solve-issue`'s, applied by `scripts/pr-state.sh`: wait only for an attached
+bot, a minute after each push for it to attach and five more to review, then go on without it and say so.
 
 ## Run State
 
@@ -78,7 +78,8 @@ Two files, written by the coordinator only, in
 - **`run.json`** — the goal, the settings, and one entry per unit, with the fields
   `references/run-state.md` lists. Rewrite it whole at every dispatch and every hand-back,
   before the next action. A unit becomes `done` only with evidence: a merge SHA, a pending review's
-  URL, a decision's report, or the `pr-state.sh` line that showed it.
+  URL, a decision's report, a task branch's head matching its report, or the `pr-state.sh` line
+that showed it.
 - **`notes.md`** — append-only, one timestamped line per entry, each tagged: `goal:` as the user
   stated it; `standing:` every grant or constraint the user added mid-run in their words, every
   permission refusal a worker hit, every rule a mistake taught; `decided:`; `reuse:` facts from
@@ -88,7 +89,8 @@ Nothing else goes there: no transcripts, diffs, test output, or reasoning — gi
 those. Workers never read or write these files; what they need reaches them in their prompt.
 
 **GitHub wins.** On `resume`, or after the context was compacted, read both files, then check each
-unit against GitHub — `pr-state.sh` for its PR, `gh issue view` for its issue — and correct the
+unit against GitHub — `pr-state.sh` for its PR, `gh issue view` for its issue, `git ls-remote` for
+a task's branch — and correct the
 file before acting. A `running` unit whose worker is gone is unknown, not failed: look at its
 branch and PR before dispatching it again. A second run on the same repo reads another open run's
 `run.json` to skip its units, and never writes it.
@@ -101,34 +103,9 @@ neither, ask the same question in normal chat as a numbered list of 2–5 option
 recommended first, one short line of description each — and wait for the user to reply
 with a number.
 
-Every question except a plain yes/no is preceded by a **briefing**. A question the user can
-answer from its own wording — "Start?" after a plan they just read — needs none.
-
-### Briefings
-
-The user has not followed the workers' reasoning and should not have to. A briefing makes one
-decision readable cold, in at most twelve lines:
-
-1. **The question**, bold, as the user would ask it.
-2. **The situation** in two or three plain sentences: what happened, and why it needs a decision
-   now. Real names — the function, the PR, the issue — each with what it is.
-3. **What we know**, two to four bullets, each one fact that moves the decision.
-4. **Options**, recommended first and marked, one line each with what it costs.
-
-Then the question, with the same options in the same order. Example:
-
-```markdown
-**Should `suspendAccount` keep running its stop as admin?**
-Suspending an account has to stop its environments, but the account check refuses stops on a suspended account for anyone but a superuser. The #2598 worker ran the stop as admin, after the caller's own check.
-
-- Owners can suspend their own account, so the stop has to work for non-superusers.
-- Admin rights reach only the account already checked; nothing new becomes reachable.
-- The `allow*` flags the issue suggested do nothing for non-superusers — dead code.
-
-1. **Keep the admin stop (recommended)** — no change to PR #2606; file the dead flags as their own issue.
-2. **Make the account check honour `allow*`** — six call sites, and it loosens deletes on expired trials.
-3. **Stop only in the sweep** — breaks #2598's "stop in the same call"; environments run up to ten more minutes.
-```
+Every question except a plain yes/no is preceded by a **briefing**, written as
+`references/briefings.md` shows: one decision readable cold, in at most twelve lines. A question
+the user can answer from its own wording — "Start?" after a plan they just read — needs none.
 
 ## Phase 0: Goal
 
@@ -139,7 +116,7 @@ above" names its units.
 | ----------- | -- |
 | Stated | Carry it into the plan as written |
 | Inferable from the session | Write it as one sentence and carry it into the plan marked `(inferred)`; the plan gate is where the user objects |
-| Missing | Brief and ask: two to four candidate goals drawn from the session and the repo — the open epic, the user's open PRs with threads — recommended first |
+| Missing | Brief and ask: two to four candidate goals from the session and the repo (the open epic, the user's PRs with threads), recommended first |
 
 End Phase 0 with one line: `Goal: <sentence> (<stated | inferred>).` Then go straight to Phase 1;
 do not plan units before the goal is settled.
@@ -153,10 +130,11 @@ then run in one batch, all reads:
 gh api user --jq .login
 gh repo view --json nameWithOwner,defaultBranchRef,visibility --jq '[.nameWithOwner,.defaultBranchRef.name,.visibility]|@tsv'
 git status --short; git branch --show-current
-gh issue view <N> --json number,title,state --jq '"#\(.number) [\(.state)] \(.title)"'      # per issue unit
+gh issue view <N> --json number,title,state --jq '"#\(.number) [\(.state)] \(.title)"'  # per issue unit
 gh pr view <M> --json headRefName,author,commits,closingIssuesReferences \
   --jq '[.headRefName, .author.login, (.commits|length), ([.closingIssuesReferences[].number]|join(","))]|@tsv'   # per PR unit
-bash <skill-dir>/scripts/pr-state.sh <M>                                                     # per PR unit
+bash <skill-dir>/scripts/pr-state.sh <M>  # per PR unit
+git ls-remote origin refs/heads/<branch>  # per task unit
 bash <skill-dir>/scripts/pr-state.sh "$(gh pr list --state merged -L 1 --json number --jq '.[0].number')"
 ```
 
@@ -205,14 +183,14 @@ Fill the unit's prompt from the plan and `notes.md` — its `reuse:` facts and e
 line, verbatim — append the block in `references/worker-rules.md`, and dispatch it as one
 background worker. Mark it `running`.
 
-| Branching | The next issue unit starts when |
+| Branching | The next issue or task unit starts when |
 | --------- | ------------------------------- |
 | `sequential` + `pr` | The previous unit is `done` |
-| `sequential` + `merge` | The previous PR is merged; the worker fetches first |
+| `sequential` + `merge` | The previous PR is merged, or the previous task unit is `done`; the worker fetches first |
 | `stack` | The previous unit is `done`, so nothing is stacked on a commit still being amended |
 | `parallel` | Immediately, at most three workers at once. None deploys to a shared live environment; one live pass runs after the last merge |
 
-Own-PR, others'-PR and decision units that touch nothing a running worker touches may run
+Own-PR, others'-PR, decision and task units that touch nothing a running worker touches may run
 alongside, at most three workers in all. Every worker that runs alongside another works in its own
 working copy and creates it itself (a worktree where the host offers one).
 
@@ -233,8 +211,9 @@ dispatch a unit the branching table holds back.
 ## Phase 4: Check the Hand-back
 
 Read the report against the unit's **Done when**, and confirm with one read each fact the next
-step depends on — never the diff. A decision unit's evidence is its report. An others'-PR unit's
-is its pending review: `gh api repos/<owner>/<repo>/pulls/<M>/reviews --jq '.[] |
+step depends on — never the diff. A decision unit's evidence is its report. A task unit's is its
+branch head equal to the reported SHA: `git ls-remote origin refs/heads/<branch>`, or
+`git log -1 --format=%H <branch>` local-only. An others'-PR unit's is its pending review: `gh api repos/<owner>/<repo>/pulls/<M>/reviews --jq '.[] |
 select(.state == "PENDING") | .html_url'`. For an issue or own-PR unit it is
 `bash <skill-dir>/scripts/pr-state.sh <M>`, and its verdict decides, against that unit's endgame:
 
@@ -278,9 +257,8 @@ A `blocked` unit stops the queue under `sequential` and `stack`, since later uni
 brief the user. Under `parallel` the others continue.
 
 When a unit rewrote or merged a branch that others are stacked on, dispatch an own-PR unit to sync
-each of them, bottom of the stack first. Record the outcome, the evidence and the `reuse:` facts in
-the run state. End Phase 4 for each
-unit with one line: `<unit>: <done | sent on | blocked> — <evidence>.` Then Phase 6 for a done
+each of them, bottom of the stack first. End Phase 4 for each unit with one line:
+`<unit>: <done | sent on | blocked> — <evidence>.` Then Phase 6 for a done
 unit; nothing else follows a hand-back.
 
 ## Phase 5: Spin-offs
@@ -288,13 +266,13 @@ unit; nothing else follows a hand-back.
 A worker's escalated choice, a question the user asks mid-run, or a suspicion worth checking
 becomes a decision unit. Under `unattended`, act on its recommendation when it stays inside the
 goal; when it widens the goal, or the user asked for the decision, brief the user first. A fix it
-recommends for an existing PR becomes an own-PR unit. A new problem becomes a new-issue unit:
+recommends for an existing PR becomes an own-PR unit. A new problem — a task unit's **Outside this unit** lines included — becomes a new-issue unit:
 inside the goal it is appended to the plan and named in the next summary; outside it, it is
 briefed and filed only on the user's answer. On a public repo, a suspected security flaw is
 briefed before anything is filed, so exploit details are not published.
 
-A report's **Needs a person** item is resolved by a unit when a worker can resolve it, and briefed
-only when it needs a person: a credential, a permission, a product call, a merge.
+A report's **Needs a person** item becomes a unit when a worker can resolve it, and is briefed
+only when it needs a credential, a permission, a product call, or a merge.
 
 End each spin-off with one line: `<decision | fix | new issue>: <outcome in one clause> — <acted | waiting on you>.`
 
