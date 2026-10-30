@@ -15,35 +15,37 @@ Edit `CLAUDE.md` directly. Do not replace the `AGENTS.md` symlink with a copied 
 
 ## Repository Structure
 
-Skills are organized into plugin groups. Each group has a `.claude-plugin/plugin.json` for auto-discovery and contains related skills:
+The whole collection is one Claude Code plugin, `edloidas`, whose root is the repo root. The
+marketplace (also named `edloidas`) has a single entry with `"source": "./"`:
 
 ```
-<group>/
-├── .claude-plugin/
-│   └── plugin.json               # Plugin metadata
-└── skills/
-    └── <skill-name>/             # Canonical skill location — a REAL directory
-        ├── SKILL.md              # Required — frontmatter + instructions
-        ├── scripts/              # Optional — executable code
-        ├── references/           # Optional — docs loaded on demand
-        └── assets/               # Optional — templates, images, data
+.claude-plugin/
+├── plugin.json                   # The edloidas plugin manifest
+└── marketplace.json              # The edloidas marketplace, one plugin entry
+agents/                           # Plugin subagents (code-to-spec's spec-* agents)
+skills/
+└── <skill-name>/                 # Canonical skill location — a REAL directory
+    ├── SKILL.md                  # Required — frontmatter + instructions
+    ├── scripts/                  # Optional — executable code
+    ├── references/               # Optional — docs loaded on demand
+    └── assets/                   # Optional — templates, images, data
 ```
 
-**`<group>/skills/<skill-name>/` is the one canonical location for a skill, and it must be
-a real directory — never a symlink.** Two independent constraints force this:
+**`skills/<skill-name>/` is the one canonical location for a skill, and it must be a real
+directory — never a symlink.** Two independent constraints force this:
 
 1. Claude Code's plugin loader looks inside the plugin's `skills/` directory, not the
-   plugin root. A skill outside `<group>/skills/` is invisible to the plugin even though
+   plugin root. A skill outside `skills/` is invisible to the plugin even though
    `SKILL.md`, `plugin.json`, and the marketplace entry all exist.
 2. Agent skill CLIs (notably `npx skills`) discover skills with
    `readdir(withFileTypes)` + `entry.isDirectory()`, which is **false** for a symlink. A
    symlinked skill directory is invisible to them. They also hard-skip directories named
-   `node_modules`, `.git`, `dist`, `build`, and `__pycache__` — which is why the `build/`
-   group is only reachable through the `<group>/skills/` path that the marketplace
-   manifest points at.
+   `node_modules`, `.git`, `dist`, `build`, and `__pycache__`, so no directory on a skill's
+   path may carry one of those names.
 
 `.github/scripts/validate-skills.sh` enforces both: it rejects a symlinked skill directory
-and rejects a leftover pre-4.0 `<group>/<skill-name>` path. It also enforces the per-skill
+and rejects a leftover group directory from the pre-6.0 `<group>/skills/<name>` or pre-4.0
+`<group>/<name>` layouts. It also enforces the per-skill
 rules that must never regress — required frontmatter, `name` matching the directory and the
 naming format, `description` within 1,024 chars, the combined discovery entry within 1,536,
 and no `references/`, `scripts/`, or `assets/` path in `SKILL.md` that the skill does not
@@ -57,14 +59,14 @@ OpenCode, and pi all resolve symlinks, so only the canonical directory has to be
 ├── plugins/
 │   └── marketplace.json  # Repo-local Codex marketplace
 └── skills/
-    └── <skill-name> -> ../../<group>/skills/<skill-name>
+    └── <skill-name> -> ../../skills/<skill-name>
 
 plugins/
-└── <plugin-name>/
+└── edloidas/
     ├── .codex-plugin/
     │   └── plugin.json   # Codex wrapper plugin manifest
     └── skills/
-        └── <skill-name> -> ../../../<group>/skills/<skill-name>
+        └── <skill-name> -> ../../../skills/<skill-name>
 ```
 
 Internal, repo-only skills stay out of the published set by living under `tools/` with a
@@ -72,49 +74,26 @@ symlink into `.claude/skills/` — Claude Code follows the symlink, while `npx s
 skips it. `tools/skills-release` is the one current example.
 
 Behavioral tests for bundled scripts live in a repo-root `tests/` tree that mirrors the skill
-paths, deliberately outside every skill and every distribution tree — see
-[Script Tests](#script-tests).
+paths (`tests/skills/<skill-name>/`), deliberately outside every skill and every distribution
+tree — see [Script Tests](#script-tests).
 
-**Plugin groups:**
-- `plan/` — Issue drafting, analysis, next-issue selection, and the full issue lifecycle (4 skills)
-- `build/` — Conflict resolution, commit summaries, and live behavioral probes (3 skills)
-- `review/` — Adversarial change review, cleanup, claim verification, approach boards, PR feedback triage, and spec extraction (6 skills)
-- `audit/` — CI, package setup, security, skill, tsconfig, Three.js, React, and test-suite auditing (8 skills)
-- `maintain/` — Label sync, editor config sync, repo security hardening, and session cleanup (4 skills)
-- `ship/` — Release workflows for npm packages (1 skill)
-- `assist/` — Explanations, external opinion, handoffs, and plain restatement tools (4 skills)
-- `write/` — Markdown, README, and repository documentation writing (1 skill)
-- `obsidian/` — Obsidian vault organization and working document management (1 skill)
-- `workflow/` — End-to-end workflows that orchestrate multiple skills (4 skills)
-
-Wrapper plugin names and display names for Codex:
-- `plugins/edloidas-plan/` → `edloidas-plan` / `Edloidas Plan`
-- `plugins/edloidas-build/` → `edloidas-build` / `Edloidas Build`
-- `plugins/edloidas-review/` → `edloidas-review` / `Edloidas Review`
-- `plugins/edloidas-audit/` → `edloidas-audit` / `Edloidas Audit`
-- `plugins/edloidas-maintain/` → `edloidas-maintain` / `Edloidas Maintain`
-- `plugins/edloidas-ship/` → `edloidas-ship` / `Edloidas Ship`
-- `plugins/edloidas-assist/` → `edloidas-assist` / `Edloidas Assist`
-- `plugins/edloidas-write/` → `edloidas-write` / `Edloidas Write`
-- `plugins/edloidas-obsidian/` → `edloidas-obsidian` / `Edloidas Obsidian`
-- `plugins/edloidas-workflow/` → `edloidas-workflow` / `Edloidas Workflow`
-
-The Codex wrapper layer is driven from `scripts/codex/catalog.json`. After changing the Codex-exposed
-skill set or plugin metadata, run:
+The Codex wrapper is one plugin, `plugins/edloidas/` → `edloidas` / `Edloidas`, in the Codex
+marketplace `edloidas-skills`. It is driven from `scripts/codex/catalog.json`. After changing the
+Codex-exposed skill set or plugin metadata, run:
 
 ```bash
 ./scripts/validate-codex.sh
 ./scripts/skills-packaging.sh sync-repo
 ```
 
-Treat `.agents/plugins/marketplace.json`, `plugins/<plugin-name>/.codex-plugin/plugin.json`,
-`.agents/skills/`, `.opencode/skills/`, `.pi/skills/`, and `plugins/<plugin-name>/skills/` as
+Treat `.agents/plugins/marketplace.json`, `plugins/edloidas/.codex-plugin/plugin.json`,
+`.agents/skills/`, `.opencode/skills/`, `.pi/skills/`, and `plugins/edloidas/skills/` as
 generated outputs. Update the source skills, their `compatibility` frontmatter, and
 `scripts/codex/catalog.json`, then regenerate instead of editing those files by hand.
 
 The generated Codex wrapper layer is symlink-based and should be treated as repo-local when this
 repository is open in Codex. For user-scoped or cross-repo Codex usage, install skills via
-`./scripts/skills-packaging.sh install-links --dest "$HOME/.agents/skills" ...` or direct installs
+`./scripts/skills-packaging.sh install-host codex` (or `--dest <path>`) or direct installs
 into `~/.codex/skills` rather than assuming the wrapper plugin cache will be portable.
 
 ## How Skills Load (Progressive Disclosure)
@@ -217,7 +196,7 @@ One skill is exempt from the *portability* patterns, via `CLAUDE_ONLY_EXEMPT`:
 
 | Skill | Why |
 | ----- | --- |
-| `audit/skills/skill-audit` | Its subject matter *is* these mechanisms — the rubric and the dispatched prompt have to name them to tell an auditor what to look for. The exemption is skill-wide, so a genuine violation inside it would go uncaught; acceptable because it dispatches as intent and has no workflow of its own a host could fail to run. |
+| `skills/skill-audit` | Its subject matter *is* these mechanisms — the rubric and the dispatched prompt have to name them to tell an auditor what to look for. The exemption is skill-wide, so a genuine violation inside it would go uncaught; acceptable because it dispatches as intent and has no workflow of its own a host could fail to run. |
 
 Adding a row is a decision that needs a reason in this table. The exemption is not a way
 past a finding — a skill that *uses* one of these mechanisms narrows its `compatibility`
@@ -265,7 +244,7 @@ Skills using `AskUserQuestion` must follow these rules:
 
 Any skill declaring a non-Claude host and asking a question carries exactly one section,
 worded **verbatim** as below. The single source of the wording is
-`audit/skills/skill-audit/references/asking-the-user.md`, so the rule travels into repos
+`skills/skill-audit/references/asking-the-user.md`, so the rule travels into repos
 without this file; the block here is a copy for reading. It sits immediately before the
 skill's first procedural section — `## Workflow`, `## Phase 0`, `## Execution Steps`,
 whichever the skill uses — at `##`, or `###` where the skill nests its conventions.
@@ -296,8 +275,8 @@ A skill whose only mention of `AskUserQuestion` is documentation about the field
 `skill-audit`'s rubric) does not need the section, and neither does a Claude-only skill.
 
 **A skill may deliberately refuse structured-choice prompting**, and then it carries its own
-`Asking the User` section saying so instead of the canonical one. `review/skills/pr-review`
-and `review/skills/changes-review` do: they publish outward-facing correspondence, and the
+`Asking the User` section saying so instead of the canonical one. `skills/pr-review`
+and `skills/changes-review` do: they publish outward-facing correspondence, and the
 gate that approves it has to be answerable *after* reading the text it is about, which a
 modal firing mid-report is not. Both ask one question in prose as the last line, so
 `AskUserQuestion` is absent from `allowed-tools` and appears in the body only as the thing
@@ -307,7 +286,7 @@ those two, and the fix is never to re-add the canonical section.
 
 ### Multi-Agent Convention
 
-Skills for different agents (Claude Code, Codex, etc.) live in the same group directories — no nesting by agent. Agent compatibility is declared via the `compatibility` frontmatter field.
+Skills for different agents (Claude Code, Codex, etc.) live side by side in `skills/` — no nesting by agent. Agent compatibility is declared via the `compatibility` frontmatter field.
 
 **`compatibility` is the single source of truth for host support.** It is not just
 documentation: `scripts/skills-packaging.sh sync-repo` parses it to decide which skills land
@@ -357,7 +336,7 @@ Three things this rule does **not** cover:
   subagents should still declare `Task` / `Agent` for Claude Code's pre-approval, and that is
   not a mismatch with intent-only prose in the body.
 - `AskUserQuestion` — the per-host fallback above is *required*, not forbidden.
-- Per-host **data**, such as `assist/skills/handoff`'s table of where each host stores its
+- Per-host **data**, such as `skills/handoff`'s table of where each host stores its
   transcripts. Facts that genuinely differ per host belong in a table with a documented
   default; only the dispatch procedure has to be uniform.
 
@@ -366,7 +345,7 @@ The README "Available Skills" tables include an **Agent** column for quick scann
 ### Per-Host Skill Trees
 
 `sync-repo` generates one symlink tree per host, all pointing into the canonical
-`<group>/skills/<name>` directories:
+`skills/<name>` directories:
 
 | Tree | Read by | Contents |
 | ---- | ------- | -------- |
@@ -423,8 +402,8 @@ The 500-line body cap is mechanical, so it lives in `validate-skills.sh` rather 
 
 | Skill | Allowance | Why |
 | ----- | --------- | --- |
-| `plan/skills/issue-flow` | 697 | **Sanctioned.** It owns every git and `gh` write in the issue pipeline — base detection, the fork point, the squash rules, the force-push lease. That concentration is the seam that let `solve-issue` and `changes-review` become portable, and splitting it would put the same rules in two files, which this repo treats as the drift mechanism. Its size is the cost of being the single writer. Raised from 1000 when stacked pull requests arrived: a branch's named parent is recorded in Step 2, the one place branches are created, and the squash, rebase and PR base follow it through `stack-sync.sh`; the procedure lives in `references/stacking.md`, the body keeps one pointer per call site. Lowered from 1010 when the issue-creation path — Step 1, sub-issues, project inheritance, blocked-by, batch — moved to `references/creating-issues.md`, read only on the router's create rows; the conventions Step 5 also cites stayed in the body. |
-| `workflow/skills/solve-issue` | 538 | At 537 after the prompting-standard pass added a stop sentence and a named end-of-phase line to every phase, paid for by cutting the 21-row Error Handling table and the trailing `## Scope` recap and moving the deferral block into `references/review-feedback.md`. Raised from 540 to 550 deliberately, because three lines of headroom made every subsequent edit a trim-or-nothing choice on an 11-phase orchestrator that is still growing. The 13 lines now free are for the phases the auditors named — Phase 0 has no counted closing line, and the Phase 6 summary has no worked fragment in the body — not for general expansion. Lowered from 550 when the compaction pass cut what `issue-flow`, `live-probe`, `changes-review` and `references/review-feedback.md` already own. |
+| `skills/issue-flow` | 697 | **Sanctioned.** It owns every git and `gh` write in the issue pipeline — base detection, the fork point, the squash rules, the force-push lease. That concentration is the seam that let `solve-issue` and `changes-review` become portable, and splitting it would put the same rules in two files, which this repo treats as the drift mechanism. Its size is the cost of being the single writer. Raised from 1000 when stacked pull requests arrived: a branch's named parent is recorded in Step 2, the one place branches are created, and the squash, rebase and PR base follow it through `stack-sync.sh`; the procedure lives in `references/stacking.md`, the body keeps one pointer per call site. Lowered from 1010 when the issue-creation path — Step 1, sub-issues, project inheritance, blocked-by, batch — moved to `references/creating-issues.md`, read only on the router's create rows; the conventions Step 5 also cites stayed in the body. |
+| `skills/solve-issue` | 538 | At 537 after the prompting-standard pass added a stop sentence and a named end-of-phase line to every phase, paid for by cutting the 21-row Error Handling table and the trailing `## Scope` recap and moving the deferral block into `references/review-feedback.md`. Raised from 540 to 550 deliberately, because three lines of headroom made every subsequent edit a trim-or-nothing choice on an 11-phase orchestrator that is still growing. The 13 lines now free are for the phases the auditors named — Phase 0 has no counted closing line, and the Phase 6 summary has no worked fragment in the body — not for general expansion. Lowered from 550 when the compaction pass cut what `issue-flow`, `live-probe`, `changes-review` and `references/review-feedback.md` already own. |
 
 The ~5000-token cap is enforced the same way, estimated as body bytes / 4, because the
 line cap alone let a body grow sideways — `changes-review` sat at 499 lines and ~7.3k
@@ -536,7 +515,7 @@ action and cross-reference it from the top.
 
 - **Length in units, never adjectives.** "One section per cause, at most four." "One line:
   `Committed <sha>`." Never "be concise" or "no fluff" — an adjective is a knob each model turns
-  differently, a unit is a fact. A check works too: `assist/skills/bro`'s "Shorter than the
+  differently, a unit is a fact. A check works too: `skills/bro`'s "Shorter than the
   original, always; if it is not, cut more."
 - **Every phase spanning more than one tool call names the line it prints at its end.** This
   replaces "give progress updates" and settles the narration split with no per-model text. Make
@@ -544,7 +523,7 @@ action and cross-reference it from the top.
   per phase**, not one per skill: a single named line elsewhere is read as the ceiling rather than
   the floor, and the model goes silent everywhere it was not asked.
 - **Every phase that could continue ends with a stop sentence naming what does not follow.**
-  `review/skills/changes-review` is the model: "Then stop. Do not fix, do not offer to fix, and do
+  `skills/changes-review` is the model: "Then stop. Do not fix, do not offer to fix, and do
   not start a second round." This is also the real defence against a model bolting its own re-check
   on top of the specified one, and against ending a turn with a promise ("Round 3 would attack the
   fix…") instead of an action. Where a skill runs in rounds, add: a round ends only in one of the
@@ -591,7 +570,7 @@ action and cross-reference it from the top.
   about", "only report high-severity", "be conservative" are followed literally and cap recall.
   Worst inside a *dispatched* prompt, where the sub-agent is the one finding things and no filter
   stage exists downstream. Carry `**Confidence**: high | medium | low` as a reported field and
-  filter in synthesis — the architecture `review/skills/changes-review` already uses.
+  filter in synthesis — the architecture `skills/changes-review` already uses.
 - **No behavioural-style words in a body** — "be thorough", "think carefully", "double-check",
   "verify your work". Warned by `validate-skills.sh`. `description` and `when_to_use` are exempt:
   those match what a user types, so `consilium`'s "think hard" and "ultrathink" triggers are
@@ -617,7 +596,7 @@ not a prohibition.
 
 ### Delegation
 
-- **Every dispatch site carries a numeric threshold or a named trigger.** `assist/skills/explain` is
+- **Every dispatch site carries a numeric threshold or a named trigger.** `skills/explain` is
   the model: "Read it yourself up to about 5 files or 1000 lines. Past that, dispatch subagents". An adjective like
   "when the surface is wide" leaves it to the model, so one host spawns and another does not.
 - **An inline fallback for a chained skill is at most 5 lines and a pointer.** A fallback longer
@@ -656,19 +635,18 @@ needing justification. Revisit with numbers, not intuition.
 
 ## Creating a New Skill
 
-1. Choose the appropriate group directory (`plan/`, `build/`, `review/`, `audit/`, `maintain/`, `ship/`, `assist/`, `write/`, `obsidian/`, or `workflow/`)
-2. Create a real directory: `mkdir -p <group>/skills/<skill-name>` (never a symlink)
-3. Create `<group>/skills/<skill-name>/SKILL.md` with required frontmatter and instructions
-4. Add `scripts/`, `references/`, or `assets/` directories as needed
-5. Update the appropriate "Available Skills" table in `README.md`
-6. Run `bash .github/scripts/validate-skills.sh` to verify marketplace, manifests, and skill layout
-7. If the skill bundles a shell script, add its tests under `tests/<group>/<skill>/` and run `bash tests/run.sh`
-8. Run `skill-audit` and clear it before committing — see below
+1. Create a real directory: `mkdir -p skills/<skill-name>` (never a symlink)
+2. Create `skills/<skill-name>/SKILL.md` with required frontmatter and instructions
+3. Add `scripts/`, `references/`, or `assets/` directories as needed
+4. Add a row under the right topic in the "Available Skills" table in `README.md`
+5. Run `bash .github/scripts/validate-skills.sh` to verify marketplace, manifests, and skill layout
+6. If the skill bundles a shell script, add its tests under `tests/skills/<skill>/` and run `bash tests/run.sh`
+7. Run `skill-audit` and clear it before committing — see below
 
 ## Skill Changes Are Gated
 
 Any change that creates, edits, moves, renames, or deletes a skill directory clears
-`audit/skills/skill-audit` before it is committed. Any change to a bundled shell script also
+`skills/skill-audit` before it is committed. Any change to a bundled shell script also
 clears `bash tests/run.sh`. The four checkers own different halves and none substitutes for
 another:
 
@@ -698,8 +676,8 @@ bash tests/run.sh detect-base        # only files whose path matches
 ```
 
 **Tests live at the repo root, never inside a skill.** A `tests/` directory under
-`<group>/skills/<name>/` would be symlinked into every generated host tree and ship inside
-the installed plugin. `tests/<group>/<skill>/<script>.test.sh` mirrors the skill path
+`skills/<name>/` would be symlinked into every generated host tree and ship inside
+the installed plugin. `tests/skills/<skill>/<script>.test.sh` mirrors the skill path
 instead, so the distribution layer never sees them.
 
 A test file sources `tests/lib/assert.sh` and `tests/lib/fixture.sh`, defines `test_*`
@@ -751,18 +729,17 @@ the other.
 - **`marketplace.json`** — marketplace registry entry. Plugin objects support: `commands`, `agents`, `hooks`, `mcpServers`, `lspServers`. **No `skills` field.** Adding `skills` here causes validation error: `plugins.0.skills: Invalid input`.
 - **`plugin.json`** — plugin manifest. Skills are auto-discovered from subdirectories containing `SKILL.md`. Do not declare a `skills` field — it is no longer supported.
 
-Skills are discovered automatically from the plugin root directory. No per-skill registration is needed in either file.
+Skills are discovered automatically from the plugin root's `skills/` directory. No per-skill registration is needed in either file.
 
 ## Codex Wrapper Plugins
 
-Do not add `.codex-plugin/plugin.json` directly to the source group directories (`plan/`,
-`build/`, `review/`, `audit/`, `maintain/`, `ship/`, `assist/`, `write/`, `obsidian/`, `workflow/`).
+Do not add `.codex-plugin/plugin.json` to the repo root or to `skills/`.
 
-Use wrapper plugins under `plugins/<plugin-name>/` instead:
+Use the wrapper plugin under `plugins/edloidas/` instead:
 
-- Source groups remain the canonical skill source for all agents.
-- Wrapper plugins expose only the Codex-vetted subset of skills.
-- `plugins/<plugin-name>/skills/` should contain symlinks to the real skill directories.
+- `skills/` remains the canonical skill source for all agents.
+- The wrapper plugin exposes only the Codex-vetted subset of skills.
+- `plugins/edloidas/skills/` should contain symlinks to the real skill directories.
 - `.agents/skills/` should also contain only Codex-vetted skill symlinks.
 
 Do not rely on `compatibility` metadata alone to hide unsupported skills from Codex discovery.
@@ -773,10 +750,10 @@ actually Codex-safe. In this repo, Codex-compatible skills must also be exposed 
 One skill is `compatibility: Claude Code`, locked by what it actually does. It should stay
 Claude-only unless its workflow changes:
 
-- `review/skills/code-to-spec` — dispatches fleets of plugin-namespaced subagents via
+- `skills/code-to-spec` — dispatches fleets of plugin-namespaced subagents via
   `subagent_type` and keys temp files on `${CLAUDE_SESSION_ID}`.
 
-`review/skills/consilium` was Claude-only for the same reasons and is now portable. It stopped
+`skills/consilium` was Claude-only for the same reasons and is now portable. It stopped
 being a review skill: it is an approach board that takes a problem or a decision, generates
 candidate approaches from independent seats, and ranks them. Making it portable was mostly
 subtraction — dispatch is stated as intent, model choice as intent, its outside seat runs through `outsider` instead of a private `codex exec`
@@ -784,7 +761,7 @@ wrapper, and the temp files that forced `${CLAUDE_SESSION_ID}` are gone entirely
 candidate set travels in the dispatched prompt and `outsider` owns the one file that still hits
 disk.
 
-`plan/skills/issue-flow` and `workflow/skills/solve-issue` were Claude-only for the same
+`skills/issue-flow` and `skills/solve-issue` were Claude-only for the same
 reason `changes-review` was: they named the mechanism. Both now state delegation as intent
 ("invoke `issue-flow`", "dispatch one subagent"), each call site documents what to do when
 the host cannot chain skills or has no subagents, and both carry the standard
@@ -793,13 +770,13 @@ it at sixteen call sites. `issue-flow` owns every git and `gh` write in the pipe
 `solve-issue` holds no duplicate of its commit format or squash rules — the seam is what
 made them portable.
 
-`review/skills/changes-review` was Claude-only for its per-agent `model` overrides. It now
+`skills/changes-review` was Claude-only for its per-agent `model` overrides. It now
 states model choice as intent — most capable model the host offers, next tier down when that is
 the orchestrator's own, a different one per reviewer where the host allows it — and degrades to
 role diversity alone where it does not. Model diversity is still half of why the reviewers
 disagree usefully, so the report says which kind of diversity a run actually got.
 
-`assist/skills/outsider` used to be two skills, `codex` and `claude`, each excluded from the
+`skills/outsider` used to be two skills, `codex` and `claude`, each excluded from the
 host it would have called recursively. It now resolves an installed agent CLI that is not the
 current host, so it declares all four hosts and still never invokes itself. Recursion is a
 selection rule in `scripts/run-outsider.sh`, not a `compatibility` omission — which is the
@@ -811,7 +788,7 @@ Codex packaging layer is updated in the same change:
 - Add or update the skill's `compatibility` frontmatter to reflect actual Codex support.
 - Add `agents/openai.yaml` if the skill should be exposed in Codex.
 - Add the skill symlink in `.agents/skills/` if it is part of the repo-local Codex skill set.
-- Add the skill symlink in the appropriate `plugins/<plugin-name>/skills/` wrapper plugin if it should
+- Add the skill symlink in `plugins/edloidas/skills/` if it should
   be installable through the repo marketplace.
 - A dispatched prompt lives in exactly one place — the skill's `references/*-prompt.md`, read
   by every host. Do not mirror it into a plugin `agents/` file: only Claude Code can read that
@@ -820,7 +797,7 @@ Codex packaging layer is updated in the same change:
   intended Codex plugin set.
 - Update `scripts/codex/catalog.json`, run `./scripts/validate-codex.sh`, and run `./scripts/skills-packaging.sh sync-repo` so the
   generated wrapper layer stays in sync.
-- Update `README.md` if the exposed Codex skill set or plugin group contents changed.
+- Update `README.md` if the exposed Codex skill set changed.
 
 A skill is not considered fully integrated until both the source skill and the Codex wrapper layer
 are kept in sync.
@@ -831,15 +808,15 @@ Claude Code agents (`.claude/agents/`) can be distributed alongside skills as pa
 
 ### Directory layout
 
-Place agent files in an `agents/` directory at the plugin group root:
+Place agent files in an `agents/` directory at the plugin root, which here is the repo root:
 
 ```
-<group>/
-├── .claude-plugin/
-│   └── plugin.json
-├── agents/
-│   ├── my-agent.md       # Auto-discovered by Claude Code
-│   └── other-agent.md
+.claude-plugin/
+└── plugin.json
+agents/
+├── spec-scout.md         # Auto-discovered by Claude Code
+└── spec-auditor.md
+skills/
 └── <skill-name>/
     └── SKILL.md
 ```
@@ -871,8 +848,8 @@ When multiple locations define an agent with the same `name`, higher-priority lo
 
 ### Naming and invocation
 
-- Agents appear in the UI as `<plugin-name>:<agent-name>` (e.g. `review:spec-analyzer`)
-- `subagent_type` for plugin-distributed agents requires the namespaced form (e.g. `subagent_type: "review:spec-analyzer"`)
+- Agents appear in the UI as `<plugin-name>:<agent-name>` (e.g. `edloidas:spec-analyzer`)
+- `subagent_type` for plugin-distributed agents requires the namespaced form (e.g. `subagent_type: "edloidas:spec-analyzer"`)
 - `subagent_type` for built-in agents uses the plain name (e.g. `subagent_type: "general-purpose"`)
 - Agent `name` in frontmatter must match the filename (without `.md`)
 
@@ -893,14 +870,14 @@ Use the `skills-release` skill (`tools/skills-release/`, surfaced to Claude Code
 `.claude/skills/skills-release` symlink). Its `release-prepare.sh` / `release-bump.sh` scripts
 handle every version-bearing file.
 
-The version is declared in **four kinds of file**, and every one must match the release tag:
+The version is declared in **five files**, and every one must match the release tag:
 
 | File | Read by |
 | ---- | ------- |
-| `.claude-plugin/marketplace.json` (per plugin entry) | Claude Code marketplace |
-| `<group>/.claude-plugin/plugin.json` | Claude Code plugin loader |
+| `.claude-plugin/marketplace.json` (the one plugin entry) | Claude Code marketplace |
+| `.claude-plugin/plugin.json` | Claude Code plugin loader |
 | `scripts/codex/catalog.json` | Codex wrapper generator |
-| `plugins/<plugin-name>/.codex-plugin/plugin.json` | Codex plugin loader (generated) |
+| `plugins/edloidas/.codex-plugin/plugin.json` | Codex plugin loader (generated) |
 | `package.json` | pi package manifest |
 
 `.github/scripts/validate-version.sh` fails the release workflow if any of them drifts from the
