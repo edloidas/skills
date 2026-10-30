@@ -292,4 +292,70 @@ test_manual_has_no_byte_limit() {
   assert_eq 0 "$STATUS" "exit status"
 }
 
+# ------------------------------------------------------------ routing table --
+
+# A router plus the skills it may name: `explain` (routed) and `bro` (manual). The
+# table rows come from stdin.
+make_router() {
+  make_skill skills/explain "$portable" <<'EOF'
+# Explain
+EOF
+  TIER=manual make_skill skills/bro "$portable" "disable-model-invocation: true" <<'EOF'
+# Bro
+EOF
+  mkdir -p skills/router/references
+  printf '# Bug\n' > skills/router/references/bug.md
+  {
+    printf '# Router\n\nRun `/bro` yourself when it fits.\n\n| Task | Route | Carry into it |\n| ---- | ----- | ------------- |\n'
+    cat
+    printf '\nAfter the table, `nope` is prose.\n'
+  } | make_skill skills/router "$portable"
+}
+
+test_routes_to_existing_skills_pass() {
+  make_router <<'EOF'
+| A how question | `explain` | The subject |
+| Something broken | `references/bug.md` | — |
+| A typo | in session | — |
+EOF
+  validate skills/router
+  assert_eq 0 "$STATUS" "exit status"
+}
+
+test_route_to_missing_skill_fails() {
+  make_router <<'EOF'
+| A how question | `explian` | The subject |
+EOF
+  validate skills/router
+  assert_eq 1 "$STATUS" "exit status"
+  assert_contains "$STDERR" "routes to 'explian', which is not a skill" "error output"
+}
+
+test_route_to_manual_skill_fails() {
+  make_router <<'EOF'
+| Say it shorter | `bro` | — |
+EOF
+  validate skills/router
+  assert_eq 1 "$STATUS" "exit status"
+  assert_contains "$STDERR" "routes to 'bro', a manual skill" "error output"
+}
+
+test_route_row_without_a_route_fails() {
+  make_router <<'EOF'
+| A how question | explain | The subject |
+EOF
+  validate skills/router
+  assert_eq 1 "$STATUS" "exit status"
+  assert_contains "$STDERR" "names no route" "error output"
+}
+
+test_route_to_missing_playbook_fails() {
+  make_router <<'EOF'
+| Something slow | `references/perf.md` | — |
+EOF
+  validate skills/router
+  assert_eq 1 "$STATUS" "exit status"
+  assert_contains "$STDERR" "points at 'references/perf.md', which the skill does not ship" "error output"
+}
+
 run_tests

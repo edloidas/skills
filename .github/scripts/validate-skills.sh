@@ -14,6 +14,7 @@ set -euo pipefail
 # - plugin roots do not embed Codex wrapper manifests directly
 # - each SKILL.md declares a name matching its directory, a description within the
 #   discovery caps, and no reference to a bundled file it does not ship
+# - every routing table (`| Task | Route |`) names existing, non-manual skills
 #
 # The Codex wrapper contract is validated separately by scripts/validate-codex.sh.
 
@@ -348,6 +349,70 @@ metadata_value() {
   ' "$1/SKILL.md"
 }
 
+# Prints `<line>\t<Route cell>` for every row of a routing table in one markdown file. A
+# routing table is any table whose header opens `| Task | Route |`; it ends at the first
+# line that is not a table row.
+route_cells() {
+  awk '
+    /^[|][ \t]*Task[ \t]*[|][ \t]*Route[ \t]*[|]/ { intable = 1; next }
+    intable && substr($0, 1, 1) != "|" { intable = 0 }
+    intable {
+      if ($0 ~ /^[|][ \t:|-]*$/) next
+      split($0, cell, "|")
+      print NR "\t" cell[3]
+    }
+  ' "$1"
+}
+
+# A router that names a skill which does not exist sends the agent nowhere, and one that
+# names a manual skill cannot run it: disable-model-invocation blocks every invocation the
+# model makes. Each backticked span in a Route cell is a sibling skill's name (its first
+# word) or a path inside this skill; the bare words `in session` mean no skill at all.
+# Manual skills are named outside the table, in the line telling the user to run them.
+validate_routes() {
+  local skill_dir="$1" skill_name="$2" md_file row line cell span name target spans
+  while IFS= read -r md_file; do
+    [ -f "$md_file" ] || continue
+    while IFS= read -r row; do
+      [ -n "$row" ] || continue
+      line="${row%%	*}"
+      cell="${row#*	}"
+      spans=$(printf '%s\n' "$cell" | grep -oE '`[^`]+`' || true)
+      if [ -z "$spans" ]; then
+        if [ "$(printf '%s' "$cell" | collapse_ws)" != "in session" ]; then
+          error "Skill '$skill_name': routing row at ${md_file#"$skill_dir"/}:$line names no route. Put the skill name or playbook path in backticks, or write 'in session'"
+        fi
+        continue
+      fi
+      while IFS= read -r span; do
+        span="${span#\`}"
+        span="${span%\`}"
+        case "$span" in
+          */*)
+            [ -e "$skill_dir/$span" ] ||
+              error "Skill '$skill_name': routing row at ${md_file#"$skill_dir"/}:$line points at '$span', which the skill does not ship"
+            ;;
+          *)
+            name="${span%% *}"
+            target="$(dirname "$skill_dir")/$name"
+            if [ ! -f "$target/SKILL.md" ]; then
+              error "Skill '$skill_name': routing row at ${md_file#"$skill_dir"/}:$line routes to '$name', which is not a skill in $(dirname "$skill_dir")/"
+            elif [ "$(metadata_value "$target" "tier")" = "manual" ]; then
+              error "Skill '$skill_name': routing row at ${md_file#"$skill_dir"/}:$line routes to '$name', a manual skill. disable-model-invocation stops a router from running it; tell the user to run /$name instead, outside the table"
+            fi
+            ;;
+        esac
+      done <<SPANS
+$spans
+SPANS
+    done <<ROWS
+$(route_cells "$md_file")
+ROWS
+  done <<EOF
+$(find "$skill_dir" -name '*.md' -type f | sort)
+EOF
+}
+
 # Hard per-skill rules. Judgment belongs to the skill-audit skill; everything checked
 # here is mechanical, unambiguous, and must never regress.
 validate_skill_content() {
@@ -598,6 +663,8 @@ INNER
 $CLAUDE_ONLY_PATTERNS
 EOF
   fi
+
+  validate_routes "$skill_dir" "$skill_name"
 
   # A body that points at references/, scripts/, or assets/ it does not ship sends the
   # agent looking for material that is not there. Paths whose last segment has no

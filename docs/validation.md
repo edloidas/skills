@@ -16,6 +16,24 @@ a valid `metadata.tier` with its discovery byte limit and `disable-model-invocat
 ([writing-skills.md](writing-skills.md#tiers)), and no `references/`, `scripts/`, or `assets/` path in `SKILL.md` that the skill does not
 ship.
 
+## Routing Tables
+
+A skill that routes work to other skills — `do` today — writes its routes as a table whose
+header opens `| Task | Route |`. `validate-skills.sh` reads every such table in the skill's
+`SKILL.md` and `references/*.md` and checks each row's **Route** cell:
+
+| Route cell holds | Must be |
+| ---------------- | ------- |
+| A backticked name, `` `explain` `` — or several, comma-separated | A sibling directory `skills/<name>/` with a `SKILL.md`, whose tier is not `manual`. Only the first word of a span is the name, so `` `pr-review --land` `` names `pr-review` |
+| A backticked path, `` `references/bug.md` `` | A file the skill ships |
+| The bare words `in session` | Nothing further: no skill runs |
+
+A row with none of these fails, so a name that lost its backticks cannot slip through. A
+manual skill is never a route — `disable-model-invocation` blocks the router from invoking it —
+so it is named outside the table, in a prose line telling the user to run `/<name>`, which the
+rule does not read. To add a route, add a row in that shape; the table ends at the first line
+that is not a row. Tests: the `route_*` cases in `tests/github/validate-skills.test.sh`.
+
 ## Body Budgets
 
 The 500-line body cap is mechanical, so it lives in `validate-skills.sh` rather than in
