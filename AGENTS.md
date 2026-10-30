@@ -22,6 +22,7 @@ job lives in `docs/`, and each rule lives in exactly one of these files:
 | [docs/testing.md](docs/testing.md) | Adding or changing a bundled shell script or a `validate-skills.sh` rule |
 | [docs/packaging.md](docs/packaging.md) | Changing the host set of a skill, the Codex wrapper, the generated trees, plugin manifests, or bundled agents |
 | [docs/releases.md](docs/releases.md) | Cutting a release or adding a version-bearing file |
+| [docs/evals.md](docs/evals.md) | Measuring which skill a real session picks: before and after a discovery-text, tier, or `/do` routing change |
 
 ## Layout
 
@@ -42,6 +43,7 @@ skills/
     └── assets/                   # Optional — templates, images, data
 tests/skills/<skill-name>/        # Behavioral tests for bundled scripts
 tools/skills-release/             # Repo-only skill, not published
+tools/skill-eval/                 # Repo-only skill: runs skills in a sandbox and scores them
 ```
 
 **`skills/<skill-name>/` is the one canonical location for a skill, and it must be a real

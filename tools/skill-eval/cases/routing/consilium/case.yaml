@@ -1,0 +1,15 @@
+schema_version: "1.1"
+name: routing-consilium
+tags: [routing]
+expected_outcome: "consilium"
+execution:
+  max_turns: 6
+  allowed_tools: [Read, Glob, Grep, Skill]
+  prompt: "/edloidas:do should count.sh also read stdin, or stay file-only? weigh the options before we pick one"
+context:
+  scaffold_script: setup.sh
+graders:
+  - name: route
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"edloidas:(?:consilium)"'

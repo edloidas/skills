@@ -71,7 +71,7 @@ Dynamic context injection: `` !`command` `` runs a shell command and inserts its
 `effort:` and `model:` frontmatter stay unset collection-wide. Claude Code supports them and the
 other hosts ignore them, so there is no portability cost — but there is also no measurement saying
 which skills are under- or over-thought, and the rubric already treats a `model` override as
-needing justification. Revisit with numbers, not intuition.
+needing justification. Revisit with numbers, not intuition — [evals.md](evals.md) is how to get them.
 
 Example frontmatter:
 

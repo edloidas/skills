@@ -1,0 +1,15 @@
+schema_version: "1.1"
+name: ambient-bug
+tags: [ambient]
+expected_outcome: "do (bug)"
+execution:
+  max_turns: 6
+  allowed_tools: [Read, Glob, Grep, Skill]
+  prompt: "count.sh prints 0 for an empty file, but the README says it prints nothing. fix it"
+context:
+  scaffold_script: setup.sh
+graders:
+  - name: route
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"edloidas:(?:do)"'

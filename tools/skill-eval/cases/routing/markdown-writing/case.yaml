@@ -1,0 +1,15 @@
+schema_version: "1.1"
+name: routing-markdown-writing
+tags: [routing]
+expected_outcome: "markdown-writing"
+execution:
+  max_turns: 6
+  allowed_tools: [Read, Glob, Grep, Skill]
+  prompt: "/edloidas:do tighten the Install section of the README"
+context:
+  scaffold_script: setup.sh
+graders:
+  - name: route
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"edloidas:(?:markdown-writing)"'

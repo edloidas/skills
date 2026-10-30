@@ -20,3 +20,6 @@ docs/superpowers/
 
 # External skill collections cloned for reference — keep them outside this repo
 /mp-skills/
+
+# skill-eval run output (traces, JSON, HTML report)
+tools/skill-eval/results/

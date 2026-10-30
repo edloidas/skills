@@ -22,7 +22,7 @@ directory — never a symlink. Two independent constraints force this:
 
 Internal, repo-only skills stay out of the published set by living under `tools/` with a
 symlink into `.claude/skills/` — Claude Code follows the symlink, while `npx skills`
-skips it. `tools/skills-release` is the one current example.
+skips it. `tools/skills-release` and `tools/skill-eval` are the current examples.
 
 ## Generated Trees
 

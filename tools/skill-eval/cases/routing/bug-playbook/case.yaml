@@ -1,0 +1,15 @@
+schema_version: "1.1"
+name: routing-bug-playbook
+tags: [routing]
+expected_outcome: "bug playbook"
+execution:
+  max_turns: 6
+  allowed_tools: [Read, Glob, Grep, Skill]
+  prompt: "/edloidas:do count.sh prints 0 for an empty file, but the README says it prints nothing. fix it"
+context:
+  scaffold_script: setup.sh
+graders:
+  - name: playbook
+    type: regex
+    target: trace
+    pattern: 'Route:\W*references/bug\.md|skills/do/references/bug\.md'

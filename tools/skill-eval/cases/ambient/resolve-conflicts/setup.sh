@@ -1,0 +1,1 @@
+../../../fixtures/setup-conflict.sh
