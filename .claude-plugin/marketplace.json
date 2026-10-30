@@ -2,7 +2,7 @@
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "edloidas",
   "metadata": {
-    "description": "Skills for planning, building, code review, auditing, maintenance, shipping, assistance, writing, and Obsidian"
+    "description": "Skills for planning, building, code review, auditing, maintenance, shipping, assistance, writing, Obsidian, and end-to-end workflows"
   },
   "owner": {
     "name": "Mikita Taukachou",
@@ -10,114 +10,15 @@
   },
   "plugins": [
     {
-      "name": "plan",
-      "source": "./plan",
-      "description": "Issue drafting, analysis, triage, and full issue lifecycle skills",
+      "name": "edloidas",
+      "source": "./",
+      "description": "Skills for planning, building, code review, auditing, maintenance, shipping, assistance, writing, Obsidian, and end-to-end workflows",
       "version": "5.18.0",
       "author": {
         "name": "Mikita Taukachou",
         "url": "https://edloidas.io"
       },
-      "category": "plan"
-    },
-    {
-      "name": "build",
-      "source": "./build",
-      "description": "Conflict resolution, commit summaries, and live behavioral probes",
-      "version": "5.18.0",
-      "author": {
-        "name": "Mikita Taukachou",
-        "url": "https://edloidas.io"
-      },
-      "category": "build"
-    },
-    {
-      "name": "review",
-      "source": "./review",
-      "description": "Adversarial review, cleanup, critical review board, PR feedback triage, and spec extraction",
-      "version": "5.18.0",
-      "author": {
-        "name": "Mikita Taukachou",
-        "url": "https://edloidas.io"
-      },
-      "category": "review"
-    },
-    {
-      "name": "audit",
-      "source": "./audit",
-      "description": "CI, package setup, security, skill, tsconfig, Three.js, React, and test-suite auditing skills",
-      "version": "5.18.0",
-      "author": {
-        "name": "Mikita Taukachou",
-        "url": "https://edloidas.io"
-      },
-      "category": "audit"
-    },
-    {
-      "name": "maintain",
-      "source": "./maintain",
-      "description": "Label sync, editor config, repo hardening, and session cleanup",
-      "version": "5.18.0",
-      "author": {
-        "name": "Mikita Taukachou",
-        "url": "https://edloidas.io"
-      },
-      "category": "maintain"
-    },
-    {
-      "name": "ship",
-      "source": "./ship",
-      "description": "Release workflows for npm packages",
-      "version": "5.18.0",
-      "author": {
-        "name": "Mikita Taukachou",
-        "url": "https://edloidas.io"
-      },
-      "category": "ship"
-    },
-    {
-      "name": "assist",
-      "source": "./assist",
-      "description": "External opinion, assistance, Q&A, and plain restatement tools including Codex CLI integration",
-      "version": "5.18.0",
-      "author": {
-        "name": "Mikita Taukachou",
-        "url": "https://edloidas.io"
-      },
-      "category": "assist"
-    },
-    {
-      "name": "write",
-      "source": "./write",
-      "description": "Markdown, README, and repository documentation writing skills",
-      "version": "5.18.0",
-      "author": {
-        "name": "Mikita Taukachou",
-        "url": "https://edloidas.io"
-      },
-      "category": "write"
-    },
-    {
-      "name": "obsidian",
-      "source": "./obsidian",
-      "description": "Obsidian vault organization and working document management skills",
-      "version": "5.18.0",
-      "author": {
-        "name": "Mikita Taukachou",
-        "url": "https://edloidas.io"
-      },
-      "category": "productivity"
-    },
-    {
-      "name": "workflow",
-      "source": "./workflow",
-      "description": "End-to-end workflows: one issue from analysis to merge, a batch of work orchestrated through subagents, the review queue, and the issue backlog",
-      "version": "5.18.0",
-      "author": {
-        "name": "Mikita Taukachou",
-        "url": "https://edloidas.io"
-      },
-      "category": "workflow"
+      "category": "development"
     }
   ]
 }

@@ -1,0 +1,20 @@
+{
+  "name": "edloidas",
+  "version": "5.18.0",
+  "description": "Skills for planning, building, code review, auditing, maintenance, shipping, assistance, writing, Obsidian, and end-to-end workflows",
+  "author": {
+    "name": "Mikita Taukachou",
+    "url": "https://edloidas.io"
+  },
+  "repository": "https://github.com/edloidas/skills",
+  "license": "MIT",
+  "keywords": [
+    "skills",
+    "issues",
+    "github",
+    "review",
+    "audit",
+    "release",
+    "workflow"
+  ]
+}
