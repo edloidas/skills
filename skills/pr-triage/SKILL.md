@@ -1,19 +1,8 @@
 ---
 name: pr-triage
 description: >
-  Work through every pull request waiting on your review in one run: list the queue, triage
-  each pull request into green, yellow or red, verify the findings before anything is said,
-  then propose an action per pull request and act only on what you say — approve and optionally
-  merge the clean ones,
-  fold small fixes into the author's commit with you as co-author, request changes, or send the
-  large and risky ones to a deep review of correctness, architecture, cleanup and tests. Also
-  lists your own open pull requests — ready to merge, needing you, or waiting. A recheck mode
-  picks up what authors pushed since your last review.
-when_to_use: >
-  On "what PRs are waiting for me", "review my queue", "triage the pull requests assigned to me",
-  "go through my review requests", "check which PRs got updates", "recheck the PRs I reviewed",
-  or "what's the state of my PRs". Not for one pull request — that is pr-review — and not for
-  attacking a local diff, which is changes-review.
+  Work through every pull request waiting on your review in one run, triaged by risk behind one
+  plan.
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
 allowed-tools: Bash(bash *pr-triage/scripts/queue.sh*) Bash(git:*) Bash(gh:*) Bash(jq:*) Bash(pnpm:*) Bash(npm:*) Bash(yarn:*) Bash(./gradlew:*) Bash(make:*) Read Glob Grep Edit Write Task Skill AskUserQuestion

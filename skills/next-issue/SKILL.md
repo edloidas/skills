@@ -1,21 +1,8 @@
 ---
 name: next-issue
 description: >
-  Survey the open GitHub issue backlog and recommend what to work on next. Reads recent
-  commits, the active epic and its sub-issues, open pull requests, plan files, and blockers,
-  then scopes each candidate in subagents and reports a short ranked list: number and title,
-  whether it is the top pick, type, size, whether it can be done automatically or needs manual
-  testing, what it does, and why it was picked — plus related issues not to pick yet and why.
-  Narrows by label and assignee, ranks one epic's sub-issues by impact against size, and on
-  an empty backlog proposes issues from the repo's direction docs without filing them.
-when_to_use: >
-  On "what's next", "what would we do next", "where are we now", "what's our plan for the
-  next issues", "what can we start on next", "which issue should I work on", "what should I
-  pick up", "next issue", "follow-ups to pick", "low hanging fruit", "easy issues", "bugs not
-  assigned to anyone or assigned to me", "minor things first or the bigger one", or "what's
-  left in this epic", and after a pull request merges or an issue closes with no
-  next step named. Also when another skill needs an issue selected — issue-flow's Step 0
-  calls it, and a bare solve-issue reaches it through that step.
+  Recommend which open GitHub issue to work on next, ranked with type, size, and what blocks the
+  rest.
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
 allowed-tools: Bash(bash *next-issue/scripts/context.sh*) Bash(gh issue list:*) Bash(gh issue view:*) Bash(gh api repos/*/labels --paginate --jq *) Bash(gh api graphql -f query=*) Bash(git log:*) Read Glob Grep Agent

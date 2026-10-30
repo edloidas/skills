@@ -1,13 +1,8 @@
 ---
 name: code-to-spec
 description: >
-  Extract a behavioral specification from a source-code bundle — a handful of files up to a
-  whole 500+ file application. Produces reproducible, stack-neutral specs another engineer or
-  LLM could use to rebuild the same observable behavior without reading the original source.
-when_to_use: >
-  When reverse-engineering a library or module's contract, understanding an application in
-  detail, or preparing input for a reimplementation. Also on "extract a spec", "what is this
-  module's contract", "map the architecture", or "document the public API surface".
+  Extract a stack-neutral behavioral specification from a codebase, from a few files to a whole
+  application.
 license: MIT
 compatibility: Claude Code
 allowed-tools: Read Write Glob Grep Task Bash

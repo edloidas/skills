@@ -1,17 +1,8 @@
 ---
 name: package-audit
 description: >
-  Audit a JS/TS repo's package setup: the package.json scripts surface (naming, composition,
-  lifecycle hooks, Vite Plus families, consistency) and, in a pnpm 10+ workspace, the workspace
-  config (catalogs, dependency placement, workspace protocol, overrides, peer-dependency rules,
-  hoisting, build order, .npmrc settings that are now defaults). Reads and reports only.
-when_to_use: >
-  When setting up or cleaning up a JS/TS package or pnpm monorepo, designing or standardizing
-  npm, pnpm, or Bun scripts, diagnosing why a dependency resolves oddly across packages, or
-  reviewing `pnpm-workspace.yaml`. Also on "npm scripts audit", "audit scripts", "check
-  package.json scripts", "clean up my build scripts", "workspace audit", "audit the workspace",
-  "check the monorepo setup", "pnpm catalog", "hoisting", or wiring build order through
-  Turborepo.
+  Audit a JS/TS repo's package.json scripts and pnpm workspace config for naming, placement, and
+  resolution problems.
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
 allowed-tools: Bash(jq:*) Bash(pnpm dedupe --check) Bash(pnpm -r ls:*) Bash(turbo run build --dry-run:*) Read Glob Grep

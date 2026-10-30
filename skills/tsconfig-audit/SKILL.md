@@ -1,13 +1,8 @@
 ---
 name: tsconfig-audit
 description: >
-  Audit tsconfig.json against TypeScript 7 and report which compilerOptions are hard errors,
-  which are redundant and safe to drop, and which must now be added.
-when_to_use: >
-  When migrating a TypeScript 5.x or 6.x config to 7, cleaning up an overgrown tsconfig, or
-  checking whether `baseUrl`, `outFile`, `downlevelIteration`, `esModuleInterop`,
-  `moduleResolution`, or `rootDir` is still needed. Also on "audit tsconfig" or "which
-  compilerOptions are deprecated".
+  Audit tsconfig.json against TypeScript 7: what is now an error, what is redundant, and what
+  must be added.
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
 allowed-tools: Bash(node:*) Read Glob Grep Edit

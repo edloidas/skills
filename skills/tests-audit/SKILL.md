@@ -1,14 +1,8 @@
 ---
 name: tests-audit
 description: >
-  Audit an existing test suite for anti-patterns — tautological mock round-trips, weak
-  assertions (toBeDefined / assertNotNull), implementation coupling, flaky timing, snapshot
-  rubber-stamping, and tests claiming guarantees they cannot provide — and report a keep /
-  tighten / rewrite / delete verdict per test.
-when_to_use: >
-  When asked to audit or review the quality of a test suite, judge whether existing tests are
-  worth keeping, diagnose flaky or brittle tests, or find out why a green suite is not
-  catching bugs.
+  Audit a test suite for anti-patterns and give a keep, tighten, rewrite, or delete verdict per
+  test.
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
 allowed-tools: Read Grep Glob Bash(grep:*) Bash(rg:*) Bash(fd:*) Bash(cat:*) Bash(wc:*) Bash(xargs:*) Bash(od:*) Bash(git diff:*) Bash(git log:*) Bash(git show:*) Bash(mktemp:*) Bash(cp:*)

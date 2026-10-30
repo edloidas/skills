@@ -1,18 +1,8 @@
 ---
 name: issue-triage
 description: >
-  Triage a repository's whole open issue backlog behind one plan. Groups related and similar
-  issues into themes, judges each theme, and verifies every close before proposing it. Then one
-  plan you approve and correct row by row: close as completed, not planned or duplicate with a
-  comment that proves it, fix type, labels, title and project status, note a stale body, ask an
-  owner, or file the follow-up a decision implies. A metadata mode relabels and moves issues
-  without judging them; a report mode stops at the plan.
-when_to_use: >
-  On "triage the issues", "go through the backlog", "what can we close", "which issues are stale",
-  "clean up the issue tracker", "groom the backlog", "relabel all issues", "fix the types and
-  labels", or "put every issue on the project". Not for picking what to work on next, which is
-  next-issue; not for scoping one issue (issue-analyze), editing one issue (issue-writer), or pull
-  requests (pr-triage).
+  Triage a repository's whole open issue backlog into themes and act on it behind one approved
+  plan.
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
 allowed-tools: Bash(bash:*) Bash(gh:*) Bash(git:*) Bash(jq:*) Read Write Edit Glob Grep Task Agent Skill AskUserQuestion

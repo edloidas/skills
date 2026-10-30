@@ -1,19 +1,7 @@
 ---
 name: doubt
 description: >
-  Rule on a set of claims before anyone acts on them — review findings, a plan's assumptions, an
-  analysis, a reviewer's objection, or the premises of a decision about to be made without the user.
-  Every claim gets exactly one verdict: it holds, it holds only in a narrower case, it is true but not
-  worth the fix, it falls, or nobody can settle it. Whoever judges never sees the reasoning that
-  produced the claim. Ends on a short recommendation of what to do next. Reads and reasons; changes
-  nothing.
-when_to_use: >
-  When a claim set already exists and should be checked before it is acted on — "validate your
-  findings", "do they agree", "double check this", "are we sure", "did we miss anything". Also
-  before contradicting a person, before a claim is published outward, and once before fixes start
-  on a set of findings. Also when a decision would normally go to the user and they are not there to
-  answer, or before a hard-to-reverse call made on the agent's own judgement — "get a third opinion",
-  "sanity-check this before I go on". Not inside a fix-verify loop, and not for a diff.
+  Rule on a set of claims with judges blind to the reasoning behind them, one verdict per claim.
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
 allowed-tools: Read Glob Grep Task Skill Write(*/outsider-*) Bash(git status:*) Bash(git hash-object:*)

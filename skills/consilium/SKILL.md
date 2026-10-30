@@ -1,16 +1,8 @@
 ---
 name: consilium
 description: >
-  Approach board for a problem or a decision. Dispatches independent seats — some generating
-  candidate approaches, including the simplest thing that could work and one agent outside this
-  process entirely, some attacking the assembled set comparatively — then verifies the surviving
-  objections and reports a ranked recommendation with its trade-offs. An approach already on the
-  table enters as one candidate among several. Autonomous; changes nothing.
-when_to_use: >
-  When the question is what to build or how to frame the problem, not whether a diff is
-  correct: "how should we approach this", "what are the options", "is this the right way",
-  "think hard", "ultrathink", "stress-test this plan". Also for an architecture decision, a
-  PRD review, or weighing trade-offs, prior art, blast radius, and lock-in.
+  Generate competing approaches to a problem or decision from independent seats, attack them,
+  and recommend one.
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
 allowed-tools: Read Glob Grep Task Skill Write(*/outsider-*) Bash(git status:*) Bash(git hash-object:*)

@@ -1,13 +1,11 @@
 ---
 name: outsider
 description: >
-  Quick opinion from an agent CLI outside this session — ask a specific question with context,
-  or review code changes. Picks an installed agent that is not the one running this skill, so
-  the answer comes from a different model in a different process. Lighter and faster than a
-  full review board.
+  Quick opinion from an agent CLI outside this session, a different model in a different
+  process, on a question or a code change. Not a full review — that is changes-review.
 when_to_use: >
-  On "ask codex", "ask claude", "outside opinion", "second opinion", or "review with another
-  agent", and when a fast independent perspective would settle something.
+  "ask codex", "ask claude", "outside opinion", "second opinion", "review with another agent".
+  Also when a fast independent perspective would settle something.
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
 allowed-tools: Bash(bash *outsider/scripts/run-outsider.sh *) Bash(bash *outsider/scripts/resolve-tmp.sh) Write(*/outsider-*) AskUserQuestion

@@ -1,14 +1,8 @@
 ---
 name: issue-analyze
 description: >
-  Fetch a GitHub issue by number or URL, analyze its scope of work, cross-reference local
-  project docs and repo instruction files, read the related issues — parent epic, siblings,
-  blockers, dependents, mentions — to correct the plan against them, and produce a
-  structured implementation analysis with a task list.
-when_to_use: >
-  Before starting work on an issue, to understand what has to be built and plan the steps.
-  Also on "analyze issue #N", "what does this issue involve", "is anything blocking this", or
-  "how does this fit the epic".
+  Analyze a GitHub issue against its epic, siblings, and blockers, and produce an implementation
+  task list.
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
 allowed-tools: Bash(bash *issue-analyze/scripts/fetch-issue.sh*) Bash(bash *issue-analyze/scripts/related.sh*) Bash(gh pr view:*) Bash(gh api graphql -f query=*) Bash(git rev-parse:*) Read Glob Grep

@@ -1,17 +1,8 @@
 ---
 name: code-cleanup
 description: >
-  Post-implementation cleanup of correct code. Prunes comments aggressively: deletes what
-  restates the code, files design rationale to the commit message and wider context to the PR
-  or an issue, collapses one mechanism explained in three places, strips issue and PR
-  references that make a file unreadable on its own, compacts genuine gotchas, renames unclear
-  symbols so a comment is not needed, checks the code against the project's conventions, and
-  simplifies what is more complicated than it needs to be. Tightens docs without gutting them.
-  Auto-applies and reports.
-when_to_use: >
-  After implementing, before committing, or on "clean up the comments", "trim the comments",
-  "prune them aggressively", "we don't need that many comments", "tidy this code",
-  "apply the conventions", "simplify this".
+  Clean up correct code after implementing: prune comments, apply the project's conventions, and
+  simplify.
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
 allowed-tools: Bash(git:*) Read Edit Glob Grep AskUserQuestion

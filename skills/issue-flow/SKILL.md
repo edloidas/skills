@@ -1,13 +1,8 @@
 ---
 name: issue-flow
 description: >
-  Full GitHub issue lifecycle: pick an issue, create it, branch, commit, squash, push, PR,
-  merge. Owns every git and gh write in the pipeline. Handles project board integration, base
-  branch detection (main/master/epic-*), and compact step reports. Supports entering at any
-  step.
-when_to_use: >
-  On "pick an issue", "create an issue", "start work on #N", "commit this",
-  "open a PR", or "merge that PR" — and for any single step of the issue pipeline.
+  Run any step of the GitHub issue lifecycle: pick, create, branch, commit, squash, push, PR,
+  and merge.
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
 allowed-tools: Bash(gh:*) Bash(git:*) Bash(bash *issue-flow/scripts/*) Bash(mktemp:*) Bash(timeout:*) Bash(gtimeout:*) Bash(sleep:*) Read Write Skill AskUserQuestion

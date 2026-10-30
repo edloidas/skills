@@ -1,14 +1,8 @@
 ---
 name: react-audit
 description: >
-  Find the React problems linters cannot see: effects that should not exist or re-run for the
-  wrong reason, memoization that is missing or pointless, state that should be an action or a
-  reducer, and components that have outgrown themselves. Reports, never edits.
-when_to_use: >
-  After building or reworking a React feature, when reviewing a change touching components or
-  hooks, or when a component works but nobody can explain its re-renders. Also on "react
-  audit", "audit hooks", "why does this re-render", "check my useEffect", or `useEffectEvent`
-  and React compiler questions.
+  Audit React code for what linters miss: needless effects, wrong memoization, state
+  architecture, oversized components.
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
 allowed-tools: Bash(bash:*) Bash(git:*) Bash(jq:*) Bash(grep:*) Bash(mktemp:*) Task Read Glob Grep

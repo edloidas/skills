@@ -1,14 +1,8 @@
 ---
 name: commit-summary
 description: >
-  Write a commit message body by deriving it from the code, not by summarizing the diff.
-  Weighs the change, then either answers seven questions against the implementation — what
-  forces it, which call paths reach it, how it failed, what breaks on update, what the tests
-  pin — or produces a two-to-three-line body for mechanical and generated changes. Not for
-  full commit creation.
-when_to_use: >
-  On "commit body", "commit summary", or "change description", and when another skill needs a
-  body composed for a commit it is about to make.
+  Write a commit message body derived from the code behind the change, not from a summary of the
+  diff.
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
 allowed-tools: Read Grep Bash(git status:*) Bash(git diff:*) Bash(git log:*) Bash(git show:*) Bash(git blame:*)

@@ -1,16 +1,8 @@
 ---
 name: security-audit
 description: >
-  Audit a repository for supply-chain and security risks — GitHub Actions workflows, release
-  and npm publishing, repository settings (rulesets, Actions defaults, secret scanning,
-  immutable releases), pnpm and bun install-time controls, and injection vectors in
-  application code. Reads and reports only; never mutates the repo or its GitHub settings.
-  Aggregates findings from focused subagents across whichever areas the repo exposes.
-when_to_use: >
-  On "audit security", "check supply chain", "harden CI", "harden release", "audit rulesets",
-  "audit install scripts", or "review for vulnerabilities". Also for SHA pinning,
-  `pull_request_target`, npm provenance and trusted publishers, immutable releases,
-  Dependabot, branch and tag protection, secret scanning, or lifecycle-script allowlists.
+  Audit a repository's supply chain, Actions, release setup, and GitHub settings for security
+  gaps, read-only.
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
 allowed-tools: Bash(ls:*) Bash(cat:*) Bash(jq:*) Bash(yq:*) Bash(sed -E:*) Bash(grep:*) Bash(awk:*) Bash(gh api:*) Bash(gh repo view:*) Bash(git fetch:*) Bash(git branch:*) Bash(git diff:*) Bash(git log:*) Bash(git rev-parse:*) Read Agent AskUserQuestion

@@ -354,7 +354,7 @@ validate_skill_content() {
   local skill_dir="$1"
   local skill_name="$2"
   local declared_name description when_to_use combined ref body_lines body_tokens body_budget
-  local rule label pattern hit key field match canonical tier dmi
+  local rule label pattern hit key field match canonical tier dmi limit bytes
 
   if [ "$(head -n 1 "$skill_dir/SKILL.md")" != "---" ]; then
     error "Skill '$skill_name': SKILL.md does not open with a YAML frontmatter block"
@@ -414,6 +414,22 @@ validate_skill_content() {
       error "Skill '$skill_name': metadata.tier '$tier' is not one of auto, routed, manual"
       ;;
   esac
+
+  # Bytes, not chars: every host pays for the entry in every session, and an em dash
+  # costs three. Measured on the entry the way the host joins the two fields.
+  limit=""
+  case "$tier" in
+    auto) limit=600 ;;
+    routed) limit=200 ;;
+  esac
+  if [ -n "$limit" ]; then
+    combined="$description"
+    [ -z "$when_to_use" ] || combined="$description $when_to_use"
+    bytes=$(printf '%s' "$combined" | wc -c | tr -d ' ')
+    if [ "$bytes" -gt "$limit" ]; then
+      error "Skill '$skill_name': description + when_to_use is $bytes bytes; the $tier tier allows $limit (docs/writing-skills.md#tiers)"
+    fi
+  fi
 
   body_lines=$(body_line_count "$skill_dir")
   body_budget=$(body_line_budget "$skill_dir")

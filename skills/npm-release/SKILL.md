@@ -1,11 +1,11 @@
 ---
 name: npm-release
 description: >
-  Release an npm, pnpm, or bun package: version bump, validation, git tagging, and publishing,
-  with safety checks and explicit user approval before anything is pushed.
+  Release an npm, pnpm, or bun package: version bump, validation, tag, and publish, with
+  approval before anything is pushed. Not for the edloidas/skills repo — that is skills-release.
 when_to_use: >
-  On "release this", "publish a new version", "bump the version", "tag a release", or "ship
-  it". For the edloidas/skills repo itself, use skills-release instead.
+  "release this", "publish a new version", "bump the version", "tag a release", "ship it". Also
+  when a JS package has merged changes waiting for a published version.
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
 allowed-tools: Bash Read Glob AskUserQuestion

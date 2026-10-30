@@ -1,14 +1,7 @@
 ---
 name: issue-writer
 description: >
-  Draft or update a GitHub issue. Analyzes the description, asks clarifying questions, and
-  produces a well-structured title and body following the project's template. Can update an
-  existing issue or prepare a draft for filing later.
-when_to_use: >
-  On "draft an issue", "write an issue", "write this up as an issue", "update issue #N", "edit
-  that issue", or "reword the issue body". Also when a bug report, feature request, task, or
-  documentation gap has to become a well-formed GitHub issue before work starts, or when a
-  draft is wanted for later filing rather than immediate creation.
+  Draft or update a GitHub issue with a title and body that follow the project's template.
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
 allowed-tools: Bash Read Glob AskUserQuestion

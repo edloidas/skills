@@ -1,18 +1,7 @@
 ---
 name: pr-review
 description: >
-  Handle a pull request from whichever side you are on. On someone else's branch it attacks
-  the diff through changes-review, then publishes a real review with per-line comments and a
-  verdict — or, asked to land it, approves and merges, folding small fixes in first. On your
-  own it works the threads people and bots left — decides its standing in each, verifies the
-  claim before answering, runs the project's checks, then replies and resolves. Changes no
-  code unless asked.
-when_to_use: >
-  When a pull request needs reviewing, when PR feedback needs addressing or answering, when
-  Copilot or other bot comments need dealing with, or on "what is still open on this PR". Also
-  on "approve and merge it if it's good", "fix the nits, squash and merge" on someone else's pull
-  request; merging your own is issue-flow. Not for the whole queue of pull requests waiting on
-  you — that is pr-triage.
+  Review someone else's pull request, or verify and answer the feedback threads on your own.
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
 allowed-tools: Bash(git:*) Bash(gh:*) Bash(pnpm:*) Bash(npm:*) Read Glob Grep Edit Write Task Skill

@@ -1,16 +1,8 @@
 ---
 name: three-audit
 description: >
-  Audit Three.js and React Three Fiber code for performance and correctness issues that hurt
-  frame rate in WebGL scenes — uncapped devicePixelRatio, fillrate blowups, missing disposals,
-  render-loop allocations, and similar pitfalls. Walks through detecting each issue, assessing
-  the offending sites in context, and reporting findings grouped by severity.
-when_to_use: >
-  When reviewing a 3D scene's performance, before shipping a Three.js / R3F build, or when
-  investigating a frame-rate regression — "smooth in dev preview, choppy in fullscreen", "why
-  is my scene slow", "the scene hitches". Also on "three audit", "audit threejs", "audit r3f",
-  or when reviewing a change touching renderer setup, `useFrame`, materials, shadows,
-  instancing, or texture loading.
+  Audit Three.js and React Three Fiber code for frame-rate and correctness pitfalls in WebGL
+  scenes.
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
 allowed-tools: Read Grep Glob Bash(rg:*) Bash(jq:*) Bash(ls:*) Bash(find:*)

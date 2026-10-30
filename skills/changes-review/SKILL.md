@@ -1,17 +1,7 @@
 ---
 name: changes-review
 description: >
-  Attack a code change and report what survives. Dispatches independent reviewers in parallel,
-  each with a single job and no access to the implementer's reasoning: one hunts correctness
-  bugs blind to the issue, one hunts requirement gaps against the issue text, one runs outside
-  the process entirely. Optionally re-attacks its own findings, then synthesizes what is left.
-  Returns findings and changes nothing in the repo — no autofix, no edits. On request it
-  publishes to the author, gated on demonstrated evidence. Every phase is configurable.
-when_to_use: >
-  Before committing, when a change should be attacked rather than assessed, or as the find
-  step behind a fix pass or a PR review — "review my changes", "attack this diff", "find bugs
-  before I commit". Answering the threads already on a pull request is
-  pr-review's job, not this one.
+  Attack a diff with independent cold reviewers and report what survives.
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
 allowed-tools: Bash(git diff:*) Bash(git ls-files:*) Bash(git status:*) Bash(git hash-object:*) Bash(git show:*) Bash(git log:*) Bash(git blame:*) Bash(git branch --show-current) Bash(gh issue view:*) Bash(gh pr view:*) Bash(gh pr comment:*) Bash(gh api user:*) Bash(gh api repos/*/pulls/*/reviews --input *) Bash(gh api repos/*/pulls/*/reviews --jq *) Bash(gh --version) Read Glob Grep Task Skill

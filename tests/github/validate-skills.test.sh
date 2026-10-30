@@ -237,4 +237,59 @@ test_auto_with_the_flag_fails() {
   assert_contains "$STDERR" "tier 'auto' with disable-model-invocation: true" "error output"
 }
 
+# make_described skills/<name> <tier> <description bytes> [extra frontmatter line]
+make_described() {
+  local dir="$1" tier="$2" n="$3" extra="${4:-}" desc
+  desc=$(printf '%*s' "$n" '' | tr ' ' 'a')
+  mkdir -p "$dir"
+  {
+    printf -- '---\nname: %s\ndescription: %s\n' "$(basename "$dir")" "$desc"
+    printf 'compatibility: %s\n' "$portable"
+    [ -z "$extra" ] || printf '%s\n' "$extra"
+    printf 'metadata:\n  tier: %s\n---\n\n# Sized\n' "$tier"
+  } > "$dir/SKILL.md"
+}
+
+test_routed_at_its_limit_passes() {
+  make_described skills/sized routed 200
+  validate skills/sized
+  assert_eq 0 "$STATUS" "exit status"
+}
+
+test_routed_past_its_limit_fails() {
+  make_described skills/sized routed 201
+  validate skills/sized
+  assert_eq 1 "$STATUS" "exit status"
+  assert_contains "$STDERR" "is 201 bytes; the routed tier allows 200" "error output"
+}
+
+test_routed_limit_counts_bytes_not_chars() {
+  # 195 letters plus " — b" is 199 chars but 201 bytes: the em dash costs three
+  mkdir -p skills/sized
+  printf -- '---\nname: sized\ndescription: %s — b\ncompatibility: %s\nmetadata:\n  tier: routed\n---\n' \
+    "$(printf '%*s' 195 '' | tr ' ' 'a')" "$portable" > skills/sized/SKILL.md
+  validate skills/sized
+  assert_eq 1 "$STATUS" "exit status"
+  assert_contains "$STDERR" "is 201 bytes" "error output"
+}
+
+test_auto_counts_when_to_use_too() {
+  make_described skills/sized auto 400 "when_to_use: $(printf '%*s' 200 '' | tr ' ' 'b')"
+  validate skills/sized
+  assert_eq 1 "$STATUS" "exit status"
+  assert_contains "$STDERR" "is 601 bytes; the auto tier allows 600" "error output"
+}
+
+test_auto_inside_its_limit_passes() {
+  make_described skills/sized auto 400 "when_to_use: $(printf '%*s' 199 '' | tr ' ' 'b')"
+  validate skills/sized
+  assert_eq 0 "$STATUS" "exit status"
+}
+
+test_manual_has_no_byte_limit() {
+  make_described skills/sized manual 900 "disable-model-invocation: true"
+  validate skills/sized
+  assert_eq 0 "$STATUS" "exit status"
+}
+
 run_tests

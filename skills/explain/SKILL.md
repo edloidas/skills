@@ -1,14 +1,13 @@
 ---
 name: explain
 description: >
-  Explain how something actually works — code, a type, an error, a fix, a design — by tracing
-  the mechanism on concrete values instead of describing it. Also checks whether the user's
-  own account of something is correct.
+  Explain how something actually works (code, a type, an error, a design) by tracing the
+  mechanism on concrete values, or check whether the user's own account of it is right. Not for
+  choosing between approaches — that is consilium.
 when_to_use: >
-  When the user asks how or why something works, wants a walkthrough or a step-by-step, says
-  an earlier answer did not land ("explain again", "simpler", "I still don't get it"), asks
-  again on a subject already explained, or asks whether what they wrote about it is right.
-  Not for choosing between approaches — that is consilium; a quick outside opinion is outsider.
+  "how does this work", "why does this happen", "walk me through it", "explain again", "I still
+  don't get it", "is what I wrote right". Also when an earlier answer did not land, or the same
+  subject comes up again.
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
 allowed-tools: Read Glob Grep Bash Task

@@ -1,15 +1,7 @@
 ---
 name: live-probe
 description: >
-  Settle a claim about observable behavior by running the thing and looking at the result, once.
-  Finds the project's declared way to run and observe, picks the cheapest rung that answers the
-  claim — a narrowed existing check, a throwaway probe, the built artifact queried directly, a
-  rendered frame compared — and returns a verdict with the artifact it read. One hypothesis, one
-  observation, then it stops. Not a debugging loop.
-when_to_use: >
-  When a verification step reaches a claim about output that reading cannot settle — layout,
-  rendering, wire format, exit code, timing, log content, a golden or snapshot result — and on
-  "prove it", "did that actually fix it", "run it and check".
+  Settle a claim about observable behavior by running the thing once and reading the result.
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
 allowed-tools: Bash Read Write Edit Glob Grep

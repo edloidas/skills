@@ -1,11 +1,10 @@
 ---
 name: repo-hardening
 description: >
-  Apply a security hardening baseline to a GitHub repository via gh api — branch and tag
+  Apply a security hardening baseline to a GitHub repository through the API: branch and tag
   rulesets, Actions token defaults, secret scanning, Dependabot, private vulnerability
-  reporting, CodeQL, immutable releases, and branch-restricted environments for deploy
-  secrets. The write half of the pair with edloidas:security-audit, which finds the same gaps
-  read-only.
+  reporting, CodeQL, immutable releases, and branch-restricted environments for deploy secrets.
+  The write half of the pair with security-audit, which finds the same gaps read-only.
 when_to_use: >
   On "harden this repo", "protect the main branch", "lock down releases or tags", "set up
   rulesets", "move deploy secrets into an environment", or "enable immutable releases", and

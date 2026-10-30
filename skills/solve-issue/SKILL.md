@@ -1,18 +1,8 @@
 ---
 name: solve-issue
 description: >
-  End-to-end GitHub issue workflow, whole or slice by slice with one commit each: analyze
-  the issue, plan and implement, verify with available tests/build/lint and an optional live
-  observation, simplify, audit the tests it added, attack the change with parallel
-  adversarial reviewers and fix what they find, trim comments and artifacts, then choose a
-  push / PR / merge endgame — holding the merge while
-  Copilot and other automated reviewers report, and answering and resolving their threads.
-  The lifecycle's git and GitHub writes are delegated to `issue-flow`, the review threads to
-  `pr-review`.
-when_to_use: >
-  When a single autonomous command is wanted for an issue already considered simple enough to
-  delegate end-to-end — `/solve-issue 69`, or a bare `/solve-issue` to be asked which issue
-  first.
+  Solve one GitHub issue end to end: analyze, implement, verify, review and fix, then push, open
+  a PR, or merge.
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
 allowed-tools: Bash(bash:*) Bash(git diff:*) Bash(git status:*) Bash(git log:*) Bash(gh pr view:*) Bash(gh api:*) Bash(sleep:*) Bash(jq:*) Bash(rm:*) Bash(ls:*) Read Edit Write Glob Grep Task Skill AskUserQuestion

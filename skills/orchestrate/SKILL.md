@@ -1,18 +1,8 @@
 ---
 name: orchestrate
 description: >
-  Coordinate a body of work from one session that never touches the code. The work is split into
-  units — issues to implement, new issues to file and solve, your own pull requests to fix,
-  someone else's to review, decisions to settle — and each unit runs in its own worker
-  subagent through the skill that owns it: solve-issue, pr-review, consilium, doubt. The session
-  keeps the goal, the plan, and a small run state on disk, checks every hand-back against GitHub,
-  sends a second worker when one stops short, and gives a plain summary after every unit.
-when_to_use: >
-  When several pieces of work should run in one go without filling this session with their code:
-  "you are the orchestrator", "run solve-issue in subagents", "do #20 then #21 and #22", "stack the
-  PRs", "implement the whole epic", "fix the review comments on my PRs, then do the next issues",
-  "resume the orchestration". Not for one issue — that is solve-issue — and not for a review queue
-  alone, which is pr-triage.
+  Run a large goal as units, each in its own worker subagent, from a session that never touches
+  the code.
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
 allowed-tools: Bash(bash *orchestrate/scripts/pr-state.sh *) Bash(gh api user --jq .login) Bash(gh repo view:*) Bash(gh issue view:*) Bash(gh pr view:*) Bash(gh pr list:*) Bash(gh api repos/*/pulls/*/reviews --jq *) Bash(git status:*) Bash(git branch:*) Bash(git log:*) Bash(git fetch:*) Bash(git worktree:*) Bash(git checkout:*) Bash(git pull:*) Bash(jq:*) Bash(mkdir:*) Bash(date:*) Read Write Task Agent Skill AskUserQuestion

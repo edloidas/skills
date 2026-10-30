@@ -1,13 +1,12 @@
 ---
 name: resolve-conflicts
 description: >
-  Resolve git merge and rebase conflicts semi-automatically. Classifies conflicts by type
-  (DU/UD/UU/AA/DD), auto-resolves trivial ones, and applies context-aware resolution for the
-  rest.
+  Resolve git merge and rebase conflicts semi-automatically: classify each by type, auto-resolve
+  the trivial ones, and resolve the rest from context.
 when_to_use: >
-  When given a PR number or link to rebase, when a working tree already has conflicts, or when
-  another skill hits conflicts mid-rebase or mid-merge. Also on "resolve conflicts", "fix the
-  merge conflicts", or "rebase this PR".
+  "resolve conflicts", "fix the merge conflicts", "rebase this PR", "rebase onto main". Also
+  when given a PR to rebase, when the working tree already has conflicts, or when another skill
+  hits them mid-rebase or mid-merge.
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
 allowed-tools: Bash(bash *resolve-conflicts/scripts/*) Bash(git:*) Bash(gh:*) Bash(npm:*) Bash(npx:*) Bash(pnpm:*) Bash(yarn:*) Bash(bun:*) Read Edit Task Agent AskUserQuestion
