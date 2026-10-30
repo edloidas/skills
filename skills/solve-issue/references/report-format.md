@@ -18,6 +18,9 @@ Print this shape, omitting rows that do not apply:
 - unit tests: ok (N passed)
 - build: ok
 - observation: skipped (not behavioral) | reproduced | refuted | unverified (<reason>)
+- bug: fixed | fixed (stand-in: <check>) | unverified — <reason>
+  - before: `<command>` — `<decisive failing line, verbatim>` | Repro: impractical — <reason>; stand-in `<check>` — `<its failing line>` | no stand-in
+  - after: `<same command>` — `<decisive passing line, verbatim>`
 
 **Tests**
 - N audited — N tightened, N rewritten, N deleted, N noted
@@ -47,6 +50,7 @@ Omit, when they do not apply:
 - the **Advisors** detail lines when the reviewers came back clean — a single
   `no findings` line is enough
 - **Tests** when Phase 4.5 was skipped
+- `observation` on a bug, whose `bug:` lines replace it; `bug:` on any other issue
 - **Outcomes** and **Needs you** when there is nothing in them
 - **Related work** when the plan had none — it is the record of where the commit departs
   from the issue text, so a Skip or Correct the plan made is never left out of it
@@ -85,7 +89,9 @@ work back into pending work.
 - type-check: ok
 - unit tests: ok (218 passed)
 - build: ok
-- observation: reproduced — tooltip flips above the anchor at y > 640
+- bug: fixed
+  - before: `pnpm vitest run Tooltip.test.tsx -t "flips at viewport edge"` — `expected 'top' but received 'bottom'`
+  - after: same command — `✓ Tooltip > flips at viewport edge`
 
 **Tests**
 - 3 audited — 1 tightened, 0 rewritten, 1 deleted

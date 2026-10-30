@@ -201,7 +201,8 @@ planned, slices: <N> | off.`
 
 ## Phase 3: Implement
 
-Work through the tracked Changes items sequentially.
+Work through the tracked Changes items sequentially. A bug starts with its reproduction,
+per `references/bug-evidence.md` → **Before**.
 
 For a checkpoint mid-implementation, invoke `issue-flow` with intent `"snapshot"` — its
 Step 3 snapshot mode freezes the tree into a content-free `wip:` commit. Phase 5 squashes
@@ -211,7 +212,8 @@ If a task hits a hard blocker (missing credentials, external service down, decis
 required), stop and ask the user — or, under `auto`, act per **Asking the User**.
 
 End Phase 3 with one line: `Phase 3: <N>/<N> changes implemented, <N> files touched.` Then
-go to Phase 4 — do not run the project's checks ad hoc as you go; Phase 4 selects them.
+go to Phase 4 — do not run the project's checks ad hoc as you go, a bug's repro aside;
+Phase 4 selects them.
 
 ## Phase 4: Verify
 
@@ -230,7 +232,7 @@ and name what was missing, rather than inventing a command the project never dec
 
 Checks prove the change compiles and that nothing already covered broke. They do not prove
 a claim about **observable output** — layout, rendering, wire format, exit code, timing,
-log content, a golden result. Where the issue asked for a change of that kind, ask, per
+log content, a golden result. Where a non-bug issue asked for a change of that kind, ask, per
 **Asking the User**:
 
 - **Option 1** — header `Skip probe`, label `Skip observation` `(Recommended)` — `Checks cover this scope.`
@@ -245,14 +247,16 @@ run the way the instruction layer or the repo declares, or report `unverified`.
 If any verification step fails:
 
 1. Go back to Phase 3, fix the cause, and re-run **only** the failing check.
-2. If the same check fails twice after two fix attempts, stop and hand back to the user
-   with the failure output. Do not proceed past Phase 4 with failing verification.
+2. Once two fix attempts at the same check have each failed, run
+   `references/bug-evidence.md` → **Attack the Premise**, then hand back with its result.
+   Do not proceed past Phase 4 with failing verification.
 
 ### Ending the phase
 
-Phase 4 is over when every check the verification set selected is green. End Phase 4 with
+Phase 4 is over when every check the verification set selected is green and a bug's
+repro passes, per `references/bug-evidence.md` → **After**. End Phase 4 with
 one line naming every group, including the ones that did not run and why: `Phase 4: type-check
-ok, unit tests ok (<N> passed), build ok, lint not configured — observation skipped.`
+ok, unit tests ok (<N> passed), build ok, lint not configured — observation skipped | bug fixed.`
 
 Then stop. Do not re-run the whole suite on top of the selected set, do not add a check
 the set did not select, and do not re-read the diff for a second opinion. Phase 4.6 is
