@@ -9,7 +9,7 @@ when_to_use: >
   work". Also when a task arrives that no more specific skill clearly owns.
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
-allowed-tools: Read Glob Grep Skill
+allowed-tools: Read Edit Write Glob Grep Skill Task Bash(git diff:*) Bash(git status:*) Bash(git log:*) Bash(git blame:*)
 argument-hint: "[task]"
 metadata:
   author: edloidas
@@ -123,8 +123,8 @@ fact the user does not have yet — a caller, a cause, a date — and reports it
 **A skill.** Invoke the `<name>` skill with the row's **Carry into it** as its arguments, and the
 task as context where the skill takes free text. A host that cannot invoke a skill by name: open
 that skill's `SKILL.md` — it sits beside this one in the installed skills directory — and follow
-it. A routed skill that is not installed: say so, and follow the nearest playbook row instead,
-naming it. The skill's own gates, questions and report stand; do not wrap or repeat them.
+it. A routed skill that is not installed: follow a playbook row only when it delivers the same thing,
+naming it; otherwise print `<name> is not installed.` and stop. The skill's own gates, questions and report stand; do not wrap or repeat them.
 
 **A playbook.** Open it and follow it. Each one ends on a named line and a stop sentence. Two terms
 the playbooks share: **the project's checks** are the finite commands its instruction file or CI
