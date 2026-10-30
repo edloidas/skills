@@ -89,6 +89,12 @@ Delete on sight: "Note that", "It is important to note", "simply", "just",
 "basically", "in order to", "As you can see", "Let's dive in", "In this section
 we will", "feel free to", "powerful", "seamless", "robust".
 
+Text that leaves the session — a PR body, a README, an issue — reads as generated
+when it reaches for stock words. Write "use", "show", "stress" where the draft says
+"delve", "showcase", "underscore"; write "is" where it says "serves as"; state the
+claim plainly instead of framing it as "not just X but Y"; and call one thing by
+one name throughout, because a reader takes a new word for a new thing.
+
 A section opening, before and after:
 
 ````markdown
@@ -114,7 +120,34 @@ changelog is a list. An architecture doc can be denser. A PR body is a factual
 summary of changes — no personality, no explanation of why the reader should
 care. Do not make everything chatty; make everything clear.
 
-## 4. Simple first, technical after
+## 4. One reading per sentence
+
+A sentence that parses two ways gets parsed the wrong way by some reader. Each
+habit below removes one second reading:
+
+- **Put "only" next to the word it limits.** "The flag applies only to new
+  users", not "The flag only applies to new users".
+- **Say what a noun stack is.** "user session token refresh handler" is four
+  guesses; "the handler that refreshes a user's session token" is one.
+- **Give every "it", "this", and "that" one referent.** When two nouns came
+  before it, repeat the noun.
+- **Write "or" or "and" between alternatives.** "a file, a directory, or both",
+  not "a file and/or directory".
+- **Write full sentences.** "Parser rejects bad date → exit 2" becomes "When the
+  parser rejects a date, the command exits with code 2."
+
+````markdown
+<!-- before -->
+Only enable it for the cache/queue client → retries on timeout. This keeps the
+request latency budget intact.
+
+<!-- after -->
+Enable `retryOnTimeout` only for the cache client and the queue client. When
+either one times out, that client retries the call instead of failing the
+request, so a slow dependency does not use up the request's latency budget.
+````
+
+## 5. Simple first, technical after
 
 Never mix the plain explanation and the exhaustive detail in one block. Split
 them:
@@ -131,7 +164,11 @@ This is also the rule for reference material: **prose explains, tables
 enumerate.** Anything with a repeated shape — options, flags, error codes, exit
 codes, fields, comparisons — is a table, not a bulleted list of sentences.
 
-## 5. Structure defaults
+**One document, one mode.** A tutorial walks one path and links to the reference
+for the option tables. A reference lists and looks up; it does not narrate. A
+document that tries to be both makes each reader wade through the other's half.
+
+## 6. Structure defaults
 
 - One `#` per document, or none when a centered HTML title block already names it.
   Everything else is `##` / `###`. Do not go past `###`.
@@ -151,7 +188,7 @@ codes, fields, comparisons — is a table, not a bulleted list of sentences.
 - **Match the file's existing wrap width.** If the file hard-wraps at 80, wrap
   at 80. If it does not, do not introduce it.
 
-## 6. Don't
+## 7. Don't
 
 - Emoji headings, unless the repo already does it consistently.
 - More than four or five badges. Version, CI, license, runtime — stop there.
