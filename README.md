@@ -230,7 +230,7 @@ Every skill runs on Claude Code, Codex, OpenCode, and pi, except `code-to-spec`,
 only. Topic rows group the table for reading; they are not separate plugins.
 
 **Tier** says how a skill is reached: `auto` skills start on their own when your request matches,
-`routed` ones run by `/name` or when another skill calls them, and `manual` ones only by `/name`.
+`routed` ones run by `/name`, through `do`, or when another skill calls them, and `manual` ones only by `/name`.
 
 | Skill | Agents | Tier | Description |
 | ----- | ------ | ---- | ----------- |

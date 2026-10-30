@@ -548,5 +548,5 @@ disagree usefully, so the report says which kind of diversity a run actually got
 `skills/outsider` used to be two skills, `codex` and `claude`, each excluded from the
 host it would have called recursively. It now resolves an installed agent CLI that is not the
 current host, so it declares all four hosts and still never invokes itself. Recursion is a
-selection rule in `scripts/run-outsider.sh`, not a `compatibility` omission — which is the
+selection rule in `skills/outsider/scripts/run-outsider.sh`, not a `compatibility` omission — which is the
 pattern to follow for anything else that shells out to an agent CLI.

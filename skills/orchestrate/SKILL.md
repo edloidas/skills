@@ -79,7 +79,7 @@ Two files, written by the coordinator only, in
   `references/run-state.md` lists. Rewrite it whole at every dispatch and every hand-back,
   before the next action. A unit becomes `done` only with evidence: a merge SHA, a pending review's
   URL, a decision's report, a task branch's head matching its report, or the `pr-state.sh` line
-that showed it.
+  that showed it.
 - **`notes.md`** — append-only, one timestamped line per entry, each tagged: `goal:` as the user
   stated it; `standing:` every grant or constraint the user added mid-run in their words, every
   permission refusal a worker hit, every rule a mistake taught; `decided:`; `reuse:` facts from
@@ -90,8 +90,7 @@ those. Workers never read or write these files; what they need reaches them in t
 
 **GitHub wins.** On `resume`, or after the context was compacted, read both files, then check each
 unit against GitHub — `pr-state.sh` for its PR, `gh issue view` for its issue, `git ls-remote` for
-a task's branch — and correct the
-file before acting. A `running` unit whose worker is gone is unknown, not failed: look at its
+a task's branch — and correct the file before acting. A `running` unit whose worker is gone is unknown, not failed: look at its
 branch and PR before dispatching it again. A second run on the same repo reads another open run's
 `run.json` to skip its units, and never writes it.
 
