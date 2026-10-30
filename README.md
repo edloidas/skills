@@ -10,14 +10,14 @@
 
 <p align="center">
   <img src="https://img.shields.io/github/v/tag/edloidas/skills?style=flat-square&color=FD3DB5&label=release" alt="Release">
-  <img src="https://img.shields.io/badge/skills-36-FD3DB5?style=flat-square" alt="36 skills">
+  <img src="https://img.shields.io/badge/skills-37-FD3DB5?style=flat-square" alt="37 skills">
   <img src="https://img.shields.io/badge/agents-4-FD3DB5?style=flat-square" alt="4 agents">
   <img src="https://img.shields.io/badge/license-MIT-FD3DB5?style=flat-square" alt="MIT license">
 </p>
 
 ---
 
-36 skills for planning, building, reviewing, auditing, maintaining, and shipping software —
+37 skills for planning, building, reviewing, auditing, maintaining, and shipping software —
 written once and distributed to [Claude Code](https://docs.anthropic.com/en/docs/claude-code),
 [Codex](https://developers.openai.com/codex), [OpenCode](https://opencode.ai), and
 [pi](https://pi.dev), following the [Agent Skills specification](https://agentskills.io/specification).
@@ -276,12 +276,19 @@ only. Topic rows group the table for reading; they are not separate plugins.
 | **Obsidian** | | | |
 | [working-docs](./skills/working-docs/) | All four | routed | Organize working documents in Obsidian with two-tier system |
 | **Workflow** | | | |
+| [do](./skills/do/) | All four | auto | Take any engineering task end to end: route it to the skill that owns it, to a playbook for a bug, a slowdown, an investigation, a review-and-fix, or a small change, or to `orchestrate` for a large goal; report with the evidence pasted |
 | [solve-issue](./skills/solve-issue/) | All four | routed | Full issue workflow: analyze, plan, implement, verify, audit tests, review, ship via `issue-flow`, then answer the PR's automated reviewers |
 | [orchestrate](./skills/orchestrate/) | All four | routed | Coordinate a body of work from one session that never touches the code: issues, new issues, own PR fixes, reviews and decisions as units, each in its own worker (`solve-issue`, `pr-review`, `consilium`); goal and plan up front, run state on disk, every hand-back checked against GitHub, a plain summary per unit |
 | [pr-triage](./skills/pr-triage/) | All four | routed | Whole review queue in one run: triage every pull request waiting on you, verify findings with blind judges, then approve, merge, fold small fixes, request changes, or deep-review by tier; lists your own PRs by state; scope to `current` repo, `assigned` or `created`; `recheck` picks up author updates |
 | [issue-triage](./skills/issue-triage/) | All four | routed | Whole open issue backlog behind one plan: scripts fetch, resolve references, group related and similar issues and lint type and labels; the strongest model judges each theme and blind judges verify every close; then close with the right reason, fix type, labels, title and project status, ask owners, or file follow-ups, written and audited by an idempotent script. `metadata` relabels and moves without judging; `report` stops at the plan |
 
 ## How the skills fit together
+
+`do` is the front door. It takes a task, decides once what it needs, and runs that: the skill that
+owns the task, one of its own playbooks for work with no issue, the change directly when it is a
+one-liner, or `orchestrate` when the goal splits into several units. `orchestrate` never touches
+code — each unit runs in its own worker, and a unit with no issue runs `do` there. `solve-issue`
+takes one GitHub issue end to end.
 
 ### Plan
 

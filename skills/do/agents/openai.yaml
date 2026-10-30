@@ -1,0 +1,6 @@
+interface:
+  display_name: "Do"
+  short_description: "Take an engineering task end to end: route it to the right skill or playbook, run it, report with evidence"
+  default_prompt: "Use $do to take this task end to end: decide the route, run it, and report what changed with the evidence pasted."
+policy:
+  allow_implicit_invocation: true
