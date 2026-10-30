@@ -18,251 +18,60 @@
   "license": "MIT",
   "plugins": [
     {
-      "group": "plan",
-      "name": "edloidas-plan",
-      "displayName": "Edloidas Plan",
-      "description": "A Codex-safe planning bundle for issue drafting, scope analysis, picking the next issue, and the full issue lifecycle.",
-      "shortDescription": "Issue drafting, scope analysis, triage, and lifecycle.",
-      "longDescription": "Install the planning bundle from edloidas/skills for drafting GitHub issues, analyzing issue scope, picking what to work on next, and driving the branch-commit-PR-merge lifecycle from Codex.",
+      "name": "edloidas",
+      "displayName": "Edloidas",
+      "description": "A Codex-safe skill collection for planning and driving GitHub issues, building and committing, adversarial review, auditing, repo maintenance, npm releases, explanations and outside opinions, Markdown writing, Obsidian working docs, and end-to-end workflows.",
+      "shortDescription": "Plan, build, review, audit, maintain, ship, explain, and write.",
+      "longDescription": "Install the Codex-ready skills from edloidas/skills: issue drafting and lifecycle, conflict resolution and commit bodies, adversarial change review and claim verification, CI, package, security, React, Three.js, tsconfig, and test-suite audits, label and editor-config sync, npm releases, explanations and outside opinions, Markdown writing, Obsidian working docs, and workflows that take an issue or a batch of work end to end.",
       "category": "Coding",
       "websiteURL": "https://github.com/edloidas/skills",
       "keywords": [
         "skills",
         "codex",
-        "plan",
         "issues",
         "github",
-        "triage",
-        "lifecycle"
-      ],
-      "skills": [
-        "plan/skills/issue-writer",
-        "plan/skills/issue-analyze",
-        "plan/skills/issue-flow",
-        "plan/skills/next-issue"
-      ]
-    },
-    {
-      "group": "build",
-      "name": "edloidas-build",
-      "displayName": "Edloidas Build",
-      "description": "A Codex-safe build bundle for merge-conflict resolution, commit message bodies, and live behavioral probes.",
-      "shortDescription": "Conflict resolution, commit bodies, probes.",
-      "longDescription": "Install the build bundle from edloidas/skills for semi-automatic merge-conflict resolution, commit message bodies, and settling behavioral claims by running the project from Codex.",
-      "category": "Coding",
-      "websiteURL": "https://github.com/edloidas/skills",
-      "keywords": [
-        "skills",
-        "codex",
-        "build",
-        "git",
-        "conflicts",
-        "commits",
-        "probes"
-      ],
-      "skills": [
-        "build/skills/commit-summary",
-        "build/skills/resolve-conflicts",
-        "build/skills/live-probe"
-      ]
-    },
-    {
-      "group": "review",
-      "name": "edloidas-review",
-      "displayName": "Edloidas Review",
-      "description": "A curated Codex-safe review bundle for change review, claim verification, approach boards, PR feedback triage, and post-change cleanup.",
-      "shortDescription": "Change review, claim verification, approach boards, PR triage, cleanup.",
-      "longDescription": "Install the Codex-ready review bundle from edloidas/skills for adversarial change review, verifying claims before acting on them, approach boards for design decisions, PR feedback triage, and post-implementation cleanup.",
-      "category": "Coding",
-      "websiteURL": "https://github.com/edloidas/skills",
-      "keywords": [
-        "skills",
-        "codex",
         "review",
-        "cleanup",
-        "diff",
-        "pull-request",
-        "feedback",
-        "approaches",
-        "decisions",
-        "claims",
-        "verification"
-      ],
-      "skills": [
-        "review/skills/changes-review",
-        "review/skills/code-cleanup",
-        "review/skills/pr-review",
-        "review/skills/consilium",
-        "review/skills/doubt"
-      ]
-    },
-    {
-      "group": "audit",
-      "name": "edloidas-audit",
-      "displayName": "Edloidas Audit",
-      "description": "A Codex-safe audit bundle for skill quality, GitHub Actions, package scripts and pnpm workspace setup, tsconfig configuration, React, and test suites.",
-      "shortDescription": "Audit skills, CI, package setup, tsconfig, React, and tests.",
-      "longDescription": "Install the audit bundle from edloidas/skills to inspect skill quality, CI workflows, package scripts and pnpm workspace configuration, tsconfig options, React code, and test-suite quality from Codex.",
-      "category": "Coding",
-      "websiteURL": "https://github.com/edloidas/skills",
-      "keywords": [
-        "skills",
-        "codex",
         "audit",
-        "quality",
-        "ci",
-        "scripts",
-        "workspace",
-        "react",
-        "tests",
-        "tsconfig",
-        "typescript"
-      ],
-      "skills": [
-        "audit/skills/ci-audit",
-        "audit/skills/package-audit",
-        "audit/skills/skill-audit",
-        "audit/skills/security-audit",
-        "audit/skills/three-audit",
-        "audit/skills/react-audit",
-        "audit/skills/tests-audit",
-        "audit/skills/tsconfig-audit"
-      ]
-    },
-    {
-      "group": "maintain",
-      "name": "edloidas-maintain",
-      "displayName": "Edloidas Maintain",
-      "description": "A Codex-safe maintenance bundle for label sync, editor config, repo hardening, and session cleanup.",
-      "shortDescription": "Label sync, editor config, hardening, and cleanup.",
-      "longDescription": "Install the maintenance bundle from edloidas/skills for syncing GitHub labels and editor configs, hardening repository security, and cleaning up after sessions from Codex.",
-      "category": "Coding",
-      "websiteURL": "https://github.com/edloidas/skills",
-      "keywords": [
-        "skills",
-        "codex",
-        "maintain",
-        "labels",
-        "sync",
-        "processes"
-      ],
-      "skills": [
-        "maintain/skills/editor-config",
-        "maintain/skills/labels-sync",
-        "maintain/skills/repo-hardening",
-        "maintain/skills/session-cleanup"
-      ]
-    },
-    {
-      "group": "ship",
-      "name": "edloidas-ship",
-      "displayName": "Edloidas Ship",
-      "description": "A Codex-safe shipping bundle for npm package releases.",
-      "shortDescription": "npm package releases.",
-      "longDescription": "Install the shipping bundle from edloidas/skills for validating and publishing npm releases from Codex.",
-      "category": "Coding",
-      "websiteURL": "https://github.com/edloidas/skills",
-      "keywords": [
-        "skills",
-        "codex",
-        "ship",
         "release",
-        "npm",
-        "publish"
-      ],
-      "skills": [
-        "ship/skills/npm-release"
-      ]
-    },
-    {
-      "group": "assist",
-      "name": "edloidas-assist",
-      "displayName": "Edloidas Assist",
-      "description": "A Codex-ready assistance bundle for explanations, independent verification, decision pressure-testing, and plain restatement.",
-      "shortDescription": "Explain, verify, challenge, and restate plainly.",
-      "longDescription": "Install the assistance bundle from edloidas/skills for clear explanations, independent verification, decision pressure-testing, and reworking an answer into something short and skimmable from Codex.",
-      "category": "Coding",
-      "websiteURL": "https://github.com/edloidas/skills",
-      "keywords": [
-        "skills",
-        "codex",
-        "assist",
-        "ask",
-        "explain",
-        "verify",
-        "summarize"
-      ],
-      "skills": [
-        "assist/skills/explain",
-        "assist/skills/outsider",
-        "assist/skills/handoff",
-        "assist/skills/bro"
-      ]
-    },
-    {
-      "group": "write",
-      "name": "edloidas-write",
-      "displayName": "Edloidas Write",
-      "description": "A Codex-safe writing bundle for Markdown, READMEs, PR bodies, and issue comments.",
-      "shortDescription": "Markdown, README, and documentation writing.",
-      "longDescription": "Install the writing bundle from edloidas/skills to draft READMEs, docs, PR bodies, and issue comments that lead with the point and use GitHub-flavored Markdown correctly.",
-      "category": "Coding",
-      "websiteURL": "https://github.com/edloidas/skills",
-      "keywords": [
-        "skills",
-        "codex",
-        "write",
-        "markdown",
-        "readme",
-        "documentation"
-      ],
-      "skills": [
-        "write/skills/markdown-writing"
-      ]
-    },
-    {
-      "group": "obsidian",
-      "name": "edloidas-obsidian",
-      "displayName": "Edloidas Obsidian",
-      "description": "A Codex-ready helper for maintaining structured working documents in an Obsidian vault.",
-      "shortDescription": "Structured working docs for Obsidian.",
-      "longDescription": "Install the Obsidian working-docs helper from edloidas/skills to manage active task notes with a consistent vault structure.",
-      "category": "Productivity",
-      "websiteURL": "https://github.com/edloidas/skills",
-      "keywords": [
-        "skills",
-        "codex",
-        "obsidian",
-        "notes",
-        "knowledge-base"
-      ],
-      "skills": [
-        "obsidian/skills/working-docs"
-      ]
-    },
-    {
-      "group": "workflow",
-      "name": "edloidas-workflow",
-      "displayName": "Edloidas Workflow",
-      "description": "A Codex-safe workflow bundle: take a GitHub issue from analysis to merged, orchestrate a batch of issues and pull requests through subagents, or triage a review queue or the issue backlog.",
-      "shortDescription": "End-to-end issue workflow, orchestration, and review and backlog triage.",
-      "longDescription": "Install the workflow bundle from edloidas/skills to take a GitHub issue end to end from Codex — analyze, plan, implement, verify, adversarially review, clean up, commit, and ship — to coordinate many issues and pull requests through worker subagents, or to triage the pull requests waiting on you and the open issue backlog.",
-      "category": "Coding",
-      "websiteURL": "https://github.com/edloidas/skills",
-      "keywords": [
-        "skills",
-        "codex",
         "workflow",
-        "issues",
-        "github",
-        "automation",
-        "triage"
+        "markdown"
       ],
       "skills": [
-        "workflow/skills/orchestrate",
-        "workflow/skills/pr-triage",
-        "workflow/skills/solve-issue",
-        "workflow/skills/issue-triage"
+        "skills/bro",
+        "skills/changes-review",
+        "skills/ci-audit",
+        "skills/code-cleanup",
+        "skills/commit-summary",
+        "skills/consilium",
+        "skills/doubt",
+        "skills/editor-config",
+        "skills/explain",
+        "skills/handoff",
+        "skills/issue-analyze",
+        "skills/issue-flow",
+        "skills/issue-triage",
+        "skills/issue-writer",
+        "skills/labels-sync",
+        "skills/live-probe",
+        "skills/markdown-writing",
+        "skills/next-issue",
+        "skills/npm-release",
+        "skills/orchestrate",
+        "skills/outsider",
+        "skills/package-audit",
+        "skills/pr-review",
+        "skills/pr-triage",
+        "skills/react-audit",
+        "skills/repo-hardening",
+        "skills/resolve-conflicts",
+        "skills/security-audit",
+        "skills/session-cleanup",
+        "skills/skill-audit",
+        "skills/solve-issue",
+        "skills/tests-audit",
+        "skills/three-audit",
+        "skills/tsconfig-audit",
+        "skills/working-docs"
       ]
     }
   ]

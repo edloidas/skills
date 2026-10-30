@@ -1,0 +1,35 @@
+{
+  "name": "edloidas",
+  "version": "5.18.0",
+  "description": "A Codex-safe skill collection for planning and driving GitHub issues, building and committing, adversarial review, auditing, repo maintenance, npm releases, explanations and outside opinions, Markdown writing, Obsidian working docs, and end-to-end workflows.",
+  "author": {
+    "name": "Mikita Taukachou",
+    "url": "https://edloidas.io"
+  },
+  "homepage": "https://github.com/edloidas/skills",
+  "repository": "https://github.com/edloidas/skills",
+  "license": "MIT",
+  "keywords": [
+    "skills",
+    "codex",
+    "issues",
+    "github",
+    "review",
+    "audit",
+    "release",
+    "workflow",
+    "markdown"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Edloidas",
+    "shortDescription": "Plan, build, review, audit, maintain, ship, explain, and write.",
+    "longDescription": "Install the Codex-ready skills from edloidas/skills: issue drafting and lifecycle, conflict resolution and commit bodies, adversarial change review and claim verification, CI, package, security, React, Three.js, tsconfig, and test-suite audits, label and editor-config sync, npm releases, explanations and outside opinions, Markdown writing, Obsidian working docs, and workflows that take an issue or a batch of work end to end.",
+    "developerName": "Mikita Taukachou",
+    "category": "Coding",
+    "websiteURL": "https://github.com/edloidas/skills",
+    "brandColor": "#FD3DB5",
+    "composerIcon": "./assets/logo.png",
+    "logo": "./assets/logo.png"
+  }
+}

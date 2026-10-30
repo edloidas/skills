@@ -6,19 +6,6 @@ SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 REPO_ROOT=$(cd -- "$SCRIPT_DIR/.." && pwd)
 CATALOG_PATH="$SCRIPT_DIR/codex/catalog.json"
 
-SOURCE_GROUPS=(
-  plan
-  build
-  review
-  audit
-  maintain
-  ship
-  assist
-  write
-  obsidian
-  workflow
-)
-
 errors=0
 
 error() {
@@ -97,28 +84,23 @@ validate_catalog_shape() {
   jq -e '.marketplace.name | strings | select(length > 0)' "$CATALOG_PATH" >/dev/null || error "Catalog marketplace.name is required"
   jq -e '.marketplace.displayName | strings | select(length > 0)' "$CATALOG_PATH" >/dev/null || error "Catalog marketplace.displayName is required"
   jq -e '.plugins | length > 0' "$CATALOG_PATH" >/dev/null || error "Catalog must define at least one plugin"
-  jq -e '([.plugins[].group] | length) == ([.plugins[].group] | unique | length)' "$CATALOG_PATH" >/dev/null || error "Catalog has duplicate plugin groups"
   jq -e '([.plugins[].name] | length) == ([.plugins[].name] | unique | length)' "$CATALOG_PATH" >/dev/null || error "Catalog has duplicate plugin names"
   jq -e '([.plugins[].skills[]] | length) == ([.plugins[].skills[]] | unique | length)' "$CATALOG_PATH" >/dev/null || error "Catalog has duplicate skill paths"
   jq -e '([.plugins[].skills[] | split("/")[-1]] | length) == ([.plugins[].skills[] | split("/")[-1]] | unique | length)' "$CATALOG_PATH" >/dev/null || error "Catalog has duplicate exposed skill names"
-  jq -e 'all(.plugins[]; (.group | strings | length > 0) and (.name | strings | length > 0) and (.displayName | strings | length > 0) and (.description | strings | length > 0) and (.shortDescription | strings | length > 0) and (.longDescription | strings | length > 0) and (.category | strings | length > 0) and (.websiteURL | strings | length > 0) and (.brandColor | strings | test("^#[0-9A-Fa-f]{6}$")) and (.keywords | type == "array" and length > 0) and (.skills | type == "array" and length > 0))' "$CATALOG_PATH" >/dev/null || error "Each catalog plugin must define complete metadata, keywords, and skills"
+  jq -e 'all(.plugins[]; (.name | strings | length > 0) and (.displayName | strings | length > 0) and (.description | strings | length > 0) and (.shortDescription | strings | length > 0) and (.longDescription | strings | length > 0) and (.category | strings | length > 0) and (.websiteURL | strings | length > 0) and (.brandColor | strings | test("^#[0-9A-Fa-f]{6}$")) and (.keywords | type == "array" and length > 0) and (.skills | type == "array" and length > 0))' "$CATALOG_PATH" >/dev/null || error "Each catalog plugin must define complete metadata, keywords, and skills"
 }
 
 collect_exposed_skills() {
-  jq -r '.plugins[] | .group as $group | .name as $plugin | .skills[] | [$group, $plugin, .] | @tsv' "$CATALOG_PATH"
+  jq -r '.plugins[] | .name as $plugin | .skills[] | [$plugin, .] | @tsv' "$CATALOG_PATH"
 }
 
 collect_source_skills() {
-  local group
-  for group in "${SOURCE_GROUPS[@]}"; do
-    find "$REPO_ROOT/$group/skills" -mindepth 2 -maxdepth 2 -name SKILL.md -print
-  done | sort
+  find "$REPO_ROOT/skills" -mindepth 2 -maxdepth 2 -name SKILL.md -print | sort
 }
 
 main() {
   local exposed_skills=""
   local compatible_skills=""
-  local group
   local plugin_name
   local skill_path
   local skill_dir
@@ -132,11 +114,11 @@ main() {
     exit 1
   fi
 
-  while IFS=$'\t' read -r group plugin_name skill_path; do
+  while IFS=$'\t' read -r plugin_name skill_path; do
     [ -n "$skill_path" ] || continue
 
-    if [[ "$skill_path" != "$group/"* ]]; then
-      error "Catalog plugin '$plugin_name' lists '$skill_path' outside its source group '$group'"
+    if [[ "$skill_path" != skills/* ]]; then
+      error "Catalog plugin '$plugin_name' lists '$skill_path' outside skills/"
       continue
     fi
 

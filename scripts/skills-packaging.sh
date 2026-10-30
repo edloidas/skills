@@ -3,7 +3,7 @@
 # Packaging for every host this collection ships to.
 #
 # `sync-repo` generates all of the distribution layers from two sources of truth:
-#   - scripts/codex/catalog.json   Codex wrapper plugins (names, metadata, grouping)
+#   - scripts/codex/catalog.json   Codex wrapper plugin (name, metadata, exposed skills)
 #   - `compatibility:` frontmatter  which hosts each skill declares support for
 #
 # Outputs: .agents/plugins/marketplace.json, plugins/<name>/{.codex-plugin,skills}/,
@@ -53,14 +53,8 @@ catalog_jq_raw() {
   jq -r "$1" "$CATALOG_PATH"
 }
 
-catalog_plugin_groups() {
-  catalog_jq_raw '.plugins[].group'
-}
-
-catalog_plugin_field() {
-  local group="$1"
-  local field="$2"
-  jq -er --arg group "$group" ".plugins[] | select(.group == \$group) | .$field" "$CATALOG_PATH"
+catalog_plugin_names() {
+  catalog_jq_raw '.plugins[].name'
 }
 
 catalog_branding_field() {
@@ -69,13 +63,13 @@ catalog_branding_field() {
 }
 
 catalog_plugin_manifest_json() {
-  local group="$1"
+  local name="$1"
   jq -n \
     --slurpfile catalog "$CATALOG_PATH" \
-    --arg group "$group" \
+    --arg name "$name" \
     '
       ($catalog[0]) as $catalog |
-      ($catalog.plugins[] | select(.group == $group)) as $plugin |
+      ($catalog.plugins[] | select(.name == $name)) as $plugin |
       {
         name: $plugin.name,
         version: $catalog.version,
@@ -102,8 +96,8 @@ catalog_plugin_manifest_json() {
 }
 
 catalog_plugin_skills() {
-  local group="$1"
-  jq -r --arg group "$group" '.plugins[] | select(.group == $group) | .skills[]' "$CATALOG_PATH"
+  local name="$1"
+  jq -r --arg name "$name" '.plugins[] | select(.name == $name) | .skills[]' "$CATALOG_PATH"
 }
 
 catalog_marketplace_manifest_json() {
@@ -273,14 +267,11 @@ skill_supports_host() {
 
 # Every canonical skill directory, as repo-relative paths.
 all_skill_dirs() {
-  local group
-  for group in plan build review audit maintain ship assist write obsidian workflow; do
-    find "$REPO_ROOT/$group/skills" -mindepth 2 -maxdepth 2 -name SKILL.md -print 2>/dev/null |
-      sed -e "s#^$REPO_ROOT/##" -e 's#/SKILL\.md$##'
-  done | sort
+  find "$REPO_ROOT/skills" -mindepth 2 -maxdepth 2 -name SKILL.md -print 2>/dev/null |
+    sed -e "s#^$REPO_ROOT/##" -e 's#/SKILL\.md$##' | sort
 }
 
-# Materialize <host>/skills as symlinks into the canonical <group>/skills/<name> dirs.
+# Materialize <host>/skills as symlinks into the canonical skills/<name> dirs.
 # Claude Code, Codex, OpenCode, and pi all resolve symlinks, so only the canonical
 # directory needs to be real.
 sync_host_tree() {
@@ -323,11 +314,10 @@ validate_catalog() {
   catalog_jq '.repository | strings | select(length > 0)' >/dev/null || die "Repository URL is required"
   catalog_jq '.license | strings | select(length > 0)' >/dev/null || die "License is required"
 
-  catalog_jq '([.plugins[].group] | length) == ([.plugins[].group] | unique | length)' >/dev/null || die "Duplicate plugin group in catalog"
   catalog_jq '([.plugins[].name] | length) == ([.plugins[].name] | unique | length)' >/dev/null || die "Duplicate plugin name in catalog"
   catalog_jq '([.plugins[].skills[] | split("/")[-1]] | length) == ([.plugins[].skills[] | split("/")[-1]] | unique | length)' >/dev/null || die "Duplicate exposed skill name across Codex plugins"
   catalog_jq '.plugins | length > 0' >/dev/null || die "Catalog must define at least one plugin"
-  catalog_jq 'all(.plugins[]; (.group | strings | length > 0) and (.name | strings | length > 0) and (.displayName | strings | length > 0) and (.description | strings | length > 0) and (.shortDescription | strings | length > 0) and (.longDescription | strings | length > 0) and (.category | strings | length > 0) and (.websiteURL | strings | length > 0) and (.keywords | type == "array" and length > 0) and (.skills | type == "array" and length > 0))' >/dev/null || die "Each plugin must define complete metadata, keywords, and skills"
+  catalog_jq 'all(.plugins[]; (.name | strings | length > 0) and (.displayName | strings | length > 0) and (.description | strings | length > 0) and (.shortDescription | strings | length > 0) and (.longDescription | strings | length > 0) and (.category | strings | length > 0) and (.websiteURL | strings | length > 0) and (.keywords | type == "array" and length > 0) and (.skills | type == "array" and length > 0))' >/dev/null || die "Each plugin must define complete metadata, keywords, and skills"
 }
 
 sync_plugin_branding_assets() {
@@ -369,13 +359,9 @@ write_json_file() {
 }
 
 write_plugin_manifest() {
-  local group="$1"
-  local plugin_name
-  local manifest_path
-
-  plugin_name=$(catalog_plugin_field "$group" 'name')
-  manifest_path="$REPO_ROOT/plugins/$plugin_name/.codex-plugin/plugin.json"
-  write_json_file "$manifest_path" "$(catalog_plugin_manifest_json "$group")"
+  local plugin_name="$1"
+  write_json_file "$REPO_ROOT/plugins/$plugin_name/.codex-plugin/plugin.json" \
+    "$(catalog_plugin_manifest_json "$plugin_name")"
 }
 
 write_marketplace_manifest() {
@@ -383,7 +369,6 @@ write_marketplace_manifest() {
 }
 
 sync_repo() {
-  local group
   local plugin_name
   local plugin_skills_dir
   local repo_keep_names=""
@@ -395,12 +380,11 @@ sync_repo() {
   validate_catalog
   ensure_dir "$REPO_ROOT/.agents/skills"
 
-  while IFS= read -r group; do
-    [ -n "$group" ] || continue
-    plugin_name=$(catalog_plugin_field "$group" 'name')
+  while IFS= read -r plugin_name; do
+    [ -n "$plugin_name" ] || continue
     plugin_skills_dir="$REPO_ROOT/plugins/$plugin_name/skills"
 
-    write_plugin_manifest "$group"
+    write_plugin_manifest "$plugin_name"
     sync_plugin_branding_assets "$plugin_name"
     plugin_keep_names=""
 
@@ -417,12 +401,12 @@ sync_repo() {
       ensure_symlink "../../../$skill_path" "$plugin_skills_dir/$skill_name"
       ensure_symlink "../../$skill_path" "$REPO_ROOT/.agents/skills/$skill_name"
     done <<EOF
-$(catalog_plugin_skills "$group")
+$(catalog_plugin_skills "$plugin_name")
 EOF
 
     remove_stale_entries "$plugin_skills_dir" "$plugin_keep_names"
   done <<EOF
-$(catalog_plugin_groups)
+$(catalog_plugin_names)
 EOF
 
   remove_stale_entries "$REPO_ROOT/.agents/skills" "$repo_keep_names"
@@ -435,33 +419,8 @@ EOF
   done
 }
 
-group_requested() {
-  local target="$1"
-  shift
-  local group
-  for group in "$@"; do
-    [ "$group" = "$target" ] && return 0
-  done
-  return 1
-}
-
-validate_requested_groups() {
-  local requested_group
-  local known_groups=""
-
-  known_groups=$(catalog_plugin_groups)
-
-  for requested_group in "$@"; do
-    if [ "$requested_group" = "all" ]; then
-      continue
-    fi
-    list_contains "$known_groups" "$requested_group" || die "Unknown group name(s): $requested_group"
-  done
-}
-
 # Install every skill that declares support for one host into that host's global skill
-# directory. Unlike install_links, this is driven by `compatibility:` frontmatter rather
-# than the Codex catalog, so OpenCode and pi are no longer limited to the Codex subset.
+# directory, driven by `compatibility:` frontmatter rather than the Codex catalog.
 install_host() {
   local host=""
   local destination=""
@@ -520,69 +479,11 @@ EOF
   echo "Installed $count $(host_label "$host") skills into $destination"
 }
 
-install_links() {
-  local destination="${HOME}/.agents/skills"
-  local requested_groups=()
-  local group
-  local skill_path
-  local skill_name
-
-  while [ "$#" -gt 0 ]; do
-    case "$1" in
-      --dest)
-        [ "$#" -ge 2 ] || die "--dest requires a path"
-        destination="$2"
-        shift 2
-        ;;
-      *)
-        requested_groups+=("$1")
-        shift
-        ;;
-    esac
-  done
-
-  [ "${#requested_groups[@]}" -gt 0 ] || die "At least one group name or 'all' is required"
-
-  require_jq
-  validate_catalog
-  validate_requested_groups "${requested_groups[@]}"
-  ensure_dir "$destination"
-
-  if group_requested "all" "${requested_groups[@]}"; then
-    requested_groups=()
-    while IFS= read -r group; do
-      [ -n "$group" ] || continue
-      requested_groups+=("$group")
-    done <<EOF
-$(catalog_plugin_groups)
-EOF
-  fi
-
-  while IFS= read -r group; do
-    [ -n "$group" ] || continue
-    if ! group_requested "$group" "${requested_groups[@]}"; then
-      continue
-    fi
-
-    while IFS= read -r skill_path; do
-      [ -n "$skill_path" ] || continue
-      validate_skill "$REPO_ROOT/$skill_path"
-      skill_name=${skill_path##*/}
-      ensure_symlink "$REPO_ROOT/$skill_path" "$destination/$skill_name"
-    done <<EOF
-$(catalog_plugin_skills "$group")
-EOF
-  done <<EOF
-$(catalog_plugin_groups)
-EOF
-}
-
 usage() {
   cat <<'EOF'
 Usage:
   ./scripts/skills-packaging.sh sync-repo
   ./scripts/skills-packaging.sh install-host [--dest PATH] <codex|opencode|pi>
-  ./scripts/skills-packaging.sh install-links [--dest PATH] <group> [group...]
 
 Commands:
   sync-repo      Regenerate the repo-local Codex marketplace, wrapper plugins, and the
@@ -590,8 +491,6 @@ Commands:
   install-host   Install every skill that declares support for one host into that host's
                  global skill directory. Driven by `compatibility:` frontmatter, so it is
                  not limited to the Codex subset. Prunes only links owned by this repo.
-  install-links  Install one or more Codex skill groups into another skills directory.
-                 Codex-catalog driven; prefer install-host.
 
 Default destinations for install-host:
   codex     ~/.agents/skills
@@ -602,7 +501,6 @@ Examples:
   ./scripts/skills-packaging.sh sync-repo
   ./scripts/skills-packaging.sh install-host opencode
   ./scripts/skills-packaging.sh install-host pi --dest "$HOME/.agents/skills"
-  ./scripts/skills-packaging.sh install-links review build
 EOF
 }
 
@@ -618,10 +516,6 @@ main() {
       shift
       require_jq
       install_host "$@"
-      ;;
-    install-links)
-      shift
-      install_links "$@"
       ;;
     -h|--help|help)
       usage
