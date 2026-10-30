@@ -79,6 +79,19 @@ it from the conversation. Order them as listed.
 - **Goal** — what the user wants, in one or two sentences. Top-level intent.
 - **Where we are** — project path, branch, working-tree state (clean / dirty /
   staged), last commit hash + subject. One short paragraph or a tight list.
+  When the session touched more than one thread — branches, PRs, issues — list
+  one line per thread, led by its state tag: `[merged #N]`, `[open PR #N]`,
+  `[in flight <branch>]`, `[verified, uncommitted]`, `[reverted #N]`,
+  `[planned, not started]`. One thread keeps the prose.
+
+  ```markdown
+  ## Where we are
+  `~/repo/acme-api`, on `issue-217`, tree dirty.
+  - `[merged #214]` tenant-keyed profile cache
+  - `[open PR #216]` cache metrics, waiting on review
+  - `[verified, uncommitted]` `issue-217` eviction fix, tests green
+  - `[planned, not started]` drop the legacy `v1` cache reader
+  ```
 - **What's been decided** — design choices, assumptions adopted, scope cuts.
   Prevents the next session from re-litigating settled questions.
 - **Next step** — the specific concrete action the next session should take
@@ -205,7 +218,6 @@ only if the conversation pointed at them — don't go exploring.
 - **Focus argument unrelated to actual session work** — trust the focus as
   the user's framing for the next session, even if the previous session
   drifted. Slant the handoff toward continuing in the focus direction.
-- **Multiple intermixed threads in the session** — pick the one the focus
-  points at; if no focus, pick the thread the user spent the most recent
-  turns on. Mention dropped threads under Open questions only if they're
-  load-bearing.
+- **Multiple intermixed threads in the session** — every thread gets its line
+  under Where we are. The other sections follow one: the thread the focus
+  points at, or with no focus, the one the user spent the most recent turns on.
