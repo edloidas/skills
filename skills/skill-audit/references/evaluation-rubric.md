@@ -131,7 +131,8 @@ Whether the body earns its size, and whether the heavy material is deferred.
 
 - [ ] Body within its budget. The caps are 500 lines and ~5000 tokens; a few skills carry
       a larger allowance, listed in `BODY_LINE_BUDGETS` and `BODY_TOKEN_BUDGETS` in
-      `.github/scripts/validate-skills.sh` with the reason recorded in `CLAUDE.md`.
+      `.github/scripts/validate-skills.sh` with the reason recorded in the repo's docs
+      (`docs/validation.md` in edloidas/skills).
       `validate-skills.sh` already fails the build on a breach, so do not re-litigate a
       budgeted size here — an allowlisted skill inside its allowance is not a finding.
       Take the numbers from the metrics script.
@@ -259,8 +260,9 @@ Whether the skill can damage something without being told to.
       external services. Stated three times, keep the first and cut the rest.
 - [ ] The skill states its own delta and not the baseline: which writes it performs, which
       gates it never skips. It does not re-derive general autonomy semantics, which belong to
-      `CLAUDE.md` — but because that file does not exist in a repo the skill is installed
-      into, the delta has to be concrete. Name the writes; do not explain the philosophy.
+      the repo instruction file (`AGENTS.md` / `CLAUDE.md`) — but because the authoring repo's
+      file does not travel into a repo the skill is installed into, the delta has to be
+      concrete. Name the writes; do not explain the philosophy.
 - [ ] A skill that edits files states the edit mechanic once: targeted edits per hunk, never
       a whole-file rewrite. Removing six comments from a 300-line file by rewriting the file
       picks up trailing-whitespace and quote-style changes nobody asked for. "Surgical"
@@ -294,7 +296,7 @@ and each rule lives in exactly one:
 | Layer | Owns |
 | ----- | ---- |
 | Host system prompt | Model calibration the host tunes per model: verbosity, narration cadence, formatting density, thinking depth, blanket self-verification |
-| `CLAUDE.md` | Cross-cutting policy for this person and this repo: commit format, autonomy baseline, comment policy, git conventions, general scope discipline |
+| `AGENTS.md` / `CLAUDE.md` | Cross-cutting policy for this person and this repo: commit format, autonomy baseline, comment policy, git conventions, general scope discipline |
 | `SKILL.md` body | What this task requires and only this task: the procedure, its gates, its output contract, its safety boundary |
 | `references/` | Material consulted *during* execution: rule catalogs, dispatched prompts, lookup tables, worked examples |
 
@@ -307,7 +309,7 @@ any candidate line:
   results? If not, it is not the skill's line.
 
 **The exception is the authorization delta.** These skills are installed into other people's
-repos, where our `CLAUDE.md` does not exist, so a skill states its own read-only or mutation
+repos, where our repo instructions do not exist, so a skill states its own read-only or mutation
 boundary in its own body — that is scored under Safety and is not a layer violation here.
 What it must not do is restate what "read-only" *means*.
 
@@ -336,7 +338,7 @@ What it must not do is restate what "read-only" *means*.
 | ----- | -------- |
 | 5 | Every line is task-specific. Mutation class stated, nothing borrowed from another layer. |
 | 4 | One borrowed line — a stray "be thorough", a restated git convention. |
-| 3 | A paragraph of host-layer or `CLAUDE.md` material, or length given as an adjective in the deliverable contract. |
+| 3 | A paragraph of host-layer or repo-instruction-file material, or length given as an adjective in the deliverable contract. |
 | 2 | Several passages calibrate the model or restate repo policy, competing with the task-specific content. |
 | 1 | Mostly general agent advice; another skill's body would read much the same. |
 

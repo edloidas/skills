@@ -33,7 +33,7 @@ questions a script cannot answer:
 3. Does the body earn the tokens it costs in every session?
 4. Does `compatibility` match what the body actually requires?
 5. Can this skill damage something without being told to?
-6. Does the body stay in its own layer, or carry lines the host or `CLAUDE.md` owns?
+6. Does the body stay in its own layer, or carry lines the host or the repo instruction file owns?
 
 ## Division of Labour
 
@@ -253,7 +253,7 @@ packaging layer, and do not re-open a skill already scored.
   `scripts/codex/catalog.json` plus `scripts/skills-packaging.sh sync-repo`.
 - **Auditing a repo with no Codex layer** — score Portability from `compatibility` and the
   body alone; there is no catalog contract to check.
-- **Auditing a repo with no `CLAUDE.md`** — Layer Discipline still applies. The host layer
+- **Auditing a repo with no `AGENTS.md` or `CLAUDE.md`** — Layer Discipline still applies. The host layer
   exists everywhere, and a skill installed into a foreign repo is exactly the case the
   category is about.
 - **Skills sharing a discovery neighbourhood** — a high overlap score is evidence for a

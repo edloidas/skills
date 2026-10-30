@@ -136,7 +136,7 @@ EOF
 # prompt have to name them to tell an auditor what to look for. Exempting the whole skill
 # means a genuine violation inside it would not be caught here — acceptable, because it
 # dispatches as intent and holds no workflow of its own that a host could fail to run.
-# Adding a row is a deliberate decision that needs a reason in CLAUDE.md.
+# Adding a row is a deliberate decision that needs a reason in docs/validation.md.
 CLAUDE_ONLY_EXEMPT="skills/skill-audit"
 
 # A tool name in `description` or `when_to_use` is dead weight on every host, Claude Code
@@ -196,9 +196,9 @@ Claude-only subagent field|subagent_type"
 # rather than left to skill-audit's rubric — the repo's rule is that anything
 # mechanically checkable belongs in a validator.
 #
-# The cap is 500 lines, per CLAUDE.md. A skill that genuinely needs more gets an
+# The cap is 500 lines, per docs/validation.md. A skill that genuinely needs more gets an
 # explicit ceiling below rather than a blanket exemption, so it cannot keep growing
-# unnoticed. Adding a row is a deliberate decision that needs a reason in CLAUDE.md.
+# unnoticed. Adding a row is a deliberate decision that needs a reason in docs/validation.md.
 BODY_LINE_CAP=500
 BODY_LINE_BUDGETS="skills/issue-flow=697
 skills/solve-issue=538"
@@ -278,7 +278,7 @@ prompt_prose() {
 }
 
 # The canonical section's paragraph, whitespace-collapsed. It lives inside skill-audit
-# so the rule travels with the skill into repos that have no copy of this CLAUDE.md.
+# so the rule travels with the skill into repos that have no copy of docs/writing-skills.md.
 CANONICAL_ASK_FILE="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)/skills/skill-audit/references/asking-the-user.md"
 
 collapse_ws() {
@@ -377,7 +377,7 @@ validate_skill_content() {
   body_budget=$(body_line_budget "$skill_dir")
   if [ "$body_lines" -gt "$body_budget" ]; then
     if [ "$body_budget" = "$BODY_LINE_CAP" ]; then
-      error "Skill '$skill_name': body is $body_lines lines; the cap is $BODY_LINE_CAP. Move reference material into references/, or add a budgeted allowance in validate-skills.sh with a reason in CLAUDE.md"
+      error "Skill '$skill_name': body is $body_lines lines; the cap is $BODY_LINE_CAP. Move reference material into references/, or add a budgeted allowance in validate-skills.sh with a reason in docs/validation.md"
     else
       error "Skill '$skill_name': body is $body_lines lines; its budgeted allowance is $body_budget. Trim it, or raise the budget deliberately"
     fi
@@ -386,7 +386,7 @@ validate_skill_content() {
   body_tokens=$(body_token_estimate "$skill_dir")
   body_budget=$(budget_for "$skill_dir" "$BODY_TOKEN_BUDGETS" "$BODY_TOKEN_CAP")
   if [ "$body_tokens" -gt "$body_budget" ]; then
-    error "Skill '$skill_name': body is ~$body_tokens tokens (bytes / 4); the ceiling is $body_budget. Move reference material into references/, or add a budgeted allowance in validate-skills.sh with a reason in CLAUDE.md"
+    error "Skill '$skill_name': body is ~$body_tokens tokens (bytes / 4); the ceiling is $body_budget. Move reference material into references/, or add a budgeted allowance in validate-skills.sh with a reason in docs/validation.md"
   fi
 
   # An unterminated fence swallows every instruction after it into a code block, so the

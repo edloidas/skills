@@ -378,8 +378,10 @@ on demand. Detailed material belongs in `references/`, not in the body.
 
 ## Contributing
 
-[CLAUDE.md](CLAUDE.md) is the authoring guide — frontmatter fields, naming rules, per-host
-packaging, and the validation contract. In short: create `skills/<name>/SKILL.md` as a real
+[AGENTS.md](AGENTS.md) holds the repo rules and the validation contract, and links the
+reference docs: [writing skills](docs/writing-skills.md) (frontmatter fields, naming rules,
+portability), [packaging](docs/packaging.md) (per-host trees, Codex wrapper), and the rest in
+`docs/`. In short: create `skills/<name>/SKILL.md` as a real
 directory, declare `compatibility`, add `agents/openai.yaml` and a `scripts/codex/catalog.json`
 entry if it targets Codex, add a row to the table above, then run `sync-repo` and the validators.
 
