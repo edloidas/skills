@@ -60,6 +60,7 @@ Five skills start only when the user types them: `bro`, `editor-config`, `labels
 
 | Task | Route | Carry into it |
 | ---- | ----- | ------------- |
+| A prompt or task statement to sharpen before work starts, not to run | `sharpen` | — |
 | A large goal — see **`orchestrate` or not** below. Skip this row in unit mode | `orchestrate` | The goal and its units as the user stated them |
 | One GitHub issue to implement | `solve-issue` | The number or URL as given. `slices` when the user wants one commit per slice; `pr-only` when they want no merge; `auto` only when they said not to ask |
 | One GitHub issue to understand or plan, not build | `issue-analyze` | The number or URL as given, and nothing else |

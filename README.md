@@ -10,14 +10,14 @@
 
 <p align="center">
   <img src="https://img.shields.io/github/v/tag/edloidas/skills?style=flat-square&color=FD3DB5&label=release" alt="Release">
-  <img src="https://img.shields.io/badge/skills-37-FD3DB5?style=flat-square" alt="37 skills">
+  <img src="https://img.shields.io/badge/skills-38-FD3DB5?style=flat-square" alt="38 skills">
   <img src="https://img.shields.io/badge/agents-4-FD3DB5?style=flat-square" alt="4 agents">
   <img src="https://img.shields.io/badge/license-MIT-FD3DB5?style=flat-square" alt="MIT license">
 </p>
 
 ---
 
-37 skills for planning, building, reviewing, auditing, maintaining, and shipping software —
+38 skills for planning, building, reviewing, auditing, maintaining, and shipping software —
 written once and distributed to [Claude Code](https://docs.anthropic.com/en/docs/claude-code),
 [Codex](https://developers.openai.com/codex), [OpenCode](https://opencode.ai), and
 [pi](https://pi.dev), following the [Agent Skills specification](https://agentskills.io/specification).
@@ -270,6 +270,7 @@ only. Topic rows group the table for reading; they are not separate plugins.
 | [explain](./skills/explain/) | All four | auto | Explain how something works by tracing the mechanism, not describing it |
 | [handoff](./skills/handoff/) | All four | auto | Compact the session into a handoff — inline text or per-project doc file |
 | [outsider](./skills/outsider/) | All four | auto | Quick opinion or review from an agent CLI outside this session |
+| [sharpen](./skills/sharpen/) | All four | routed | Rewrite a prompt or task statement to ask for what a top practitioner would do — the four answers, the rewrite, and the choices left to you |
 | [bro](./skills/bro/) | All four | manual | Say the last message again, straight — shorter, plainer, decision last |
 | **Write** | | | |
 | [markdown-writing](./skills/markdown-writing/) | All four | auto | Write READMEs, docs, PRs, and issues that lead with the point — GitHub alerts, structure, README skeleton |

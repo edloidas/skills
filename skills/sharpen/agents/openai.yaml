@@ -1,0 +1,6 @@
+interface:
+  display_name: "Sharpen"
+  short_description: "Rewrite a prompt to ask for what a top practitioner would do"
+  default_prompt: "Use $sharpen on my last request: answer the four questions, give the rewritten prompt in a fenced block, and list the choices left to me. Do not run the task."
+policy:
+  allow_implicit_invocation: false
