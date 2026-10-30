@@ -3,7 +3,7 @@ name: reflect
 description: Read past session transcripts for how this collection's skills were used, find what went well and badly, and propose fixes ranked by enforcement level.
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
-allowed-tools: Read Glob Grep Edit Write Task AskUserQuestion Bash(ls:*) Bash(find:*) Bash(stat:*) Bash(wc:*) Bash(realpath:*) Bash(python3:*) Bash(git rev-parse:*) Bash(git status:*) Bash(git diff:*) Bash(git log:*) Bash(git show:*) Bash(git worktree:*)
+allowed-tools: Read Glob Grep Edit Write Task AskUserQuestion Bash(ls:*) Bash(find:*) Bash(stat:*) Bash(wc:*) Bash(realpath:*) Bash(python3:*) Bash(sqlite3:*) Bash(bash:*) Bash(git rev-parse:*) Bash(git status:*) Bash(git diff:*) Bash(git log:*) Bash(git show:*) Bash(git worktree:*)
 argument-hint: "[last N | since YYYY-MM-DD] [skill names] [project <path> | all-projects]"
 metadata:
   author: edloidas
@@ -46,7 +46,7 @@ Parse the invocation's arguments (`$ARGUMENTS`); every part is optional.
 
 Every host's transcripts are read; the window counts sessions across all of them together, newest
 first. The session this skill is running in is never read — its transcript is still being written. It
-is the current project's newest transcript for the running host, modified in the last few minutes;
+is the current project's newest transcript for the running host, modified in the last 10 minutes;
 when two qualify, skip both and name them under **Not read**.
 
 Resolve the **source repository** now, because Phase 6 edits only there. Resolve this skill's own
