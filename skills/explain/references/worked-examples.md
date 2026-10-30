@@ -1,8 +1,9 @@
 # Worked Examples
 
-Four explanations that landed, condensed and renamed for compactness. Each one is followed by the
-move that carried it. Read them for shape, not for content — the subjects are incidental. The last
-one is a second pass over a subject already explained once.
+Five explanations that landed, condensed and renamed for compactness. Each one is followed by the
+move that carried it. Read them for shape, not for content — the subjects are incidental. The
+fourth is a second pass over a subject already explained once; the fifth answers a why question
+from the history.
 
 **Asked:** "Why does adding my own `setKey` to a map store break `listenKeys`?"
 
@@ -155,3 +156,40 @@ the request still exists", `falls through` became "reaches". The trap is called 
 happens in, not warned about above. Longer than the first pass, not shorter. Three lanes and three
 arrows for eight steps: the map puts steps 2–4 on the controller and 6–7 on the handshake thread,
 and says nothing about what step 6 decides.
+
+---
+
+**Asked:** "Why do we sort the plugin list before loading? I assume it's for determinism?"
+
+Partly. The sort exists so that `core-*` plugins load before everything else; determinism is a side
+effect nobody asked for.
+
+```js
+// loader.js:31
+plugins.sort((a, b) => rank(a) - rank(b) || a.name.localeCompare(b.name))
+// rank('core-auth') -> 0, rank('billing') -> 1
+```
+
+`rank` puts every `core-` name at 0, so `core-auth` registers its `beforeRequest` hook first, and
+`billing`'s hook, which reads `req.user`, runs after `req.user` exists. Remove the sort and load
+order follows `readdir`, which happens to be alphabetical on some filesystems and hash order on
+ext4 — `billing` can then run first on Linux and read `undefined`.
+
+**Why it is this way**
+- direct — Load order, not determinism, is the reason.
+  > "billing hook sees no user on prod (ext4), fine locally. sort so core-* registers first" —
+  > PR #88, description
+- inferred — The name tiebreak (`localeCompare`) is what makes the order deterministic; it arrived
+  in the same commit, 4e1f0a2, with no separate mention, so it was likely added to keep the
+  non-core order stable rather than as a goal of its own.
+- unknown — Why a name prefix rather than an explicit priority field. Consulted:
+  `git log -S 'core-' -- loader.js`, PR #88 and its two review comments, issue #85, `docs/` (no
+  ADR on plugins).
+
+The `core-` prefix is now a contract nobody wrote down: a core plugin named without it loads in
+the wrong group, and nothing warns.
+
+**The move.** The mechanism first, on the two real plugin names, including what happens on each
+filesystem without it. The user's guess is checked rather than confirmed, and corrected by kind.
+Each intent claim labelled, the direct one quoted with its source, the unknown one listing every
+source consulted. The close names what the history did not settle.
