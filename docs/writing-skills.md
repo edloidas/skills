@@ -510,7 +510,7 @@ Three things this rule does **not** cover:
   not a mismatch with intent-only prose in the body.
 - `AskUserQuestion` — the per-host fallback in [Asking the User](#asking-the-user) is
   *required*, not forbidden.
-- Per-host **data**, such as `skills/handoff`'s table of where each host stores its
+- Per-host **data**, such as `skills/reflect`'s table of where each host stores its
   transcripts. Facts that genuinely differ per host belong in a table with a documented
   default; only the dispatch procedure has to be uniform.
 

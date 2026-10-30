@@ -92,6 +92,7 @@ Five skills start only when the user types them: `bro`, `editor-config`, `labels
 | React effects, memoization, state, component size | `react-audit` | The path, if named |
 | Three.js or React Three Fiber frame rate and pitfalls | `three-audit` | The path, if named |
 | The quality of a test suite | `tests-audit` | The path, if named |
+| Review past sessions to see how our skills performed and improve them | `reflect` | The window (`last N`, `since <date>`) and skill names, if named |
 | Agent skills | `skill-audit` | The skill names, if named |
 | A behavioural spec extracted from code | `code-to-spec` | Paths or a feature description. Claude Code only; on other hosts say it is unavailable and stop |
 | A fact or a cause to find, changing nothing: what calls X, why it fails in CI, when Y changed | `references/investigate.md` | — |
