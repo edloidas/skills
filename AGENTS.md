@@ -61,8 +61,8 @@ another:
 
 | Checker | Owns | Failure |
 | ------- | ---- | ------- |
-| `.github/scripts/validate-skills.sh` | Marketplace and plugin manifests, canonical layout, per-skill frontmatter rules, body line and token ceilings, dangling bundled paths, Claude-only mechanisms in a portable skill, the verbatim `Asking the User` section, shouty emphasis in the body and in `references/*prompt*.md` fences, calibration adverbs, and README skill-count drift (rules: [docs/writing-skills.md](docs/writing-skills.md); ceilings and exemptions: [docs/validation.md](docs/validation.md)) | Hard, fails CI; behavioural-style words warn only |
-| `scripts/validate-codex.sh` | Codex catalog, `compatibility` agreement, `agents/openai.yaml`, host subset rule | Hard, fails CI |
+| `.github/scripts/validate-skills.sh` | Marketplace and plugin manifests, canonical layout, per-skill frontmatter rules, skill tiers and their discovery byte limits, body line and token ceilings, dangling bundled paths, Claude-only mechanisms in a portable skill, the verbatim `Asking the User` section, shouty emphasis in the body and in `references/*prompt*.md` fences, calibration adverbs, and README skill-count and tier-column drift (rules: [docs/writing-skills.md](docs/writing-skills.md); ceilings and exemptions: [docs/validation.md](docs/validation.md)) | Hard, fails CI; behavioural-style words warn only |
+| `scripts/validate-codex.sh` | Codex catalog, `compatibility` agreement, `agents/openai.yaml` and its tier-to-`allow_implicit_invocation` mapping, host subset rule | Hard, fails CI |
 | `tests/run.sh` | What a bundled script actually returns — exit codes, chosen branch, parsed output, refusals ([docs/testing.md](docs/testing.md)) | Hard, fails CI |
 | `skill-audit` | Discovery, instruction quality, context cost, portability, safety, layer discipline | Scored 1-5, PASS / FAIL |
 

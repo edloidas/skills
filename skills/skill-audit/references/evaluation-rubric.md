@@ -20,21 +20,39 @@ Discovery is the only phase every skill pays for in every session. `name`, `desc
 and `when_to_use` are all the host reads before deciding — everything below the frontmatter
 is invisible at this point.
 
+Judge by the skill's `metadata.tier`. A skill with no tier — common in a foreign repo — is
+judged as `auto`. The byte limits per tier belong to `validate-skills.sh`; this category asks
+whether the text inside them does its job, and whether the tier itself was chosen well.
+
+| Tier | The entry must | Correct, not a defect |
+| ---- | -------------- | --------------------- |
+| `auto` | Fire on its own: 4–6 typed phrases in `when_to_use` plus the situation, and a "Not for X — that is Y" clause in `description` where a sibling is a real confusion | — |
+| `routed` | Identify the skill in a listing: one sentence, what it does, the noun that tells it apart | No `when_to_use`, no trigger phrases, no routing notes |
+| `manual` | Tell the user in the `/` menu what it does | Length, since only the menu reads it |
+
+A routed skill that carries trigger phrases is a finding: it pays every session for a match
+it should never win, and it competes with the auto skill that should. An auto skill is
+scored on whether it will fire for the requests it exists for and stay quiet on its
+neighbours'.
+
 **Checks:**
 
 - [ ] The description names a *situation*, not a stance. "Reviews code critically and does
       not let bad things slide" describes an attitude and can never match a request.
       "Reviews a diff for correctness bugs before committing" can.
-- [ ] Trigger phrasing is present and reads like something a user would actually type.
-- [ ] The description says what the skill *does*, what it takes as input, and when it
-      applies — not just its topic.
+- [ ] Auto: trigger phrasing is present and reads like something a user would actually type.
+- [ ] The description says what the skill *does* — not just its topic. Auto also says when
+      it applies.
+- [ ] The tier fits the skill. Routed is the default; auto is earned by users asking for it
+      in their own words often and by a situation distinct from its neighbours'; manual is
+      for a skill that should never start unasked and that no other skill invokes. An auto
+      skill that should be routed pays for its entry every session.
 - [ ] No sibling skill claims the same trigger. Check the discovery-overlap section of the
       metrics output; a high-scoring pair means at least one of the two never wins.
-- [ ] Where two skills legitimately live near each other, each description states the
-      boundary explicitly ("for X use this, for Y use `<other-skill>`").
-- [ ] `when_to_use` carries the trigger phrases rather than a `## Keywords` section in the
-      body, which is loaded too late to affect discovery at all.
-- [ ] The discovery entry is proportionate: a narrow skill does not spend 900 characters.
+- [ ] Auto: where a sibling is a real confusion, the description states the boundary
+      ("Not for X — that is `<other-skill>`"). Routed skills state none; the router owns it.
+- [ ] Auto: `when_to_use` carries the trigger phrases rather than a `## Keywords` section in
+      the body, which is loaded too late to affect discovery at all.
 - [ ] No word in `description` or `when_to_use` calibrates the model rather than describing
       the situation — "thoroughly", "concisely", "carefully". They cannot make a skill fire,
       and they bias the host before the body is even loaded. A trigger phrase a user would
@@ -45,11 +63,11 @@ is invisible at this point.
 
 | Score | Criteria |
 | ----- | -------- |
-| 5 | Specific, situational, unmistakably distinct from every sibling. Would fire when it should and stay quiet otherwise. |
-| 4 | Clear and triggerable. One vague clause, or a near neighbour whose boundary is implied rather than stated. |
-| 3 | Fires, but over- or under-broadly. Topic is clear, the triggering situation is not. |
-| 2 | Overlaps a sibling with no stated boundary, or describes attitude and capability instead of a situation. |
-| 1 | Nothing in the entry could match a real request. The skill is effectively unreachable. |
+| 5 | Right tier, and fits it exactly. Auto: specific, situational, distinct from every sibling — fires when it should and stays quiet otherwise. Routed or manual: a sentence nobody could mistake for a sibling's. |
+| 4 | Clear for its tier. One vague clause, or (auto) a near neighbour whose boundary is implied rather than stated. |
+| 3 | Auto fires over- or under-broadly; routed carries trigger phrases or routing notes it should not; or the tier is arguably wrong. |
+| 2 | Auto overlaps a sibling with no stated boundary; any tier describes attitude and capability instead of what it does; or the tier is clearly wrong. |
+| 1 | Nothing in the entry could match a real request (auto) or tell the user or a router what the skill is (routed, manual). |
 
 ## 2. Instruction Quality
 
@@ -221,9 +239,9 @@ cannot run it.
       fixed command sequence, a computed path — is a bundled script, not prose the agent
       re-types. Prose is right where the step is judgment.
 - [ ] **Codex surface**, where the repo has one: `agents/openai.yaml` carries a
-      `display_name` and a `short_description` that reads like the skill, and
-      `allow_implicit_invocation: false` for anything destructive or environment-specific.
-      Catalog membership and the host-subset rule are `validate-codex.sh`'s job — cite it.
+      `display_name` and a `short_description` that reads like the skill. Catalog
+      membership, the host-subset rule, and `allow_implicit_invocation` matching the tier are
+      `validate-codex.sh`'s job — cite it.
 
 **Anchors:**
 

@@ -41,7 +41,7 @@ these already answers, and never score a skill down for something a script repor
 | Owner | Answers | Failure mode |
 | ----- | ------- | ------------ |
 | `.github/scripts/validate-skills.sh` | Manifests, layout, frontmatter, size ceilings, portability patterns, and every rule its `::error::` lines name | Hard, fails CI |
-| `scripts/validate-codex.sh` | Codex catalog membership, `compatibility` ↔ catalog agreement, `agents/openai.yaml` presence, Codex ⊆ OpenCode ∩ Pi host subset rule | Hard, fails CI |
+| `scripts/validate-codex.sh` | Codex catalog membership, `compatibility` ↔ catalog agreement, `agents/openai.yaml` presence and its `allow_implicit_invocation` matching the tier, Codex ⊆ OpenCode ∩ Pi host subset rule | Hard, fails CI |
 | `scripts/skill-metrics.mjs` | Body size and token estimate, largest inline block, duplicate sentence pairs, worked-output examples, longest prose run, unquantified dispatch lines, inline fallback length, named-output lines per section, unreachable bundled files, nested reference chains, heading skips, host-mechanism hits, `AskUserQuestion` fallback wording, cross-skill discovery overlap | Advisory measurements |
 | This skill | The six judgment questions above | Scored 1–5 |
 

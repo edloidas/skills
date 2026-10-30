@@ -8,9 +8,11 @@ Read this when creating or editing a skill. The checks that enforce these rules 
 ## Creating a New Skill
 
 1. Create a real directory: `mkdir -p skills/<skill-name>` (never a symlink)
-2. Create `skills/<skill-name>/SKILL.md` with required frontmatter and instructions
+2. Create `skills/<skill-name>/SKILL.md` with required frontmatter and instructions, including
+   `metadata.tier` — see [Tiers](#tiers)
 3. Add `scripts/`, `references/`, or `assets/` directories as needed
-4. Add a row under the right topic in the "Available Skills" table in `README.md`
+4. Add a row under the right topic in the "Available Skills" table in `README.md`, with the tier
+   in its Tier column
 5. If the skill targets Codex, update the Codex layer in the same change — see
    [packaging.md](packaging.md#codex-wrapper)
 6. Run `bash .github/scripts/validate-skills.sh` to verify marketplace, manifests, and skill layout
@@ -42,7 +44,7 @@ Optional fields:
 | --------------- | --------------------------------------------------------------------------------------------------------------------- |
 | `license`       | License name or reference to a bundled LICENSE file                                                                   |
 | `compatibility` | 1–500 chars; target agent and/or environment needs (see [Portability](#portability))                                  |
-| `metadata`      | Key-value mapping; use reasonably unique key names to prevent conflicts                                               |
+| `metadata`      | Key-value mapping; use reasonably unique key names to prevent conflicts. `metadata.tier` (`auto`, `routed`, `manual`) is required here — see [Tiers](#tiers) |
 | `when_to_use`   | Trigger phrases and scenarios for activation. Appended to `description` at discovery; combined cap 1,536 chars        |
 | `arguments`     | Space-separated parameter names for autocomplete tokens. Makes arguments mandatory for marketplace-installed plugin skills — see [Arguments Behavior](#arguments-behavior) |
 | `allowed-tools` | **Experimental.** Pre-approved tools, as a space-separated string (`Bash(git:*) Read`) or a YAML list                  |
@@ -76,15 +78,14 @@ Example frontmatter:
 ```yaml
 ---
 name: pdf-processing
-description: >
-  Converts PDF files to text and extracts metadata.
-  Use when the user asks to parse, read, or analyze PDF documents.
+description: Convert PDF files to text and extract their metadata.
 license: MIT
 compatibility: Requires poppler-utils (pdftotext) installed on the system
 allowed-tools: Bash(pdftotext:*) Read
 user-invocable: true
 metadata:
   author: edloidas
+  tier: routed
 ---
 ```
 
@@ -106,14 +107,48 @@ Skills use progressive disclosure to manage context efficiently:
 2. **Activation** — Full SKILL.md body is loaded (capped at 500 lines / ~5000 tokens; see [validation.md](validation.md#body-budgets)).
 3. **Execution** — `references/` and `assets/` files are loaded on demand. Put detailed material there, not in the body.
 
+### Tiers
+
+Every skill declares how it is reached, as `metadata.tier` in its frontmatter. The tier sets
+what its discovery text is for, and so how long it may be. `validate-skills.sh` enforces the
+limits, measured in bytes of `description` plus `when_to_use`; the 1,536 cap applies to all.
+
+| Tier | Reached by | Discovery text | Limit | Flags |
+| ---- | ---------- | -------------- | ----- | ----- |
+| `auto` | The model, on its own, from what the user typed | `description`: what it does, plus one "Not for X — that is Y" clause only where a real confusion exists. `when_to_use`: 4–6 phrases a user actually types, then the situation that should fire it | 600 B | none |
+| `routed` | `/name`, `/do`, or another skill that chains into it | One sentence in `description`: what it does in plain words, with the one noun that tells it apart. No `when_to_use`, no trigger phrases, no routing notes | 200 B | none |
+| `manual` | `/name` only | A fuller `description` is fine; it only feeds the `/` menu | 1,536 | `disable-model-invocation: true` |
+
+**Routed skills carry no triggers because nothing matches against them.** Every discovery entry
+is read in every session by every host. A routed skill is chosen by a router that already knows
+it, or typed by name, so a trigger list there costs every session and buys nothing — and it
+competes with the auto skill that should have fired. The sentence only has to identify the skill
+in a listing.
+
+**A skill another skill chains into cannot be manual.** `disable-model-invocation` blocks the
+model from loading the skill at all, which includes another skill invoking it. Before making a
+skill manual, search the other skills for an instruction to invoke it; a line telling the user to
+run it themselves is fine. The validator rejects `disable-model-invocation: true` on an auto or
+routed skill, and its absence on a manual one.
+
+**Choosing a tier.** Default to `routed`. Make a skill `auto` only when users ask for it in their
+own words often enough that waiting for `/do` or `/name` would be a miss, and its situation is
+distinct enough that it will not fire on its neighbours' requests. Make it `manual` when it
+should never start without the user asking: it writes to machine or repository settings, or its
+output is wanted only on demand.
+
+Codex maps the tier onto `allow_implicit_invocation` ([packaging.md](packaging.md#codex-metadata)).
+OpenCode and pi have no equivalent flag, so there the tier is only as good as the text.
+
 ### Writing Descriptions
 
-The `description` determines when an agent activates the skill. Be specific and actionable —
-include what the skill does, what inputs it handles, and keywords that would appear in a matching
-user request.
+The `description` says what the skill does in words that would appear in a matching request —
+a situation, not a stance. How much more it carries is the tier's call, above.
 
 - Poor: `"Helps with PDFs."`
-- Good: `"Converts PDF files to text and extracts metadata. Use when the user asks to parse, read, or analyze PDF documents."`
+- Routed: `"Attack a diff with independent cold reviewers and report what survives."`
+- Auto: `"Explain how something actually works by tracing the mechanism on concrete values."`, with
+  `when_to_use` holding `"how does this work", "walk me through it", "I still don't get it"`.
 
 ### What Discovery Text Must Not Carry
 

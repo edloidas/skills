@@ -113,8 +113,17 @@ Skills exposed to Codex include `agents/openai.yaml` with:
 - optional `interface.default_prompt`
 - `policy.allow_implicit_invocation`
 
-Use `allow_implicit_invocation: false` for destructive or environment-specific skills that should
-only run when explicitly invoked.
+`allow_implicit_invocation` follows the skill's tier ([writing-skills.md](writing-skills.md#tiers)),
+and `scripts/validate-codex.sh` fails on a mismatch:
+
+| `metadata.tier` | `allow_implicit_invocation` |
+| --------------- | --------------------------- |
+| `auto` | `true` |
+| `routed` | `false` |
+| `manual` | `false` |
+
+The flag is Codex's only discovery switch, so a skill that should not start on its own changes
+tier rather than overriding the flag.
 
 ## Claude Code Plugin Manifests
 

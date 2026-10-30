@@ -12,7 +12,8 @@ It rejects a symlinked skill directory and a leftover group directory from the p
 [packaging.md](packaging.md#why-skills-are-real-directories)). It also enforces the per-skill
 rules that must never regress — required frontmatter, `name` matching the directory and the
 naming format, `description` within 1,024 chars, the combined discovery entry within 1,536,
-and no `references/`, `scripts/`, or `assets/` path in `SKILL.md` that the skill does not
+a valid `metadata.tier` with its discovery byte limit and `disable-model-invocation` setting
+([writing-skills.md](writing-skills.md#tiers)), and no `references/`, `scripts/`, or `assets/` path in `SKILL.md` that the skill does not
 ship.
 
 ## Body Budgets

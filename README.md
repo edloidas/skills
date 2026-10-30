@@ -229,54 +229,57 @@ to agree with each other.
 Every skill runs on Claude Code, Codex, OpenCode, and pi, except `code-to-spec`, which is Claude Code
 only. Topic rows group the table for reading; they are not separate plugins.
 
-| Skill | Agents | Description |
-| ----- | ------ | ----------- |
-| **Plan** | | |
-| [issue-writer](./skills/issue-writer/) | All four | Draft and update well-structured GitHub issues |
-| [issue-analyze](./skills/issue-analyze/) | All four | Analyze issue scope against its parent, siblings, and dependencies, and produce an implementation task list |
-| [issue-flow](./skills/issue-flow/) | All four | Full issue lifecycle: pick, create, branch, commit, push, PR, merge |
-| [next-issue](./skills/next-issue/) | All four | Recommend the next issues to work on, with type, size, fit, and what blocks the rest |
-| **Build** | | |
-| [resolve-conflicts](./skills/resolve-conflicts/) | All four | Semi-automatic merge and rebase conflict resolution |
-| [commit-summary](./skills/commit-summary/) | All four | Derive a commit message body from the code behind the change |
-| [live-probe](./skills/live-probe/) | All four | Settle a claim about observable behavior by running it once |
-| **Review** | | |
-| [changes-review](./skills/changes-review/) | All four | Parallel cold reviewers that hunt bugs and requirement gaps, verify them, and optionally publish as a comment or a full review — finds, never fixes |
-| [code-cleanup](./skills/code-cleanup/) | All four | Prune comments aggressively, apply project conventions, simplify correct code |
-| [consilium](./skills/consilium/) | All four | Approach board — generate candidate approaches, attack them comparatively, recommend one |
-| [doubt](./skills/doubt/) | All four | Verify a set of claims with two seats blind to the reasoning behind them — one verdict each |
-| [pr-review](./skills/pr-review/) | All four | Review someone else's PR, or land it with `--land` — approve and merge, folding small fixes first; or verify and answer the feedback on yours — replies and resolves |
-| [code-to-spec](./skills/code-to-spec/) | Claude Code | Extract a behavioral spec from a codebase (1 file up to 500+ files) |
-| **Audit** | | |
-| [ci-audit](./skills/ci-audit/) | All four | Audit GitHub Actions for wall clock, spend, and whether the gating actually gates |
-| [package-audit](./skills/package-audit/) | All four | Audit package.json scripts against each package's role and, in a pnpm workspace, catalogs, protocol, overrides, and hoisting |
-| [security-audit](./skills/security-audit/) | All four | Find supply-chain gaps in Actions, release config, repo settings, and package manager — read-only |
-| [skill-audit](./skills/skill-audit/) | All four | Gate a skill change on discovery, instructions, context cost, portability, and safety |
-| [three-audit](./skills/three-audit/) | All four | Audit Three.js / React Three Fiber code for perf and best-practice issues |
-| [react-audit](./skills/react-audit/) | All four | Audit React code for effect misuse, memoization, state architecture, and conventions |
-| [tests-audit](./skills/tests-audit/) | All four | Audit a test suite and report keep/tighten/rewrite/delete per test |
-| [tsconfig-audit](./skills/tsconfig-audit/) | All four | Audit tsconfig.json against TypeScript 7 and report what to drop, add, and keep |
-| **Maintain** | | |
-| [labels-sync](./skills/labels-sync/) | All four | Check, apply, or export GitHub repository labels as reusable JSON |
-| [editor-config](./skills/editor-config/) | All four | Init or merge `.zed` / `.vscode` editor configs from a canonical set |
-| [repo-hardening](./skills/repo-hardening/) | All four | Apply a GitHub security baseline: rulesets, Actions defaults, immutable releases, environments |
-| [session-cleanup](./skills/session-cleanup/) | All four | Memory report, then clean up leftover processes, worktrees, merged branches, and session files |
-| **Ship** | | |
-| [npm-release](./skills/npm-release/) | All four | Guide npm/pnpm package release workflow |
-| **Assist** | | |
-| [explain](./skills/explain/) | All four | Explain how something works by tracing the mechanism, not describing it |
-| [handoff](./skills/handoff/) | All four | Compact the session into a handoff — inline text or per-project doc file |
-| [outsider](./skills/outsider/) | All four | Quick opinion or review from an agent CLI outside this session |
-| [bro](./skills/bro/) | All four | Say the last message again, straight — shorter, plainer, decision last |
-| **Write** | | |
-| [markdown-writing](./skills/markdown-writing/) | All four | Write READMEs, docs, PRs, and issues that lead with the point — GitHub alerts, structure, README skeleton |
-| **Obsidian** | | |
-| [working-docs](./skills/working-docs/) | All four | Organize working documents in Obsidian with two-tier system |
-| **Workflow** | | |
-| [solve-issue](./skills/solve-issue/) | All four | Full issue workflow: analyze, plan, implement, verify, audit tests, review, ship via `issue-flow`, then answer the PR's automated reviewers |
-| [orchestrate](./skills/orchestrate/) | All four | Coordinate a body of work from one session that never touches the code: issues, new issues, own PR fixes, reviews and decisions as units, each in its own worker (`solve-issue`, `pr-review`, `consilium`); goal and plan up front, run state on disk, every hand-back checked against GitHub, a plain summary per unit |
-| [pr-triage](./skills/pr-triage/) | All four | Whole review queue in one run: triage every pull request waiting on you, verify findings with blind judges, then approve, merge, fold small fixes, request changes, or deep-review by tier; lists your own PRs by state; scope to `current` repo, `assigned` or `created`; `recheck` picks up author updates |
-| [issue-triage](./skills/issue-triage/) | All four | Whole open issue backlog behind one plan: scripts fetch, resolve references, group related and similar issues and lint type and labels; the strongest model judges each theme and blind judges verify every close; then close with the right reason, fix type, labels, title and project status, ask owners, or file follow-ups, written and audited by an idempotent script. `metadata` relabels and moves without judging; `report` stops at the plan |
+**Tier** says how a skill is reached: `auto` skills start on their own when your request matches,
+`routed` ones run by `/name` or when another skill calls them, and `manual` ones only by `/name`.
+
+| Skill | Agents | Tier | Description |
+| ----- | ------ | ---- | ----------- |
+| **Plan** | | | |
+| [issue-writer](./skills/issue-writer/) | All four | routed | Draft and update well-structured GitHub issues |
+| [issue-analyze](./skills/issue-analyze/) | All four | routed | Analyze issue scope against its parent, siblings, and dependencies, and produce an implementation task list |
+| [issue-flow](./skills/issue-flow/) | All four | routed | Full issue lifecycle: pick, create, branch, commit, push, PR, merge |
+| [next-issue](./skills/next-issue/) | All four | routed | Recommend the next issues to work on, with type, size, fit, and what blocks the rest |
+| **Build** | | | |
+| [resolve-conflicts](./skills/resolve-conflicts/) | All four | auto | Semi-automatic merge and rebase conflict resolution |
+| [commit-summary](./skills/commit-summary/) | All four | routed | Derive a commit message body from the code behind the change |
+| [live-probe](./skills/live-probe/) | All four | routed | Settle a claim about observable behavior by running it once |
+| **Review** | | | |
+| [changes-review](./skills/changes-review/) | All four | routed | Parallel cold reviewers that hunt bugs and requirement gaps, verify them, and optionally publish as a comment or a full review — finds, never fixes |
+| [code-cleanup](./skills/code-cleanup/) | All four | routed | Prune comments aggressively, apply project conventions, simplify correct code |
+| [consilium](./skills/consilium/) | All four | routed | Approach board — generate candidate approaches, attack them comparatively, recommend one |
+| [doubt](./skills/doubt/) | All four | routed | Verify a set of claims with two seats blind to the reasoning behind them — one verdict each |
+| [pr-review](./skills/pr-review/) | All four | routed | Review someone else's PR, or land it with `--land` — approve and merge, folding small fixes first; or verify and answer the feedback on yours — replies and resolves |
+| [code-to-spec](./skills/code-to-spec/) | Claude Code | routed | Extract a behavioral spec from a codebase (1 file up to 500+ files) |
+| **Audit** | | | |
+| [ci-audit](./skills/ci-audit/) | All four | routed | Audit GitHub Actions for wall clock, spend, and whether the gating actually gates |
+| [package-audit](./skills/package-audit/) | All four | routed | Audit package.json scripts against each package's role and, in a pnpm workspace, catalogs, protocol, overrides, and hoisting |
+| [security-audit](./skills/security-audit/) | All four | routed | Find supply-chain gaps in Actions, release config, repo settings, and package manager — read-only |
+| [skill-audit](./skills/skill-audit/) | All four | auto | Gate a skill change on discovery, instructions, context cost, portability, and safety |
+| [three-audit](./skills/three-audit/) | All four | routed | Audit Three.js / React Three Fiber code for perf and best-practice issues |
+| [react-audit](./skills/react-audit/) | All four | routed | Audit React code for effect misuse, memoization, state architecture, and conventions |
+| [tests-audit](./skills/tests-audit/) | All four | routed | Audit a test suite and report keep/tighten/rewrite/delete per test |
+| [tsconfig-audit](./skills/tsconfig-audit/) | All four | routed | Audit tsconfig.json against TypeScript 7 and report what to drop, add, and keep |
+| **Maintain** | | | |
+| [labels-sync](./skills/labels-sync/) | All four | manual | Check, apply, or export GitHub repository labels as reusable JSON |
+| [editor-config](./skills/editor-config/) | All four | manual | Init or merge `.zed` / `.vscode` editor configs from a canonical set |
+| [repo-hardening](./skills/repo-hardening/) | All four | manual | Apply a GitHub security baseline: rulesets, Actions defaults, immutable releases, environments |
+| [session-cleanup](./skills/session-cleanup/) | All four | manual | Memory report, then clean up leftover processes, worktrees, merged branches, and session files |
+| **Ship** | | | |
+| [npm-release](./skills/npm-release/) | All four | auto | Guide npm/pnpm package release workflow |
+| **Assist** | | | |
+| [explain](./skills/explain/) | All four | auto | Explain how something works by tracing the mechanism, not describing it |
+| [handoff](./skills/handoff/) | All four | auto | Compact the session into a handoff — inline text or per-project doc file |
+| [outsider](./skills/outsider/) | All four | auto | Quick opinion or review from an agent CLI outside this session |
+| [bro](./skills/bro/) | All four | manual | Say the last message again, straight — shorter, plainer, decision last |
+| **Write** | | | |
+| [markdown-writing](./skills/markdown-writing/) | All four | auto | Write READMEs, docs, PRs, and issues that lead with the point — GitHub alerts, structure, README skeleton |
+| **Obsidian** | | | |
+| [working-docs](./skills/working-docs/) | All four | routed | Organize working documents in Obsidian with two-tier system |
+| **Workflow** | | | |
+| [solve-issue](./skills/solve-issue/) | All four | routed | Full issue workflow: analyze, plan, implement, verify, audit tests, review, ship via `issue-flow`, then answer the PR's automated reviewers |
+| [orchestrate](./skills/orchestrate/) | All four | routed | Coordinate a body of work from one session that never touches the code: issues, new issues, own PR fixes, reviews and decisions as units, each in its own worker (`solve-issue`, `pr-review`, `consilium`); goal and plan up front, run state on disk, every hand-back checked against GitHub, a plain summary per unit |
+| [pr-triage](./skills/pr-triage/) | All four | routed | Whole review queue in one run: triage every pull request waiting on you, verify findings with blind judges, then approve, merge, fold small fixes, request changes, or deep-review by tier; lists your own PRs by state; scope to `current` repo, `assigned` or `created`; `recheck` picks up author updates |
+| [issue-triage](./skills/issue-triage/) | All four | routed | Whole open issue backlog behind one plan: scripts fetch, resolve references, group related and similar issues and lint type and labels; the strongest model judges each theme and blind judges verify every close; then close with the right reason, fix type, labels, title and project status, ask owners, or file follow-ups, written and audited by an idempotent script. `metadata` relabels and moves without judging; `report` stops at the plan |
 
 ## How the skills fit together
 

@@ -753,7 +753,7 @@ done
 # wrong at v5.0.0: 38 skills against a real 36. The correct value is already computed
 # above, so assert it rather than trusting a person to remember a number.
 #
-# The skills table is checked by name as well as by count: every skill directory has
+# The skills table is checked by name and tier as well as by count: every skill directory has
 # exactly one `[name](./skills/name/)` row, and no row points at a skill that is gone.
 validate_readme_counts() {
   local readme="README.md"
@@ -781,7 +781,7 @@ validate_readme_counts() {
     fi
   done
 
-  local row_name skill_md
+  local row_name skill_md row_tier skill_tier
   while IFS= read -r row_name; do
     [ -n "$row_name" ] || continue
     [ -f "skills/$row_name/SKILL.md" ] || error "README: the skills table lists '$row_name', which has no skills/$row_name/SKILL.md"
@@ -794,6 +794,13 @@ EOF
     row_name=$(basename "$(dirname "$skill_md")")
     grep -qE "^[|] \[$row_name\]\(\./skills/$row_name/\) [|]" "$readme" ||
       error "README: skill '$row_name' has no row in the skills table"
+    # Columns: Skill | Agents | Tier | Description.
+    row_tier=$(grep -E "^[|] \[$row_name\]\(\./skills/$row_name/\) [|]" "$readme" | head -n 1 |
+      awk -F'|' '{ gsub(/^[ \t]+|[ \t]+$/, "", $4); print $4 }')
+    skill_tier=$(metadata_value "skills/$row_name" "tier")
+    if [ -n "$row_tier" ] && [ "$row_tier" != "$skill_tier" ]; then
+      error "README: the skills table gives '$row_name' tier '$row_tier', but its metadata.tier is '$skill_tier'"
+    fi
   done <<EOF
 $(find skills -mindepth 2 -maxdepth 2 -name SKILL.md | sort)
 EOF
@@ -806,4 +813,4 @@ if [ "$errors" -eq 1 ]; then
 fi
 
 echo "Claude marketplace valid. $total_skills skills across $plugin_count plugins ($total_codex_compatible_skills marked Codex-compatible)."
-echo "README agrees: $total_skills skills, one table row each."
+echo "README agrees: $total_skills skills, one table row each, tiers matching."
