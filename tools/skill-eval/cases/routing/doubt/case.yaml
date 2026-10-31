@@ -1,0 +1,15 @@
+schema_version: "1.1"
+name: routing-doubt
+tags: [routing]
+expected_outcome: "doubt"
+execution:
+  max_turns: 6
+  allowed_tools: [Read, Glob, Grep, Skill]
+  prompt: "/edloidas:do a reviewer left these on count.sh — are they right? I don't want fixes yet, just a verdict on each: 1) it breaks on paths with spaces, 2) set -eu makes it exit non-zero on an empty file, 3) the tr call is unnecessary on Linux"
+context:
+  scaffold_script: setup.sh
+graders:
+  - name: route
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"edloidas:(?:doubt)"'

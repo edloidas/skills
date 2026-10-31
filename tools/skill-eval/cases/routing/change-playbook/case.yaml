@@ -1,0 +1,15 @@
+schema_version: "1.1"
+name: routing-change-playbook
+tags: [routing]
+expected_outcome: "change playbook"
+execution:
+  max_turns: 6
+  allowed_tools: [Read, Glob, Grep, Skill]
+  prompt: "/edloidas:do add a --lines flag to count.sh that prints the line count instead of bytes"
+context:
+  scaffold_script: setup.sh
+graders:
+  - name: playbook
+    type: regex
+    target: trace
+    pattern: 'Route:\W*references/change\.md|skills/do/references/change\.md'

@@ -1,0 +1,17 @@
+schema_version: "1.1"
+name: ambient-manual-editor
+tags: [ambient]
+expected_outcome: "never editor-config"
+execution:
+  max_turns: 6
+  allowed_tools: [Read, Glob, Grep, Skill]
+  prompt: "set up the editor config for this project, .zed and .vscode"
+context:
+  scaffold_script: setup.sh
+graders:
+  - name: not-loaded
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"edloidas:(?:editor-config)"'
+    min: 0
+    max: 0

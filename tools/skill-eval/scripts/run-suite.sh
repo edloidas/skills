@@ -2,7 +2,7 @@
 # run-suite.sh — run one suite of skill cases through `claude plugin eval`, then collect the
 # traces and write summary.md beside the JSON result.
 #
-#   bash tools/skill-eval/scripts/run-suite.sh <suite> [--runs N] [--model M] [--case GLOB] [--jobs N] [--out DIR]
+#   bash tools/skill-eval/scripts/run-suite.sh <suite> [--runs N] [--model M] [--case GLOB] [--jobs N] [--max-cost-usd USD] [--out DIR]
 #
 # <suite> is a tag on the cases (routing, ambient). Every run is a real model call.
 # Exit codes: the eval's own (0 all cases passed, 1 below threshold or load failure,
@@ -17,6 +17,7 @@ runs=3
 model=""
 case_glob=""
 jobs=1
+max_cost=""
 out=""
 while [ "$#" -gt 0 ]; do
   case "$1" in
@@ -24,6 +25,7 @@ while [ "$#" -gt 0 ]; do
     --model) model="${2:?--model needs a name}"; shift 2 ;;
     --case) case_glob="${2:?--case needs a glob}"; shift 2 ;;
     --jobs) jobs="${2:?--jobs needs a number}"; shift 2 ;;
+    --max-cost-usd) max_cost="${2:?--max-cost-usd needs an amount}"; shift 2 ;;
     --out) out="${2:?--out needs a directory}"; shift 2 ;;
     *) usage ;;
   esac
@@ -46,6 +48,7 @@ set -- "$repo" --eval-dir tools/skill-eval/cases --tag "$suite" --runs "$runs" \
   --disallow-tools Agent --concurrency "$jobs" --output-dir "$out"
 [ -n "$model" ] && set -- "$@" --model "$model"
 [ -n "$case_glob" ] && set -- "$@" --case "$case_glob"
+[ -n "$max_cost" ] && set -- "$@" --max-cost-usd "$max_cost"
 
 echo "Running suite '$suite' ($runs run(s) per case) -> $out"
 claude plugin eval "$@"

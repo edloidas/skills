@@ -62,16 +62,18 @@ test_defaults_run_the_tagged_suite_three_times_one_arm_read_only() {
   assert_contains "$a" "--output-dir $PWD/out" "output dir"
   assert_not_contains "$a" "--allow-tools" "no gated tools granted"
   assert_not_contains "$a" "--model" "no model override"
+  assert_not_contains "$a" "--max-cost-usd" "no cost ceiling by default"
 }
 
 test_options_are_passed_through() {
   fake_claude
-  run bash "$(script "$RUN_SUITE")" ambient --runs 1 --model claude-sonnet-5 --case 'ambient-ex*' --jobs 4 --out "$PWD/out"
+  run bash "$(script "$RUN_SUITE")" ambient --runs 1 --model claude-sonnet-5 --case 'ambient-ex*' --jobs 4 --max-cost-usd 2.5 --out "$PWD/out"
   a="$(args | tr '\n' ' ')"
   assert_contains "$a" "--runs 1" "runs"
   assert_contains "$a" "--model claude-sonnet-5" "model"
   assert_contains "$a" "--case ambient-ex*" "case glob"
   assert_contains "$a" "--concurrency 4" "jobs"
+  assert_contains "$a" "--max-cost-usd 2.5" "cost ceiling"
 }
 
 test_summary_is_written_and_the_eval_exit_status_kept() {

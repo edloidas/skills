@@ -1,0 +1,15 @@
+schema_version: "1.1"
+name: routing-issue-flow
+tags: [routing]
+expected_outcome: "issue-flow"
+execution:
+  max_turns: 6
+  allowed_tools: [Read, Glob, Grep, Skill]
+  prompt: "/edloidas:do push this branch and open a PR against main"
+context:
+  scaffold_script: setup.sh
+graders:
+  - name: route
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"edloidas:(?:issue-flow)"'

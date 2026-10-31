@@ -1,0 +1,15 @@
+schema_version: "1.1"
+name: routing-perf-playbook
+tags: [routing]
+expected_outcome: "perf playbook"
+execution:
+  max_turns: 6
+  allowed_tools: [Read, Glob, Grep, Skill]
+  prompt: "/edloidas:do count.sh takes forever on our 4 GB log files, make it faster"
+context:
+  scaffold_script: setup.sh
+graders:
+  - name: playbook
+    type: regex
+    target: trace
+    pattern: 'Route:\W*references/perf\.md|skills/do/references/perf\.md'

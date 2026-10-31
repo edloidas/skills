@@ -16,10 +16,11 @@ bash tools/skill-eval/scripts/run-suite.sh ambient --runs 3 --jobs 4
 bash tools/skill-eval/scripts/run-suite.sh routing --runs 1 --case routing-explain
 ```
 
-Each run is a real model call on your credential, about $0.15–0.60 with Opus; the 20 cases at
-3 runs cost roughly $15. Output goes to `tools/skill-eval/results/<timestamp>-<suite>/`
-(gitignored): `aggregate-result.json` and `report.html` from the harness, `traces/<case>/<run>.jsonl`,
-and `summary.md`. `--model` overrides the model; `--out` the directory. Exit status is the
+Each run is a real model call on your credential, about $0.10–0.40 with Opus; the 48 cases (32
+routing, 16 ambient) at 3 runs cost roughly $25. Output goes to
+`tools/skill-eval/results/<timestamp>-<suite>/` (gitignored): `aggregate-result.json` and
+`report.html` from the harness, `traces/<case>/<run>.jsonl`, and `summary.md`. `--model` overrides
+the model; `--out` the directory; `--max-cost-usd` aborts the suite at that spend. Exit status is the
 harness's: 0 every case at 100%, 1 below, 2 partial.
 
 ## How it works
@@ -49,7 +50,9 @@ Principles the cases follow:
   `Route:` line `/do` printed, the playbook it opened. A run that writes "I used explain" without a
   Skill call loaded nothing.
 - **A fixture, not the repo.** `fixtures/tally` is a three-file shell project committed into a
-  fresh git repo per run; `setup-conflict.sh` leaves a rebase stopped on a conflict. Cases allow
+  fresh git repo per run. Variants build on it: `setup-conflict.sh` leaves a rebase stopped on a
+  conflict, `setup-issue.sh` adds an issue's text as a file, `setup-dirty.sh` a staged change,
+  `setup-branch.sh` an unpushed feature branch, `setup-tests.sh` a weak test file. Cases allow
   only `Read`, `Glob`, `Grep`, `Skill`, so a run can route but cannot edit, run git, or reach
   GitHub.
 - **One run is noise.** Default is 3 runs per case; read the pass rate, not one verdict.

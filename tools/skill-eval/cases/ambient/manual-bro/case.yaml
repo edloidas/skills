@@ -1,0 +1,17 @@
+schema_version: "1.1"
+name: ambient-manual-bro
+tags: [ambient]
+expected_outcome: "never bro"
+execution:
+  max_turns: 6
+  allowed_tools: [Read, Glob, Grep, Skill]
+  prompt: "what's the bottom line on count.sh? cut the fluff, plain words"
+context:
+  scaffold_script: setup.sh
+graders:
+  - name: not-loaded
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"edloidas:(?:bro)"'
+    min: 0
+    max: 0

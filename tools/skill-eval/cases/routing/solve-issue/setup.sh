@@ -1,0 +1,1 @@
+../../../fixtures/setup-issue.sh

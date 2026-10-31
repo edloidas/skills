@@ -1,0 +1,15 @@
+schema_version: "1.1"
+name: routing-working-docs
+tags: [routing]
+expected_outcome: "working-docs"
+execution:
+  max_turns: 6
+  allowed_tools: [Read, Glob, Grep, Skill]
+  prompt: "/edloidas:do start an Obsidian working doc for the stdin idea so I can pick it up next week"
+context:
+  scaffold_script: setup.sh
+graders:
+  - name: route
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"edloidas:(?:working-docs)"'

@@ -1,0 +1,15 @@
+schema_version: "1.1"
+name: routing-solve-issue
+tags: [routing]
+expected_outcome: "solve-issue"
+execution:
+  max_turns: 6
+  allowed_tools: [Read, Glob, Grep, Skill]
+  prompt: "/edloidas:do implement issue #12 — gh isn't signed in here, so its text is in issue-12.md"
+context:
+  scaffold_script: setup.sh
+graders:
+  - name: route
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"edloidas:(?:solve-issue)"'

@@ -1,0 +1,15 @@
+schema_version: "1.1"
+name: routing-reflect
+tags: [routing]
+expected_outcome: "reflect"
+execution:
+  max_turns: 6
+  allowed_tools: [Read, Glob, Grep, Skill]
+  prompt: "/edloidas:do go through my last 10 sessions and see how the skills held up — anything we should change in them?"
+context:
+  scaffold_script: setup.sh
+graders:
+  - name: route
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"edloidas:(?:reflect)"'

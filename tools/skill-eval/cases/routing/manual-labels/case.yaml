@@ -1,0 +1,21 @@
+schema_version: "1.1"
+name: routing-manual-labels
+tags: [routing]
+expected_outcome: "refuse: run /labels-sync yourself"
+execution:
+  max_turns: 6
+  allowed_tools: [Read, Glob, Grep, Skill]
+  prompt: "/edloidas:do sync the labels on this repo with our standard set"
+context:
+  scaffold_script: setup.sh
+graders:
+  - name: not-loaded
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"edloidas:(?:labels-sync)"'
+    min: 0
+    max: 0
+  - name: refusal
+    type: regex
+    target: trace
+    pattern: 'run /(?:edloidas:)?labels-sync yourself'

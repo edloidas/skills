@@ -1,0 +1,17 @@
+schema_version: "1.1"
+name: ambient-manual-labels
+tags: [ambient]
+expected_outcome: "never labels-sync"
+execution:
+  max_turns: 6
+  allowed_tools: [Read, Glob, Grep, Skill]
+  prompt: "sync the labels on this repo with our standard set"
+context:
+  scaffold_script: setup.sh
+graders:
+  - name: not-loaded
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"edloidas:(?:labels-sync)"'
+    min: 0
+    max: 0
