@@ -63,6 +63,10 @@ host itself:
 | pi | `pi install git:github.com/edloidas/skills` | Every portable skill |
 | OpenCode | `./scripts/skills-packaging.sh install-host opencode` | Every portable skill |
 
+To try a branch before it is released, add the marketplace at that branch:
+`/plugin marketplace add 'edloidas/skills#<branch>'` on Claude Code, or
+`codex plugin marketplace add edloidas/skills --ref <branch>` on Codex.
+
 Every skill ships to all four agents except one. `code-to-spec` drives fleets of
 plugin-namespaced subagents and keys its temp files on Claude's session id, so it is Claude Code
 only. See [How skills reach each agent](#how-skills-reach-each-agent).
@@ -134,7 +138,11 @@ marketplace alone installs nothing. To update, run `codex plugin marketplace upg
 `codex plugin add edloidas@edloidas-skills` again. Restart Codex if new skills do not appear.
 
 Codex lists only the auto-tier skills to the model. Routed skills are installed too and are reached
-through `do`, which opens their `SKILL.md` from the plugin.
+through `do`, which opens their `SKILL.md` from the plugin. Manual skills are installed but not
+offered to the model; invoke one with `$edloidas:<skill>`.
+
+The Codex marketplace is named `edloidas-skills`, while Claude Code's is `edloidas`, so plugin ids
+differ between the hosts: `edloidas@edloidas-skills` against `edloidas@edloidas`.
 
 Opening this repository in Codex additionally exposes `.agents/skills/` and the repo marketplace at
 `.agents/plugins/marketplace.json` for local use.

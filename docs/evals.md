@@ -88,7 +88,7 @@ The sandbox needs nested unprivileged user namespaces. Where AppArmor restricts 
 `apply-seccomp: write /proc/self/setgroups … Permission denied`, and the suite then measures only
 how the skills behave without a shell. Check one trace for that line before reading the results.
 
-Cases cap `max_turns` at 6: the route is decided in the first few turns, and the rest of the run is
+Routing and ambient cases cap `max_turns` at 6: the route is decided in the first few turns, and the rest of the run is
 cost. A run that reaches the cap is graded like any other; the summary marks it `at turn cap`, not
 as an error.
 
