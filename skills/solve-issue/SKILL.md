@@ -254,9 +254,10 @@ If any verification step fails:
 ### Ending the phase
 
 Phase 4 is over when every check the verification set selected is green and a bug's
-repro passes, per `references/bug-evidence.md` → **After**. End Phase 4 with
+repro passes or is reported per `references/bug-evidence.md` → **After**. End Phase 4 with
 one line naming every group, including the ones that did not run and why: `Phase 4: type-check
-ok, unit tests ok (<N> passed), build ok, lint not configured — observation skipped | bug fixed.`
+ok, unit tests ok (<N> passed), build ok, lint not configured — observation skipped | bug fixed |
+bug fixed (stand-in: <check>) | bug unverified — <reason>.`
 
 Then stop. Do not re-run the whole suite on top of the selected set, do not add a check
 the set did not select, and do not re-read the diff for a second opinion. Phase 4.6 is
