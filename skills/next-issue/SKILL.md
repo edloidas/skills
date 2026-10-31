@@ -1,8 +1,8 @@
 ---
 name: next-issue
 description: >
-  Recommend which open GitHub issue to work on next, ranked with type, size, and what blocks the
-  rest.
+  Recommend which open GitHub issues to work on next — low-hanging, easy, unassigned or
+  assigned-to-me picks — ranked with type, size, and what blocks the rest.
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
 allowed-tools: Bash(bash *next-issue/scripts/context.sh*) Bash(gh issue list:*) Bash(gh issue view:*) Bash(gh api repos/*/labels --paginate --jq *) Bash(gh api graphql -f query=*) Bash(git log:*) Read Glob Grep Agent

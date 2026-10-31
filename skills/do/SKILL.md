@@ -5,9 +5,8 @@ description: >
   of its own playbooks for a bug, a slowdown, an investigation, a review-and-fix, or a small
   change, and report with evidence.
 when_to_use: >
-  A bare "do", "do it", "do this", "handle this", "take care of it", "make this work", "fix this
-  bug", "figure out and fix", or the same in another language ("сделай") — a short request to act,
-  not a question. Also when a task arrives that no more specific skill clearly owns.
+  A bare "do", "do it", "do this", "handle this", "take care of it", "make this work", "figure out
+  and fix", or the same in another language ("сделай") — a short request to act, not a question. Also when a task arrives that no more specific skill clearly owns.
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
 allowed-tools: Read Glob Grep Skill Task Bash(git diff:*) Bash(git status:*) Bash(git log:*) Bash(git blame:*)
@@ -95,12 +94,12 @@ Five skills start only when the user types them: `bro`, `editor-config`, `labels
 | Tidy correct code: comments, conventions, simplification | `code-cleanup` | Files or a commit; `--comments-only` when only comments were named |
 | Settle one claim about runtime behaviour by running it | `live-probe` | The claim |
 | Security: supply chain, action pinning, secrets, release and repository settings | `security-audit` | — |
-| CI wall-clock, spend, and gates that check nothing | `ci-audit` | — |
+| CI workflows: wall-clock, spend, and CI steps that gate nothing | `ci-audit` | — |
 | package.json scripts or pnpm workspace config | `package-audit` | — |
 | tsconfig against TypeScript 7 | `tsconfig-audit` | The tsconfig path, if named |
 | React effects, memoization, state, component size | `react-audit` | The path, if named |
 | Three.js or React Three Fiber frame rate and pitfalls | `three-audit` | The path, if named |
-| The quality of a test suite | `tests-audit` | The path, if named |
+| The quality of a test suite: whether its tests are worth anything or check anything | `tests-audit` | The path, if named |
 | Review past sessions to see how our skills performed and improve them | `reflect` | The window (`last N`, `since <date>`) and skill names, if named |
 | Agent skills | `skill-audit` | The skill names, if named |
 | A behavioural spec extracted from code | `code-to-spec` | Paths or a feature description. Claude Code only; on other hosts say it is unavailable and stop |
@@ -121,6 +120,9 @@ fact the user does not have yet — a caller, a cause, a date — and reports it
 
 ## Phase 3: Run
 
+Print the `Task:` and `Route:` lines as text first, in the same message, before any skill call or
+playbook read.
+
 **A skill.** Invoke the `<name>` skill with the row's **Carry into it** as its arguments, and the
 task as context where the skill takes free text. A host that cannot invoke a skill by name: open
 that skill's `SKILL.md` — it sits beside this one in the installed skills directory — and follow
@@ -130,10 +132,14 @@ naming it; otherwise print `<name> is not installed.` and stop. The skill's own 
 **A playbook.** Open it and follow it. Each one ends on a named line and a stop sentence. Two terms
 the playbooks share: **the project's checks** are the finite commands its instruction file or CI
 runs — tests, build, lint, typecheck — never a watch server, a deploy, or a publish; and
-`code-cleanup` is always scoped to the lines this task changed, not whole files. A project with
-no checks gets that said under **Did not run**.
+`code-cleanup` is always scoped to the lines this task changed, not whole files. Without `git diff`,
+`changes-review` and `code-cleanup` work from the files the task changed, read as they are now. A
+project with no checks gets that said under **Did not run**.
 
 **In session.** Make the change, run the one check that shows it worked, and paste its output.
+
+**Unverified.** A check or test that could not run goes under **Did not run** as unverified. A test
+asserts only expected values you observed.
 
 **Scope.** A problem inside the task is fixed as part of it. A problem outside it — another
 module's bug, a stale doc, a flaky test the task did not touch — is noted with `file:line` for the

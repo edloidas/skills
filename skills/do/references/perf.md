@@ -6,6 +6,8 @@ Something is slow or heavy, the user wants it faster or lighter, and there is no
    direction is better — "wall time of `pnpm build` on a clean tree, seconds, lower is better".
 2. **Measure a baseline before changing anything.** Use the `live-probe` skill's way of running
    the thing, at least five runs. Paste the runs, then the median and the range (min–max).
+   No baseline, no change: when the measurement cannot run, name the suspected cause with
+   `file:line`, edit nothing, and end with `Perf: unmeasured — <reason>.`
 3. **Find where the time goes** — a profile, a trace, timestamps around the suspect step — and
    name the one cause you will change, with `file:line`.
 4. **One change, one measurement.** Make a single change, as targeted edits, and measure it the same way. Stack a

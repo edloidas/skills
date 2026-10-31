@@ -149,8 +149,8 @@ Stop conditions from the analyzer:
 
 End Phase 1 with one line that carries the run's finish line:
 `Phase 1: #<N> "<title>" — <N> tasks, <N> blockers, <N> related consequences, existing work <verdict>. Finish: merged PR | Phase 6 endgame's Then column.`
-— the first under `auto`, the second attended. Then go to Phase 2. No file is edited before
-the plan is printed.
+— the first under `auto`, the second attended. Then go to Phase 2. Phase 1's analysis comes
+first, and no file is edited before Phase 2's branch exists and its plan is printed.
 
 ## Phase 2: Plan
 

@@ -60,6 +60,7 @@ Fixed in <sha or "the latest push">. <What changed, in one clause.> <Why that is
 rather than the obvious one, only if it is not obvious.> Verified with `<the repo's own command>`.
 ```
 
+Name only checks that ran this session; for any other, write `Not run: <check> — <reason>.`
 Do not restate the original claim, do not re-derive the mechanism, and do not thank the commenter for
 a finding a bot produced.
 
