@@ -3,6 +3,8 @@
 # feature branch and main that both rewrote the same line of count.sh.
 set -eu
 here="$(cd "$(dirname "$0")" && pwd)"
+# Run through a case's setup.sh link, $here is the case directory, not this one.
+[ -d "$here/tally" ] || here="$here/../../../fixtures"
 bash "$here/setup.sh"
 
 g() { git -c user.name=Dana -c user.email=dana@example.com "$@"; }
