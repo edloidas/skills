@@ -9,7 +9,7 @@ when_to_use: >
   work". Also when a task arrives that no more specific skill clearly owns.
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
-allowed-tools: Read Edit Write Glob Grep Skill Task Bash(git diff:*) Bash(git status:*) Bash(git log:*) Bash(git blame:*)
+allowed-tools: Read Glob Grep Skill Task Bash(git diff:*) Bash(git status:*) Bash(git log:*) Bash(git blame:*)
 argument-hint: "[task]"
 metadata:
   author: edloidas
