@@ -138,6 +138,7 @@ should never start without the user asking: it writes to machine or repository s
 output is wanted only on demand.
 
 Codex maps the tier onto `allow_implicit_invocation` ([packaging.md](packaging.md#codex-metadata)).
+OpenCode does not honour `disable-model-invocation`, so a manual skill is model-visible there.
 OpenCode and pi have no equivalent flag, so there the tier is only as good as the text.
 
 ### Writing Descriptions

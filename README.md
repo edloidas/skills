@@ -101,7 +101,17 @@ To hand a team the plugin through Git instead, commit the marketplace and the pl
 ```
 
 Up to 5.x the collection shipped as ten group plugins (`plan@edloidas`, `review@edloidas`, and so
-on). Those ids no longer exist: uninstall them and install `edloidas@edloidas` once.
+on). Those ids no longer exist. To move to 6.x, uninstall each one you had, refresh the
+marketplace, and install the single plugin:
+
+```
+/plugin uninstall <group>@edloidas
+/plugin marketplace update edloidas
+/plugin install edloidas@edloidas
+```
+
+`/plugin uninstall` also removes the user-scope `enabledPlugins` entry; only a project's
+`.claude/settings.json` that pinned a `<group>@edloidas` id needs editing by hand.
 
 To load the plugin for a single session without installing it:
 
@@ -297,8 +307,8 @@ takes one GitHub issue end to end.
 `issue-flow` owns every git and GitHub write in the pipeline — creating the issue, branching, snapshots, commits, squashing, pushes, PRs, merges. Skills that
 orchestrate the pipeline (`solve-issue`) delegate those actions to it instead of
 reimplementing them, so the commit subject format and the squash rules live in one place.
-`next-issue` owns choosing what to work on; it is not in the `/` menu and runs on its own
-when you ask what is next.
+`next-issue` owns choosing what to work on; reach it through `/do` ("what's next"),
+`/next-issue`, or `issue-flow`'s Step 0.
 
 ### Review
 
