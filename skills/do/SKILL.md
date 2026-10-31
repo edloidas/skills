@@ -93,8 +93,8 @@ Five skills start only when the user types them: `bro`, `editor-config`, `labels
 | Find what is wrong with a diff, without fixing it | `changes-review` | `--base <branch>`, `--uncommitted`, or `--commit <sha>` |
 | Tidy correct code: comments, conventions, simplification | `code-cleanup` | Files or a commit; `--comments-only` when only comments were named |
 | Settle one claim about runtime behaviour by running it | `live-probe` | The claim |
-| Security: supply chain, action pinning, secrets, release and repository settings | `security-audit` | — |
-| CI workflows: wall-clock, spend, and CI steps that gate nothing | `ci-audit` | — |
+| CI or GitHub Actions setup: wall-clock, spend, and CI steps that gate nothing | `ci-audit` | — |
+| A security question: supply chain, unpinned actions, secrets, release and repository settings | `security-audit` | — |
 | package.json scripts or pnpm workspace config | `package-audit` | — |
 | tsconfig against TypeScript 7 | `tsconfig-audit` | The tsconfig path, if named |
 | React effects, memoization, state, component size | `react-audit` | The path, if named |
