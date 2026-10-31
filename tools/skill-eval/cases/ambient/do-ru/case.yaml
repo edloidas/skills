@@ -1,0 +1,15 @@
+schema_version: "1.1"
+name: ambient-do-ru
+tags: [ambient]
+expected_outcome: "do"
+execution:
+  max_turns: 6
+  allowed_tools: [Read, Glob, Grep, Skill]
+  prompt: "сделай, чтобы count.sh ничего не печатал на пустом файле, как написано в README"
+context:
+  scaffold_script: setup.sh
+graders:
+  - name: route
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"edloidas:(?:do)"'

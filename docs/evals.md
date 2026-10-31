@@ -16,7 +16,7 @@ bash tools/skill-eval/scripts/run-suite.sh ambient --runs 3 --jobs 4
 bash tools/skill-eval/scripts/run-suite.sh routing --runs 1 --case routing-explain
 ```
 
-Each run is a real model call on your credential, about $0.15–0.60 with Opus; the 18 cases at
+Each run is a real model call on your credential, about $0.15–0.60 with Opus; the 20 cases at
 3 runs cost roughly $15. Output goes to `tools/skill-eval/results/<timestamp>-<suite>/`
 (gitignored): `aggregate-result.json` and `report.html` from the harness, `traces/<case>/<run>.jsonl`,
 and `summary.md`. `--model` overrides the model; `--out` the directory. Exit status is the

@@ -5,8 +5,9 @@ description: >
   of its own playbooks for a bug, a slowdown, an investigation, a review-and-fix, or a small
   change, and report with evidence.
 when_to_use: >
-  "do this", "handle this", "fix this bug", "take care of it", "figure out and fix", "make this
-  work". Also when a task arrives that no more specific skill clearly owns.
+  A bare "do", "do it", "do this", "handle this", "take care of it", "make this work", "fix this
+  bug", "figure out and fix", or the same in another language ("сделай") — a short request to act,
+  not a question. Also when a task arrives that no more specific skill clearly owns.
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
 allowed-tools: Read Glob Grep Skill Task Bash(git diff:*) Bash(git status:*) Bash(git log:*) Bash(git blame:*)
