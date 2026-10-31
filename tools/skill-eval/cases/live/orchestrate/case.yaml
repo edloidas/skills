@@ -1,0 +1,22 @@
+schema_version: "1.1"
+name: live-orchestrate
+tags: [live]
+expected_outcome: "orchestrate preflight refuses without an authenticated gh, before any unit runs"
+execution:
+  max_turns: 15
+  timeout_seconds: 600
+  allowed_tools: [Read, Glob, Grep, Skill, TodoWrite, AskUserQuestion, Edit, Write, Bash]
+  prompt: "/edloidas:orchestrate two tasks, no issues for them: 1) add a --json flag to bin/total.js 2) make bin/merchants.js faster on big ledgers. Each on its own branch from main, local commits only, no push."
+context:
+  scaffold_script: setup.sh
+graders:
+  - name: preflight-stops
+    type: regex
+    target: last_message
+    pattern: 'needs an authenticated gh'
+  - name: no-edit
+    type: tool_used
+    tool: Edit
+    input_match: '.'
+    min: 0
+    max: 0

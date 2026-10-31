@@ -1,0 +1,32 @@
+schema_version: "1.1"
+name: live-investigate
+tags: [live]
+expected_outcome: "do investigate playbook: answers no (getUTCDay 6 vs 7), Lee Okafor, 'Add weekend listing'; changes nothing"
+execution:
+  max_turns: 20
+  timeout_seconds: 600
+  allowed_tools: [Read, Glob, Grep, Skill, TodoWrite, AskUserQuestion, Edit, Write, Bash]
+  prompt: "/edloidas:do does bin/weekend.js list entries dated on a Saturday? who added the weekend check, and in which commit?"
+context:
+  scaffold_script: setup.sh
+graders:
+  - name: route-investigate
+    type: regex
+    target: trace
+    pattern: 'Route:\W*(?:`)?references/investigate\.md'
+  - name: no-edit
+    type: tool_used
+    tool: Edit
+    input_match: '.'
+    min: 0
+    max: 0
+  - name: no-write
+    type: tool_used
+    tool: Write
+    input_match: '.'
+    min: 0
+    max: 0
+  - name: names-author
+    type: regex
+    target: last_message
+    pattern: 'Lee Okafor'

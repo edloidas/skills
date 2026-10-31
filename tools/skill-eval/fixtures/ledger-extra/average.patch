@@ -1,0 +1,70 @@
+diff --git a/README.md b/README.md
+index dd48ca5..85860c7 100644
+--- a/README.md
++++ b/README.md
+@@ -8,7 +8,8 @@ Command-line tools for plain-text expense ledgers. One entry per line:
+ 
+ ## Commands
+ 
+-- `node bin/total.js <file>` prints the total of a ledger, e.g. `43.50`.
++- `node bin/total.js <file> [--average]` prints the total of a ledger, e.g. `43.50`, and with
++  `--average` also the average entry, rounded to the nearest cent.
+ - `node bin/weekend.js <file>` lists the entries dated on a Saturday or Sunday.
+ - `node bin/merchants.js <file>` lists each merchant once, in the order they first appear.
+ - `npm start` serves `GET /health` and `GET /total?ledger=<name>` for the ledgers in `examples/`.
+diff --git a/bin/total.js b/bin/total.js
+index 8875a39..f98ad67 100644
+--- a/bin/total.js
++++ b/bin/total.js
+@@ -2,14 +2,18 @@
+ 'use strict';
+ 
+ const fs = require('fs');
+-const { readLedger, total } = require('../src/ledger');
++const { readLedger, total, average } = require('../src/ledger');
+ const { formatCents } = require('../src/amount');
+ 
+ const file = process.argv[2];
++const showAverage = process.argv[3] === '--average';
+ if (!file) {
+-  console.error('usage: total.js <ledger-file>');
++  console.error('usage: total.js <ledger-file> [--average]');
+   process.exit(1);
+ }
+ 
+ const entries = readLedger(fs.readFileSync(file, 'utf8'));
+ console.log(formatCents(total(entries)));
++if (showAverage) {
++  console.log(`average ${formatCents(average(entries))} over ${entries.length} entries`);
++}
+diff --git a/src/ledger.js b/src/ledger.js
+index 514f4bc..a04b33e 100644
+--- a/src/ledger.js
++++ b/src/ledger.js
+@@ -19,4 +19,9 @@ function total(entries) {
+   return entries.reduce((sum, entry) => sum + entry.cents, 0);
+ }
+ 
+-module.exports = { parseLine, readLedger, total };
++// Average entry, in whole cents.
++function average(entries) {
++  return Math.floor(total(entries) / entries.length);
++}
++
++module.exports = { parseLine, readLedger, total, average };
+diff --git a/test/average.test.js b/test/average.test.js
+new file mode 100644
+index 0000000..086d273
+--- /dev/null
++++ b/test/average.test.js
+@@ -0,0 +1,10 @@
++'use strict';
++
++const test = require('node:test');
++const assert = require('node:assert');
++const { readLedger, average } = require('../src/ledger');
++
++test('average of two entries', () => {
++  const entries = readLedger('2026-02-01, a, 1.00\n2026-02-02, b, 3.00\n');
++  assert.ok(average(entries) > 0);
++});

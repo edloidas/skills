@@ -65,6 +65,28 @@ Principles the cases follow:
 | ----- | ------------ | -------- |
 | `routing` | `/edloidas:do <request>` | The first route `/do` takes: the skill it loads, or the playbook or in-session route it prints |
 | `ambient` | The request alone | Whether an `auto` skill fires on its own, and where a request for a `routed` skill ends up — through `do`, directly, or nowhere |
+| `live` | `/edloidas:<skill> <request>` | Whether a skill that changes things works end to end: the `do` playbooks, `solve-issue` offline, `live-probe write-runbook`, `reflect`, `orchestrate`'s preflight, `sharpen` |
+
+`live` is not run by `run-suite.sh`: its cases edit and run code, so they need Edit, Write and Bash
+granted, and its fixture is `fixtures/ledger` (a small Node.js project with seeded defects, built by
+`fixtures/setup-ledger.sh <variant>`). Run it directly, with a cost ceiling:
+
+```bash
+claude plugin eval . --eval-dir tools/skill-eval/cases --tag live --runs 1 --ablation none \
+  --scaffold --trust-plugin --no-publish --keep-temp --disallow-tools Agent \
+  --allow-tools Edit Write Bash --max-cost-usd 15 --output-dir <out>
+```
+
+Bash runs inside the harness's OS sandbox (writes confined to the workspace, no network), and
+`gh` is unauthenticated. The harness has no script grader, so behaviour — the bug fixed, the
+output unchanged, the tree left clean — is checked afterwards on each kept workspace
+(`<kept>/sealed/home/cwd`) with `cases/live/check.sh <case> <workspace>`, before
+`collect-traces.sh` deletes it. A live run costs $0.20–0.60 with Opus.
+
+The sandbox needs nested unprivileged user namespaces. Where AppArmor restricts them (Ubuntu
+24.04+, `kernel.apparmor_restrict_unprivileged_userns=1`), every Bash call in a run fails with
+`apply-seccomp: write /proc/self/setgroups … Permission denied`, and the suite then measures only
+how the skills behave without a shell. Check one trace for that line before reading the results.
 
 Cases cap `max_turns` at 6: the route is decided in the first few turns, and the rest of the run is
 cost. A run that reaches the cap is graded like any other; the summary marks it `at turn cap`, not

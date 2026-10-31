@@ -1,0 +1,18 @@
+schema_version: "1.1"
+name: live-solve-issue
+tags: [live]
+expected_outcome: "solve-issue offline: stops at the gh precondition, or reproduces and fixes with before/after evidence"
+execution:
+  max_turns: 40
+  timeout_seconds: 1500
+  allowed_tools: [Read, Glob, Grep, Skill, TodoWrite, AskUserQuestion, Edit, Write, Bash]
+  prompt: "/edloidas:solve-issue 17 \u2014 GitHub is not reachable from this machine, so the issue text is in issue-17.md"
+context:
+  scaffold_script: setup.sh
+graders:
+  - name: no-issue-filed
+    type: tool_used
+    tool: Bash
+    input_match: 'gh (?:issue|pr) (?:create|comment|edit)'
+    min: 0
+    max: 0

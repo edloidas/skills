@@ -1,0 +1,10 @@
+{
+  "name": "ledger",
+  "version": "1.2.0",
+  "private": true,
+  "description": "Small command-line tools for plain-text expense ledgers.",
+  "scripts": {
+    "test": "node --test test/*.test.js",
+    "start": "node src/server.js"
+  }
+}

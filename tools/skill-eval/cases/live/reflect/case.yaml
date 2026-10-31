@@ -1,0 +1,28 @@
+schema_version: "1.1"
+name: live-reflect
+tags: [live]
+expected_outcome: "reflect: finds the do wrong-route pattern in the seeded transcripts, proposes, applies nothing"
+execution:
+  max_turns: 30
+  timeout_seconds: 900
+  allowed_tools: [Read, Glob, Grep, Skill, TodoWrite, AskUserQuestion, Edit, Write, Bash]
+  prompt: "/edloidas:reflect last 10"
+context:
+  scaffold_script: setup.sh
+graders:
+  - name: no-edit
+    type: tool_used
+    tool: Edit
+    input_match: '.'
+    min: 0
+    max: 0
+  - name: no-write
+    type: tool_used
+    tool: Write
+    input_match: 'SKILL\.md'
+    min: 0
+    max: 0
+  - name: wrong-route-found
+    type: regex
+    target: last_message
+    pattern: 'wrong-route|investigate'
