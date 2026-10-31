@@ -3,7 +3,7 @@ name: reflect
 description: Read past session transcripts for how this collection's skills were used, find what went well and badly, and propose fixes ranked by enforcement level.
 license: MIT
 compatibility: Claude Code, Codex, OpenCode, Pi
-allowed-tools: Read Glob Grep Edit Write Task AskUserQuestion Bash(ls:*) Bash(find:*) Bash(stat:*) Bash(wc:*) Bash(realpath:*) Bash(python3:*) Bash(sqlite3:*) Bash(bash:*) Bash(git rev-parse:*) Bash(git status:*) Bash(git diff:*) Bash(git log:*) Bash(git show:*) Bash(git worktree:*)
+allowed-tools: Read Glob Grep Edit Write Task AskUserQuestion Bash(ls:*) Bash(stat:*) Bash(wc:*) Bash(realpath:*) Bash(sqlite3:*) Bash(git rev-parse:*) Bash(git status:*) Bash(git diff:*) Bash(git log:*) Bash(git show:*) Bash(git worktree:*)
 argument-hint: "[last N | since YYYY-MM-DD] [skill names] [project <path> | all-projects]"
 metadata:
   author: edloidas

@@ -29,7 +29,9 @@ For each session:
    end; a file too large to read whole is read in windows around those hits. A session where a use
    could not be read to its end goes under `unreadable` with the reason, even if other uses in it
    were read. A use starts where the skill is invoked and ends at the
-   next invocation of any skill, the user's next unrelated request, or the end of the session.
+   next invocation of a skill this use did not itself invoke, the user's next unrelated request,
+   or the end of the session. A skill this use invokes — a route, a chain — is its own use nested
+   inside it, and the parent's use continues after it.
 2. Within each use, find these events:
 
    | Class | Verdict | What it is |
