@@ -59,7 +59,7 @@ host itself:
 | Agent | Install | What you get |
 | ----- | ------- | ------------ |
 | Claude Code | `/plugin marketplace add edloidas/skills` | The `edloidas` plugin, every skill |
-| Codex | `codex plugin marketplace add edloidas/skills` | The `edloidas` wrapper plugin |
+| Codex | `codex plugin marketplace add edloidas/skills`, then `codex plugin add edloidas@edloidas-skills` | The `edloidas` plugin, every Codex-ready skill |
 | pi | `pi install git:github.com/edloidas/skills` | Every portable skill |
 | OpenCode | `./scripts/skills-packaging.sh install-host opencode` | Every portable skill |
 
@@ -122,15 +122,19 @@ claude --plugin-dir ./skills
 
 ### Codex
 
-Add the marketplace from GitHub — no `--ref` flag needed:
+Add the marketplace from GitHub, then install its one plugin:
 
 ```bash
 codex plugin marketplace add edloidas/skills
+codex plugin add edloidas@edloidas-skills
 ```
 
-This installs and enables the one wrapper plugin, `Edloidas`, which carries every Codex-ready
-skill. Codex clones the whole repository, so `git pull` updates flow through. Restart Codex if new
-skills do not appear.
+The plugin, `Edloidas`, carries every Codex-ready skill, namespaced `edloidas:<skill>`. Adding the
+marketplace alone installs nothing. To update, run `codex plugin marketplace upgrade` and then
+`codex plugin add edloidas@edloidas-skills` again. Restart Codex if new skills do not appear.
+
+Codex lists only the auto-tier skills to the model. Routed skills are installed too and are reached
+through `do`, which opens their `SKILL.md` from the plugin.
 
 Opening this repository in Codex additionally exposes `.agents/skills/` and the repo marketplace at
 `.agents/plugins/marketplace.json` for local use.
@@ -198,7 +202,7 @@ trusting `opencode debug skill` after an install.
 | Agent | Command |
 | ----- | ------- |
 | Claude Code | `/plugin uninstall edloidas@edloidas`, then `/plugin marketplace remove edloidas` |
-| Codex | `codex plugin marketplace remove edloidas-skills` |
+| Codex | `codex plugin remove edloidas@edloidas-skills`, then `codex plugin marketplace remove edloidas-skills` |
 | pi | `pi remove git:github.com/edloidas/skills` |
 | OpenCode | `rm ~/.config/opencode/skills/<skill>`, or remove the whole directory |
 | npx skills | `npx skills remove --all` |
@@ -208,13 +212,15 @@ trusting `opencode debug skill` after an install.
 ## How skills reach each agent
 
 Every skill lives in exactly one real directory, `skills/<name>/`. Everything else is a
-generated symlink tree pointing at it. Claude Code, Codex, OpenCode, and pi all resolve symlinks;
-the `skills` CLI does not, which is why the canonical location must be a real directory.
+generated manifest or a symlink tree pointing at it. Claude Code, Codex, OpenCode, and pi all
+resolve symlinks when they read a tree in place; the `skills` CLI does not, which is why the
+canonical location must be a real directory. A Codex plugin install drops symlinks, so the Codex
+plugin is rooted at the repo root and names the real skill directories.
 
 | Agent | Discovery path | Installed by |
 | ----- | -------------- | ------------ |
 | Claude Code | `skills/` via the root `.claude-plugin/plugin.json` | Plugin marketplace |
-| Codex | `.agents/skills/`, `plugins/edloidas/skills/` | Plugin marketplace, or `install-host codex` |
+| Codex | `skills/` via the root `.codex-plugin/plugin.json`; `.agents/skills/` and `~/.agents/skills/` | Plugin marketplace, or `install-host codex` |
 | pi | `.pi/skills/` via `pi.skills`; also `~/.pi/agent/skills/` and `~/.agents/skills/` | `pi install`, or `install-host pi` |
 | OpenCode | `.opencode/skills/`, `.claude/skills/`, `.agents/skills/`, and their `~/.config/opencode` and `~/.agents` equivalents | `install-host opencode` |
 
@@ -402,7 +408,7 @@ on demand. Detailed material belongs in `references/`, not in the body.
 
 [AGENTS.md](AGENTS.md) holds the repo rules and the validation contract, and links the
 reference docs: [writing skills](docs/writing-skills.md) (frontmatter fields, naming rules,
-portability), [packaging](docs/packaging.md) (per-host trees, Codex wrapper), and the rest in
+portability), [packaging](docs/packaging.md) (per-host trees, Codex plugin), and the rest in
 `docs/`. In short: create `skills/<name>/SKILL.md` as a real
 directory, declare `compatibility`, add `agents/openai.yaml` and a `scripts/codex/catalog.json`
 entry if it targets Codex, add a row to the table above, then run `sync-repo` and the validators.

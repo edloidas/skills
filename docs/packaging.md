@@ -1,6 +1,6 @@
 # Packaging
 
-Read this when changing which hosts a skill ships to, the Codex wrapper, the generated trees,
+Read this when changing which hosts a skill ships to, the Codex plugin, the generated trees,
 the plugin manifests, or the bundled agents. Which hosts a skill declares, and what makes a skill
 safe to declare them, is in [writing-skills.md](writing-skills.md#portability).
 
@@ -27,21 +27,17 @@ skips it. `tools/skills-release` and `tools/skill-eval` are the current examples
 ## Generated Trees
 
 Distribution trees are generated symlinks into that canonical location. Claude Code, Codex,
-OpenCode, and pi all resolve symlinks, so only the canonical directory has to be real:
+OpenCode, and pi all resolve symlinks when they read a tree in place, so only the canonical
+directory has to be real:
 
 ```
+.codex-plugin/
+└── plugin.json           # Codex plugin manifest; lists the Codex skills by path
 .agents/
 ├── plugins/
-│   └── marketplace.json  # Repo-local Codex marketplace
+│   └── marketplace.json  # Codex marketplace; its one plugin's path is ./
 └── skills/
     └── <skill-name> -> ../../skills/<skill-name>
-
-plugins/
-└── edloidas/
-    ├── .codex-plugin/
-    │   └── plugin.json   # Codex wrapper plugin manifest
-    └── skills/
-        └── <skill-name> -> ../../../skills/<skill-name>
 ```
 
 `sync-repo` generates one symlink tree per host, all pointing into the canonical
@@ -53,9 +49,8 @@ plugins/
 | `.opencode/skills/` | OpenCode | Every skill declaring `OpenCode` |
 | `.pi/skills/` | pi | Every skill declaring `Pi` |
 
-Treat `.agents/plugins/marketplace.json`, `plugins/edloidas/.codex-plugin/plugin.json`,
-`.agents/skills/`, `.opencode/skills/`, `.pi/skills/`, and `plugins/edloidas/skills/` as
-generated outputs. Update the source skills, their `compatibility` frontmatter, and
+Treat `.agents/plugins/marketplace.json`, `.codex-plugin/plugin.json`, `.agents/skills/`,
+`.opencode/skills/`, and `.pi/skills/` as generated outputs. Update the source skills, their `compatibility` frontmatter, and
 `scripts/codex/catalog.json`, then regenerate:
 
 ```bash
@@ -74,22 +69,25 @@ To install a host's set globally rather than repo-locally:
 `install-host` prunes only links that point into this repo, so unrelated skills sharing the
 destination directory are left alone.
 
-## Codex Wrapper
+## Codex Plugin
 
-The Codex wrapper is one plugin, `plugins/edloidas/` → `edloidas` / `Edloidas`, in the Codex
-marketplace `edloidas-skills`. It is driven from `scripts/codex/catalog.json`.
+The Codex plugin, `edloidas` / `Edloidas` in the Codex marketplace `edloidas-skills`, is rooted at
+the repo root, like the Claude Code plugin. Both are driven from `scripts/codex/catalog.json`,
+which holds exactly one plugin.
 
-Do not add `.codex-plugin/plugin.json` to the repo root or to `skills/`. Use the wrapper:
+Codex copies an installed plugin into its cache and drops every symlink on the way, so the plugin
+cannot be a tree of symlinked skills — that installs empty. Instead:
 
-- `skills/` remains the canonical skill source for all agents.
-- The wrapper plugin exposes only the Codex-vetted subset of skills.
-- `plugins/edloidas/skills/` contains symlinks to the real skill directories.
-- `.agents/skills/` also contains only Codex-vetted skill symlinks.
+- `.codex-plugin/plugin.json` sits at the repo root beside `.claude-plugin/`, and its `skills`
+  array names each catalog skill as `./skills/<name>/`. Codex loads only the listed directories,
+  which is what keeps a Claude Code-only skill such as `code-to-spec` out.
+- The marketplace entry in `.agents/plugins/marketplace.json` has `path: "./"`.
+- The install copies the whole repo into `$CODEX_HOME/plugins/cache/`; the skills arrive as the
+  real directories.
 
-The generated wrapper layer is symlink-based and should be treated as repo-local when this
-repository is open in Codex. For user-scoped or cross-repo Codex usage, install skills via
-`./scripts/skills-packaging.sh install-host codex` (or `--dest <path>`) or direct installs
-into `~/.codex/skills` rather than assuming the wrapper plugin cache will be portable.
+`.agents/skills/` is separate: the Codex-vetted set as symlinks, read in place when this
+repository is open in Codex, OpenCode, or pi. `./scripts/skills-packaging.sh install-host codex`
+links the same set into `~/.agents/skills` for use outside a plugin.
 
 When adding a new skill, or when upgrading an existing skill to support Codex, update the
 Codex packaging layer in the same change:
@@ -97,11 +95,11 @@ Codex packaging layer in the same change:
 - Add or update the skill's `compatibility` frontmatter to reflect actual Codex support.
 - Add `agents/openai.yaml` (below) if the skill should be exposed in Codex.
 - Add the skill to `scripts/codex/catalog.json`, run `./scripts/validate-codex.sh`, and run
-  `./scripts/skills-packaging.sh sync-repo` so `.agents/skills/`, `plugins/edloidas/skills/`,
-  the wrapper manifest, and `.agents/plugins/marketplace.json` stay in sync.
+  `./scripts/skills-packaging.sh sync-repo` so `.agents/skills/`, `.codex-plugin/plugin.json`,
+  and `.agents/plugins/marketplace.json` stay in sync.
 - Update `README.md` if the exposed Codex skill set changed.
 
-A skill is not considered fully integrated until both the source skill and the Codex wrapper layer
+A skill is not considered fully integrated until both the source skill and the Codex plugin layer
 are kept in sync.
 
 ### Codex Metadata

@@ -2,7 +2,7 @@
 
 Read this when creating or editing a skill. The checks that enforce these rules are listed in
 [AGENTS.md](../AGENTS.md#skill-changes-are-gated); budgets and exemptions are in
-[validation.md](validation.md); host trees and the Codex wrapper are in
+[validation.md](validation.md); host trees and the Codex plugin are in
 [packaging.md](packaging.md).
 
 ## Creating a New Skill
@@ -14,7 +14,7 @@ Read this when creating or editing a skill. The checks that enforce these rules 
 4. Add a row under the right topic in the "Available Skills" table in `README.md`, with the tier
    in its Tier column
 5. If the skill targets Codex, update the Codex layer in the same change — see
-   [packaging.md](packaging.md#codex-wrapper)
+   [packaging.md](packaging.md#codex-plugin)
 6. Run `bash .github/scripts/validate-skills.sh` to verify marketplace, manifests, and skill layout
 7. If the skill bundles a shell script, add its tests under `tests/skills/<skill>/` and run `bash tests/run.sh`
 8. Run `skill-audit` and clear it before committing
@@ -453,7 +453,7 @@ Adding a host to a skill is not free. Check that the body has no Claude-only dep
 `${CLAUDE_SESSION_ID}`, or `~/.claude/...` paths. Do not rely on `compatibility` alone to hide
 an unsupported skill from Codex: add `Codex` only after reviewing that the instructions are
 actually Codex-safe, and expose the skill through `scripts/codex/catalog.json`
-([packaging.md](packaging.md#codex-wrapper)).
+([packaging.md](packaging.md#codex-plugin)).
 
 The README "Available Skills" table has an **Agents** column for quick scanning.
 

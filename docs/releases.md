@@ -10,8 +10,8 @@ The version is declared in **five files**, and every one must match the release 
 | ---- | ------- |
 | `.claude-plugin/marketplace.json` (the one plugin entry) | Claude Code marketplace |
 | `.claude-plugin/plugin.json` | Claude Code plugin loader |
-| `scripts/codex/catalog.json` | Codex wrapper generator |
-| `plugins/edloidas/.codex-plugin/plugin.json` | Codex plugin loader (generated) |
+| `scripts/codex/catalog.json` | Codex plugin generator |
+| `.codex-plugin/plugin.json` | Codex plugin loader (generated) |
 | `package.json` | pi package manifest |
 
 `.github/scripts/validate-version.sh` fails the release workflow if any of them drifts from the

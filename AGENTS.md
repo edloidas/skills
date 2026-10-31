@@ -20,19 +20,21 @@ job lives in `docs/`, and each rule lives in exactly one of these files:
 | [docs/writing-skills.md](docs/writing-skills.md) | Creating or editing a skill: naming, frontmatter, discovery text, how to write a body, `Asking the User`, portability across hosts |
 | [docs/validation.md](docs/validation.md) | A validator fails, or you change one: body budgets and their reasons, Claude-only pattern detection and its exemption |
 | [docs/testing.md](docs/testing.md) | Adding or changing a bundled shell script or a `validate-skills.sh` rule |
-| [docs/packaging.md](docs/packaging.md) | Changing the host set of a skill, the Codex wrapper, the generated trees, plugin manifests, or bundled agents |
+| [docs/packaging.md](docs/packaging.md) | Changing the host set of a skill, the Codex plugin, the generated trees, plugin manifests, or bundled agents |
 | [docs/releases.md](docs/releases.md) | Cutting a release or adding a version-bearing file |
 | [docs/evals.md](docs/evals.md) | Measuring which skill a real session picks: before and after a discovery-text, tier, or `/do` routing change |
 
 ## Layout
 
 The whole collection is one Claude Code plugin, `edloidas`, whose root is the repo root. The
-marketplace (also named `edloidas`) has a single entry with `"source": "./"`:
+marketplace (also named `edloidas`) has a single entry with `"source": "./"`. The Codex plugin of
+the same name is rooted there too:
 
 ```
 .claude-plugin/
 ├── plugin.json                   # The edloidas plugin manifest
 └── marketplace.json              # The edloidas marketplace, one plugin entry
+.codex-plugin/plugin.json         # Codex plugin manifest (generated), also rooted here
 agents/                           # Plugin subagents (code-to-spec's spec-* agents)
 docs/                             # Reference docs for working on this repo
 skills/
@@ -49,8 +51,8 @@ tools/skill-eval/                 # Repo-only skill: runs skills in a sandbox an
 **`skills/<skill-name>/` is the one canonical location for a skill, and it must be a real
 directory — never a symlink.** Why, and what enforces it: [docs/packaging.md](docs/packaging.md).
 
-`.agents/`, `.opencode/skills/`, `.pi/skills/`, and `plugins/edloidas/` are generated symlink
-trees and manifests. Never edit them by hand: change the source skill, its `compatibility`, or
+`.codex-plugin/`, `.agents/`, `.opencode/skills/`, and `.pi/skills/` are generated manifests and
+symlink trees. Never edit them by hand: change the source skill, its `compatibility`, or
 `scripts/codex/catalog.json`, then run `./scripts/skills-packaging.sh sync-repo` and commit the
 result.
 
