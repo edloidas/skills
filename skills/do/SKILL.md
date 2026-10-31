@@ -3,7 +3,7 @@ name: do
 description: >
   Take an engineering task end to end: work out what it needs, run the skill that owns it or one
   of its own playbooks for a bug, a slowdown, an investigation, a review-and-fix, or a small
-  change, and report with evidence. The front door for work no more specific skill owns.
+  change, and report with evidence.
 when_to_use: >
   "do this", "handle this", "fix this bug", "take care of it", "figure out and fix", "make this
   work". Also when a task arrives that no more specific skill clearly owns.
@@ -70,7 +70,7 @@ Five skills start only when the user types them: `bro`, `editor-config`, `labels
 | ---- | ----- | ------------- |
 | A prompt or task statement to sharpen before work starts, not to run | `sharpen` | — |
 | A large goal — see **`orchestrate` or not** below. Skip this row in unit mode | `orchestrate` | The goal and its units as the user stated them |
-| One GitHub issue to implement | `solve-issue` | The number or URL as given. `slices` when the user wants one commit per slice; `pr-only` when they want no merge; `auto` only when they said not to ask |
+| One GitHub issue to implement | `solve-issue` | The number or URL as given. `slices` when the user wants one commit per slice; `pr-only` when they want no merge; `auto` only when they said not to ask; "do not file follow-up issues" unless they asked for them |
 | One GitHub issue to understand or plan, not build | `issue-analyze` | The number or URL as given, and nothing else |
 | What to work on next | `next-issue` | Filters the user named: a label, "mine", "small" |
 | Issue text to draft, write up or reword, including "an issue for later" — anything short of "file it now" | `issue-writer` | The description, or the issue number to update |
@@ -83,8 +83,9 @@ Five skills start only when the user types them: `bro`, `editor-config`, `labels
 | Merge or rebase conflicts | `resolve-conflicts` | The PR, if named |
 | Release an npm package | `npm-release` | The bump, if named |
 | Hand the session off | `handoff` | `doc` when a file was asked for |
-| Write or edit Markdown: a README, docs, a PR or issue body | `markdown-writing` | The file or topic |
 | An Obsidian working document | `working-docs` | The topic |
+| Write down how to run and observe the project, for agents | `live-probe` | `write-runbook` |
+| Any other Markdown: a README, docs, a PR or issue body | `markdown-writing` | The file or topic |
 | How or why something works, or whether the user's account of it is right | `explain` | The subject |
 | How to approach a problem, which option to pick, a plan to stress-test | `consilium` | The problem and any approach already on the table; `short` for a brief report |
 | Verdicts on claims, with no fixes: findings, a plan's assumptions, an objection | `doubt` | The claim set, verbatim |
@@ -92,7 +93,6 @@ Five skills start only when the user types them: `bro`, `editor-config`, `labels
 | Find what is wrong with a diff, without fixing it | `changes-review` | `--base <branch>`, `--uncommitted`, or `--commit <sha>` |
 | Tidy correct code: comments, conventions, simplification | `code-cleanup` | Files or a commit; `--comments-only` when only comments were named |
 | Settle one claim about runtime behaviour by running it | `live-probe` | The claim |
-| Write down how to run and observe the project, for agents | `live-probe` | `write-runbook` |
 | Security: supply chain, action pinning, secrets, release and repository settings | `security-audit` | — |
 | CI wall-clock, spend, and gates that check nothing | `ci-audit` | — |
 | package.json scripts or pnpm workspace config | `package-audit` | — |
@@ -144,7 +144,8 @@ End Phase 3 with one line: `Ran: <route> — <outcome in one clause>.`
 ## Phase 4: Report
 
 When the route was a single skill, its own report is the answer: add only the **Outside this task**
-block, and only when it is non-empty. For every other route, print this report:
+block, and only when it is non-empty. In session, the `Ran:` line and the pasted check are the
+report, with the same **Outside this task** rule. For a playbook, print this report:
 
 - **Route** — the line from Phase 2, and the re-route if one happened.
 - **Outcome** — one sentence: what is true now.
