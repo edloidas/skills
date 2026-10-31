@@ -15,12 +15,13 @@ metadata:
 # Live Probe
 
 Runs commands and may create scratch files; every one it creates is removed before it returns,
-except a rendered frame a caller asked to keep. It never edits source, never commits, and never
-changes what it is observing.
+except a rendered frame a caller asked to keep. It leaves source as it found it, never commits,
+and never changes what it is observing.
 
 With the argument `write-runbook` it runs a second mode instead: it writes the project's
-"Running and observing" section — see [Write-runbook mode](#write-runbook-mode). That mode edits
-one file, the project's agent instruction file, and only when the user asked for it.
+"Running and observing" section — see [Write-runbook mode](#write-runbook-mode). That mode runs
+the project to prove each step, edits the project's agent instruction file, and keeps the proof
+run's evidence files — only when the user asked for it.
 
 ## The premise
 
@@ -133,7 +134,8 @@ The instruction layer owns the specifics. These hold regardless of what it says:
 - **Captured artifacts go where the project puts them** — the instruction layer names the
   directory. Absent one, the scratch location, never the working tree.
 - **Never edit source to make a probe work.** Removing a prop to expose a symptom is reverted the
-  moment the observation is taken.
+  moment the observation is taken, by reversing that one edit — never by restoring the file, which
+  also discards the caller's uncommitted work.
 
 ## What to return
 
