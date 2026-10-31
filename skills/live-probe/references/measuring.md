@@ -9,9 +9,9 @@ to run it exactly as SKILL.md says — the project's declared command, never an 
 
 ## Before the first timed run
 
-1. **Write the claim as you would report it**, with the metric, the input, and the unit: "`pnpm
-   build` on a clean tree takes longer than 40 s", "the list renders at under 30 fps with 5,000
-   rows". The series below tests that sentence and nothing wider.
+1. **Write the claim as you would report it**, with the metric, the input, the unit, and which
+   direction is better — lower for a time or a size, higher for a rate: "`pnpm build` on a clean
+   tree takes longer than 40 s", "the list renders at under 30 fps with 5,000 rows". The series below tests that sentence and nothing wider.
 2. **Confirm the work runs inside the timed region.** Check one run for the evidence that the work
    happened: the request reached the server, the rows were written, the output was produced and is
    correct. Lazy code — a generator nobody iterates, a promise nobody awaits, a result the runtime
@@ -42,8 +42,8 @@ to run it exactly as SKILL.md says — the project's declared command, never an 
 
 ## Reading the result
 
-- **A difference inside the run-to-run range is no difference.** B is faster only when its median
-  is below A's minimum, and slower only when its median is above A's maximum. Anything between is
+- **A difference inside the run-to-run range is no difference.** B is better only when its median
+  is better than A's best run, and worse only when its median is worse than A's worst run. Anything between is
   `no difference`, however the medians compare.
 - **An absolute claim** ("takes longer than 40 s") holds when the whole range sits on its side of
   the threshold, fails when the whole range sits on the other side, and is `unverified` when the
