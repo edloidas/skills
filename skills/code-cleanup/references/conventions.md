@@ -105,7 +105,7 @@ sibling you compared against.
 
 ### TypeScript
 
-- **Null/undefined consistency** — only when `CLAUDE.md` or a rule file documents an explicit
+- **Null/undefined consistency** — only when `AGENTS.md`, `CLAUDE.md` or a rule file documents an explicit
   convention. No documented convention → skip this check entirely.
 - **Export patterns** — default exports where the rules say to avoid them, named-export
   consistency, re-export patterns.

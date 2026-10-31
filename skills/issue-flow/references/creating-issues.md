@@ -21,7 +21,7 @@ Wait for all four before proceeding. `detect-base.sh` is not needed until Step 2
 
 ### Title
 
-Use conventional commit format: `<type>: <description>`. Defer to CLAUDE.md conventions if they differ.
+Use conventional commit format: `<type>: <description>`. Defer to the `AGENTS.md` / `CLAUDE.md` conventions if they differ.
 
 ### Epic Detection
 
@@ -99,7 +99,7 @@ Ask, per **Asking the User**: slot 1 (Recommended) = first row, slots 2–4 = ne
 
 **Trigger:** Check milestones when either:
 - The user explicitly asks to assign a milestone
-- The target repo's CLAUDE.md mentions milestones (any mention — section headers, instructions, config)
+- The target repo's `AGENTS.md` / `CLAUDE.md` mentions milestones (any mention — section headers, instructions, config)
 
 If neither trigger matches, skip silently.
 

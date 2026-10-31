@@ -14,7 +14,7 @@ metadata:
 
 # Issue Flow
 
-Manages the full GitHub issue lifecycle: select → issue → branch → commits → PR → merge → close. Supports entering at any step and advancing forward. Reads the target repo's CLAUDE.md for project-specific conventions.
+Manages the full GitHub issue lifecycle: select → issue → branch → commits → PR → merge → close. Supports entering at any step and advancing forward. Reads the repo's `AGENTS.md` / `CLAUDE.md` for its conventions.
 
 Mutation class: **writes and pushes, and writes to external services (GitHub)** — branch creation, snapshots, commits, squashing, pushes, PRs, merges. This skill owns every one of them; `next-issue` owns ranking. Skills that orchestrate the pipeline (`solve-issue`) delegate those actions here rather than reimplementing them, so the commit subject format and the squash rules exist in exactly one place.
 
@@ -113,7 +113,7 @@ the same turn.
 
 ## Conventions
 
-Read the target repo's CLAUDE.md for project-specific formatting. Use these defaults when no override is found:
+Read the repo's instruction file for its formatting. Use these defaults when no override is found:
 
 - **Issue titles**: `<type>: <description>` (conventional commit format)
 - **Commit subjects**: `<Issue Title> #<number>`
@@ -178,7 +178,7 @@ bash "<skill-dir>/scripts/repo-ownership.sh"
 
 In every case the fallback is the current user: if the user skips the question, the prompt cannot be shown, or `repo-ownership.sh` fails, assign `@me` rather than nothing.
 
-An explicit instruction always wins — "assign to @octocat", "leave it unassigned", or a reviewer/assignee rule in the target repo's CLAUDE.md overrides everything above, in personal repos too.
+An explicit instruction always wins — "assign to @octocat", "leave it unassigned", or a reviewer/assignee rule in the repo's instruction file overrides everything above, in personal repos too.
 
 People to offer come only from `issue-assignees.sh` and `pr-reviewers.sh`. When one returns nothing, offer no one else: the generic `repo-context.sh` collaborator list is repo members ranked by nothing meaningful, and inventing labels like "Frequent collaborator" misleads the user.
 
@@ -268,7 +268,7 @@ the whole pipeline.** Nothing else defines them — callers delegate here.
 
 Use `<Issue Title> #<number>` as the commit subject. The issue title is already in conventional commit format from Step 1 or from the `issue-analyze` skill.
 
-If there is no linked issue (e.g., entered at Step 3 directly), use the repo's CLAUDE.md commit format or fall back to `<type>: <description>`.
+If there is no linked issue (e.g., entered at Step 3 directly), use the repo's instruction file commit format or fall back to `<type>: <description>`.
 
 Under **Slice Delivery**, the subject is the slice's own conventional subject plus ` #<number>`, so each slice commit names what it did. `<Issue Title> #<number>` stays the subject of an issue delivered in one commit.
 
@@ -519,9 +519,9 @@ Closes #<number>
 
 Pick reviewers here. **### Assignees** derives the PR's assignees from them; the `KIND` prompt is for issues only.
 
-In a `KIND=personal` repo, skip the reviewer prompt unless the repo's CLAUDE.md sets a reviewer rule or the user asked for one — a solo repo has no one else to review.
+In a `KIND=personal` repo, skip the reviewer prompt unless the repo's instruction file sets a reviewer rule or the user asked for one — a solo repo has no one else to review.
 
-Check the target repo's CLAUDE.md for reviewer rules (e.g., "PRs to main should be reviewed by @username"). If one matches, use that reviewer directly.
+Check the repo's instruction file for reviewer rules (e.g., "PRs to main should be reviewed by @username"). If one matches, use that reviewer directly.
 
 Otherwise, run `pr-reviewers.sh` to find users with actual recent PR review activity:
 

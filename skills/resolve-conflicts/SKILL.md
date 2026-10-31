@@ -324,7 +324,7 @@ After all resolvable conflicts are handled:
 
 1. `git status` — confirm clean working tree
 2. Check for project-specific lint/typecheck commands:
-   - Read `CLAUDE.md` or `package.json` scripts for available commands
+   - Read `AGENTS.md` / `CLAUDE.md` or `package.json` scripts for available commands
    - Run fast checks only: `tsc --noEmit`, `eslint`, `biome check`, etc.
    - Do NOT run slow builds or integration tests at this stage
 3. If issues are found (broken imports, type errors from deleted files) and the mode is not
