@@ -83,7 +83,7 @@ validate_implicit_invocation() {
       return
       ;;
   esac
-  actual=$(sed -n 's/^[ \t]*allow_implicit_invocation:[ \t]*\([a-z]*\).*/\1/p' "$skill_dir/agents/openai.yaml" | head -n 1)
+  actual=$(sed -n 's/^[[:blank:]]*allow_implicit_invocation:[[:blank:]]*\([a-z]*\).*/\1/p' "$skill_dir/agents/openai.yaml" | head -n 1)
   if [ "$actual" != "$expected" ]; then
     error "'$skill_path' is tier '$tier', so agents/openai.yaml needs allow_implicit_invocation: $expected (found '${actual:-none}')"
   fi
