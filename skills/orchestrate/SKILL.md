@@ -142,8 +142,8 @@ The last line reads the latest merged PR: `BOT=reviewed` there means the repo at
 No `gh`, a failing `gh api user`, or no git clone stops the run: `orchestrate needs an
 authenticated gh inside a clone.` A unit that does not resolve, an issue already closed, an issue
 with an open PR, and a dirty tree go on the plan, not into a worker. List the writes the run
-needs — push, PR, review requests, issue edits, merges, live-environment writes — so the user can
-allow them in the host's permission settings before a worker is refused mid-run.
+needs — push, PR, review requests, issue creation, issue edits, merges, live-environment writes —
+so the user can allow them in the host's permission settings before a worker is refused mid-run.
 
 End Phase 1 with one line: `Preflight: <login> on <repo> (<visibility>), <N> units, <N> need attention, review bot <attached | none>.`
 
@@ -160,7 +160,7 @@ Create the run-state directory and both files, then print the plan:
 - People: assign edloidas, rymsha; reviewer rymsha · Review bot: attached (Copilot)
 - Decisions: `unattended` (default) · Live testing: dev cluster, read-only plus own test data
 - Checks: `pnpm run check`, `pnpm run test`, `./gradlew build`
-- Writes: push, PR, review requests, issue edits; no merges
+- Writes: push, PR, review requests, issue edits; no new issues, no merges
 - Read as: "m" → `edloidas`
 - State: ~/.local/state/orchestrate/enonic-cloud-api/20261014-0930/
 ```
@@ -265,10 +265,12 @@ unit; nothing else follows a hand-back.
 A worker's escalated choice, a question the user asks mid-run, or a suspicion worth checking
 becomes a decision unit. Under `unattended`, act on its recommendation when it stays inside the
 goal; when it widens the goal, or the user asked for the decision, brief the user first. A fix it
-recommends for an existing PR becomes an own-PR unit. A new problem — a task unit's **Outside this unit** lines included — becomes a new-issue unit:
-inside the goal it is appended to the plan and named in the next summary; outside it, it is
-briefed and filed only on the user's answer. On a public repo, a suspected security flaw is
-briefed before anything is filed, so exploit details are not published.
+recommends for an existing PR becomes an own-PR unit. A new problem — a task unit's **Outside this
+unit** lines included — becomes a new-issue unit only inside the goal and only when the plan's
+`Writes:` names issue creation; it is then appended to the plan and named in the next summary.
+Otherwise it is listed under **Needs you**, and filed only on the user's answer. On a public repo,
+a suspected security flaw is briefed before anything is filed, so exploit details are not
+published.
 
 A report's **Needs a person** item becomes a unit when a worker can resolve it, and is briefed
 only when it needs a credential, a permission, a product call, or a merge.

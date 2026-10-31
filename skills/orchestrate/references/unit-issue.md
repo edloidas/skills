@@ -31,6 +31,8 @@ Make the call, record it, and report it.
 Invoke `solve-issue <N> auto` for endgame merge, or `solve-issue <N> auto pr-only` for PR only.
 If the host cannot invoke the skill, or refuses to, follow its phases by hand and list every
 phase you skipped or compressed.
+<Writes without issue creation:> Tell `solve-issue` the user said not to file follow-up issues;
+report what it would have filed under Unfinished.
 
 ## Git
 - <sequential / parallel:> `issue-flow`, through `solve-issue`, picks the base: the default branch,
