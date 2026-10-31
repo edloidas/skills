@@ -79,8 +79,8 @@ echo "Validating skill registries..."
 bash .github/scripts/validate-skills.sh
 ./scripts/validate-codex.sh
 
-# Verify generated Codex wrapper files are in sync
-echo "Checking generated Codex wrapper files..."
+# Verify generated Codex plugin files are in sync
+echo "Checking generated Codex plugin files..."
 ./scripts/skills-packaging.sh sync-repo
 
 if [[ -n $(git status --porcelain) ]]; then
@@ -148,21 +148,15 @@ PACKAGE_VERSION=$(jq -r '.version' "$PACKAGE_JSON")
 echo "pi package: $PACKAGE_VERSION"
 VERSIONS+=("$PACKAGE_VERSION")
 
-while IFS= read -r plugin_name; do
-  [[ -n "$plugin_name" ]] || continue
-  plugin_json="plugins/$plugin_name/.codex-plugin/plugin.json"
+CODEX_PLUGIN_JSON=".codex-plugin/plugin.json"
+if [[ ! -f "$CODEX_PLUGIN_JSON" ]]; then
+  echo "ERROR: $CODEX_PLUGIN_JSON not found"
+  exit 1
+fi
 
-  if [[ ! -f "$plugin_json" ]]; then
-    echo "ERROR: $plugin_json not found"
-    exit 1
-  fi
-
-  pj_version=$(jq -r '.version' "$plugin_json")
-  echo "Codex plugin '$plugin_name': $pj_version"
-  VERSIONS+=("$pj_version")
-done <<EOF
-$(jq -r '.plugins[].name' "$CODEX_CATALOG")
-EOF
+pj_version=$(jq -r '.version' "$CODEX_PLUGIN_JSON")
+echo "Codex plugin: $pj_version"
+VERSIONS+=("$pj_version")
 
 # Check all versions match
 FIRST="${VERSIONS[0]}"

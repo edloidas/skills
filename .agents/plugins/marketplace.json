@@ -8,7 +8,7 @@
       "name": "edloidas",
       "source": {
         "source": "local",
-        "path": "./plugins/edloidas"
+        "path": "./"
       },
       "policy": {
         "installation": "AVAILABLE",

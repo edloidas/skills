@@ -32,7 +32,7 @@ jobs:
       - name: Validate Codex compatibility contract
         run: ./scripts/validate-codex.sh
 
-      - name: Verify generated Codex wrapper files
+      - name: Verify generated Codex plugin files
         run: |
           ./scripts/skills-packaging.sh sync-repo
           git diff --exit-code

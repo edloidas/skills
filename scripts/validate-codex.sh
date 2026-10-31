@@ -110,7 +110,7 @@ validate_catalog_shape() {
   jq -e '.version | strings | select(length > 0)' "$CATALOG_PATH" >/dev/null || error "Catalog version is required"
   jq -e '.marketplace.name | strings | select(length > 0)' "$CATALOG_PATH" >/dev/null || error "Catalog marketplace.name is required"
   jq -e '.marketplace.displayName | strings | select(length > 0)' "$CATALOG_PATH" >/dev/null || error "Catalog marketplace.displayName is required"
-  jq -e '.plugins | length > 0' "$CATALOG_PATH" >/dev/null || error "Catalog must define at least one plugin"
+  jq -e '.plugins | length == 1' "$CATALOG_PATH" >/dev/null || error "Catalog must define exactly one plugin: the Codex plugin is rooted at the repo root, which holds one .codex-plugin/plugin.json"
   jq -e '([.plugins[].name] | length) == ([.plugins[].name] | unique | length)' "$CATALOG_PATH" >/dev/null || error "Catalog has duplicate plugin names"
   jq -e '([.plugins[].skills[]] | length) == ([.plugins[].skills[]] | unique | length)' "$CATALOG_PATH" >/dev/null || error "Catalog has duplicate skill paths"
   jq -e '([.plugins[].skills[] | split("/")[-1]] | length) == ([.plugins[].skills[] | split("/")[-1]] | unique | length)' "$CATALOG_PATH" >/dev/null || error "Catalog has duplicate exposed skill names"

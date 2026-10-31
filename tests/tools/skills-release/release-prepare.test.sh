@@ -15,12 +15,12 @@ PREPARE="tools/skills-release/scripts/release-prepare.sh"
 skills_repo() {
   init_repo repo master
   cd repo
-  mkdir -p .claude-plugin .github/scripts scripts/codex plugins/edloidas/.codex-plugin
+  mkdir -p .claude-plugin .github/scripts scripts/codex .codex-plugin
   printf '{"plugins":[{"name":"edloidas","source":"./","version":"1.0.0"}]}\n' \
     > .claude-plugin/marketplace.json
   printf '{"version":"1.0.0"}\n' > .claude-plugin/plugin.json
   printf '{"version":"1.0.0","plugins":[{"name":"edloidas"}]}\n' > scripts/codex/catalog.json
-  printf '{"version":"1.0.0"}\n' > plugins/edloidas/.codex-plugin/plugin.json
+  printf '{"version":"1.0.0"}\n' > .codex-plugin/plugin.json
   printf '{"private":true,"version":"1.0.0"}\n' > package.json
   printf '#!/bin/bash\nexit 0\n' > .github/scripts/validate-skills.sh
   printf '#!/bin/bash\nexit 0\n' > scripts/validate-codex.sh

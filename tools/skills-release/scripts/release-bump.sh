@@ -96,15 +96,10 @@ for i in $(seq 0 $((PLUGIN_COUNT - 1))); do
   FILES_TO_STAGE+=("$plugin_json")
 done
 
-# Regenerate Codex wrapper plugin manifests from the updated catalog
+# Regenerate the Codex plugin manifest from the updated catalog
 ./scripts/skills-packaging.sh sync-repo
-
-while IFS= read -r plugin_name; do
-  [[ -n "$plugin_name" ]] || continue
-  FILES_TO_STAGE+=("plugins/$plugin_name/.codex-plugin/plugin.json")
-done <<EOF
-$(jq -r '.plugins[].name' "$CODEX_CATALOG")
-EOF
+CODEX_PLUGIN_JSON=".codex-plugin/plugin.json"
+FILES_TO_STAGE+=("$CODEX_PLUGIN_JSON")
 
 # Verify all updates
 for i in $(seq 0 $((PLUGIN_COUNT - 1))); do
@@ -138,18 +133,11 @@ if [[ "$pkg_version" != "$VERSION" ]]; then
   exit 1
 fi
 
-while IFS= read -r plugin_name; do
-  [[ -n "$plugin_name" ]] || continue
-  plugin_json="plugins/$plugin_name/.codex-plugin/plugin.json"
-  pj_version=$(jq -r '.version' "$plugin_json")
-
-  if [[ "$pj_version" != "$VERSION" ]]; then
-    echo "ERROR: $plugin_json version mismatch (got $pj_version)"
-    exit 1
-  fi
-done <<EOF
-$(jq -r '.plugins[].name' "$CODEX_CATALOG")
-EOF
+pj_version=$(jq -r '.version' "$CODEX_PLUGIN_JSON")
+if [[ "$pj_version" != "$VERSION" ]]; then
+  echo "ERROR: $CODEX_PLUGIN_JSON version mismatch (got $pj_version)"
+  exit 1
+fi
 
 echo "Verified: all files updated to $VERSION"
 

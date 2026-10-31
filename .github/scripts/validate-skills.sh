@@ -11,12 +11,11 @@ set -euo pipefail
 # - each plugin root contains discoverable skills under skills/
 # - each skill is a real directory at skills/<name>, not a symlink, and no legacy
 #   group directory (pre-6.0 <group>/skills/<name>, pre-4.0 <group>/<name>) is back
-# - plugin roots do not embed Codex wrapper manifests directly
 # - each SKILL.md declares a name matching its directory, a description within the
 #   discovery caps, and no reference to a bundled file it does not ship
 # - every routing table (`| Task | Route |`) names existing, non-manual skills
 #
-# The Codex wrapper contract is validated separately by scripts/validate-codex.sh.
+# The Codex plugin contract is validated separately by scripts/validate-codex.sh.
 
 MARKETPLACE=".claude-plugin/marketplace.json"
 
@@ -740,10 +739,6 @@ for i in $(seq 0 $((plugin_count - 1))); do
   if [ ! -d "$source" ]; then
     error "Plugin '$name': source directory '$source' does not exist"
     continue
-  fi
-
-  if [ -f "$source/.codex-plugin/plugin.json" ]; then
-    error "Plugin '$name': plugin root '$source/' must not contain .codex-plugin/plugin.json; Codex wrapper manifests belong under plugins/<plugin-name>/"
   fi
 
   if [ ! -f "$plugin_manifest" ]; then

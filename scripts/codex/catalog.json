@@ -10,7 +10,6 @@
   },
   "pluginBranding": {
     "brandColor": "#FD3DB5",
-    "assetSource": "./assets/logo.png",
     "logo": "./assets/logo.png",
     "composerIcon": "./assets/logo.png"
   },

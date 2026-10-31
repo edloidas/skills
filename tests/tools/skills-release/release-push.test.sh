@@ -15,23 +15,22 @@ EXECUTE="tools/skills-release/scripts/release-execute.sh"
 # A repo shaped like this one at version 1.0.0, pushed to a bare origin: one
 # plugin whose marketplace source is the repo root ("./"). skills-packaging.sh
 # is replaced by a stand-in that does only what release-bump.sh relies on: copy
-# the catalog version into the Codex wrapper.
+# the catalog version into the Codex plugin manifest.
 skills_repo() {
   init_repo repo master
   cd repo
-  mkdir -p .claude-plugin scripts/codex plugins/edloidas/.codex-plugin
+  mkdir -p .claude-plugin scripts/codex .codex-plugin
   printf '{"plugins":[{"name":"edloidas","source":"./","version":"1.0.0"}]}\n' \
     > .claude-plugin/marketplace.json
   printf '{"version":"1.0.0"}\n' > .claude-plugin/plugin.json
   printf '{"version":"1.0.0","plugins":[{"name":"edloidas"}]}\n' > scripts/codex/catalog.json
-  printf '{"version":"1.0.0"}\n' > plugins/edloidas/.codex-plugin/plugin.json
+  printf '{"version":"1.0.0"}\n' > .codex-plugin/plugin.json
   printf '{"private":true,"version":"1.0.0"}\n' > package.json
   cat > scripts/skills-packaging.sh <<'EOF'
 #!/bin/bash
 v=$(jq -r '.version' scripts/codex/catalog.json)
-for f in plugins/*/.codex-plugin/plugin.json; do
-  jq --arg v "$v" '.version = $v' "$f" > "$f.tmp" && mv "$f.tmp" "$f"
-done
+f=.codex-plugin/plugin.json
+jq --arg v "$v" '.version = $v' "$f" > "$f.tmp" && mv "$f.tmp" "$f"
 EOF
   chmod +x scripts/skills-packaging.sh
   git add -A
@@ -107,7 +106,7 @@ test_bump_updates_every_version_file_including_the_root_plugin() {
   assert_eq 1.1.0 "$(jq -r '.plugins[0].version' .claude-plugin/marketplace.json)" "marketplace"
   assert_eq 1.1.0 "$(jq -r '.version' .claude-plugin/plugin.json)" "root plugin.json"
   assert_eq 1.1.0 "$(jq -r '.version' scripts/codex/catalog.json)" "catalog"
-  assert_eq 1.1.0 "$(jq -r '.version' plugins/edloidas/.codex-plugin/plugin.json)" "codex wrapper"
+  assert_eq 1.1.0 "$(jq -r '.version' .codex-plugin/plugin.json)" "codex plugin"
   assert_eq 1.1.0 "$(jq -r '.version' package.json)" "package.json"
 }
 

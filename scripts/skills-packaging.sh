@@ -3,11 +3,15 @@
 # Packaging for every host this collection ships to.
 #
 # `sync-repo` generates all of the distribution layers from two sources of truth:
-#   - scripts/codex/catalog.json   Codex wrapper plugin (name, metadata, exposed skills)
+#   - scripts/codex/catalog.json   Codex plugin (name, metadata, exposed skills)
 #   - `compatibility:` frontmatter  which hosts each skill declares support for
 #
-# Outputs: .agents/plugins/marketplace.json, plugins/<name>/{.codex-plugin,skills}/,
-# .agents/skills/, .opencode/skills/, .pi/skills/. All generated — never hand-edited.
+# Outputs: .agents/plugins/marketplace.json, .codex-plugin/plugin.json, .agents/skills/,
+# .opencode/skills/, .pi/skills/. All generated — never hand-edited.
+#
+# The Codex plugin is rooted at the repo root and lists its skills by path: Codex drops
+# symlinks when it copies a plugin into its cache, so a plugin made of symlinked skill
+# directories installs empty.
 #
 # `install-host` installs one host's set into that host's global skill directory.
 #
@@ -49,27 +53,17 @@ catalog_jq() {
   jq -er "$1" "$CATALOG_PATH"
 }
 
-catalog_jq_raw() {
-  jq -r "$1" "$CATALOG_PATH"
-}
-
-catalog_plugin_names() {
-  catalog_jq_raw '.plugins[].name'
-}
-
 catalog_branding_field() {
   local field="$1"
   jq -er ".pluginBranding.$field" "$CATALOG_PATH"
 }
 
 catalog_plugin_manifest_json() {
-  local name="$1"
   jq -n \
     --slurpfile catalog "$CATALOG_PATH" \
-    --arg name "$name" \
     '
       ($catalog[0]) as $catalog |
-      ($catalog.plugins[] | select(.name == $name)) as $plugin |
+      $catalog.plugins[0] as $plugin |
       {
         name: $plugin.name,
         version: $catalog.version,
@@ -79,7 +73,7 @@ catalog_plugin_manifest_json() {
         repository: $catalog.repository,
         license: $catalog.license,
         keywords: $plugin.keywords,
-        skills: "./skills/",
+        skills: [$plugin.skills[] | "./" + . + "/"],
         interface: {
           displayName: $plugin.displayName,
           shortDescription: $plugin.shortDescription,
@@ -96,8 +90,7 @@ catalog_plugin_manifest_json() {
 }
 
 catalog_plugin_skills() {
-  local name="$1"
-  jq -r --arg name "$name" '.plugins[] | select(.name == $name) | .skills[]' "$CATALOG_PATH"
+  jq -r '.plugins[0].skills[]' "$CATALOG_PATH"
 }
 
 catalog_marketplace_manifest_json() {
@@ -113,7 +106,7 @@ catalog_marketplace_manifest_json() {
           name: .name,
           source: {
             source: "local",
-            path: ("./plugins/" + .name)
+            path: "./"
           },
           policy: {
             installation: "AVAILABLE",
@@ -308,7 +301,6 @@ validate_catalog() {
   catalog_jq '.author.name | strings | select(length > 0)' >/dev/null || die "Author name is required"
   catalog_jq '.author.url | strings | select(length > 0)' >/dev/null || die "Author URL is required"
   catalog_jq '.pluginBranding.brandColor | strings | test("^#[0-9A-Fa-f]{6}$")' >/dev/null || die "Shared plugin brandColor is required"
-  catalog_jq '.pluginBranding.assetSource | strings | select(startswith("./"))' >/dev/null || die "Shared plugin assetSource must start with ./"
   catalog_jq '.pluginBranding.logo | strings | select(startswith("./assets/"))' >/dev/null || die "Shared plugin logo path must be under ./assets/"
   catalog_jq '.pluginBranding.composerIcon | strings | select(startswith("./assets/"))' >/dev/null || die "Shared plugin composerIcon path must be under ./assets/"
   catalog_jq '.repository | strings | select(length > 0)' >/dev/null || die "Repository URL is required"
@@ -316,35 +308,16 @@ validate_catalog() {
 
   catalog_jq '([.plugins[].name] | length) == ([.plugins[].name] | unique | length)' >/dev/null || die "Duplicate plugin name in catalog"
   catalog_jq '([.plugins[].skills[] | split("/")[-1]] | length) == ([.plugins[].skills[] | split("/")[-1]] | unique | length)' >/dev/null || die "Duplicate exposed skill name across Codex plugins"
-  catalog_jq '.plugins | length > 0' >/dev/null || die "Catalog must define at least one plugin"
+  catalog_jq '.plugins | length == 1' >/dev/null || die "Catalog must define exactly one plugin; the repo root holds one Codex plugin manifest"
   catalog_jq 'all(.plugins[]; (.name | strings | length > 0) and (.displayName | strings | length > 0) and (.description | strings | length > 0) and (.shortDescription | strings | length > 0) and (.longDescription | strings | length > 0) and (.category | strings | length > 0) and (.websiteURL | strings | length > 0) and (.keywords | type == "array" and length > 0) and (.skills | type == "array" and length > 0))' >/dev/null || die "Each plugin must define complete metadata, keywords, and skills"
 }
 
-sync_plugin_branding_assets() {
-  local plugin_name="$1"
-  local plugin_root="$REPO_ROOT/plugins/$plugin_name"
-  local asset_source
-  local logo_path
-  local composer_icon_path
-
-  asset_source=$(catalog_branding_field 'assetSource')
-  logo_path=$(catalog_branding_field 'logo')
-  composer_icon_path=$(catalog_branding_field 'composerIcon')
-
-  [ -f "$REPO_ROOT/${asset_source#./}" ] || die "Shared plugin asset not found: $asset_source"
-
-  case "$logo_path" in
-    ./assets/*) ;;
-    *) die "Shared plugin logo path must stay under ./assets/: $logo_path" ;;
-  esac
-
-  case "$composer_icon_path" in
-    ./assets/*) ;;
-    *) die "Shared plugin composerIcon path must stay under ./assets/: $composer_icon_path" ;;
-  esac
-
-  ensure_symlink "../../../${asset_source#./}" "$plugin_root/${logo_path#./}"
-  ensure_symlink "../../../${asset_source#./}" "$plugin_root/${composer_icon_path#./}"
+require_plugin_branding_assets() {
+  local field path
+  for field in logo composerIcon; do
+    path=$(catalog_branding_field "$field")
+    [ -f "$REPO_ROOT/${path#./}" ] || die "Plugin $field not found: $path"
+  done
 }
 
 write_json_file() {
@@ -359,9 +332,7 @@ write_json_file() {
 }
 
 write_plugin_manifest() {
-  local plugin_name="$1"
-  write_json_file "$REPO_ROOT/plugins/$plugin_name/.codex-plugin/plugin.json" \
-    "$(catalog_plugin_manifest_json "$plugin_name")"
+  write_json_file "$REPO_ROOT/.codex-plugin/plugin.json" "$(catalog_plugin_manifest_json)"
 }
 
 write_marketplace_manifest() {
@@ -369,47 +340,27 @@ write_marketplace_manifest() {
 }
 
 sync_repo() {
-  local plugin_name
-  local plugin_skills_dir
   local repo_keep_names=""
-  local plugin_keep_names
   local skill_path
   local skill_name
 
   require_jq
   validate_catalog
+  require_plugin_branding_assets
   ensure_dir "$REPO_ROOT/.agents/skills"
 
-  while IFS= read -r plugin_name; do
-    [ -n "$plugin_name" ] || continue
-    plugin_skills_dir="$REPO_ROOT/plugins/$plugin_name/skills"
-
-    write_plugin_manifest "$plugin_name"
-    sync_plugin_branding_assets "$plugin_name"
-    plugin_keep_names=""
-
-    while IFS= read -r skill_path; do
-      [ -n "$skill_path" ] || continue
-      validate_skill "$REPO_ROOT/$skill_path"
-      skill_name=${skill_path##*/}
-
-      plugin_keep_names=$(append_line "$plugin_keep_names" "$skill_name")
-      if ! list_contains "$repo_keep_names" "$skill_name"; then
-        repo_keep_names=$(append_line "$repo_keep_names" "$skill_name")
-      fi
-
-      ensure_symlink "../../../$skill_path" "$plugin_skills_dir/$skill_name"
-      ensure_symlink "../../$skill_path" "$REPO_ROOT/.agents/skills/$skill_name"
-    done <<EOF
-$(catalog_plugin_skills "$plugin_name")
-EOF
-
-    remove_stale_entries "$plugin_skills_dir" "$plugin_keep_names"
+  while IFS= read -r skill_path; do
+    [ -n "$skill_path" ] || continue
+    validate_skill "$REPO_ROOT/$skill_path"
+    skill_name=${skill_path##*/}
+    repo_keep_names=$(append_line "$repo_keep_names" "$skill_name")
+    ensure_symlink "../../$skill_path" "$REPO_ROOT/.agents/skills/$skill_name"
   done <<EOF
-$(catalog_plugin_names)
+$(catalog_plugin_skills)
 EOF
 
   remove_stale_entries "$REPO_ROOT/.agents/skills" "$repo_keep_names"
+  write_plugin_manifest
   write_marketplace_manifest
 
   # Per-host trees for the hosts that read their own directory rather than .agents/skills.
@@ -486,7 +437,7 @@ Usage:
   ./scripts/skills-packaging.sh install-host [--dest PATH] <codex|opencode|pi>
 
 Commands:
-  sync-repo      Regenerate the repo-local Codex marketplace, wrapper plugins, and the
+  sync-repo      Regenerate the Codex marketplace and root plugin manifest, and the
                  per-host skill trees (.agents/skills, .opencode/skills, .pi/skills).
   install-host   Install every skill that declares support for one host into that host's
                  global skill directory. Driven by `compatibility:` frontmatter, so it is

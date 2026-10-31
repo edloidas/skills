@@ -64,28 +64,19 @@ else
   fi
 fi
 
-# Check generated Codex plugin manifests
-if [ -f "$CODEX_CATALOG" ]; then
-  while IFS= read -r plugin_name; do
-    [ -n "$plugin_name" ] || continue
-    plugin_json="plugins/$plugin_name/.codex-plugin/plugin.json"
+# Check the generated Codex plugin manifest
+CODEX_PLUGIN_JSON=".codex-plugin/plugin.json"
+if [ ! -f "$CODEX_PLUGIN_JSON" ]; then
+  echo "::error::$CODEX_PLUGIN_JSON not found"
+  errors=1
+else
+  pj_version=$(jq -r '.version' "$CODEX_PLUGIN_JSON")
+  echo "Codex plugin ($CODEX_PLUGIN_JSON): $pj_version"
 
-    if [ ! -f "$plugin_json" ]; then
-      echo "::error::Codex plugin '$plugin_name': $plugin_json not found"
-      errors=1
-      continue
-    fi
-
-    pj_version=$(jq -r '.version' "$plugin_json")
-    echo "Codex plugin '$plugin_name' ($plugin_json): $pj_version"
-
-    if [ "$TAG_VERSION" != "$pj_version" ]; then
-      echo "::error::Tag version ($TAG_VERSION) does not match $plugin_json ($pj_version)"
-      errors=1
-    fi
-  done <<EOF
-$(jq -r '.plugins[].name' "$CODEX_CATALOG")
-EOF
+  if [ "$TAG_VERSION" != "$pj_version" ]; then
+    echo "::error::Tag version ($TAG_VERSION) does not match $CODEX_PLUGIN_JSON ($pj_version)"
+    errors=1
+  fi
 fi
 
 # Check the pi package manifest — pi reads the version from package.json, so it is a

@@ -17,7 +17,7 @@ metadata:
 # Skills Collection Release Workflow
 
 This skill **writes locally and pushes**. It rewrites every version-bearing manifest,
-regenerates the Codex wrapper layer, commits, creates the tag (signed when signing is
+regenerates the Codex plugin layer, commits, creates the tag (signed when signing is
 configured), pushes both to GitHub in one atomic push, and edits the published release notes —
 where the tag triggers the release workflow and publishes a GitHub Release that installers
 fetch. A pushed tag cannot be recalled. It does not publish to npm; `package.json` here is
@@ -33,7 +33,7 @@ Helper scripts in `scripts/`, invoked below by path.
 | ------ | ---- | ------ |
 | `release-prepare.sh` | Validates git state, packaging state, and version consistency across the release files | Step 1 |
 | `release-analyze.sh` | Counts commits since the last tag by conventional type, detects removed or renamed skills, recommends a bump | Step 2 |
-| `release-bump.sh` | Rewrites the version files, regenerates the Codex wrappers, verifies, commits, tags, and verifies the tag — no push | Step 4 |
+| `release-bump.sh` | Rewrites the version files, regenerates the Codex plugin layer, verifies, commits, tags, and verifies the tag — no push | Step 4 |
 | `release-push.sh` | Refuses unless the tag is annotated, at HEAD, and signed when signing is configured; pushes branch and tag with `--atomic`; confirms both on the remote | Step 6 |
 | `release-tag.sh` | Tag creation and verification, sourced by the two above | Never directly |
 | `release-execute.sh` | `release-bump.sh` then `release-push.sh` with **no gate between them** | Never in this workflow — it clears the Step 5 gate; it exists for a non-interactive release the user asks for by name |
@@ -153,7 +153,7 @@ bash .claude/skills/skills-release/scripts/release-bump.sh {{VERSION}}
 Run it bare — never piped through `tail`, `head`, or any filter: a pipe reports the filter's
 exit status, which is how a GPG failure once went unseen and master was pushed without
 `v5.18.0`. The script rewrites every version file, regenerates the
-wrapper manifests, verifies each one landed on `{{VERSION}}`, stages them, commits as
+Codex plugin manifest, verifies each one landed on `{{VERSION}}`, stages them, commits as
 `Release v{{VERSION}}`, creates the `v{{VERSION}}` tag (signed when `user.signingkey` or
 `tag.gpgSign` is set), and verifies the tag. It does **not** push, and neither do you here —
 Step 5 gates that. It refuses a tag that already exists and prints `git tag -d v{{VERSION}}`.

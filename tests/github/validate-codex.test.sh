@@ -74,4 +74,13 @@ test_missing_tier_fails() {
   assert_contains "$STDERR" "has no valid metadata.tier" "error output"
 }
 
+test_second_plugin_fails() {
+  make_repo auto true
+  jq '.plugins += [.plugins[0] | .name = "other" | .skills = []]' scripts/codex/catalog.json \
+    > catalog.tmp && mv catalog.tmp scripts/codex/catalog.json
+  validate
+  assert_eq 1 "$STATUS" "exit status"
+  assert_contains "$STDERR" "exactly one plugin" "error output"
+}
+
 run_tests
