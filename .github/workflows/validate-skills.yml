@@ -40,6 +40,16 @@ jobs:
       - name: Validate per-host discovery
         run: bash .github/scripts/validate-discovery.sh
 
+  shellcheck:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Lint shell scripts
+        run: shellcheck --version && git ls-files -z '*.sh' | xargs -0 shellcheck -S warning
+
   # Executes the bundled shell scripts and asserts what they return. Separate
   # from `validate`, which only reads them: a script can satisfy every
   # structural rule and still answer the wrong question.
