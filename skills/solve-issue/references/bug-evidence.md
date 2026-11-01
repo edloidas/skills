@@ -29,6 +29,20 @@ The repro test is not committed on its own. It stays in the working tree with th
 `issue-flow`'s squash rules decide the commit, as for any other change. In slice mode,
 reproduce before the slice that carries the fix.
 
+## Diagnosis
+
+The issue's symptom is the requirement; its stated cause and proposed fix are the author's
+guess. When **Before** reproduces the symptom and the code shows the stated cause is false,
+fix the real cause if the fix is contained: it sits in the code the issue names, in what that
+code calls directly, or in its direct callers, and it changes no behaviour beyond correcting
+that wrong result wherever the result shows. Mark the plan items built on the false cause
+`dropped`, add the real-cause item, and reprint the changed Changes lines; dropped items leave
+Phase 3's count. A cause elsewhere, or a fix that also changes behaviour the issue did not ask
+about, is a Phase 3 blocker of the "decision required" kind.
+
+Either way, carry one line into the Phase 6 summary and the commit body, which the PR body is
+built from: `Diagnosis: the issue blames <X>; the cause is <file:line> — <evidence>.`
+
 ## After: the same observation, at the end of Phase 4
 
 Re-run exactly the command from **Before** — same test, same probe input — once the

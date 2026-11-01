@@ -21,6 +21,7 @@ Print this shape, omitting rows that do not apply:
 - bug: fixed | fixed (stand-in: <check>) | unverified — <reason>
   - before: `<command>` — `<decisive failing line, verbatim>` | Repro: impractical — <reason>; stand-in `<check>` — `<its failing line>` | no stand-in
   - after: `<same command>` — `<decisive passing line, verbatim>`
+  - diagnosis: the issue blames <X>; the cause is <file:line> — <evidence> (only when the stated cause was disproved)
 
 **Tests**
 - N audited — N tightened, N rewritten, N deleted, N noted

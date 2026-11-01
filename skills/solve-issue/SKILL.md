@@ -202,7 +202,7 @@ planned, slices: <N> | off.`
 ## Phase 3: Implement
 
 Work through the tracked Changes items sequentially. A bug starts with its reproduction,
-per `references/bug-evidence.md` → **Before**.
+per `references/bug-evidence.md` → **Before** and **Diagnosis**.
 
 For a checkpoint mid-implementation, invoke `issue-flow` with intent `"snapshot"` — its
 Step 3 snapshot mode freezes the tree into a content-free `wip:` commit. Phase 5 squashes
@@ -443,9 +443,9 @@ Invoke `issue-flow` with intent `"commit #<N>"` — in slice mode `"commit slice
 <subject>"`. Its Step 3 squashes the branch, or the current slice, to one commit, including
 every `wip:` snapshot Phase 4.6 created, and reports the result.
 
-Pass along, as context for the commit body: the issue title and number, and the design
-rationale `code-cleanup` pulled out of the source — it belongs in the body's *why*
-paragraph, not appended at the end.
+Pass along, as context for the commit body: the issue title and number, any `Diagnosis:` line,
+and the design rationale `code-cleanup` pulled out of the source — it belongs in the body's
+*why* paragraph, not appended at the end.
 
 Capture the short SHA and subject from Step 3's report for the Phase 6 summary. If Step 3
 comes back with a dirty tree or more than one commit past the last finished slice, re-invoke it rather than fixing the
