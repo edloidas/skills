@@ -359,8 +359,8 @@ Write it as prose that can carry that weight — the reason, not a label for it.
 **PR body** and **an issue** are handed to whoever writes them. Omit a section that has nothing in it
 rather than printing an empty heading.
 
-Then stop. Do not stage, do not commit, do not open the issue you just filed text for, and do not
-start a second cleanup pass over the same files.
+Then this skill stops; a calling skill goes on. Do not stage, do not commit, do not open the issue
+you just filed text for, and do not start a second cleanup pass over the same files.
 
 ## Examples
 

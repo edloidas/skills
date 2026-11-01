@@ -188,9 +188,9 @@ form today, so those 429s retry with no delay.
 Leave the 503 duplicate alone unless a trace shows 503s under load.
 ```
 
-Then stop. Do not fix what fell, do not narrow a claim on the claimant's behalf, and do not re-run
-the panel on the same propositions. The recommendation is advice; the caller decides whether to
-follow it.
+Then this skill stops; a calling skill goes on. Do not fix what fell, do not narrow a claim on the
+claimant's behalf, and do not re-run the panel on the same propositions. The recommendation is
+advice; the caller decides whether to follow it.
 
 ## Edge Cases
 

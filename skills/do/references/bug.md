@@ -17,10 +17,9 @@ Something produces the wrong result, the user wants it fixed, and there is no is
 5. **Two fix attempts at the same check have each failed?** Before a third, write the premise
    both assumed as one sentence — "the value is already normalized when it reaches X" — and test
    it directly: a log line, a probe, an assertion. Fix from what that shows, not from the premise.
-6. **Attack the diff:** invoke `changes-review` on the uncommitted changes, and fix each finding
-   that survives inside the task's scope.
-7. **Clean up:** invoke `code-cleanup`.
-8. **Final run,** after the last edit: the observation from step 4 and the project's checks. Paste
+6. **Attack and clean up:** invoke `changes-review` on the uncommitted changes, fix each finding
+   that survives inside the task's scope, then invoke `code-cleanup`.
+7. **Final run,** after the last edit: the observation from step 4 and the project's checks. Paste
    both.
 
 End with one line: `Bug: <fixed | fixed (stand-in: <check>) | unverified | not fixed> — <before → after, in one clause>.`
