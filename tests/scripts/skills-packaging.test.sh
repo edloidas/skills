@@ -80,4 +80,34 @@ test_missing_logo_refused() {
   assert_contains "$STDERR" "Plugin logo not found" "error output"
 }
 
+test_install_host_all_fills_every_host_dir() {
+  make_repo
+  run bash scripts/skills-packaging.sh install-host all
+  assert_eq 0 "$STATUS" "exit status"
+  local dir
+  for dir in .agents/skills .config/opencode/skills .pi/agent/skills; do
+    assert_symlink_to "$HOME/$dir/sample" "$PWD/skills/sample"
+    assert_no_file "$HOME/$dir/claude-only"
+  done
+}
+
+test_install_host_all_refuses_dest() {
+  make_repo
+  run bash scripts/skills-packaging.sh install-host all --dest "$HOME/out"
+  assert_eq 1 "$STATUS" "exit status"
+  assert_contains "$STDERR" "--dest cannot be combined" "error output"
+  assert_no_file "$HOME/out"
+}
+
+test_install_host_prunes_only_repo_links() {
+  make_repo
+  mkdir -p "$HOME/.agents/skills"
+  ln -s "$PWD/skills/gone" "$HOME/.agents/skills/gone"
+  ln -s /elsewhere/foreign "$HOME/.agents/skills/foreign"
+  run bash scripts/skills-packaging.sh install-host codex
+  assert_eq 0 "$STATUS" "exit status"
+  [ ! -L "$HOME/.agents/skills/gone" ] || fail "stale repo link was not pruned"
+  assert_symlink_to "$HOME/.agents/skills/foreign" /elsewhere/foreign
+}
+
 run_tests

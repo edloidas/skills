@@ -13,7 +13,8 @@
 # symlinks when it copies a plugin into its cache, so a plugin made of symlinked skill
 # directories installs empty.
 #
-# `install-host` installs one host's set into that host's global skill directory.
+# `install-host` installs one host's set, or every host's with `all`, into the host's global
+# skill directory.
 #
 # Contract validation lives elsewhere: .github/scripts/validate-skills.sh (Claude
 # marketplace + canonical layout), .github/scripts/validate-discovery.sh (what each host
@@ -395,10 +396,17 @@ install_host() {
     esac
   done
 
-  [ -n "$host" ] || die "A host name is required (one of: codex opencode pi)"
+  [ -n "$host" ] || die "A host name is required (one of: codex opencode pi all)"
   case "$host" in
     codex | opencode | pi) ;;
-    *) die "Unknown host '$host' (expected one of: codex opencode pi)" ;;
+    all)
+      [ -z "$destination" ] || die "--dest cannot be combined with 'all'"
+      for host in codex opencode pi; do
+        install_host "$host"
+      done
+      return
+      ;;
+    *) die "Unknown host '$host' (expected one of: codex opencode pi all)" ;;
   esac
 
   [ -n "$destination" ] || destination=$(host_global_dir "$host")
@@ -435,6 +443,7 @@ usage() {
 Usage:
   ./scripts/skills-packaging.sh sync-repo
   ./scripts/skills-packaging.sh install-host [--dest PATH] <codex|opencode|pi>
+  ./scripts/skills-packaging.sh install-host all
 
 Commands:
   sync-repo      Regenerate the Codex marketplace and root plugin manifest, and the
@@ -442,6 +451,7 @@ Commands:
   install-host   Install every skill that declares support for one host into that host's
                  global skill directory. Driven by `compatibility:` frontmatter, so it is
                  not limited to the Codex subset. Prunes only links owned by this repo.
+                 `all` runs it for every host into its default directory.
 
 Default destinations for install-host:
   codex     ~/.agents/skills
@@ -451,6 +461,7 @@ Default destinations for install-host:
 Examples:
   ./scripts/skills-packaging.sh sync-repo
   ./scripts/skills-packaging.sh install-host opencode
+  ./scripts/skills-packaging.sh install-host all
   ./scripts/skills-packaging.sh install-host pi --dest "$HOME/.agents/skills"
 EOF
 }

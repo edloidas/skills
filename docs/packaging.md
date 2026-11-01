@@ -64,6 +64,7 @@ To install a host's set globally rather than repo-locally:
 ./scripts/skills-packaging.sh install-host opencode   # -> ~/.config/opencode/skills
 ./scripts/skills-packaging.sh install-host pi         # -> ~/.pi/agent/skills
 ./scripts/skills-packaging.sh install-host codex      # -> ~/.agents/skills
+./scripts/skills-packaging.sh install-host all        # all three, default directories
 ```
 
 `install-host` prunes only links that point into this repo, so unrelated skills sharing the
