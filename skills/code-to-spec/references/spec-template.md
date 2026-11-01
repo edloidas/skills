@@ -1,125 +1,108 @@
-# Spec Output Template
+# Spec Output
 
-Unified schema for all code-to-spec output files. Use this as the authoritative reference when reviewing extracted specs by hand or when extending the pipeline.
+The layout of what code-to-spec writes, and the two files the orchestrator writes itself: the
+spec `README.md`, and the Small tier's `spec.md`. Every other file is copied from a worker's
+output, whose structure its prompt owns.
 
-## Small Tier Output
-
-Single file: `<dest>/spec.md`.
-
-```markdown
-# Behavioral Specification
-
-**Bundle:** <name>
-**Generated:** <ISO 8601>
-**Files:** N
-**Tier:** Small
-
-<11-section deep spec from spec-analyzer>
-
----
-
-## Audit Findings
-
-<audit report from spec-auditor>
-```
-
-## Medium / Large Tier Output
-
-Directory: `<dest>/spec/`.
+## Medium and Large: `<dest>/spec/`
 
 ```
-<dest>/spec/
-├── README.md
-├── architecture.md
-├── modules.md
-├── contracts.md
-├── audit.md
-└── modules/
-    └── <module-name>.md     (Large tier only, per flagged critical module)
+spec/
+├── README.md              # orchestrator: index, coverage, how to use
+├── architecture.md        # survey worker
+├── contracts.md           # contracts worker
+├── audit.md               # every audit file concatenated, global first
+├── modules/<module>.md    # one per module
+└── acceptance/
+    ├── <module>.md        # one per module
+    └── x.md               # cross-module cases
 ```
+
+A reimplementer porting one module loads `README.md`, `architecture.md`, `modules/<m>.md`, and
+`acceptance/<m>.md`, and opens `contracts.md` only for the module's boundary.
+
+### Building the indexes
+
+Build the obligation and question tables from the heading lines the rules file fixes. Do not
+read the files whole to build them:
+
+```bash
+grep -H '^### OB-' modules/*.md contracts.md
+grep -H '^### Q-' modules/*.md contracts.md
+grep -c '^### AC-' acceptance/*.md
+```
+
+Each `### OB-auth-003 · rule · observed` line becomes one index row. The obligation text is not
+copied. The row links to the file.
 
 ### README.md
 
-Bundle overview and map of the spec. Contains:
-- Bundle name, generated timestamp, tier, file count, LOC, detected languages.
-- "How to read this spec" — brief map of the files.
-- List of flagged modules with deep specs (linked).
-- Known gaps from the audit.
+```markdown
+# Behavioral Specification: <bundle name>
 
-### architecture.md
+Generated <ISO 8601 date> by code-to-spec from <N> files (about <LOC> lines), <tier> tier.
 
-From `spec-scout`. Contains:
-- **Purpose** — one paragraph on what this application or library does.
-- **Runtime Model** — client/server/hybrid/CLI/library, sync/async patterns, threading/process model.
-- **Tech-Stack Signals** — detected ecosystems with evidence `file:line`, no product evangelism.
-- **Entry Points** — table of entry files with roles.
-- **Top-Level Structure** — brief description of workspace/directory relationships.
-- **Module Inventory** — table of all modules.
-- **Critical Modules** — which modules were flagged and why, with links to deep specs.
-- **Cross-Module Signals** — named event channels, buses, registries.
+## How to use this spec
 
-### modules.md
+1. Read `architecture.md` for purpose, runtime model, glossary, and module map.
+2. Port module by module. For each, `modules/<m>.md` is the behavior and `acceptance/<m>.md`
+   is the test list. A module is done when every case passes in the new stack.
+3. `contracts.md` holds the flows and agreements between modules. `acceptance/x.md` tests them.
+4. Every open question below needs a decision before its module is ported.
+5. `audit.md` lists where this spec is known to be wrong or thin.
 
-Module catalog + per-module medium-depth summaries. Contains:
-- **Catalog** — table: module, role, primary files, has-deep-spec.
-- **Per-module sections** — each contains:
-  - Purpose (one paragraph).
-  - Public Surface — Exports table + Public Members table.
-  - State Bindings — target / source / read-by / written-by.
-  - Lifecycle — Construction / Initialization / Listener Registration / Teardown.
-  - Events and Messages — Fired table + Listened table.
-  - Flag and Branch Audit — flag parameters + switch/case decisions.
-  - Error Surfaces.
-  - Lifecycle Contract for Consumers.
-  - Non-goals.
-  - Cross-Module References.
-  - Suspicious-Condition Flags.
+`observed` claims were read in source or asserted by a test. `inferred` claims carry their
+basis. `unknown` claims point at an open question.
 
-### contracts.md
+## Coverage
 
-From `spec-contract-resolver`. Contains:
-- **Event / Message Contracts** — table with classification (internal/outbound/inbound/bidirectional).
-- **Asymmetries** — fired-without-listener, listened-without-fire-site.
-- **Public Export Map** — in-bundle consumers + external-only / unused.
-- **Shared Registries / Singletons / Global State**.
-- **External Integration Points** — network / filesystem / database / message-channel / scheduled-job.
-- **Contract Invariants** — cross-module invariants.
-- **Observations for Synthesizer** — subsystems, circular deps, drift.
+| Module | Depth | Files | Obligations | Cases | Open questions | Audit |
+|--------|-------|-------|-------------|-------|----------------|-------|
 
-### audit.md
+<Then one line per gap: a module that failed, a stage skipped, files listed but not read.
+`No gaps.` if there are none. Then `check-spec: <P> mechanical problems, reported in audit.md.`>
 
-Consolidated verification findings. Contains:
-- Header: reviewed-module count + totals (Critical / Warning / Note).
-- **Verdict** — would a reimplementer succeed from this spec alone?
-- **Critical** — findings by severity.
-- **Warning**.
-- **Note**.
-- **What the Spec Got Right** — calibrating strengths.
-- **Missing Coverage** — modules where analysis failed or was skipped.
+## Obligations
 
-### modules/<name>.md
+| ID | Layer | State | File |
+|----|-------|-------|------|
 
-Deep 11-section spec from `spec-analyzer`. See below.
+## Open Questions
 
-## Deep 11-Section Spec Schema
+| ID | Severity | File |
+|----|----------|------|
+```
 
-Used by `spec-analyzer` for Small-tier output and Large-tier deep dives.
+## Small: `<dest>/spec.md`
 
-1. **Contract Surface** — Imports and Exports + Public Members.
-2. **Params / Options Unboxing** — every params/payload object's fields with origin and use sites.
-3. **State Bindings** — every this.X / module-level let / static with read-by and written-by sites.
-4. **Lifecycle Segments** — Construction, Public Init, Listener Registration, Teardown.
-5. **Boolean / Enum / Discriminated-Union Flag Audit** — every flag parameter with observable branches.
-6. **Switch / Case / Empty-Handler Audit** — every dispatch site with per-case observable behavior.
-7. **Bidirectional Event / Message Tracing** — fire sites + listen sites + literal payloads + asymmetries.
-8. **Register / Unregister Symmetry Audit** — subscription / teardown pairs; missing teardowns flagged.
-9. **Suspicious-Condition Flags** — inverted, unreachable, contradictory conditions.
-10. **Domain Spec — Primary Unit** — Purpose, Shape, Rules, Example Table, Error Surfaces, Idempotency, Lifecycle, Non-goals.
-11. **Secondary Units — Brief Specs** — per-unit Purpose, Shape, Rules, Error Surfaces, Lifecycle.
+One file. Its parts keep their own heading levels, so `### OB-` and `### AC-` lines stay
+greppable:
 
-## Hard Rules Across All Outputs
+```markdown
+# Behavioral Specification: <bundle name>
 
-The six **Quality Constraints** in `SKILL.md` apply to every file above — evidence-first citations, literal payloads, no placeholders, domain-neutral naming, observable-behavior framing, and what is excluded from a spec. Two more are specific to this schema:
+Generated <ISO 8601 date> by code-to-spec from <N> files (about <LOC> lines), Small tier.
+Port it by making every acceptance case pass in the new stack. Decide every open question first.
 
-1. TypeScript contract attributes (`type` on exports/imports) are preserved.
-2. Tables may be long; prose across Domain Spec + Secondary Units is capped at ~2000 words combined.
+<module spec, sections 1–13, without its `# Module:` line>
+
+## Acceptance Cases
+
+<acceptance file without its `# Acceptance:` line; its `## OB-...` groups and `### AC-...` records unchanged>
+
+## Audit
+
+<the audit output, or `Not run: <reason>`>
+```
+
+## Worked index rows
+
+Three index rows built from a real-shaped run, for reference:
+
+```markdown
+| ID | Layer | State | File |
+|----|-------|-------|------|
+| OB-auth-003 | rule | observed | [modules/auth.md](modules/auth.md) |
+| OB-billing-011 | integration | inferred | [modules/billing.md](modules/billing.md) |
+| OB-x-002 | timing | unknown | [contracts.md](contracts.md) |
+```

@@ -1,44 +1,55 @@
 # Severity Rubric
 
-The single source of severity for code-to-spec. `spec-auditor` carries no rubric of its own: every audit dispatch passes this file's absolute path, and the auditor scores by it. Edit severity here only.
+The single source of severity for code-to-spec audits. The audit prompt carries none of its own.
 
 ## Critical
 
-A finding is Critical when any of the following holds:
+A finding is Critical when any of these holds:
 
-- A reimplementer following the spec would produce different observable behavior than the source.
-- The source has a behavior the spec entirely omits, and the omission is not covered by a documented non-goal.
-- A cited contract slot does not exist in source.
-- A claim is factually wrong — an import that isn't there, a payload field that isn't produced, a lifecycle step out of order in a way that changes observable effect.
-- A register without a matching unregister was not flagged, and the leak is observable.
+- A reimplementer following the spec would produce observable behavior that differs from source.
+- Source has a behavior the spec omits entirely, and no finish or non-goal entry covers it.
+- A claim is wrong against its citation, or the cited code does not exist.
+- An obligation is marked `observed` but rests on inference.
+- A case kind an obligation lists has no acceptance case, or a case's `Then` contradicts source.
+- A case marked `Source: test` points at a test that does not assert it.
+- A `not found` or `MISSING` claim is contradicted by a search.
+- A secret is transcribed unredacted.
 
 ## Warning
 
-A finding is Warning when any of the following holds:
+A finding is Warning when any of these holds:
 
-- The spec has a real gap a reimplementer would notice and need to fill by re-reading source.
-- A branch, case, or empty handler was paraphrased instead of stated as observable behavior.
-- A payload was paraphrased instead of transcribed literally. A secret value shown as `<redacted>` is the required form, not a paraphrase.
-- A params / payload / options object had fields unenumerated.
-- An asymmetry in event fire/listen was missed.
+- A gap a reimplementer would notice and have to fill by reopening the source.
+- A payload, message, default, or branch result is paraphrased instead of literal.
+- An `inferred` obligation has no `Basis:`, or an `unknown` has no open question.
+- A summary-depth gap hides interface, data, or error behavior.
+- A messaging asymmetry or a missing teardown went unflagged.
+- An open question is rated below `high` although guessing wrong changes visible behavior.
 
 ## Note
 
-A finding is Note when any of the following holds:
+A finding is Note when any of these holds:
 
-- Minor omission or imprecision.
-- Missed cross-reference that does not change implementable behavior.
-- Wording slip that a reimplementer would pattern-match through.
-- Aesthetic placeholder language that did not violate the no-placeholder rule but could be sharper.
+- A minor omission or imprecision that does not change what a reimplementer builds.
+- A missing cross-reference.
+- A wording slip a reimplementer would read through.
 
-## Dismissal Criteria
+## Precheck Lines
 
-- If a finding is structurally true but practically insignificant for reimplementation, downgrade to Note.
-- If a finding is outright wrong — the reviewer misunderstood scope — dismiss with a brief rationale.
-- Never downgrade because the finding is inconvenient. Severity is determined by reimplementation impact, not by how much work the fix would be.
+The script's problem lines map onto the levels above:
 
-## Applying the Rubric
+| Problem | Severity |
+| ------- | -------- |
+| case kind with no case, case for an unknown obligation, `Source: test` citing a non-test file, cited file not found, cited line past the end of the file | Critical |
+| malformed heading, missing `Cases`, `Source`, or `Basis` line, dangling `Depends on`, bare file name or absolute path in a citation | Warning |
 
-- Per-module audit findings are scored against the module's deep spec.
-- Global audit findings are scored against the architecture, modules catalog, and contracts documents.
-- Consolidated audit.md groups findings by severity, with module attribution on each finding.
+## Fail-closed Rules
+
+- An unverified check counts as a gap, never as a pass. It goes under `Unverified`, and the run
+  report counts it.
+- A skipped or truncated input is a finding.
+- `blocked`, `skipped`, `truncated`, and `unknown` never add up to covered.
+- An audit can lower a claim's state. It never raises one.
+- Severity follows the impact on the rewrite, never the effort a fix would take. A finding that
+  is true but does not affect the rewrite is a Note. A finding that misreads the scope is
+  dismissed with one line of reason.

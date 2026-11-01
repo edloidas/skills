@@ -1,0 +1,6 @@
+interface:
+  display_name: "Code to Spec"
+  short_description: "Extract a behavioral spec with obligations and acceptance cases for a rewrite"
+  default_prompt: "Use $code-to-spec to extract a stack-neutral behavioral spec from this codebase, with an obligation ledger, acceptance cases, open questions, and a cold audit, so it can be rewritten in another stack. Do not modify the source."
+policy:
+  allow_implicit_invocation: false

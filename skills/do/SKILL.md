@@ -102,7 +102,7 @@ Five skills start only when the user types them: `bro`, `editor-config`, `labels
 | The quality of a test suite: whether its tests are worth anything or check anything | `tests-audit` | The path, if named |
 | Review past sessions to see how our skills performed and improve them | `reflect` | The window (`last N`, `since <date>`) and skill names, if named |
 | Agent skills | `skill-audit` | The skill names, if named |
-| A behavioural spec extracted from code | `code-to-spec` | Paths or a feature description. Claude Code only; on other hosts say it is unavailable and stop |
+| A behavioural spec extracted from code, for a rewrite or a port to another stack | `code-to-spec` | Paths or a feature description |
 | A fact or a cause to find, changing nothing: what calls X, why it fails in CI, when Y changed | `references/investigate.md` | — |
 | A command to run, or a one-line change with nothing failing now: run the tests, a typo, a rename | in session | — |
 | Something broken, to fix: wrong output, a crash, a failing test, a regression | `references/bug.md` | — |

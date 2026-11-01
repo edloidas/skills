@@ -35,7 +35,6 @@ the same name is rooted there too:
 ├── plugin.json                   # The edloidas plugin manifest
 └── marketplace.json              # The edloidas marketplace, one plugin entry
 .codex-plugin/plugin.json         # Codex plugin manifest (generated), also rooted here
-agents/                           # Plugin subagents (code-to-spec's spec-* agents)
 docs/                             # Reference docs for working on this repo
 skills/
 └── <skill-name>/                 # Canonical skill location — a REAL directory

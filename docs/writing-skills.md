@@ -515,13 +515,15 @@ Three things this rule does **not** cover:
   transcripts. Facts that genuinely differ per host belong in a table with a documented
   default; only the dispatch procedure has to be uniform.
 
-### Claude-only skills, and how others became portable
+### How Claude-only skills became portable
 
-One skill is `compatibility: Claude Code`, locked by what it actually does. It should stay
-Claude-only unless its workflow changes:
+No skill is `compatibility: Claude Code` now. A new one needs a reason that intent-level
+dispatch and the chat fallback cannot cover.
 
-- `skills/code-to-spec` — dispatches fleets of plugin-namespaced subagents via
-  `subagent_type` and keys temp files on `${CLAUDE_SESSION_ID}`.
+`skills/code-to-spec` was the last. It dispatched six plugin-namespaced agents via
+`subagent_type` and keyed temp files on `${CLAUDE_SESSION_ID}`. Its prompts now live in
+`references/*-prompt.md`, every stage is dispatched as intent with an inline fallback, and its
+working directory comes from `mktemp`.
 
 `skills/consilium` was Claude-only for the same reasons and is now portable. It stopped
 being a review skill: it is an approach board that takes a problem or a decision, generates

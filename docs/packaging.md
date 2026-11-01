@@ -81,7 +81,7 @@ cannot be a tree of symlinked skills — that installs empty. Instead:
 
 - `.codex-plugin/plugin.json` sits at the repo root beside `.claude-plugin/`, and its `skills`
   array names each catalog skill as `./skills/<name>/`. Codex loads only the listed directories,
-  which is what keeps a Claude Code-only skill such as `code-to-spec` out.
+  which is what keeps a skill that does not declare Codex out.
 - The marketplace entry in `.agents/plugins/marketplace.json` has `path: "./"`.
 - The install copies the whole repo into `$CODEX_HOME/plugins/cache/`; the skills arrive as the
   real directories.
@@ -137,48 +137,10 @@ registration is needed in either file.
 
 ## Bundled Agents
 
-Claude Code agents can be distributed alongside skills as part of a plugin. This is a
-**Claude Code-specific feature** — the Agent Skills spec (agentskills.io) has no concept of agent
-distribution, which is why a portable skill keeps its dispatched prompt in `references/` instead
-([writing-skills.md](writing-skills.md#subagent-dispatch-is-intent)).
-
-Agent files live in `agents/` at the plugin root, which here is the repo root:
-
-```
-.claude-plugin/
-└── plugin.json
-agents/
-├── spec-scout.md         # Auto-discovered by Claude Code
-└── spec-auditor.md
-skills/
-└── <skill-name>/
-    └── SKILL.md
-```
-
-`agents/` at the plugin root is **auto-discovered** — no declaration needed in `plugin.json`. The `"agents"` field in `plugin.json` is additive (supplements auto-discovery for non-standard paths).
-
-Agent files are Markdown with YAML frontmatter:
-
-```markdown
----
-name: my-agent
-description: What this agent does and when to invoke it
-model: sonnet
-tools: Bash, Read, Glob, Grep
----
-
-Agent system prompt here.
-```
-
-When multiple locations define an agent with the same `name`, higher-priority locations win silently:
-
-1. `.claude/agents/` — project-level (highest)
-2. `~/.claude/agents/` — global user
-3. Plugin's `agents/` — distributed (lowest)
-
-Naming and invocation:
-
-- Agents appear in the UI as `<plugin-name>:<agent-name>` (e.g. `edloidas:spec-analyzer`)
-- `subagent_type` for plugin-distributed agents requires the namespaced form (e.g. `subagent_type: "edloidas:spec-analyzer"`)
-- `subagent_type` for built-in agents uses the plain name (e.g. `subagent_type: "general-purpose"`)
-- Agent `name` in frontmatter must match the filename (without `.md`)
+The plugin ships no agents, and new skills do not add them. Claude Code can distribute agents
+from a plugin's `agents/` directory, but the Agent Skills spec has no such concept, so an agent
+there is invisible to Codex, OpenCode, and pi, and a second copy of any prompt it holds drifts.
+A skill that dispatches work keeps the prompt in its own `references/*-prompt.md`, states the
+dispatch as intent, and runs on the host's built-in subagents
+([writing-skills.md](writing-skills.md#subagent-dispatch-is-intent)). `code-to-spec` shipped six
+plugin agents until it moved to that shape.

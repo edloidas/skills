@@ -25,6 +25,7 @@
     "./skills/changes-review/",
     "./skills/ci-audit/",
     "./skills/code-cleanup/",
+    "./skills/code-to-spec/",
     "./skills/commit-summary/",
     "./skills/consilium/",
     "./skills/do/",

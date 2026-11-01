@@ -67,9 +67,7 @@ To try a branch before it is released, add the marketplace at that branch:
 `/plugin marketplace add 'edloidas/skills#<branch>'` on Claude Code, or
 `codex plugin marketplace add edloidas/skills --ref <branch>` on Codex.
 
-Every skill ships to all four agents except one. `code-to-spec` drives fleets of
-plugin-namespaced subagents and keys its temp files on Claude's session id, so it is Claude Code
-only. See [How skills reach each agent](#how-skills-reach-each-agent).
+Every skill ships to all four agents. See [How skills reach each agent](#how-skills-reach-each-agent).
 
 ### Claude Code
 
@@ -250,8 +248,7 @@ to agree with each other.
 
 ## Available Skills
 
-Every skill runs on Claude Code, Codex, OpenCode, and pi, except `code-to-spec`, which is Claude Code
-only. Topic rows group the table for reading; they are not separate plugins.
+Every skill runs on Claude Code, Codex, OpenCode, and pi. Topic rows group the table for reading; they are not separate plugins.
 
 **Tier** says how a skill is reached: `auto` skills start on their own when your request matches,
 `routed` ones run by `/name`, through `do`, or when another skill calls them, and `manual` ones only by `/name`.
@@ -273,7 +270,7 @@ only. Topic rows group the table for reading; they are not separate plugins.
 | [consilium](./skills/consilium/) | All four | routed | Approach board — generate candidate approaches, attack them comparatively, recommend one |
 | [doubt](./skills/doubt/) | All four | routed | Verify a set of claims with two seats blind to the reasoning behind them — one verdict each |
 | [pr-review](./skills/pr-review/) | All four | routed | Review someone else's PR, or land it with `--land` — approve and merge, folding small fixes first; or verify and answer the feedback on yours — replies and resolves |
-| [code-to-spec](./skills/code-to-spec/) | Claude Code | routed | Extract a behavioral spec from a codebase (1 file up to 500+ files) |
+| [code-to-spec](./skills/code-to-spec/) | All four | routed | Extract a behavioral spec for a rewrite — obligation ledger, acceptance cases, open questions, cold audit (1 file up to 500+ files) |
 | **Audit** | | | |
 | [ci-audit](./skills/ci-audit/) | All four | routed | Audit GitHub Actions for wall clock, spend, and whether the gating actually gates |
 | [package-audit](./skills/package-audit/) | All four | routed | Audit package.json scripts against each package's role and, in a pnpm workspace, catalogs, protocol, overrides, and hoisting |
@@ -363,9 +360,11 @@ before fixes start, or when an agent is about to make a call the user would norm
 user is not there. The report groups claims by what to do with them and ends on a short
 recommendation of what to do next.
 
-`code-to-spec` is the collection's only Claude Code-only skill. It dispatches six
-plugin-namespaced subagents and keys its intermediate files on Claude's session id, so there is
-nothing to port until that changes.
+`code-to-spec` turns source into a spec for rewriting the application in another stack. Its core
+is an obligation ledger: each behavior the rewrite must keep, marked observed, inferred, or
+unknown, with acceptance cases taken from the existing tests where they exist. What the source
+cannot settle becomes an open question instead of a guess, and a cold auditor checks every module
+against the source.
 
 ### Audit
 
@@ -382,9 +381,8 @@ selection time rather than by leaving a host out of `compatibility`.
 
 ```
 .claude-plugin/
-├── plugin.json               # The edloidas plugin (auto-discovers skills/ and agents/)
+├── plugin.json               # The edloidas plugin (auto-discovers skills/)
 └── marketplace.json          # The edloidas marketplace, one entry pointing at the repo root
-agents/                       # Subagents the plugin ships (code-to-spec's spec-* agents)
 skills/
 └── <skill-name>/             # Canonical location — a real directory, never a symlink
     ├── SKILL.md              # Required — frontmatter + instructions
