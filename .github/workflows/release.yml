@@ -36,6 +36,9 @@ jobs:
           ./scripts/skills-packaging.sh sync-repo
           git diff --exit-code
 
+      - name: Validate per-host discovery
+        run: bash .github/scripts/validate-discovery.sh
+
       - name: Run bundled-script tests
         run: bash tests/run.sh
 
