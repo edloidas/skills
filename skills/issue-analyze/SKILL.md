@@ -308,9 +308,9 @@ Part of #400 "Overlay positioning rework" — 2/6 done; next open: #413, #415.
 https://github.com/owner/repo/issues/412
 ```
 
-Then stop. This skill analyzes and reports — it does not create a branch, edit a file, or
-start implementing, and it does not offer to. A caller that wants the work done invokes
-`issue-flow` or `solve-issue` next; that is the caller's decision, not this skill's.
+Then this skill stops; a calling skill goes on. It analyzes and reports — it does not create a
+branch, edit a file, or start implementing, and it does not offer to. A caller that wants the work
+done invokes `issue-flow` or `solve-issue` next; that is the caller's decision, not this skill's.
 
 ## Error Handling
 

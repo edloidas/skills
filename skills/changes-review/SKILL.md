@@ -419,8 +419,8 @@ Look at `src/http/retry.ts:41`.
 
 One report serves every caller. A caller wanting something shorter condenses what it got.
 
-Then stop. Do not fix, do not offer to fix, and do not start a second round. Round policy and
-triage belong to the caller. Publish only if the caller asked — Phase 8.
+Then this skill stops; a calling skill goes on. No fix, no offer to fix, no second round:
+triage belongs to the caller. Publish only if the caller asked — Phase 8.
 
 ## Phase 8: Publish (on `--comment` or `--review`)
 

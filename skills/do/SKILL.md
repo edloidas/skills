@@ -129,7 +129,8 @@ that skill's `SKILL.md` — it sits beside this one in the installed skills dire
 it. A routed skill that is not installed: follow a playbook row only when it delivers the same thing,
 naming it; otherwise print `<name> is not installed.` and stop. The skill's own gates, questions and report stand; do not wrap or repeat them.
 
-**A playbook.** Open it and follow it. Each one ends on a named line and a stop sentence. Two terms
+**A playbook.** Open it and follow it. Each one ends on a named line and a stop sentence; a skill a
+step invokes hands back to the next step, and its report is that step's input, not the run's end. Two terms
 the playbooks share: **the project's checks** are the finite commands its instruction file or CI
 runs — tests, build, lint, typecheck — never a watch server, a deploy, or a publish; and
 `code-cleanup` is always scoped to the lines this task changed, not whole files. Without `git diff`,
