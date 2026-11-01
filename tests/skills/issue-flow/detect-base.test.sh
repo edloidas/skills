@@ -205,7 +205,8 @@ test_two_epics_sharing_a_fork_point_pick_one_deterministically() {
   assert_one_of "$(last_line "$STDOUT")" epic-a epic-b
 
   # And the same input gives the same answer twice.
-  local first="$(last_line "$STDOUT")"
+  local first
+  first="$(last_line "$STDOUT")"
   detect
   assert_eq "$first" "$(last_line "$STDOUT")" "detected base on a second run"
 }

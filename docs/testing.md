@@ -60,3 +60,10 @@ runner's PATH and plain `bash` would just duplicate the Linux leg; and it instal
 already present and stock macOS ships neither — without it the suite drops the tool
 silently instead of failing. `fail-fast` is off so a failure on one OS still reports
 the other.
+
+**`shellcheck` gates every script at warning level.** The `shellcheck` job lints each tracked
+`*.sh`. Test files skip two checks: SC2164, because each case already runs in a throwaway
+subshell where a failed `cd` fails the case, and SC2034, because `run()` sets globals that
+`assert.sh` and the test bodies read across files. A finding in a bundled script is fixed, not
+silenced; quote a literal such as `verdict="done"` or `--json "a,b"` instead of adding a
+directive.

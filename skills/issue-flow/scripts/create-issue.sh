@@ -146,7 +146,7 @@ LOGIN=$(gh api user --jq '.login' 2>/dev/null || true)
 
 REUSE_URL=""
 if [[ -n "$TITLE" && -n "$LOGIN" ]]; then
-  LIST_ARGS=(issue list --author "$LOGIN" --state all --limit 30 --json number,title,url,createdAt)
+  LIST_ARGS=(issue list --author "$LOGIN" --state all --limit 30 --json "number,title,url,createdAt")
   if [[ -n "$REPO" ]]; then
     LIST_ARGS=("${LIST_ARGS[@]}" --repo "$REPO")
   fi

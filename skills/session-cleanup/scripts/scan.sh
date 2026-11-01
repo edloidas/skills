@@ -280,7 +280,7 @@ branch_label() {  # branch name -> catalog label, or empty
 }
 
 scan_repo() {
-  local repo="$1" name default upstream merged_prs="" checked_out wt line
+  local repo="$1" name default merged_prs="" checked_out
   name="$(basename "$repo")"
   default="$(git -C "$repo" symbolic-ref -q --short refs/remotes/origin/HEAD 2>/dev/null)"
   if [ -z "$default" ]; then
@@ -312,7 +312,7 @@ scan_repo() {
     }' > "$PS_FILE.wt"
   while IFS="$US" read -r path br head prunable locked; do
     [ -n "$path" ] || continue
-    local id="$repo|$path" owner="$name" age size risk detail ref dirty uniq gitdir
+    local id="$repo|$path" owner="$name" age size risk detail dirty uniq gitdir
     owner="$name${br:+ ($br)}"
     if [ -n "$prunable" ]; then
       row worktree "$owner" "-" "-" safe "$id" "prunable: $prunable"

@@ -83,7 +83,7 @@ DONE=0; SKIPPED=0; FAILED=0
 KILL_IDS=""
 say() { printf '%s\t%s\t%s\t%s\n' "$1" "$2" "$3" "$4"; }
 skip() { say skip "$1" "$2" "$3"; SKIPPED=$((SKIPPED + 1)); }
-ok() { say done "$1" "$2" "$3"; DONE=$((DONE + 1)); }
+ok() { say "done" "$1" "$2" "$3"; DONE=$((DONE + 1)); }
 bad() { say fail "$1" "$2" "$3"; FAILED=$((FAILED + 1)); }
 
 ROWS="$(awk -F'\t' 'NF == 7 && ($1 == "process" || $1 == "branch" || $1 == "worktree" || $1 == "file")' "$REPORT")"
@@ -99,7 +99,7 @@ done <<EOF
 $ONLY
 EOF
 
-while IFS="$TAB" read -r kind owner age size risk id detail; do
+while IFS="$TAB" read -r kind _ age _ risk id _; do
   [ -n "$kind" ] || continue
   selected "$kind" || continue
   if [ -n "$ONLY" ] && ! named "$id"; then continue; fi
