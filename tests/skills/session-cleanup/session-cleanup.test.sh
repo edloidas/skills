@@ -113,7 +113,7 @@ test_busy_gradle_daemon_needs_a_name() {
 test_orphaned_process_is_killed() {
   start_sleeper
   proc 1 0 10-00:00:00 /sbin/init
-  proc "$SLEEPER" 1 02:00:00 bash -c until false\; do sleep 30\; done
+  proc "$SLEEPER" 1 02:00:00 bash -c "until false; do sleep 30; done"
   scan processes
   printf '%s\n' "$STDOUT" > report.tsv
   assert_eq safe "$(risk_of "$(process_row "$SLEEPER")")" "sleeper risk"
@@ -129,7 +129,7 @@ test_orphaned_process_is_killed() {
 test_reused_pid_is_not_killed() {
   start_sleeper
   proc 1 0 10-00:00:00 /sbin/init
-  proc "$SLEEPER" 1 02:00:00 bash -c until false\; do sleep 30\; done
+  proc "$SLEEPER" 1 02:00:00 bash -c "until false; do sleep 30; done"
   scan processes
   printf '%s\n' "$STDOUT" > report.tsv
   printf 'Fri Oct 30 11:00:00 2026\n' > ps/reused-start

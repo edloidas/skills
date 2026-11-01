@@ -55,7 +55,7 @@ if [[ -f "$CONFIG_FILE" ]]; then
     cfg_val="${cfg_val%\'}"; cfg_val="${cfg_val#\'}"
     if [[ -z "$(eval "printf '%s' \"\${$cfg_key:-}\"")" ]]; then
       eval "$cfg_key=\$cfg_val"
-      export "$cfg_key"
+      export "${cfg_key?}"
     fi
   done < "$CONFIG_FILE"
 fi
@@ -116,7 +116,7 @@ build_cmd() {
       if [[ ${#extra[@]} -gt 0 ]]; then CMD+=("${extra[@]}"); fi
       ;;
     pi)
-      CMD=(pi --print --no-session -t read,grep,find,ls)
+      CMD=(pi --print --no-session -t "read,grep,find,ls")
       if [[ -n "$model" ]]; then CMD+=(--model "$model"); fi
       if [[ -n "$effort" ]]; then CMD+=(--thinking "$effort"); fi
       if [[ ${#extra[@]} -gt 0 ]]; then CMD+=("${extra[@]}"); fi

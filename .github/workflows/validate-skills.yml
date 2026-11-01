@@ -47,8 +47,13 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
+      # Test files run each case in a throwaway subshell, where a failed `cd` already fails
+      # the case, and they set the run() globals that assert.sh reads.
       - name: Lint shell scripts
-        run: shellcheck --version && git ls-files -z '*.sh' | xargs -0 shellcheck -S warning
+        run: |
+          shellcheck --version
+          git ls-files -z '*.sh' ':!tests/' | xargs -0 shellcheck -S warning
+          git ls-files -z 'tests/*.sh' | xargs -0 shellcheck -S warning -e SC2164,SC2034
 
   # Executes the bundled shell scripts and asserts what they return. Separate
   # from `validate`, which only reads them: a script can satisfy every

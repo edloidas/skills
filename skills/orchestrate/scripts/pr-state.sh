@@ -213,16 +213,16 @@ if [ "$state" = MERGED ]; then
 elif [ "$state" = CLOSED ]; then
   verdict=closed
 elif [ "$ci" = fail ] || [ "$bot_threads" != 0 ] || [ "$mergeable" = CONFLICTING ]; then
-  verdict=act
+  verdict="act"
 elif [ "$ci" = pending ]; then
-  verdict=wait
+  verdict="wait"
 elif [ "$bot" = requested ]; then
-  if [ "$bot_min" -ge "$BUDGET" ]; then verdict=timeout; else verdict=wait; fi
+  if [ "$bot_min" -ge "$BUDGET" ]; then verdict="timeout"; else verdict="wait"; fi
 elif [ "$head_min" -lt 1 ] && { [ "$bot" = none ] || [ "$ci" = none ]; }; then
-  verdict=wait
+  verdict="wait"
 elif [ "$mergeable" = UNKNOWN ] && [ "$head_min" -lt 2 ]; then
-  verdict=wait
+  verdict="wait"
 else
-  verdict=done
+  verdict="done"
 fi
 echo "VERDICT=$verdict"
