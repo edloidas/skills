@@ -41,6 +41,7 @@ The script's problem lines map onto the levels above:
 | Problem | Severity |
 | ------- | -------- |
 | case kind with no case, case for an unknown obligation, `Source: test` citing a non-test file, cited file not found, cited line past the end of the file | Critical |
+| possible secret, unless the auditor confirms it is a public test fixture or a documented example, which is a Note | Critical |
 | malformed heading, missing `Cases`, `Source`, or `Basis` line, dangling `Depends on`, bare file name or absolute path in a citation | Warning |
 
 ## Fail-closed Rules

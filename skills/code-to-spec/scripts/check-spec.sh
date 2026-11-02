@@ -3,8 +3,8 @@
 #
 # Mechanical checks on a code-to-spec output tree (modules/, acceptance/, and
 # contracts.md when present): record formats, case-kind coverage, orphan cases,
-# dangling dependencies, inferred obligations without a basis, and every
-# `path:line` citation against the repository. Prints one problem per line as
+# dangling dependencies, inferred obligations without a basis, every
+# `path:line` citation against the repository, and secret-shaped strings. Prints one problem per line as
 # `<spec file>:<line>: <problem>`, then a summary line.
 #
 # Exit: 0 no problems, 1 problems found, 2 usage error.
@@ -38,6 +38,19 @@ if [ "$#" -eq 0 ]; then
 fi
 
 awk -v root="$root" -v spec="$spec/" '
+function rep(c, n,   r) { r = ""; while (n-- > 0) r = r c; return r }
+BEGIN {
+  an = "[A-Za-z0-9]"
+  secret["private key"] = "-----BEGIN [A-Z ]*PRIVATE KEY-----"
+  secret["AWS access key"] = "AKIA" rep("[0-9A-Z]", 16)
+  secret["GitHub token"] = "gh[pousr]_" rep(an, 36)
+  secret["Slack token"] = "xox[abprs]-" rep("[A-Za-z0-9-]", 10)
+  secret["API key"] = "sk-" rep(an, 20)
+  secret["JWT"] = "eyJ[A-Za-z0-9_-]+[.]eyJ[A-Za-z0-9_-]+[.][A-Za-z0-9_-]+"
+}
+function check_secrets(s,   k) {
+  for (k in secret) if (s ~ secret[k]) problem("possible secret (" k "): redact it, or confirm it is a public test fixture")
+}
 function rel(f) { return index(f, spec) == 1 ? substr(f, length(spec) + 1) : f }
 function problem(msg) { problems++; print rel(FILENAME) ":" FNR ": " msg }
 function is_test(p,   name) {
@@ -57,10 +70,11 @@ function check_citations(s,   span, body, path, rest, parts, i, a, hi, n, ext) {
   while (match(s, /`[^`]+`/)) {
     span = substr(s, RSTART + 1, RLENGTH - 2)
     s = substr(s, RSTART + RLENGTH)
-    if (span !~ /^[A-Za-z0-9_.\/-]+\.[A-Za-z0-9]+:[0-9]+(-[0-9]+)?(,[0-9]+(-[0-9]+)?)*$/) continue
+    if (span !~ /^[]A-Za-z0-9_.\/@+()[-]+\.[A-Za-z0-9]+:[0-9]+(-[0-9]+)?(,[0-9]+(-[0-9]+)?)*$/) continue
     path = span; sub(/:.*/, "", path)
     rest = span; sub(/^[^:]*:/, "", rest)
     if (substr(path, 1, 1) == "/") { citations++; problem("absolute path in citation `" span "`"); continue }
+    if (path ~ /(^|\/)\.\.(\/|$)/) { citations++; problem("citation outside the repository `" span "`"); continue }
     if (path !~ /\//) {
       ext = path; sub(/.*\./, "", ext)
       if (ext ~ /^(java|kt|kts|scala|ts|tsx|js|jsx|mjs|cjs|py|go|rs|cs|rb|php|swift|c|h|cc|cpp|hpp|sh|sql|xml|yml|yaml|json|html|md|toml|gradle|properties)$/) {
@@ -140,7 +154,7 @@ in_acc && cur_ac != "" && /^- Source:/ {
     } else problem("case " cur_ac " says Source: test but cites no file")
   } else if ($0 !~ /^- Source: code/) problem("case " cur_ac " has a Source that is neither test nor code")
 }
-{ check_citations($0) }
+{ check_citations($0); check_secrets($0) }
 END {
   close_ob(); close_ac()
   for (key in need) {

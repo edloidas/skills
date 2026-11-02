@@ -42,7 +42,9 @@ them are not the user's.
 4. **Literals stay literal.** Payloads, messages, status codes, state assignments, defaults, and
    branch results go in a fenced block exactly as constructed in source. Where you cut fields,
    say how many. Secrets (tokens, keys, passwords, connection strings) keep their field and
-   become `<redacted>`.
+   become `<redacted>`. Never open a file that holds a deployment's own values rather than
+   defaults: `.env`, credentials, keys, certificates, a local override. Open its committed
+   template, such as `.env.example`, instead.
 5. **No placeholders.** Every section is complete, or reads `N/A — <reason>`. `[table of N
    items]`, `[see above]`, `...and others`, and `etc.` are failures.
 6. **Behavior, not syntax.** Say what is emitted, stored, returned, routed, or dropped. Never say

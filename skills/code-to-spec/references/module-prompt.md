@@ -22,7 +22,8 @@ Open every source and test file in the lists in one response, before writing any
 every file the source loads by path at runtime: templates, prompt or message files, schemas,
 default config. Their contents are behavior, so their defaults and literals go in the spec. A
 loaded file outside the repository, such as a path under the user's home, becomes an open
-question. Search other modules only to resolve what a call into them returns. Name those modules
+question. A file that holds a deployment's own values stays closed, per the rules file. Name it,
+and the keys the code reads from it, in Configuration. Search other modules only to resolve what a call into them returns. Name those modules
 and leave their internals out.
 
 **Depth.** On `deep`, fill every section, and give each obligation every case kind its behavior

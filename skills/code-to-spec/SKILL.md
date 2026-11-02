@@ -207,15 +207,19 @@ the totals summed from the workers' return lines.
 
 *Small: skip.*
 
-One worker with `references/contracts-prompt.md`, run after every module worker has returned:
+One worker with `references/contracts-prompt.md`, started when the last module worker returns:
 `{ARCH}`, every module spec path, the full source list, `{OUT_CONTRACTS}` = `<RUN>/contracts.md`,
-and `{OUT_ACCEPTANCE}` = `<RUN>/acceptance/x.md`.
+and `{OUT_ACCEPTANCE}` = `<RUN>/acceptance/x.md`. Run Phase 6's first check and its module
+audits while this worker runs, without waiting for it to return. They read only module files,
+which no longer change. A host that runs one worker at a time runs contracts first and the first
+check after it.
 
 Print its return line.
 
 ## Phase 6: Check and Audit
 
-Run the mechanical check once every module is written, and again after contracts:
+Run the mechanical check twice: first when the last module worker returns, while contracts are
+being written, and again once contracts return:
 
 ```bash
 bash <skill-dir>/scripts/check-spec.sh <RUN> <repo-root> > <RUN>/check.txt
@@ -225,17 +229,16 @@ bash <skill-dir>/scripts/check-spec.sh <RUN> <repo-root> > <RUN>/check.txt
 directory the run started in. Citations are relative to it. The script needs `bash` and `awk`.
 Exit `0` means clean and `1` means problems were found; both continue. Exit `2` is a usage error
 to fix before going on. Any other exit means it could not run: give the auditors `None.`, and the
-`Audit` line reads `check-spec not run (<reason>)`. The first run happens before contracts exist,
-so drop its lines about unknown `OB-x-` obligations. Never edit the spec to clear a line. The lines
+`Audit` line reads `check-spec not run (<reason>)`. Drop the first run's lines about unknown
+`OB-x-` obligations, because contracts may not exist yet. Never edit the spec to clear a line. The lines
 go to the auditors. Small runs the check once, after its module, gives every line to its one
 auditor, and reports that run's count.
 
 One auditor per module in `module` mode, with `references/audit-prompt.md`: the module's spec and
 acceptance files, its source and test files, `{PRECHECK}` = the check lines that start with
 `modules/<module>.md:` or `acceptance/<module>.md:`, and `{OUT}` = `<RUN>/audit/<module>.md`.
-Module audits need only the first check, so they can run while contracts are still being written.
-On Medium and Large, add one auditor in `global` mode once contracts and the second check are
-done: the architecture map, contracts and its acceptance file, every module spec, `{PRECHECK}` =
+Module audits start as soon as the first check is done. On Medium and Large, add one auditor in
+`global` mode once contracts and the second check are done: the architecture map, contracts and its acceptance file, every module spec, `{PRECHECK}` =
 the second check's lines for `contracts.md` and `acceptance/x.md`, and `{OUT}` =
 `<RUN>/audit/global.md`. For its `{FILE_LIST}`, pass the files `contracts.md` cites, including
 cited files outside the bundle. The module auditors have already read the rest. `{PRECHECK}`

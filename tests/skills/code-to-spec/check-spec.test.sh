@@ -99,7 +99,7 @@ test_citation_problems_are_each_reported() {
   cat >> spec/modules/auth.md <<'EOF'
 
 ## 12. Suspicious Conditions
-- `src/auth/gone.ts:3` and `src/auth/lock.ts:28-31` and `lock.ts:4` and `/abs/src/auth/lock.ts:2`
+- `src/auth/gone.ts:3` and `src/auth/lock.ts:28-31` and `lock.ts:4` and `/abs/src/auth/lock.ts:2` and `../repo/src/auth/lock.ts:2`
 - Config literal `retry.max:3` is not a citation.
 EOF
   check
@@ -108,8 +108,42 @@ EOF
   assert_contains "$STDOUT" "cited line 31 is past the end of src/auth/lock.ts (30 lines)" "past the end"
   assert_contains "$STDOUT" "citation without a repository path \`lock.ts:4\`" "bare file name"
   assert_contains "$STDOUT" "absolute path in citation" "absolute path"
+  assert_contains "$STDOUT" "citation outside the repository \`../repo/src/auth/lock.ts:2\`" "parent path"
   assert_not_contains "$STDOUT" "retry.max" "non-citation literal"
-  assert_eq "check-spec: 2 obligations, 3 cases, 10 citations, 4 problems." "$(last_line "$STDOUT")" "summary"
+  assert_eq "check-spec: 2 obligations, 3 cases, 11 citations, 5 problems." "$(last_line "$STDOUT")" "summary"
+}
+
+test_paths_with_brackets_scopes_and_groups_are_checked() {
+  mkdir -p 'repo/app/(shop)/[id]' 'repo/node_modules/@acme/ui+x'
+  seq 1 5 > 'repo/app/(shop)/[id]/page.tsx'
+  seq 1 5 > 'repo/node_modules/@acme/ui+x/index.js'
+  cat >> spec/modules/auth.md <<'EOF'
+
+## 2. Interface
+- `app/(shop)/[id]/page.tsx:3` and `app/(shop)/[id]/page.tsx:9` and `node_modules/@acme/ui+x/index.js:5`
+EOF
+  check
+  assert_eq 1 "$STATUS" "exit status"
+  assert_contains "$STDOUT" "cited line 9 is past the end of app/(shop)/[id]/page.tsx (5 lines)" "past the end"
+  assert_eq "check-spec: 2 obligations, 3 cases, 9 citations, 1 problems." "$(last_line "$STDOUT")" "summary"
+}
+
+# The secrets are split so the fixture file itself holds no secret-shaped string.
+test_secret_shaped_strings_are_reported() {
+  {
+    printf '\n## 7. Configuration\n'
+    printf -- '- Key: `%s%s`\n' 'AKIA' 'IOSFODNN7EXAMPLE'
+    printf -- '- Token: `%s.%s.sig_x`\n' 'eyJhbGciOiJIUzUxMiJ9' 'eyJzdWIiOiJ1c2VyIn0'
+    printf -- '- Header: `%s`\n' '-----BEGIN RSA PRIVATE KEY-----'
+    printf -- '- Redacted: `<redacted>`\n'
+  } >> spec/modules/auth.md
+  check
+  assert_eq 1 "$STATUS" "exit status"
+  assert_contains "$STDOUT" "possible secret (AWS access key)" "aws key"
+  assert_contains "$STDOUT" "possible secret (JWT)" "jwt"
+  assert_contains "$STDOUT" "possible secret (private key)" "private key"
+  assert_not_contains "$STDOUT" "IOSFODNN7EXAMPLE" "secret not echoed"
+  assert_eq "check-spec: 2 obligations, 3 cases, 6 citations, 3 problems." "$(last_line "$STDOUT")" "summary"
 }
 
 test_test_source_must_cite_a_test_file() {
