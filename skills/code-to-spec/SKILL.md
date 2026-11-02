@@ -155,9 +155,11 @@ Ask, per **Asking the User**:
 
 - **`docs/`** *(Recommended)* — inside the project, versioned with it
 - **Temp directory** — outside the project, under a timestamped name
-- **Other** — a path the user gives
+- **Other** — a parent directory the user gives
 
-The target is `<dest>/spec.md` for Small and `<dest>/spec/` otherwise. If the target exists, ask:
+The choice is `<dest>`, the directory the spec goes into. A given path that already ends in
+`spec` or `spec.md` names the target itself, so `<dest>` is its parent. The target is
+`<dest>/spec.md` for Small and `<dest>/spec/` otherwise. If the target exists, ask:
 **`spec-<N>`** *(Recommended, next free number)*, **Name it** (`spec-<name>`), or
 **Overwrite**. Overwrite replaces and never merges: it deletes the whole existing target,
 including files this skill did not write. Nothing is deleted yet. The deletion waits for

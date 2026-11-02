@@ -22,12 +22,17 @@ Inputs:
 
 Group files into modules. A module is a set of files with one purpose you can state in one
 sentence: a workspace package, a feature directory, or files that share imports and a name
-prefix. Most modules hold 1–20 files. Map each test file to the module it exercises.
+prefix. Most modules hold 1–20 files, and every module holds at least one bundle source file.
+Map each test file to the module whose source it exercises. A test that exercises no bundle
+source goes under Not Covered, never into a module of its own.
 
 Nominate a module for `deep` depth when any of these holds: it sits on the public boundary, it
 holds an entry point or bootstrap, many modules import it, it owns persistent data or a state
-machine, or it coordinates async work. Every other module gets `summary` depth. Nominate 2–5
-modules on Medium and 5–15 on Large.
+machine, or it coordinates async work. Every other module gets `summary` depth. Nominate at least
+one module, at most 5 on Medium and 15 on Large, and never more than half the modules, rounded
+up. When more qualify,
+keep the ones a rewrite would most likely get wrong: state machines, security checks, and
+cross-module coordination.
 
 Write the result to `{OUT}`. If you cannot write files, return the content instead. Use exactly
 this structure, with no preamble:
