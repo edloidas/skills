@@ -223,7 +223,7 @@ skills/changes-review"
 # Only the first two `---` lines are delimiters. Skipping every one of them — as this
 # did — silently discards each horizontal rule in the body, so a skill measured smaller
 # than it is: `issue-writer` reported 498 lines against a real 507 because nine `---`
-# rules sit inside its issue templates. The cap has to count what the agent loads.
+# rules sat inside its issue templates. The cap has to count what the agent loads.
 body_line_count() {
   awk 'BEGIN { delimiter_count = 0 }
     delimiter_count < 2 && $0 == "---" { delimiter_count++; next }

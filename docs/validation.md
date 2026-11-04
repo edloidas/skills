@@ -65,7 +65,7 @@ row is a decision that needs a reason in this doc.
 `body_line_count` counts every line after the frontmatter, **horizontal rules included**.
 It used to skip each `---` in the file rather than only the two delimiters, which made a
 body measure smaller than what the agent actually loads: `issue-writer` reported 498 lines
-against a real 507, because nine `---` rules sit inside its issue templates. Six other
+against a real 507, because nine `---` rules sat inside its issue templates. Six other
 skills were undercounted too, none of them across a ceiling — `changes-review` at 451 is now
 the closest to the line cap. A checker that reads low is worse than no checker, so if the two
 counts ever disagree again, trust neither until you know which one is wrong.

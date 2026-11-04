@@ -21,7 +21,7 @@ Wait for all four before proceeding. `detect-base.sh` is not needed until Step 2
 
 ### Title
 
-Use conventional commit format: `<type>: <description>`. Defer to the `AGENTS.md` / `CLAUDE.md` conventions if they differ.
+A title drafted by `issue-writer` is used as given. Otherwise take the `AGENTS.md` / `CLAUDE.md` convention, else the shape at least two thirds of `gh issue list --state all --limit 30 --json title` share, else `<type>: <imperative>` — under 72 characters, naming at least one identifier an agent can search for. `issue-writer`'s **Step 5** carries the full title rules.
 
 ### Epic Detection
 
@@ -35,9 +35,9 @@ If it is an epic, and the repo has an `epic` label (check `repo-context.sh` outp
 
 ### Body
 
-Write a 2-4 sentence description. No markdown headers.
+A body drafted by `issue-writer` is used as given, and so are the kind and label it confirmed — skip **Labels**. Otherwise write it without asking, to the content `issue-writer`'s **Step 6** lists: open with what is wrong or wanted and why now, mark a guessed cause "Likely cause:", put identifiers in backticks, add headers only when the body has distinct parts, and end with a paragraph starting "Done when" — the condition the request states, or what investigation must settle when it states none. Nothing the request does not supply is guessed.
 
-Under **Slice Delivery**, when the scope is already understood, end the body with a short ordered list of parts that can each land as a working increment. When the scope still needs investigation, leave the list out — a guessed split misleads whoever plans the work.
+Under **Slice Delivery**, when the scope is already understood, put a short ordered list of parts that can each land as a working increment just before "Done when". When the scope still needs investigation, leave the list out — a guessed split misleads whoever plans the work.
 
 For epic issues: **do not list child issue numbers in the body.** Sub-issue relationships are managed via the GitHub sub-issues API (see **## Sub-Issues**), not via body text.
 

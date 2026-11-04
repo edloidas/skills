@@ -115,7 +115,7 @@ the same turn.
 
 Read the repo's instruction file for its formatting. Use these defaults when no override is found:
 
-- **Issue titles**: `<type>: <description>` (conventional commit format)
+- **Issue titles**: per `references/creating-issues.md` → **Title**
 - **Commit subjects**: `<Issue Title> #<number>`
 - **PR titles**: `<Issue Title> #<number>`
 - **PR body**: one bullet per change, then `Closes #<number>`, one per line. GitHub links only the first reference after a keyword, so `Closes #1 #2 #3` closes #1 and leaves #2 and #3 open
@@ -606,8 +606,8 @@ If reviewer AND assignee are the current user (self-review), or user explicitly 
 ### Entering Step 6 at all
 
 Step 6 is entered on exactly three things: an intent naming the merge
-(`"merge #<N>"`, `"push, PR, and merge #<N>"`), the user answering the suggestion below,
-or the user asking to merge in conversation. Otherwise stop after Step 5 — never suggest a merge to an intent that ended there.
+(`"merge #<N>"`, `"push, PR, and merge #<N>"`) or the full flow, the user answering the suggestion below,
+or the user asking to merge. Otherwise stop after Step 5 — never suggest a merge to an intent that ended there.
 
 ### Confirm exactly once
 

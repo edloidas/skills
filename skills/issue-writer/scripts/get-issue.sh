@@ -4,7 +4,7 @@
 # Usage: get-issue.sh <issue-number-or-url>
 # Returns: JSON with title, body, labels, state, number, url
 
-set -e
+set -eo pipefail
 
 # Check argument
 if [ -z "$1" ]; then
@@ -26,7 +26,7 @@ fi
 
 # Check if gh is available
 if ! command -v gh &> /dev/null; then
-    echo "ERROR: GitHub CLI not installed. Install with: brew install gh"
+    echo "ERROR: GitHub CLI not installed. Install it from https://cli.github.com"
     exit 1
 fi
 
@@ -36,15 +36,21 @@ fi
 #   #123
 #   https://github.com/owner/repo/issues/123
 #   owner/repo#123
+REPO=""
 if [[ "$ISSUE" =~ ^#?([0-9]+)$ ]]; then
     ISSUE_NUM="${BASH_REMATCH[1]}"
-elif [[ "$ISSUE" =~ github\.com/[^/]+/[^/]+/issues/([0-9]+) ]]; then
-    ISSUE_NUM="${BASH_REMATCH[1]}"
-elif [[ "$ISSUE" =~ ^[^/]+/[^#]+#([0-9]+)$ ]]; then
-    ISSUE_NUM="${BASH_REMATCH[1]}"
+elif [[ "$ISSUE" =~ github\.com/([^/]+/[^/]+)/issues/([0-9]+) ]]; then
+    REPO="${BASH_REMATCH[1]}"
+    ISSUE_NUM="${BASH_REMATCH[2]}"
+elif [[ "$ISSUE" =~ ^([^/]+/[^#]+)#([0-9]+)$ ]]; then
+    REPO="${BASH_REMATCH[1]}"
+    ISSUE_NUM="${BASH_REMATCH[2]}"
 else
-    ISSUE_NUM="$ISSUE"
+    echo "ERROR: Not an issue reference: $ISSUE (expected 123, #123, owner/repo#123, or an issue URL)"
+    exit 1
 fi
 
 # Fetch issue data
-gh issue view "$ISSUE_NUM" --json number,title,body,labels,state,url
+GH_ARGS=("issue" "view" "$ISSUE_NUM" "--json" "number,title,body,labels,state,url")
+[ -n "$REPO" ] && GH_ARGS+=("--repo" "$REPO")
+gh "${GH_ARGS[@]}"

@@ -3,7 +3,7 @@
 # Updates an existing GitHub issue
 # Usage: update-issue.sh --issue <number> [--title "New title"] [--body "New body"] [--body-file file] [--add-label "label"] [--remove-label "label"] [--attach path[#alt text]]
 
-set -e
+set -eo pipefail
 
 # Parse arguments
 ISSUE=""
@@ -15,6 +15,10 @@ REMOVE_LABELS=()
 ATTACHMENTS=()
 
 while [[ $# -gt 0 ]]; do
+    if [[ "$1" == --* && $# -lt 2 ]]; then
+        echo "ERROR: $1 needs a value"
+        exit 1
+    fi
     case $1 in
         --issue)
             ISSUE="$2"
@@ -74,6 +78,11 @@ if [ ${#ATTACHMENTS[@]} -gt 0 ]; then
     done
 fi
 
+if [ -n "$BODY_FILE" ] && [ ! -f "$BODY_FILE" ]; then
+    echo "ERROR: --body-file not found: $BODY_FILE"
+    exit 1
+fi
+
 # Check environment
 if ! git rev-parse --is-inside-work-tree > /dev/null 2>&1; then
     echo "ERROR: Not in a git repository. Navigate to a git repository and try again."
@@ -81,19 +90,23 @@ if ! git rev-parse --is-inside-work-tree > /dev/null 2>&1; then
 fi
 
 if ! command -v gh &> /dev/null; then
-    echo "ERROR: GitHub CLI not installed. Install with: brew install gh"
+    echo "ERROR: GitHub CLI not installed. Install it from https://cli.github.com"
     exit 1
 fi
 
 # Extract issue number from URL if provided
+REPO=""
 if [[ "$ISSUE" =~ ^#?([0-9]+)$ ]]; then
     ISSUE_NUM="${BASH_REMATCH[1]}"
-elif [[ "$ISSUE" =~ github\.com/[^/]+/[^/]+/issues/([0-9]+) ]]; then
-    ISSUE_NUM="${BASH_REMATCH[1]}"
-elif [[ "$ISSUE" =~ ^[^/]+/[^#]+#([0-9]+)$ ]]; then
-    ISSUE_NUM="${BASH_REMATCH[1]}"
+elif [[ "$ISSUE" =~ github\.com/([^/]+/[^/]+)/issues/([0-9]+) ]]; then
+    REPO="${BASH_REMATCH[1]}"
+    ISSUE_NUM="${BASH_REMATCH[2]}"
+elif [[ "$ISSUE" =~ ^([^/]+/[^#]+)#([0-9]+)$ ]]; then
+    REPO="${BASH_REMATCH[1]}"
+    ISSUE_NUM="${BASH_REMATCH[2]}"
 else
-    ISSUE_NUM="$ISSUE"
+    echo "ERROR: Not an issue reference: $ISSUE (expected 123, #123, owner/repo#123, or an issue URL)"
+    exit 1
 fi
 
 echo "=== Updating Issue #$ISSUE_NUM ==="
@@ -101,6 +114,7 @@ echo ""
 
 # Build arguments array
 GH_ARGS=("issue" "edit" "$ISSUE_NUM")
+[ -n "$REPO" ] && GH_ARGS+=("--repo" "$REPO")
 
 if [ -n "$TITLE" ]; then
     GH_ARGS+=("--title" "$TITLE")

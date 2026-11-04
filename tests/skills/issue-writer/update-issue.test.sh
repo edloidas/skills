@@ -98,4 +98,69 @@ EOF
   assert_contains "$STDOUT" "appends again" "warns an attach-only retry duplicates"
 }
 
+test_body_file_reaches_gh_as_a_file() {
+  init_repo repo main
+  cd repo
+  printf '%s\n' 'Uses `$(id)` and `$HOME` verbatim.' > body.md
+  stub_recording gh
+
+  run bash "$(script "$UPDATE_ISSUE")" --issue 7 --body-file body.md
+  assert_eq 0 "$STATUS" "exit status"
+  assert_contains "$(calls_of gh)" "--body-file body.md" "gh reads the body itself"
+  assert_not_contains "$(calls_of gh)" "--body " "the body is not passed as an argument"
+}
+
+test_flag_without_value_is_refused_before_gh() {
+  init_repo repo main
+  cd repo
+  stub_recording gh
+
+  run bash "$(script "$UPDATE_ISSUE")" --issue 7 --title
+  assert_ne 0 "$STATUS" "exit status"
+  assert_contains "$STDOUT$STDERR" "--title needs a value" "names the flag"
+  assert_eq "" "$(calls_of gh)" "gh was not invoked"
+}
+
+test_unrecognised_issue_reference_is_refused_before_gh() {
+  init_repo repo main
+  cd repo
+  stub_recording gh
+
+  run bash "$(script "$UPDATE_ISSUE")" --issue 'latest' --title "New title"
+  assert_ne 0 "$STATUS" "exit status"
+  assert_contains "$STDOUT$STDERR" "Not an issue reference: latest" "names the bad reference"
+  assert_eq "" "$(calls_of gh)" "gh was not invoked"
+}
+
+test_issue_url_resolves_to_its_number() {
+  init_repo repo main
+  cd repo
+  stub_recording gh
+
+  run bash "$(script "$UPDATE_ISSUE")" --issue 'https://github.com/o/r/issues/42' --title "New title"
+  assert_eq 0 "$STATUS" "exit status"
+  assert_contains "$(calls_of gh)" "issue edit 42 --repo o/r" "edits that number in the URL's repository"
+}
+
+test_short_reference_targets_its_own_repository() {
+  init_repo repo main
+  cd repo
+  stub_recording gh
+
+  run bash "$(script "$UPDATE_ISSUE")" --issue 'other/proj#9' --title "New title"
+  assert_eq 0 "$STATUS" "exit status"
+  assert_contains "$(calls_of gh)" "issue edit 9 --repo other/proj" "never the same number in the current repository"
+}
+
+test_missing_body_file_fails_before_gh_runs() {
+  init_repo repo main
+  cd repo
+  stub_recording gh
+
+  run bash "$(script "$UPDATE_ISSUE")" --issue 7 --body-file gone.md
+  assert_ne 0 "$STATUS" "exit status"
+  assert_contains "$STDOUT$STDERR" "gone.md" "names the missing file"
+  assert_eq "" "$(calls_of gh)" "gh was not invoked"
+}
+
 run_tests
