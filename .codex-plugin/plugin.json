@@ -1,6 +1,6 @@
 {
   "name": "edloidas",
-  "version": "6.0.0",
+  "version": "6.1.0",
   "description": "A Codex-safe skill collection for planning and driving GitHub issues, building and committing, adversarial review, auditing, repo maintenance, npm releases, explanations and outside opinions, Markdown writing, Obsidian working docs, and end-to-end workflows.",
   "author": {
     "name": "Mikita Taukachou",
